@@ -3,7 +3,7 @@ import { authService } from './auth';
 
 export interface TradeListItem {
   id: number;
-  topstep_id: string;
+  external_trade_id: string;
   trading_account: number;
   trading_account_name: string;
   contract_name: string;
@@ -122,7 +122,7 @@ class TradesService {
 
   async list(filters: TradesFilters = {}): Promise<PaginatedResponse<TradeListItem>> {
     const qs = this.toQuery(filters as any);
-    const url = `${this.BASE_URL}/api/trades/topstep/${qs ? `?${qs}` : ''}`;
+    const url = `${this.BASE_URL}/api/trades/imported/${qs ? `?${qs}` : ''}`;
     const res = await this.fetchWithAuth(url);
     if (!res.ok) throw new Error('Erreur lors du chargement des trades');
     return res.json();
@@ -135,7 +135,7 @@ class TradesService {
     trades_with_risk_units: number;
     skipped_unknown_contract: number;
   }> {
-    const url = `${this.BASE_URL}/api/trades/topstep/monte_carlo_inputs/?trading_account=${tradingAccount}`;
+    const url = `${this.BASE_URL}/api/trades/imported/monte_carlo_inputs/?trading_account=${tradingAccount}`;
     const res = await this.fetchWithAuth(url);
     if (!res.ok) throw new Error('Erreur lors du chargement des données Monte Carlo');
     return res.json();
@@ -152,7 +152,7 @@ class TradesService {
     count: number;
   }> {
     const qs = this.toQuery(filters as any);
-    const url = `${this.BASE_URL}/api/trades/topstep/daily_aggregates/${qs ? `?${qs}` : ''}`;
+    const url = `${this.BASE_URL}/api/trades/imported/daily_aggregates/${qs ? `?${qs}` : ''}`;
     const res = await this.fetchWithAuth(url);
     if (!res.ok) throw new Error('Erreur lors du chargement des données agrégées');
     return res.json();
@@ -160,20 +160,20 @@ class TradesService {
 
   async instruments(tradingAccount?: number | null): Promise<string[]> {
     const qs = tradingAccount ? `?trading_account=${tradingAccount}` : '';
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/topstep/instruments/${qs}`);
+    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/imported/instruments/${qs}`);
     if (!res.ok) return [];
     const data = await res.json();
     return data.instruments || [];
   }
 
   async retrieve(id: number): Promise<TradeDetail> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/topstep/${id}/`);
+    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/imported/${id}/`);
     if (!res.ok) throw new Error('Erreur lors de la récupération du trade');
     return res.json();
   }
 
   async create(payload: Partial<TradeDetail>): Promise<TradeDetail> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/topstep/`, {
+    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/imported/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -186,7 +186,7 @@ class TradesService {
   }
 
   async update(id: number, payload: Partial<TradeDetail>): Promise<TradeDetail> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/topstep/${id}/`, {
+    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/imported/${id}/`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -199,7 +199,7 @@ class TradesService {
   }
 
   async remove(id: number): Promise<void> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/topstep/${id}/`, {
+    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/imported/${id}/`, {
       method: 'DELETE',
     });
     if (!res.ok) throw new Error('Erreur lors de la suppression du trade');
@@ -213,7 +213,7 @@ class TradesService {
     total_fees: number;
   }> {
     const qs = this.toQuery(filters as any);
-    const url = `${this.BASE_URL}/api/trades/topstep/statistics/${qs ? `?${qs}` : ''}`;
+    const url = `${this.BASE_URL}/api/trades/imported/statistics/${qs ? `?${qs}` : ''}`;
     const res = await this.fetchWithAuth(url);
     if (!res.ok) throw new Error('Erreur lors du chargement des statistiques');
     const data = await res.json();
@@ -258,7 +258,7 @@ class TradesService {
       form.append('dry_run', 'true');
     }
     form.append('duplicate_to_copy_accounts', duplicateToCopyAccounts ? 'true' : 'false');
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/topstep/upload_csv/`, {
+    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/imported/upload_csv/`, {
       method: 'POST',
       body: form,
     });
@@ -367,7 +367,7 @@ class TradesService {
     }
     
     const qs = queryParams.toString();
-    const url = `${this.BASE_URL}/api/trades/topstep/statistics/${qs ? `?${qs}` : ''}`;
+    const url = `${this.BASE_URL}/api/trades/imported/statistics/${qs ? `?${qs}` : ''}`;
     const res = await this.fetchWithAuth(url);
     if (!res.ok) throw new Error('Erreur lors du chargement des statistiques détaillées');
     return res.json();
@@ -464,7 +464,7 @@ class TradesService {
     }
     
     const qs = queryParams.toString();
-    const url = `${this.BASE_URL}/api/trades/topstep/analytics/${qs ? `?${qs}` : ''}`;
+    const url = `${this.BASE_URL}/api/trades/imported/analytics/${qs ? `?${qs}` : ''}`;
     const res = await this.fetchWithAuth(url);
     if (!res.ok) throw new Error('Erreur lors du chargement des analytics');
     return res.json();
@@ -537,7 +537,7 @@ class TradesService {
     updated_count: number;
     message: string;
   }> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/topstep/bulk_assign_strategy/`, {
+    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/imported/bulk_assign_strategy/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -557,7 +557,7 @@ class TradesService {
       ...filters,
       page_size: 10000, // Récupérer tous les trades
     });
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/topstep/?${query}`);
+    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/imported/?${query}`);
     if (!res.ok) throw new Error('Erreur lors de la récupération des IDs');
     const data = await res.json();
     return data.results.map((trade: TradeListItem) => trade.id);

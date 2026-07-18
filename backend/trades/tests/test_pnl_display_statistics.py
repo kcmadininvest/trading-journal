@@ -7,7 +7,7 @@ from django.utils import timezone
 from rest_framework.test import APITestCase
 
 from accounts.models import User, UserPreferences
-from trades.models import AccountTransaction, TopStepTrade, TradingAccount
+from trades.models import AccountTransaction, ImportedTrade, TradingAccount
 
 
 class TopStepStatisticsPnlDisplayTests(APITestCase):
@@ -30,10 +30,10 @@ class TopStepStatisticsPnlDisplayTests(APITestCase):
             status='active',
         )
         now = timezone.now()
-        TopStepTrade.objects.create(
+        ImportedTrade.objects.create(
             user=self.user,
             trading_account=self.account,
-            topstep_id='pnl-pref-1',
+            external_trade_id='pnl-pref-1',
             contract_name='NQ',
             entered_at=now,
             exited_at=now,
@@ -48,7 +48,7 @@ class TopStepStatisticsPnlDisplayTests(APITestCase):
 
     def _get_stats(self):
         self.client.force_authenticate(user=self.user)
-        return self.client.get('/api/trades/topstep/statistics/')
+        return self.client.get('/api/trades/imported/statistics/')
 
     def test_net_mode_uses_net_pnl_for_total_pnl(self) -> None:
         prefs = self.user.preferences
@@ -97,10 +97,10 @@ class CalendarPnlDisplayQueryParamTests(APITestCase):
             status='active',
         )
         now = timezone.now()
-        TopStepTrade.objects.create(
+        ImportedTrade.objects.create(
             user=self.user,
             trading_account=self.account,
-            topstep_id='cal-pnl-1',
+            external_trade_id='cal-pnl-1',
             contract_name='NQ',
             entered_at=now,
             exited_at=now,
@@ -120,7 +120,7 @@ class CalendarPnlDisplayQueryParamTests(APITestCase):
         self.client.force_authenticate(user=self.user)
         y = timezone.now().year
         m = timezone.now().month
-        url = f'/api/trades/topstep/calendar_data/?year={y}&month={m}&pnl_display=net'
+        url = f'/api/trades/imported/calendar_data/?year={y}&month={m}&pnl_display=net'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200, response.data)
         self.assertEqual(float(response.data['monthly_total']), 80.0)
@@ -132,7 +132,7 @@ class CalendarPnlDisplayQueryParamTests(APITestCase):
         self.client.force_authenticate(user=self.user)
         y = timezone.now().year
         m = timezone.now().month
-        url = f'/api/trades/topstep/calendar_data/?year={y}&month={m}&pnl_display=gross'
+        url = f'/api/trades/imported/calendar_data/?year={y}&month={m}&pnl_display=gross'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200, response.data)
         self.assertEqual(float(response.data['monthly_total']), 100.0)
@@ -185,7 +185,7 @@ class CalendarAccountTransactionTests(APITestCase):
     def test_calendar_data_includes_deposit_and_withdrawal_by_day(self) -> None:
         self.client.force_authenticate(user=self.user)
         url = (
-            f'/api/trades/topstep/calendar_data/'
+            f'/api/trades/imported/calendar_data/'
             f'?year={self.year}&month={self.month}&trading_account={self.account.id}'
         )
         response = self.client.get(url)

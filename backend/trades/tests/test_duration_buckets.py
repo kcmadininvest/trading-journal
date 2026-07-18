@@ -1,4 +1,4 @@
-"""Vérifie l'agrégation par durée contre les champs réels du modèle TopStepTrade."""
+"""Vérifie l'agrégation par durée contre les champs réels du modèle ImportedTrade."""
 from datetime import timedelta
 from decimal import Decimal
 
@@ -7,7 +7,7 @@ from rest_framework.test import APITestCase
 
 from accounts.models import User
 from trades.duration_buckets import aggregate_duration_performance
-from trades.models import TopStepTrade, TradingAccount
+from trades.models import ImportedTrade, TradingAccount
 
 
 class DurationBucketAggregationTests(APITestCase):
@@ -30,10 +30,10 @@ class DurationBucketAggregationTests(APITestCase):
         )
         now = timezone.now()
 
-        TopStepTrade.objects.create(
+        ImportedTrade.objects.create(
             user=self.user,
             trading_account=self.account,
-            topstep_id='dur-1',
+            external_trade_id='dur-1',
             contract_name='NQ',
             entered_at=now,
             exited_at=now + timedelta(minutes=3),
@@ -46,10 +46,10 @@ class DurationBucketAggregationTests(APITestCase):
             pnl=Decimal('100'),
             net_pnl=Decimal('80'),
         )
-        TopStepTrade.objects.create(
+        ImportedTrade.objects.create(
             user=self.user,
             trading_account=self.account,
-            topstep_id='dur-2',
+            external_trade_id='dur-2',
             contract_name='NQ',
             entered_at=now,
             exited_at=now + timedelta(minutes=3),
@@ -62,10 +62,10 @@ class DurationBucketAggregationTests(APITestCase):
             pnl=Decimal('-50'),
             net_pnl=Decimal('-60'),
         )
-        TopStepTrade.objects.create(
+        ImportedTrade.objects.create(
             user=self.user,
             trading_account=self.account,
-            topstep_id='dur-3',
+            external_trade_id='dur-3',
             contract_name='NQ',
             entered_at=now,
             exited_at=now + timedelta(minutes=3),
@@ -78,10 +78,10 @@ class DurationBucketAggregationTests(APITestCase):
             pnl=Decimal('0'),
             net_pnl=Decimal('0'),
         )
-        TopStepTrade.objects.create(
+        ImportedTrade.objects.create(
             user=self.user,
             trading_account=self.account,
-            topstep_id='dur-4',
+            external_trade_id='dur-4',
             contract_name='NQ',
             entered_at=now,
             exited_at=now + timedelta(minutes=8),
@@ -96,7 +96,7 @@ class DurationBucketAggregationTests(APITestCase):
         )
 
     def test_net_pnl_aggregation_matches_database(self) -> None:
-        trades = TopStepTrade.objects.filter(trading_account=self.account).order_by('topstep_id')
+        trades = ImportedTrade.objects.filter(trading_account=self.account).order_by('external_trade_id')
         rows = aggregate_duration_performance(trades, 'net_pnl')
 
         bucket_5m = next(r for r in rows if r['label'] == '5m')
@@ -113,7 +113,7 @@ class DurationBucketAggregationTests(APITestCase):
         self.assertAlmostEqual(bucket_5_10['win_rate'], 100.0, places=5)
 
     def test_gross_pnl_field_differs_from_net(self) -> None:
-        trades = TopStepTrade.objects.filter(trading_account=self.account)
+        trades = ImportedTrade.objects.filter(trading_account=self.account)
         net_rows = aggregate_duration_performance(trades, 'net_pnl')
         gross_rows = aggregate_duration_performance(trades, 'pnl')
 
@@ -124,5 +124,5 @@ class DurationBucketAggregationTests(APITestCase):
 
     def test_is_profitable_property_miscounts_breakeven_as_loss(self) -> None:
         """Documente l'écart : is_profitable=False pour net_pnl=0 (ne doit plus piloter le graphique)."""
-        breakeven = TopStepTrade.objects.get(topstep_id='dur-3')
+        breakeven = ImportedTrade.objects.get(external_trade_id='dur-3')
         self.assertFalse(breakeven.is_profitable)

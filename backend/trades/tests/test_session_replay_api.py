@@ -13,7 +13,7 @@ from accounts.models import User
 from billing.models import CustomerSubscription
 from integrations.credentials_crypto import encrypt_json
 from integrations.models import UserApiIntegration
-from trades.models import SessionEvent, SessionJournalDraft, TopStepTrade, TradingAccount, TradingSession
+from trades.models import SessionEvent, SessionJournalDraft, ImportedTrade, TradingAccount, TradingSession
 from trades.replay.serializers import SessionEventSerializer
 from trades.replay.session_builder import SessionBuildResult
 
@@ -83,10 +83,10 @@ class SessionReplayApiTests(TestCase):
         from zoneinfo import ZoneInfo
 
         tz = ZoneInfo('UTC')
-        TopStepTrade.objects.create(
+        ImportedTrade.objects.create(
             user=self.user,
             trading_account=self.account,
-            topstep_id='t1',
+            external_trade_id='t1',
             contract_name='NQ',
             entered_at=datetime(2025, 8, 9, 10, 0, tzinfo=tz),
             exited_at=datetime(2025, 8, 9, 11, 0, tzinfo=tz),
@@ -172,10 +172,10 @@ class SessionReplayApiTests(TestCase):
         from zoneinfo import ZoneInfo
 
         tz = ZoneInfo('UTC')
-        trade = TopStepTrade.objects.create(
+        trade = ImportedTrade.objects.create(
             user=self.user,
             trading_account=self.account,
-            topstep_id='sl-trade-1',
+            external_trade_id='sl-trade-1',
             contract_name='NQ',
             entered_at=datetime(2025, 8, 10, 14, 0, tzinfo=tz),
             exited_at=datetime(2025, 8, 10, 15, 0, tzinfo=tz),

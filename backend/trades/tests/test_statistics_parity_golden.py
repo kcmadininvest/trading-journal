@@ -11,7 +11,7 @@ from django.test import TestCase
 from rest_framework.request import Request
 from rest_framework.test import APIRequestFactory
 
-from trades.models import TopStepTrade, TradingAccount
+from trades.models import ImportedTrade, TradingAccount
 from trades.models_rollup import STRATEGY_ROOT_UNASSIGNED, TradeDailyRollup
 from trades.pnl_basis import get_trade_pnl_field
 from trades.services.analytics_calculator import compute_analytics_payload
@@ -22,7 +22,7 @@ from trades.services.rollup_service import (
 )
 from trades.services.statistics_calculator import compute_statistics_payload
 from trades.services.stats_bundle_service import compute_stats_bundle_payload
-from trades.views import TopStepTradeViewSet
+from trades.views import ImportedTradeViewSet
 
 User = get_user_model()
 
@@ -39,12 +39,12 @@ class StatisticsParityGoldenTests(TestCase):
         )
         self.factory = APIRequestFactory()
 
-    def _create_trade(self, topstep_id, trade_day, net_pnl, pnl=None, hour=10):
+    def _create_trade(self, external_trade_id, trade_day, net_pnl, pnl=None, hour=10):
         entered = datetime.combine(trade_day, datetime.min.time().replace(hour=hour))
-        trade = TopStepTrade.objects.create(
+        trade = ImportedTrade.objects.create(
             user=self.user,
             trading_account=self.account,
-            topstep_id=topstep_id,
+            external_trade_id=external_trade_id,
             contract_name='ES',
             trade_type='Long',
             entered_at=entered,
@@ -67,7 +67,7 @@ class StatisticsParityGoldenTests(TestCase):
         return request
 
     def _queryset(self, request):
-        viewset = TopStepTradeViewSet()
+        viewset = ImportedTradeViewSet()
         viewset.request = request
         viewset.action = 'list'
         viewset.format_kwarg = None

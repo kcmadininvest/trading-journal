@@ -206,7 +206,7 @@ export const StrategyDrillDownModal: React.FC<StrategyDrillDownModalProps> = ({
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <div className="min-w-0">
                         <div className="font-medium text-gray-900 dark:text-gray-100 tabular-nums">
-                          #{strategy.trade_info.topstep_id}{' '}
+                          #{strategy.trade_info.external_trade_id}{' '}
                           <span className="text-gray-500 dark:text-gray-400 font-normal">
                             {strategy.trade_info.contract_name} · {strategy.trade_info.trade_type}
                           </span>

@@ -14,7 +14,7 @@ from daily_journal.models import (
     QuestionnaireAnswer,
     QuestionnaireQuestion,
 )
-from trades.models import TopStepTrade, TradingAccount
+from trades.models import ImportedTrade, TradingAccount
 
 
 class QuestionnaireApiTests(APITestCase):
@@ -38,12 +38,12 @@ class QuestionnaireApiTests(APITestCase):
         self.client = APIClient()
         self.client.force_authenticate(user=self.user)
 
-    def _create_trade(self, topstep_id: str = 'Q-T1') -> TopStepTrade:
+    def _create_trade(self, external_trade_id: str = 'Q-T1') -> ImportedTrade:
         entered = timezone.make_aware(datetime(2026, 7, 10, 10, 0, 0))
-        return TopStepTrade.objects.create(
+        return ImportedTrade.objects.create(
             user=self.user,
             trading_account=self.account,
-            topstep_id=topstep_id,
+            external_trade_id=external_trade_id,
             contract_name='ES',
             trade_type='Long',
             entered_at=entered,

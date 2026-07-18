@@ -5,7 +5,7 @@ from django.utils import timezone
 from rest_framework.test import APITestCase
 
 from accounts.models import User, UserPreferences
-from trades.models import TopStepTrade, TradingAccount
+from trades.models import ImportedTrade, TradingAccount
 from trades.risk_metrics import compute_sharpe_annualized_from_trades, compute_sharpe_per_trade
 from trades.views import get_user_timezone
 
@@ -37,10 +37,10 @@ class StatisticsSharpeApiTests(APITestCase):
             Decimal('-50.00'),
         ]
         for idx, pnl in enumerate(samples):
-            TopStepTrade.objects.create(
+            ImportedTrade.objects.create(
                 user=self.user,
                 trading_account=self.account,
-                topstep_id=f'sharpe-{idx}',
+                external_trade_id=f'sharpe-{idx}',
                 contract_name='NQ',
                 entered_at=now + timezone.timedelta(days=idx),
                 exited_at=now + timezone.timedelta(days=idx, minutes=30),
@@ -55,7 +55,7 @@ class StatisticsSharpeApiTests(APITestCase):
 
     def test_statistics_returns_sharpe_per_trade_and_annualized(self) -> None:
         trades = list(
-            TopStepTrade.objects.filter(trading_account=self.account).order_by('entered_at')
+            ImportedTrade.objects.filter(trading_account=self.account).order_by('entered_at')
         )
         pnls = [float(t.net_pnl) for t in trades]
         expected_per_trade = compute_sharpe_per_trade(pnls)
@@ -73,7 +73,7 @@ class StatisticsSharpeApiTests(APITestCase):
 
         self.client.force_authenticate(user=self.user)
         response = self.client.get(
-            '/api/trades/topstep/statistics/',
+            '/api/trades/imported/statistics/',
             {'trading_account': str(self.account.id)},
         )
         self.assertEqual(response.status_code, 200, response.data)

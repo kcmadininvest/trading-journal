@@ -10,7 +10,7 @@ from django.utils import timezone
 from rest_framework.test import APITestCase
 
 from accounts.models import User, UserPreferences
-from trades.models import TopStepTrade, TradingAccount
+from trades.models import ImportedTrade, TradingAccount
 from trades.period_performance import (
     compute_period_performance,
     resolve_initial_capital_for_dashboard,
@@ -52,10 +52,10 @@ class PeriodPerformanceComputationTests(APITestCase):
         entered = self.tz.localize(
             datetime.combine(trade_day, datetime.min.time().replace(hour=10))
         )
-        TopStepTrade.objects.create(
+        ImportedTrade.objects.create(
             user=self.user,
             trading_account=self.account,
-            topstep_id=trade_id or f'period-{trade_day.isoformat()}-{pnl}',
+            external_trade_id=trade_id or f'period-{trade_day.isoformat()}-{pnl}',
             contract_name='NQ',
             entered_at=entered,
             exited_at=entered + timedelta(hours=1),
@@ -79,7 +79,7 @@ class PeriodPerformanceComputationTests(APITestCase):
         self._create_trade(-2, '20.00')  # Thursday this week
         self._create_trade(-8, '100.00') # previous week
 
-        qs = TopStepTrade.objects.filter(user=self.user, trading_account=self.account)
+        qs = ImportedTrade.objects.filter(user=self.user, trading_account=self.account)
         result = compute_period_performance(
             qs,
             self.tz,
@@ -109,7 +109,7 @@ class PeriodPerformanceComputationTests(APITestCase):
         self._create_trade_on_date(date(2025, 2, 1), '10.00')
         self._create_trade_on_date(date(2024, 12, 31), '999.00')  # hors période YTD
 
-        qs = TopStepTrade.objects.filter(user=self.user, trading_account=self.account)
+        qs = ImportedTrade.objects.filter(user=self.user, trading_account=self.account)
         result = compute_period_performance(
             qs,
             self.tz,
@@ -129,7 +129,7 @@ class PeriodPerformanceComputationTests(APITestCase):
         self._create_trade_on_date(date(2025, 11, 1), '50.00')
         self._create_trade_on_date(date(2025, 12, 1), '-20.00')
 
-        qs = TopStepTrade.objects.filter(user=self.user, trading_account=self.account)
+        qs = ImportedTrade.objects.filter(user=self.user, trading_account=self.account)
         result = compute_period_performance(
             qs,
             self.tz,
@@ -148,10 +148,10 @@ class PeriodPerformanceComputationTests(APITestCase):
         """Les imports peuvent avoir entered_at récent mais trade_day historique."""
         trade_day_2025 = date(2025, 4, 10)
         entered_2026 = self.tz.localize(datetime(2026, 1, 15, 10, 0, 0))
-        TopStepTrade.objects.create(
+        ImportedTrade.objects.create(
             user=self.user,
             trading_account=self.account,
-            topstep_id='period-import-2025',
+            external_trade_id='period-import-2025',
             contract_name='NQ',
             entered_at=entered_2026,
             exited_at=entered_2026 + timedelta(hours=1),
@@ -165,7 +165,7 @@ class PeriodPerformanceComputationTests(APITestCase):
         )
         self._create_trade_on_date(date(2026, 4, 10), '50.00')
 
-        qs = TopStepTrade.objects.filter(user=self.user, trading_account=self.account)
+        qs = ImportedTrade.objects.filter(user=self.user, trading_account=self.account)
         result = compute_period_performance(
             qs,
             self.tz,
@@ -180,7 +180,7 @@ class PeriodPerformanceComputationTests(APITestCase):
 
     def test_change_pct_none_when_previous_zero(self) -> None:
         self._create_trade(0, '25.00')
-        qs = TopStepTrade.objects.filter(user=self.user)
+        qs = ImportedTrade.objects.filter(user=self.user)
         result = compute_period_performance(
             qs, self.tz, Decimal('5000'), 'net_pnl', reference_now=self.ref
         )
@@ -219,10 +219,10 @@ class DashboardSummaryPeriodPerformanceTests(APITestCase):
             status='active',
         )
         now = timezone.now()
-        TopStepTrade.objects.create(
+        ImportedTrade.objects.create(
             user=self.user,
             trading_account=self.account,
-            topstep_id='dash-period-1',
+            external_trade_id='dash-period-1',
             contract_name='NQ',
             entered_at=now,
             exited_at=now,

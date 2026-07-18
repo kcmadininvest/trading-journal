@@ -12,7 +12,7 @@ from rest_framework.response import Response
 
 from billing.permissions import IsPremiumBundleSubscriberOrAdmin
 from daily_journal.models import DailyJournalEntry
-from trades.models import TopStepTrade, TradingAccount, TradingSession
+from trades.models import ImportedTrade, TradingAccount, TradingSession
 
 from .serializers import (
     SessionBuildRequestSerializer,
@@ -82,7 +82,7 @@ class TradingSessionReplayViewSet(viewsets.ReadOnlyModelViewSet):
             user=request.user,
         )
         trade_days = (
-            TopStepTrade.objects.filter(
+            ImportedTrade.objects.filter(
                 user=request.user,
                 trading_account=account,
                 trade_day__isnull=False,

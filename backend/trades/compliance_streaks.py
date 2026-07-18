@@ -13,7 +13,7 @@ from django.utils import timezone
 from .models import (
     DayStrategyCompliance,
     PositionStrategy,
-    TopStepTrade,
+    ImportedTrade,
     TradeStrategy,
 )
 
@@ -353,7 +353,7 @@ def compute_strategy_compliance_context(
     Retourne notamment : strategies_queryset, current_streak, best_streak,
     current_streak_start, daily_compliance, totaux pour les taux globaux.
     """
-    trades_queryset = TopStepTrade.objects.filter(trading_account__user=user)
+    trades_queryset = ImportedTrade.objects.filter(trading_account__user=user)
     if trading_account_id:
         trades_queryset = trades_queryset.filter(trading_account_id=trading_account_id)
     else:

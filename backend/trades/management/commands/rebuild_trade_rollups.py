@@ -25,14 +25,14 @@ class Command(BaseCommand):
         if options['user_id']:
             user_ids = [options['user_id']]
         elif options['all']:
-            from trades.models import TopStepTrade
+            from trades.models import ImportedTrade
 
             # order_by() vide : sans ça, Meta.ordering (-entered_at) casse DISTINCT
             # → un user_id par trade au lieu d'un par utilisateur.
             user_ids = sorted(
                 {
                     uid
-                    for uid in TopStepTrade.objects.order_by().values_list('user_id', flat=True).distinct()
+                    for uid in ImportedTrade.objects.order_by().values_list('user_id', flat=True).distinct()
                     if uid is not None
                 }
             )

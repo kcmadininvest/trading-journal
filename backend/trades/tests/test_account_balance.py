@@ -16,7 +16,7 @@ from trades.account_balance import (
     compute_trading_account_balance,
     resolve_peak_balance_only,
 )
-from trades.models import AccountTransaction, TopStepTrade, TradingAccount
+from trades.models import AccountTransaction, ImportedTrade, TradingAccount
 from trades.serializers import AccountTransactionSerializer
 
 
@@ -65,10 +65,10 @@ class AccountBalanceComputationTests(TestCase):
 
     def test_gross_totals_when_pnl_differs_from_net_pnl(self) -> None:
         now = timezone.now()
-        TopStepTrade.objects.create(
+        ImportedTrade.objects.create(
             user=self.user,
             trading_account=self.account,
-            topstep_id='bal-gross-1',
+            external_trade_id='bal-gross-1',
             contract_name='NQ',
             entered_at=now,
             entry_price=Decimal('100.000000000'),
@@ -89,10 +89,10 @@ class AccountBalanceComputationTests(TestCase):
 
     def test_peak_balance_tracks_intraday_high_before_drawdown(self) -> None:
         d1 = timezone.now().date()
-        TopStepTrade.objects.create(
+        ImportedTrade.objects.create(
             user=self.user,
             trading_account=self.account,
-            topstep_id='bal-peak-1',
+            external_trade_id='bal-peak-1',
             contract_name='NQ',
             entered_at=timezone.now(),
             entry_price=Decimal('100.000000000'),
@@ -101,10 +101,10 @@ class AccountBalanceComputationTests(TestCase):
             net_pnl=Decimal('200.00'),
             trade_day=d1,
         )
-        TopStepTrade.objects.create(
+        ImportedTrade.objects.create(
             user=self.user,
             trading_account=self.account,
-            topstep_id='bal-peak-2',
+            external_trade_id='bal-peak-2',
             contract_name='NQ',
             entered_at=timezone.now(),
             entry_price=Decimal('100.000000000'),
@@ -130,10 +130,10 @@ class AccountBalanceComputationTests(TestCase):
         self.assertEqual(b['current_balance'], Decimal('1500.00'))
 
     def test_include_peak_false_omits_peak_fields(self) -> None:
-        TopStepTrade.objects.create(
+        ImportedTrade.objects.create(
             user=self.user,
             trading_account=self.account,
-            topstep_id='bal-no-peak-1',
+            external_trade_id='bal-no-peak-1',
             contract_name='NQ',
             entered_at=timezone.now(),
             entry_price=Decimal('100.000000000'),
@@ -148,10 +148,10 @@ class AccountBalanceComputationTests(TestCase):
 
     def test_compute_peak_balances_single_pass_matches_net_and_gross(self) -> None:
         now = timezone.now()
-        TopStepTrade.objects.create(
+        ImportedTrade.objects.create(
             user=self.user,
             trading_account=self.account,
-            topstep_id='bal-dual-1',
+            external_trade_id='bal-dual-1',
             contract_name='NQ',
             entered_at=now,
             entry_price=Decimal('100.000000000'),
@@ -169,10 +169,10 @@ class AccountBalanceComputationTests(TestCase):
         self.account.account_type = 'topstep'
         self.account.save(update_fields=['account_type'])
         d1 = timezone.now().date()
-        TopStepTrade.objects.create(
+        ImportedTrade.objects.create(
             user=self.user,
             trading_account=self.account,
-            topstep_id='bal-best-1',
+            external_trade_id='bal-best-1',
             contract_name='NQ',
             entered_at=timezone.now(),
             entry_price=Decimal('100.000000000'),
@@ -188,10 +188,10 @@ class AccountBalanceComputationTests(TestCase):
         self.assertEqual(best['best_day_pnl_gross'], Decimal('120.000000000'))
 
     def test_resolve_peak_balance_only(self) -> None:
-        TopStepTrade.objects.create(
+        ImportedTrade.objects.create(
             user=self.user,
             trading_account=self.account,
-            topstep_id='bal-peak-only-1',
+            external_trade_id='bal-peak-only-1',
             contract_name='NQ',
             entered_at=timezone.now(),
             entry_price=Decimal('100.000000000'),
@@ -233,10 +233,10 @@ class PeriodOpeningBalanceTests(TestCase):
         self.assertEqual(opening, Decimal('50000.00'))
 
     def test_opening_balance_includes_pnl_and_deposits_before_period(self) -> None:
-        TopStepTrade.objects.create(
+        ImportedTrade.objects.create(
             user=self.user,
             trading_account=self.account,
-            topstep_id='open-bal-1',
+            external_trade_id='open-bal-1',
             contract_name='NQ',
             entered_at=timezone.make_aware(
                 datetime.combine(self.day_before, datetime.min.time())
@@ -262,10 +262,10 @@ class PeriodOpeningBalanceTests(TestCase):
     def test_opening_balance_zero_initial_capital(self) -> None:
         self.account.initial_capital = Decimal('0')
         self.account.save(update_fields=['initial_capital'])
-        TopStepTrade.objects.create(
+        ImportedTrade.objects.create(
             user=self.user,
             trading_account=self.account,
-            topstep_id='open-bal-zero',
+            external_trade_id='open-bal-zero',
             contract_name='NQ',
             entered_at=timezone.make_aware(
                 datetime.combine(self.day_before, datetime.min.time())
@@ -280,10 +280,10 @@ class PeriodOpeningBalanceTests(TestCase):
         self.assertEqual(opening, Decimal('500.00'))
 
     def test_build_dashboard_balance_context(self) -> None:
-        TopStepTrade.objects.create(
+        ImportedTrade.objects.create(
             user=self.user,
             trading_account=self.account,
-            topstep_id='open-bal-ctx',
+            external_trade_id='open-bal-ctx',
             contract_name='NQ',
             entered_at=timezone.make_aware(
                 datetime.combine(self.day_before, datetime.min.time())
@@ -332,10 +332,10 @@ class AccountBalanceApiTests(APITestCase):
         self.assertNotIn('peak_balance_gross', response.data)
 
     def test_balance_api_with_peak(self) -> None:
-        TopStepTrade.objects.create(
+        ImportedTrade.objects.create(
             user=self.user,
             trading_account=self.account,
-            topstep_id='bal-api-1',
+            external_trade_id='bal-api-1',
             contract_name='NQ',
             entered_at=timezone.now(),
             entry_price=Decimal('100.000000000'),
@@ -353,10 +353,10 @@ class AccountBalanceApiTests(APITestCase):
         self.assertIn('peak_balance_gross', response.data)
 
     def test_balance_peak_api(self) -> None:
-        TopStepTrade.objects.create(
+        ImportedTrade.objects.create(
             user=self.user,
             trading_account=self.account,
-            topstep_id='bal-peak-api-1',
+            external_trade_id='bal-peak-api-1',
             contract_name='NQ',
             entered_at=timezone.now(),
             entry_price=Decimal('100.000000000'),
@@ -375,10 +375,10 @@ class AccountBalanceApiTests(APITestCase):
         self.account.account_type = 'topstep'
         self.account.save(update_fields=['account_type'])
         d1 = timezone.now().date()
-        TopStepTrade.objects.create(
+        ImportedTrade.objects.create(
             user=self.user,
             trading_account=self.account,
-            topstep_id='bal-cons-1',
+            external_trade_id='bal-cons-1',
             contract_name='NQ',
             entered_at=timezone.now(),
             entry_price=Decimal('100.000000000'),

@@ -199,7 +199,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
       // Créer une map des stratégies par trade_id (l'ID numérique du trade)
       const strategiesMap = new Map<number, TradeStrategy>();
       strategies.forEach((strategy) => {
-        // strategy.trade est l'ID numérique du trade TopStepTrade
+        // strategy.trade est l'ID numérique du trade ImportedTrade
         strategiesMap.set(strategy.trade, strategy);
       });
 
@@ -754,7 +754,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
       } else {
         // Mode normal avec trades
         const strategiesToSave: BulkStrategyData[] = trades.map((trade) => ({
-          trade_id: trade.topstep_id,
+          trade_id: trade.external_trade_id,
           trading_account_id: tradingAccount,
           strategy_respected: trade.strategyRespected,
           gain_if_strategy_respected: trade.gainIfStrategyRespected,

@@ -1,4 +1,4 @@
-"""Tests copy trading : même topstep_id sur deux comptes, serializer, importeur."""
+"""Tests copy trading : même external_trade_id sur deux comptes, serializer, importeur."""
 from datetime import datetime
 from decimal import Decimal
 from zoneinfo import ZoneInfo
@@ -6,7 +6,7 @@ from zoneinfo import ZoneInfo
 from django.test import TestCase
 
 from accounts.models import User
-from trades.models import TopStepTrade, TradingAccount
+from trades.models import ImportedTrade, TradingAccount
 from trades.serializers import TradingAccountSerializer
 from trades.utils import TopStepCSVImporter
 
@@ -46,15 +46,15 @@ class CopyImportSameTopstepIdTwoAccountsTests(TestCase):
             copy_imports_from=self.leader,
         )
 
-    def test_same_topstep_id_on_two_accounts(self) -> None:
+    def test_same_external_trade_id_on_two_accounts(self) -> None:
         tid = 'dup-001'
         tz = ZoneInfo('Europe/Paris')
         ent = datetime(2025, 8, 10, 18, 23, 28, tzinfo=tz)
         ext = datetime(2025, 8, 10, 18, 31, 3, tzinfo=tz)
-        TopStepTrade.objects.create(
+        ImportedTrade.objects.create(
             user=self.user,
             trading_account=self.leader,
-            topstep_id=tid,
+            external_trade_id=tid,
             contract_name='NQZ5',
             entered_at=ent,
             exited_at=ext,
@@ -65,10 +65,10 @@ class CopyImportSameTopstepIdTwoAccountsTests(TestCase):
             trade_type='Long',
             trade_day=ent.date(),
         )
-        t2 = TopStepTrade.objects.create(
+        t2 = ImportedTrade.objects.create(
             user=self.user,
             trading_account=self.follower,
-            topstep_id=tid,
+            external_trade_id=tid,
             contract_name='NQZ5',
             entered_at=ent,
             exited_at=ext,
@@ -79,7 +79,7 @@ class CopyImportSameTopstepIdTwoAccountsTests(TestCase):
             trade_type='Long',
             trade_day=ent.date(),
         )
-        self.assertEqual(TopStepTrade.objects.filter(topstep_id=tid).count(), 2)
+        self.assertEqual(ImportedTrade.objects.filter(external_trade_id=tid).count(), 2)
         self.assertEqual(t2.trading_account_id, self.follower.id)
 
     def test_importer_duplicates_row_to_two_accounts(self) -> None:
@@ -90,14 +90,14 @@ class CopyImportSameTopstepIdTwoAccountsTests(TestCase):
         )
         result = importer.import_from_string(csv_content, 't.csv', dry_run=False)
         self.assertTrue(result['success'])
-        self.assertEqual(TopStepTrade.objects.filter(topstep_id='import-dup-1').count(), 2)
+        self.assertEqual(ImportedTrade.objects.filter(external_trade_id='import-dup-1').count(), 2)
 
     def test_importer_duplicate_to_copy_false_single_account(self) -> None:
         csv_content = MINIMAL_CSV_HEADER + _csv_line('import-dup-2')
         importer = TopStepCSVImporter(self.user, target_accounts=[self.leader])
         result = importer.import_from_string(csv_content, 't.csv', dry_run=False)
         self.assertTrue(result['success'])
-        self.assertEqual(TopStepTrade.objects.filter(topstep_id='import-dup-2').count(), 1)
+        self.assertEqual(ImportedTrade.objects.filter(external_trade_id='import-dup-2').count(), 1)
 
 
 class TradingAccountCopyImportsValidationTests(TestCase):

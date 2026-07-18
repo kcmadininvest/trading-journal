@@ -2,7 +2,7 @@ from django.db import transaction
 from django.db.models import Max
 from rest_framework import serializers
 
-from trades.models import TopStepTrade, TradingAccount
+from trades.models import ImportedTrade, TradingAccount
 
 from .answer_validation import validate_answer_value
 from .models import (
@@ -256,7 +256,7 @@ class BulkAnswersSerializer(serializers.Serializer):
             trade_id = attrs.get('trade')
             if not trade_id:
                 raise serializers.ValidationError({'trade': 'Trade requis pour scope=position.'})
-            trade = TopStepTrade.objects.filter(pk=trade_id, user=user).first()
+            trade = ImportedTrade.objects.filter(pk=trade_id, user=user).first()
             if not trade:
                 raise serializers.ValidationError({'trade': 'Trade introuvable.'})
             attrs['_trade_obj'] = trade

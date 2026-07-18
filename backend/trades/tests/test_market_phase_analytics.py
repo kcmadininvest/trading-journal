@@ -11,7 +11,7 @@ from trades.market_phases.analytics import (
 )
 from trades.market_phases.capture_service import bulk_upsert_capture
 from trades.market_phases.period_projection import parse_period_key, periods_from_config
-from trades.models import TopStepTrade, TradingAccount
+from trades.models import ImportedTrade, TradingAccount
 
 User = get_user_model()
 

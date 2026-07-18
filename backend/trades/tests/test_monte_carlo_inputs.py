@@ -9,7 +9,7 @@ from django.utils import timezone
 from rest_framework.test import APITestCase
 
 from accounts.models import User, UserPreferences
-from trades.models import TopStepTrade, TradingAccount
+from trades.models import ImportedTrade, TradingAccount
 from trades.services.monte_carlo_inputs import compute_monte_carlo_exposure_inputs
 
 
@@ -36,19 +36,19 @@ class MonteCarloInputsServiceTests(APITestCase):
 
     def _create_trade(
         self,
-        topstep_id: str,
+        external_trade_id: str,
         size: str,
         contract_name: str = 'MNQ',
         point_value: Optional[str] = '2',
-    ) -> TopStepTrade:
-        entered = self.base_time + timedelta(minutes=int(topstep_id.replace('mc-', '') or 0))
+    ) -> ImportedTrade:
+        entered = self.base_time + timedelta(minutes=int(external_trade_id.replace('mc-', '') or 0))
         kwargs: dict = {}
         if point_value is not None:
             kwargs['point_value'] = Decimal(point_value)
-        return TopStepTrade.objects.create(
+        return ImportedTrade.objects.create(
             user=self.user,
             trading_account=self.account,
-            topstep_id=topstep_id,
+            external_trade_id=external_trade_id,
             contract_name=contract_name,
             entered_at=entered,
             exited_at=entered + timedelta(minutes=5),
@@ -67,7 +67,7 @@ class MonteCarloInputsServiceTests(APITestCase):
         self._create_trade('mc-2', '2', point_value='2')
         self._create_trade('mc-3', '3', point_value='2')
 
-        qs = TopStepTrade.objects.filter(user=self.user, trading_account=self.account)
+        qs = ImportedTrade.objects.filter(user=self.user, trading_account=self.account)
         result = compute_monte_carlo_exposure_inputs(qs)
 
         self.assertEqual(result['median_risk_units'], 4.0)
@@ -77,7 +77,7 @@ class MonteCarloInputsServiceTests(APITestCase):
     def test_point_value_resolved_from_contract_when_missing(self) -> None:
         self._create_trade('mc-10', '1', contract_name='MNQ', point_value=None)
 
-        qs = TopStepTrade.objects.filter(user=self.user, trading_account=self.account)
+        qs = ImportedTrade.objects.filter(user=self.user, trading_account=self.account)
         result = compute_monte_carlo_exposure_inputs(qs)
 
         self.assertEqual(result['median_risk_units'], 2.0)
@@ -86,7 +86,7 @@ class MonteCarloInputsServiceTests(APITestCase):
     def test_unknown_contract_incremented_skipped(self) -> None:
         self._create_trade('mc-20', '1', contract_name='UNKNOWN.XYZ', point_value=None)
 
-        qs = TopStepTrade.objects.filter(user=self.user, trading_account=self.account)
+        qs = ImportedTrade.objects.filter(user=self.user, trading_account=self.account)
         result = compute_monte_carlo_exposure_inputs(qs)
 
         self.assertIsNone(result['median_risk_units'])
@@ -115,10 +115,10 @@ class MonteCarloInputsAPITests(APITestCase):
         )
         self.client.force_authenticate(user=self.user)
         entered = timezone.now()
-        TopStepTrade.objects.create(
+        ImportedTrade.objects.create(
             user=self.user,
             trading_account=self.account,
-            topstep_id='mc-api-1',
+            external_trade_id='mc-api-1',
             contract_name='MNQ',
             entered_at=entered,
             exited_at=entered + timedelta(minutes=5),
@@ -133,7 +133,7 @@ class MonteCarloInputsAPITests(APITestCase):
         )
 
     def test_monte_carlo_inputs_endpoint(self) -> None:
-        url = f'/api/trades/topstep/monte_carlo_inputs/?trading_account={self.account.id}'
+        url = f'/api/trades/imported/monte_carlo_inputs/?trading_account={self.account.id}'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['median_risk_units'], 2.0)

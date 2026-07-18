@@ -11,7 +11,7 @@ from rest_framework import permissions, status, viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from trades.models import TopStepTrade, TradingAccount
+from trades.models import ImportedTrade, TradingAccount
 
 from .analytics import (
     build_asset_market_profile,
@@ -248,7 +248,7 @@ class MarketPhaseAnalyticsView(APIView):
         if account_id:
             blocks_qs = blocks_qs.filter(trading_account_id=account_id)
             events_qs = events_qs.filter(trading_account_id=account_id)
-        trades_qs = TopStepTrade.objects.filter(
+        trades_qs = ImportedTrade.objects.filter(
             user=request.user,
             trade_day__gte=date_from,
             trade_day__lte=date_to,

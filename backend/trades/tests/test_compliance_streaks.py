@@ -57,7 +57,7 @@ class ComplianceStreakTests(TestCase):
 
     def test_current_streak_ignores_recent_day_with_unevaluated_trade(self):
         """Un trade sans stratégie renseignée le jour le plus récent ne doit pas casser la série."""
-        from trades.models import TopStepTrade
+        from trades.models import ImportedTrade
         from datetime import datetime, timedelta
 
         self._create_day_compliance(date(2026, 6, 12), respected=True)
@@ -65,10 +65,10 @@ class ComplianceStreakTests(TestCase):
         self._create_day_compliance(date(2026, 6, 18), respected=True)
 
         entered = datetime(2026, 6, 23, 10, 0, 0)
-        TopStepTrade.objects.create(
+        ImportedTrade.objects.create(
             user=self.user,
             trading_account=self.account,
-            topstep_id='STREAK-T1',
+            external_trade_id='STREAK-T1',
             contract_name='ES',
             trade_type='Long',
             entered_at=entered,
@@ -93,7 +93,7 @@ class ComplianceStreakTests(TestCase):
 
     def test_day_compliance_extends_streak_when_trade_unevaluated(self):
         """Une compliance journalière respectée compte même si un trade du jour n'est pas encore évalué."""
-        from trades.models import TopStepTrade
+        from trades.models import ImportedTrade
         from datetime import datetime, timedelta
 
         self._create_day_compliance(date(2026, 6, 12), respected=True)
@@ -101,10 +101,10 @@ class ComplianceStreakTests(TestCase):
         self._create_day_compliance(date(2026, 6, 18), respected=True)
 
         entered = datetime(2026, 6, 23, 10, 0, 0)
-        TopStepTrade.objects.create(
+        ImportedTrade.objects.create(
             user=self.user,
             trading_account=self.account,
-            topstep_id='STREAK-T2',
+            external_trade_id='STREAK-T2',
             contract_name='ES',
             trade_type='Long',
             entered_at=entered,
@@ -131,19 +131,19 @@ class ComplianceStreakTests(TestCase):
 
     def test_current_streak_trades_excludes_respected_trades_before_streak_start(self):
         """Les trades respectés avant le début de la série ne doivent pas être comptés."""
-        from trades.models import TopStepTrade, TradeStrategy
+        from trades.models import ImportedTrade, TradeStrategy
         from datetime import datetime, timedelta
 
         self._create_day_compliance(date(2026, 6, 12), respected=True)
         self._create_day_compliance(date(2026, 6, 16), respected=True)
         self._create_day_compliance(date(2026, 6, 18), respected=True)
 
-        def create_trade(day: date, topstep_id: str, *, respected: bool) -> TopStepTrade:
+        def create_trade(day: date, external_trade_id: str, *, respected: bool) -> ImportedTrade:
             entered = datetime.combine(day, datetime.min.time().replace(hour=10))
-            trade = TopStepTrade.objects.create(
+            trade = ImportedTrade.objects.create(
                 user=self.user,
                 trading_account=self.account,
-                topstep_id=topstep_id,
+                external_trade_id=external_trade_id,
                 contract_name='ES',
                 trade_type='Long',
                 entered_at=entered,
@@ -189,15 +189,15 @@ class ComplianceStreakTests(TestCase):
 
     def test_best_streak_trades_counts_only_trades_on_record_streak_days(self):
         """Les trades de la meilleure série ne doivent pas inclure des séquences consécutives hors période."""
-        from trades.models import TopStepTrade, TradeStrategy
+        from trades.models import ImportedTrade, TradeStrategy
         from datetime import datetime, timedelta
 
-        def create_trade(day: date, topstep_id: str, *, respected: bool) -> TopStepTrade:
+        def create_trade(day: date, external_trade_id: str, *, respected: bool) -> ImportedTrade:
             entered = datetime.combine(day, datetime.min.time().replace(hour=10))
-            trade = TopStepTrade.objects.create(
+            trade = ImportedTrade.objects.create(
                 user=self.user,
                 trading_account=self.account,
-                topstep_id=topstep_id,
+                external_trade_id=external_trade_id,
                 contract_name='ES',
                 trade_type='Long',
                 entered_at=entered,

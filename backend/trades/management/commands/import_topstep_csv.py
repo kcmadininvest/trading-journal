@@ -3,7 +3,7 @@ Commande Django pour importer un fichier CSV TopStep.
 
 Usage:
     python manage.py import_topstep_csv <username> <csv_file_path>
-    python manage.py import_topstep_csv john /path/to/topstep_trades.csv
+    python manage.py import_topstep_csv john /path/to/trades.csv
 """
 from django.core.management.base import BaseCommand, CommandError
 from django.contrib.auth.models import User

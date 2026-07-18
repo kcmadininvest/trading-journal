@@ -10,7 +10,7 @@ from typing import cast, TYPE_CHECKING
 if TYPE_CHECKING:
     from ..models import TradingAccount
 
-from ..models import TopStepTrade, AccountDailyMetrics
+from ..models import ImportedTrade, AccountDailyMetrics
 
 
 class AccountMetricsCalculator:
@@ -49,8 +49,8 @@ class AccountMetricsCalculator:
         
         # Récupérer tous les trades jusqu'à cette date (inclus)
         trading_account_cast = cast('TradingAccount', trading_account)
-        topstep_trades = getattr(trading_account_cast, 'topstep_trades')
-        trades: QuerySet[TopStepTrade] = topstep_trades.filter(
+        imported_trades = getattr(trading_account_cast, 'imported_trades')
+        trades: QuerySet[ImportedTrade] = imported_trades.filter(
             trade_day__lte=target_date
         ).order_by('trade_day', 'entered_at')
         
@@ -122,8 +122,8 @@ class AccountMetricsCalculator:
         """
         # Récupérer toutes les dates de trading à partir de from_date
         trading_account_cast = cast('TradingAccount', trading_account)
-        topstep_trades = getattr(trading_account_cast, 'topstep_trades')
-        trade_dates = topstep_trades.filter(
+        imported_trades = getattr(trading_account_cast, 'imported_trades')
+        trade_dates = imported_trades.filter(
             trade_day__gte=from_date
         ).values_list('trade_day', flat=True).distinct().order_by('trade_day')
         
@@ -147,8 +147,8 @@ class AccountMetricsCalculator:
         """
         # Récupérer la première date de trading
         trading_account_cast = cast('TradingAccount', trading_account)
-        topstep_trades = getattr(trading_account_cast, 'topstep_trades')
-        first_trade = topstep_trades.order_by('trade_day').first()
+        imported_trades = getattr(trading_account_cast, 'imported_trades')
+        first_trade = imported_trades.order_by('trade_day').first()
         if not first_trade or not first_trade.trade_day:
             return 0
         

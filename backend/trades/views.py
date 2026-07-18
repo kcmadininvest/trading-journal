@@ -84,7 +84,7 @@ def get_user_timezone(request):
         return pytz.timezone('Europe/Paris')
 
 
-from .models import TopStepTrade, TopStepImportLog, TradeStrategy, DayStrategyCompliance, PositionStrategy, TradingAccount, Currency, TradingGoal, AccountTransaction, AccountDailyMetrics
+from .models import ImportedTrade, TopStepImportLog, TradeStrategy, DayStrategyCompliance, PositionStrategy, TradingAccount, Currency, TradingGoal, AccountTransaction, AccountDailyMetrics
 from .pnl_basis import (
     get_trade_pnl_field,
     get_trade_pnl_field_for_request,
@@ -125,8 +125,8 @@ from .pagination import AccountTransactionPagination
 from daily_journal.models import DailyJournalEntry
 from .market_holidays import MarketHolidaysService
 from .serializers import (
-    TopStepTradeSerializer,
-    TopStepTradeListSerializer,
+    ImportedTradeSerializer,
+    ImportedTradeListSerializer,
     TopStepImportLogSerializer,
     TradeStatisticsSerializer,
     TradingMetricsSerializer,
@@ -415,7 +415,7 @@ class TradingAccountViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
         """
         try:
             account = self.get_object()
-            trades = account.topstep_trades.all()
+            trades = account.imported_trades.all()
             
             if not trades.exists():
                 return Response({
@@ -804,7 +804,7 @@ class AccountTransactionViewSet(viewsets.ModelViewSet):
         })
 
 
-class TopStepTradeViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
+class ImportedTradeViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
     """
     ViewSet pour gérer les trades TopStep.
     """
@@ -819,15 +819,15 @@ class TopStepTradeViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
     
     def get_serializer_class(self):  # type: ignore
         if self.action == 'list':
-            return TopStepTradeListSerializer
-        return TopStepTradeSerializer
+            return ImportedTradeListSerializer
+        return ImportedTradeSerializer
     
     def get_queryset(self):
         """Retourne uniquement les trades de l'utilisateur connecté avec optimisations de requêtes."""
         if not self.request.user.is_authenticated:
-            return TopStepTrade.objects.none()  # type: ignore
+            return ImportedTrade.objects.none()  # type: ignore
         queryset = (
-            TopStepTrade.objects
+            ImportedTrade.objects
             .filter(user=self.request.user)  # type: ignore
             .select_related('trading_account', 'user', 'position_strategy')
             .order_by('-entered_at')
@@ -931,7 +931,7 @@ class TopStepTradeViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
         total_strategies = TradeStrategy.objects.filter(user=request.user).count()  # type: ignore
         
         # Supprimer seulement les données de l'utilisateur connecté
-        TopStepTrade.objects.filter(user=request.user).delete()  # type: ignore
+        ImportedTrade.objects.filter(user=request.user).delete()  # type: ignore
         TopStepImportLog.objects.filter(user=request.user).delete()  # type: ignore
         refresh_goals_for_user(request.user, TRADE_DRIVEN_GOAL_TYPES)
         
@@ -960,7 +960,7 @@ class TopStepTradeViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
             trade_date = datetime.strptime(date, '%Y-%m-%d').date()
             
             # Récupérer les trades de cette date pour l'utilisateur connecté uniquement
-            trades_to_delete = TopStepTrade.objects.filter(trade_day=trade_date, user=request.user)  # type: ignore
+            trades_to_delete = ImportedTrade.objects.filter(trade_day=trade_date, user=request.user)  # type: ignore
             
             # Compter les stratégies associées
             strategy_count = TradeStrategy.objects.filter(trade__in=trades_to_delete).count()  # type: ignore
@@ -1026,7 +1026,7 @@ class TopStepTradeViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
         if not request.user.is_authenticated:
             return Response({'instruments': []})
         trading_account_id = request.query_params.get('trading_account')
-        trades = TopStepTrade.objects.filter(user=request.user)  # type: ignore
+        trades = ImportedTrade.objects.filter(user=request.user)  # type: ignore
         if trading_account_id:
             try:
                 trades = trades.filter(trading_account_id=int(trading_account_id))
@@ -1353,7 +1353,7 @@ class TopStepTradeViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
                 }, status=status.HTTP_400_BAD_REQUEST)
         
         # Récupérer les trades de l'utilisateur avec les IDs fournis
-        trades = TopStepTrade.objects.filter(  # type: ignore
+        trades = ImportedTrade.objects.filter(  # type: ignore
             id__in=trade_ids,
             user=request.user
         )
@@ -1924,7 +1924,7 @@ class TopStepTradeViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
         end_date = request.query_params.get('end_date', None)
         
         # Construire le queryset de base
-        queryset = TopStepTrade.objects.filter(user=request.user)  # type: ignore
+        queryset = ImportedTrade.objects.filter(user=request.user)  # type: ignore
         
         if trading_account_id:
             queryset = queryset.filter(trading_account_id=trading_account_id)
@@ -2005,7 +2005,7 @@ class TopStepTradeViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
         from trades.services.monte_carlo_inputs import compute_monte_carlo_exposure_inputs
 
         trading_account_id = request.query_params.get('trading_account', None)
-        queryset = TopStepTrade.objects.filter(user=request.user)  # type: ignore
+        queryset = ImportedTrade.objects.filter(user=request.user)  # type: ignore
 
         if trading_account_id:
             queryset = queryset.filter(trading_account_id=trading_account_id)
@@ -2134,7 +2134,7 @@ class TopStepTradeViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
         
         # Filtrer par trading_account si spécifié
         trading_account_id = request.query_params.get('trading_account')
-        trades = TopStepTrade.objects.filter(user=request.user)  # type: ignore
+        trades = ImportedTrade.objects.filter(user=request.user)  # type: ignore
         if trading_account_id:
             try:
                 trades = trades.filter(trading_account_id=int(trading_account_id))
@@ -2203,14 +2203,14 @@ class TopStepTradeViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
         
         # Compter les stratégies associées avant suppression
         strategy_count = instance.strategy_data.count()
-        topstep_id = instance.topstep_id
+        external_trade_id = instance.external_trade_id
         
         # La suppression du trade supprimera automatiquement les stratégies
         # grâce à on_delete=models.CASCADE
         self.perform_destroy(instance)
         
         return Response({
-            'message': f'Trade {topstep_id} supprimé avec succès',
+            'message': f'Trade {external_trade_id} supprimé avec succès',
             'deleted_strategies_count': strategy_count
         }, status=status.HTTP_200_OK)
 
@@ -2249,7 +2249,7 @@ class TradeStrategyViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
                 'id', 'strategy_respected', 'tp1_reached', 'tp2_plus_reached',
                 'session_rating', 'created_at', 'updated_at', 'emotion_details',
                 'possible_improvements', 'gain_if_strategy_respected',
-                'trade__id', 'trade__topstep_id', 'trade__contract_name', 'trade__trade_type',
+                'trade__id', 'trade__external_trade_id', 'trade__contract_name', 'trade__trade_type',
                 'trade__pnl', 'trade__net_pnl', 'trade__entered_at', 'trade__exited_at', 'trade__trade_day',
                 'trade__trading_account__id', 'trade__trading_account__name',
                 'trade__trading_account__currency',
@@ -2272,7 +2272,7 @@ class TradeStrategyViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
         position_strategy_id = self.request.query_params.get('position_strategy', None)
         
         if trade_id:
-            queryset = queryset.filter(trade__topstep_id=trade_id)
+            queryset = queryset.filter(trade__external_trade_id=trade_id)
             if trading_account_id:
                 queryset = queryset.filter(trade__trading_account_id=trading_account_id)
         else:
@@ -2360,7 +2360,7 @@ class TradeStrategyViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
             # 🔒 SÉCURITÉ : Filtrer par utilisateur connecté
             strategy_qs = TradeStrategy.objects.filter(  # type: ignore
                 user=self.request.user,
-                trade__topstep_id=trade_id,
+                trade__external_trade_id=trade_id,
             )
             ta = request.query_params.get('trading_account')
             if ta:
@@ -2597,7 +2597,7 @@ class TradeStrategyViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
         # Statistiques globales (toutes périodes et tous comptes)
         # Pour all_time : compter TOUS les trades de l'utilisateur (pas seulement ceux avec stratégie)
         # IMPORTANT: Toujours exclure les comptes archivés des stats all_time (tous comptes)
-        all_time_trades_queryset = TopStepTrade.objects.filter(user=self.request.user).exclude(trading_account__status='archived')  # type: ignore
+        all_time_trades_queryset = ImportedTrade.objects.filter(user=self.request.user).exclude(trading_account__status='archived')  # type: ignore
         all_time_strategies_queryset = TradeStrategy.objects.filter(user=self.request.user).exclude(trade__trading_account__status='archived')  # type: ignore
         
         # Appliquer le filtre position_strategy à tous les querysets
@@ -2607,7 +2607,7 @@ class TradeStrategyViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
         
         # Pour la période sélectionnée (tous comptes) : compter TOUS les trades de l'utilisateur pour la période
         # IMPORTANT: Toujours exclure les comptes archivés des stats period (tous comptes)
-        period_trades_queryset = TopStepTrade.objects.filter(  # type: ignore
+        period_trades_queryset = ImportedTrade.objects.filter(  # type: ignore
             user=self.request.user,
             trade_day__gte=start_date.strftime('%Y-%m-%d'),
             trade_day__lt=end_date.strftime('%Y-%m-%d')
@@ -2623,7 +2623,7 @@ class TradeStrategyViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
             period_strategies_queryset = period_strategies_queryset.filter(trade__position_strategy_id__in=strategy_family_ids)
         
         # Pour le compte : compter TOUS les trades du compte (toutes périodes, pas seulement la période sélectionnée)
-        account_trades_queryset = TopStepTrade.objects.filter(user=self.request.user)  # type: ignore
+        account_trades_queryset = ImportedTrade.objects.filter(user=self.request.user)  # type: ignore
         account_strategies_queryset = TradeStrategy.objects.filter(user=self.request.user)  # type: ignore
         if trading_account_id:
             account_trades_queryset = account_trades_queryset.filter(trading_account_id=trading_account_id)
@@ -2638,7 +2638,7 @@ class TradeStrategyViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
             account_strategies_queryset = account_strategies_queryset.filter(trade__position_strategy_id__in=strategy_family_ids)
         
         # Pour le compte et la période sélectionnée : compter TOUS les trades du compte pour la période
-        account_period_trades_queryset = TopStepTrade.objects.filter(  # type: ignore
+        account_period_trades_queryset = ImportedTrade.objects.filter(  # type: ignore
             user=self.request.user,
             trade_day__gte=start_date.strftime('%Y-%m-%d'),
             trade_day__lt=end_date.strftime('%Y-%m-%d')
@@ -3173,8 +3173,8 @@ class TradeStrategyViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
                 if not trade_id:
                     continue
                 
-                # Résoudre le trade (topstep_id peut exister sur plusieurs comptes)
-                trade_qs = TopStepTrade.objects.filter(topstep_id=trade_id, user=self.request.user)  # type: ignore
+                # Résoudre le trade (external_trade_id peut exister sur plusieurs comptes)
+                trade_qs = ImportedTrade.objects.filter(external_trade_id=trade_id, user=self.request.user)  # type: ignore
                 ta_id = strategy_data.get('trading_account_id')
                 if ta_id is not None:
                     trade_qs = trade_qs.filter(trading_account_id=ta_id)
@@ -4501,7 +4501,7 @@ def dashboard_activity_summary(request):
     start_date_obj = None
     end_date_obj = None
 
-    trades_queryset = TopStepTrade.objects.filter(user=request.user)  # type: ignore
+    trades_queryset = ImportedTrade.objects.filter(user=request.user)  # type: ignore
 
     if trading_account_id:
         trades_queryset = trades_queryset.filter(trading_account_id=trading_account_id)

@@ -7,7 +7,7 @@ from django.utils import timezone
 from rest_framework.test import APITestCase
 
 from accounts.models import User, UserPreferences
-from trades.models import TopStepTrade, TradingAccount
+from trades.models import ImportedTrade, TradingAccount
 from trades.services.post_win_sizing import compute_post_win_sizing
 
 
@@ -34,23 +34,23 @@ class PostWinSizingServiceTests(APITestCase):
 
     def _create_trade(
         self,
-        topstep_id: str,
+        external_trade_id: str,
         offset_minutes: int,
         size: str,
         pnl: str,
         net_pnl: Optional[str] = None,
         contract_name: str = 'NQ',
         point_value: Optional[str] = None,
-    ) -> TopStepTrade:
+    ) -> ImportedTrade:
         entered = self.base_time + timedelta(minutes=offset_minutes)
         net = net_pnl if net_pnl is not None else pnl
         kwargs: dict = {}
         if point_value is not None:
             kwargs['point_value'] = Decimal(point_value)
-        return TopStepTrade.objects.create(
+        return ImportedTrade.objects.create(
             user=self.user,
             trading_account=self.account,
-            topstep_id=topstep_id,
+            external_trade_id=external_trade_id,
             contract_name=contract_name,
             entered_at=entered,
             exited_at=entered + timedelta(minutes=5),
@@ -72,7 +72,7 @@ class PostWinSizingServiceTests(APITestCase):
         self._create_trade('pw-5', 40, '3', '20', '20')
         self._create_trade('pw-6', 50, '1', '-5', '-5')
 
-        qs = TopStepTrade.objects.filter(user=self.user, trading_account=self.account)
+        qs = ImportedTrade.objects.filter(user=self.user, trading_account=self.account)
         result = compute_post_win_sizing(qs, 'net_pnl')
 
         self.assertEqual(result['sample_size'], 3)
@@ -95,7 +95,7 @@ class PostWinSizingServiceTests(APITestCase):
         self._create_trade('pw-a3', 20, '2', '40', '40')
         self._create_trade('pw-a4', 30, '3', '10', '10')
 
-        qs = TopStepTrade.objects.filter(user=self.user, trading_account=self.account)
+        qs = ImportedTrade.objects.filter(user=self.user, trading_account=self.account)
         result = compute_post_win_sizing(qs, 'net_pnl')
 
         larger = result['vs_winning_trade']['larger']
@@ -107,7 +107,7 @@ class PostWinSizingServiceTests(APITestCase):
         self._create_trade('pw-w1', 0, '1', '50', '50')
         self._create_trade('pw-w2', 10, '2', '-100', '-100')
 
-        qs = TopStepTrade.objects.filter(user=self.user, trading_account=self.account)
+        qs = ImportedTrade.objects.filter(user=self.user, trading_account=self.account)
         result = compute_post_win_sizing(qs, 'net_pnl')
 
         larger = result['vs_winning_trade']['larger']
@@ -118,7 +118,7 @@ class PostWinSizingServiceTests(APITestCase):
 
     def test_empty_when_no_win_followed_by_trade(self) -> None:
         self._create_trade('pw-loss', 0, '1', '-50', '-50')
-        qs = TopStepTrade.objects.filter(user=self.user, trading_account=self.account)
+        qs = ImportedTrade.objects.filter(user=self.user, trading_account=self.account)
         result = compute_post_win_sizing(qs, 'net_pnl')
         self.assertEqual(result['sample_size'], 0)
 
@@ -128,7 +128,7 @@ class PostWinSizingServiceTests(APITestCase):
         self._create_trade('pw-win', 40, '2', '50', '50')
         self._create_trade('pw-next', 50, '4', '-10', '-10')
 
-        qs = TopStepTrade.objects.filter(user=self.user, trading_account=self.account)
+        qs = ImportedTrade.objects.filter(user=self.user, trading_account=self.account)
         result = compute_post_win_sizing(qs, 'net_pnl')
 
         self.assertGreater(result['median_sample_size'], 0)
@@ -138,7 +138,7 @@ class PostWinSizingServiceTests(APITestCase):
         self._create_trade('pw-nq', 0, '1', '50', '50', contract_name='NQM6')
         self._create_trade('pw-mnq', 10, '5', '-10', '-10', contract_name='MNQM6')
 
-        qs = TopStepTrade.objects.filter(user=self.user, trading_account=self.account)
+        qs = ImportedTrade.objects.filter(user=self.user, trading_account=self.account)
         result = compute_post_win_sizing(qs, 'net_pnl')
 
         self.assertEqual(result['sample_size'], 1)
@@ -150,7 +150,7 @@ class PostWinSizingServiceTests(APITestCase):
         self._create_trade('pw-nq2', 0, '1', '50', '50', contract_name='NQM6')
         self._create_trade('pw-cl', 10, '1', '-10', '-10', contract_name='CLZ5')
 
-        qs = TopStepTrade.objects.filter(user=self.user, trading_account=self.account)
+        qs = ImportedTrade.objects.filter(user=self.user, trading_account=self.account)
         result = compute_post_win_sizing(qs, 'net_pnl')
 
         self.assertEqual(result['sample_size'], 0)
@@ -177,10 +177,10 @@ class PostWinSizingAnalyticsApiTests(APITestCase):
             status='active',
         )
         now = timezone.now()
-        TopStepTrade.objects.create(
+        ImportedTrade.objects.create(
             user=self.user,
             trading_account=self.account,
-            topstep_id='api-pw-1',
+            external_trade_id='api-pw-1',
             contract_name='NQ',
             entered_at=now,
             exited_at=now + timedelta(minutes=5),
@@ -192,10 +192,10 @@ class PostWinSizingAnalyticsApiTests(APITestCase):
             pnl=Decimal('50.000000000'),
             net_pnl=Decimal('50.000000000'),
         )
-        TopStepTrade.objects.create(
+        ImportedTrade.objects.create(
             user=self.user,
             trading_account=self.account,
-            topstep_id='api-pw-2',
+            external_trade_id='api-pw-2',
             contract_name='NQ',
             entered_at=now + timedelta(minutes=10),
             exited_at=now + timedelta(minutes=15),
@@ -211,7 +211,7 @@ class PostWinSizingAnalyticsApiTests(APITestCase):
     def test_analytics_includes_post_win_sizing(self) -> None:
         self.client.force_authenticate(user=self.user)
         response = self.client.get(
-            '/api/trades/topstep/analytics/',
+            '/api/trades/imported/analytics/',
             {'trading_account': self.account.id},
         )
         self.assertEqual(response.status_code, 200, response.data)
@@ -223,10 +223,10 @@ class PostWinSizingAnalyticsApiTests(APITestCase):
         self.assertIn('skipped_cross_instrument', pws)
 
     def test_analytics_empty_post_win_sizing_without_trades(self) -> None:
-        TopStepTrade.objects.all().delete()
+        ImportedTrade.objects.all().delete()
         self.client.force_authenticate(user=self.user)
         response = self.client.get(
-            '/api/trades/topstep/analytics/',
+            '/api/trades/imported/analytics/',
             {'trading_account': self.account.id},
         )
         self.assertEqual(response.status_code, 200)

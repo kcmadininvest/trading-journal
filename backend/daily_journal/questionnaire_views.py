@@ -6,7 +6,7 @@ from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from trades.models import TopStepTrade
+from trades.models import ImportedTrade
 
 from .models import (
     QuestionTemplate,
@@ -238,7 +238,7 @@ class QuestionnaireAnswersView(APIView):
                     {'trade': 'Paramètre trade requis pour scope=position.'},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            trade = TopStepTrade.objects.filter(pk=trade_id, user=request.user).first()
+            trade = ImportedTrade.objects.filter(pk=trade_id, user=request.user).first()
             if not trade:
                 return Response(
                     {'trade': 'Trade introuvable.'},

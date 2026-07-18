@@ -16,9 +16,9 @@ from ..compliance_streaks import (
     get_position_strategy_family_ids,
     get_rolling_twelve_month_date_range,
 )
-from ..models import DayStrategyCompliance, TopStepTrade, TradingAccount
+from ..models import DayStrategyCompliance, ImportedTrade, TradingAccount
 from ..period_performance import compute_period_performance, resolve_initial_capital_for_dashboard
-from ..serializers import TopStepTradeListSerializer, TradeStrategySerializer
+from ..serializers import ImportedTradeListSerializer, TradeStrategySerializer
 from ..pnl_basis import get_trade_pnl_field_for_request
 from .rollup_service import (
     get_active_account_ids,
@@ -57,7 +57,7 @@ def compute_dashboard_summary_payload(request, *, include_lists: bool = True) ->
     end_date_obj = None
     parsed_strategy_id = None
 
-    trades_queryset = TopStepTrade.objects.filter(user=request.user)  # type: ignore
+    trades_queryset = ImportedTrade.objects.filter(user=request.user)  # type: ignore
 
     if trading_account_id:
         trades_queryset = trades_queryset.filter(trading_account_id=trading_account_id)
@@ -181,7 +181,7 @@ def compute_dashboard_summary_payload(request, *, include_lists: bool = True) ->
     active_days_count = len(active_dates)
 
     limited_trades = trades_queryset.select_related('trading_account')[:500]
-    trades_data = TopStepTradeListSerializer(limited_trades, many=True).data if include_lists else []
+    trades_data = ImportedTradeListSerializer(limited_trades, many=True).data if include_lists else []
 
     compliance_stats = None
     strategies_data = []
@@ -230,7 +230,7 @@ def compute_dashboard_summary_payload(request, *, include_lists: bool = True) ->
         logger.error('Erreur compliance dashboard: %s', exc)
         strategies_data = []
 
-    period_trades_qs = TopStepTrade.objects.filter(user=request.user)  # type: ignore
+    period_trades_qs = ImportedTrade.objects.filter(user=request.user)  # type: ignore
     if trading_account_id:
         period_trades_qs = period_trades_qs.filter(trading_account_id=trading_account_id)
     elif active_accounts is not None:
@@ -251,7 +251,7 @@ def compute_dashboard_summary_payload(request, *, include_lists: bool = True) ->
     )
 
     recent_trades_qs = period_trades_qs.select_related('trading_account').order_by('-entered_at')[:20]
-    recent_trades_data = TopStepTradeListSerializer(recent_trades_qs, many=True).data if include_lists else []
+    recent_trades_data = ImportedTradeListSerializer(recent_trades_qs, many=True).data if include_lists else []
 
     balance_context = None
     if trading_account_id:

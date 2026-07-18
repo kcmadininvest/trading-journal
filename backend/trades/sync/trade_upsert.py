@@ -6,27 +6,27 @@ from decimal import Decimal
 
 from django.db import transaction
 
-from trades.models import TopStepTrade
+from trades.models import ImportedTrade
 from trades.utils import _recalculate_mll_for_topstep_accounts
 
 
-def trade_exists(user, trading_account, topstep_id: str) -> bool:
-    return TopStepTrade.objects.filter(
+def trade_exists(user, trading_account, external_trade_id: str) -> bool:
+    return ImportedTrade.objects.filter(
         user=user,
         trading_account=trading_account,
-        topstep_id=topstep_id,
+        external_trade_id=external_trade_id,
     ).exists()
 
 
-def create_trade_from_parsed(user, trading_account, parsed: dict) -> TopStepTrade | None:
-    """Crée un trade si topstep_id absent. Ne met jamais à jour un trade existant."""
-    topstep_id = parsed['topstep_id']
-    if trade_exists(user, trading_account, topstep_id):
+def create_trade_from_parsed(user, trading_account, parsed: dict) -> ImportedTrade | None:
+    """Crée un trade si external_trade_id absent. Ne met jamais à jour un trade existant."""
+    external_trade_id = parsed['external_trade_id']
+    if trade_exists(user, trading_account, external_trade_id):
         return None
-    return TopStepTrade.objects.create(
+    return ImportedTrade.objects.create(
         user=user,
         trading_account=trading_account,
-        topstep_id=topstep_id,
+        external_trade_id=external_trade_id,
         contract_name=parsed['contract_name'],
         entered_at=parsed['entered_at'],
         exited_at=parsed.get('exited_at'),

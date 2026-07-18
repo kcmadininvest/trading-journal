@@ -10,7 +10,7 @@ from accounts.models import User
 from integrations.credentials_crypto import encrypt_json
 from integrations.models import UserApiIntegration
 from integrations.topstepx_client import TopStepXApiError
-from trades.models import SessionEvent, TradingAccount, TradingSession, TopStepTrade
+from trades.models import SessionEvent, TradingAccount, TradingSession, ImportedTrade
 from trades.sync.topstepx_mapper import parse_api_timestamp
 from trades.replay.event_display import format_contract_label, order_summary
 from trades.replay.session_builder import (
@@ -189,10 +189,10 @@ class SessionReplayBuildIntegrationTests(TestCase):
             is_connected=True,
         )
         tz = ZoneInfo('UTC')
-        TopStepTrade.objects.create(
+        ImportedTrade.objects.create(
             user=self.user,
             trading_account=self.account,
-            topstep_id='1002',
+            external_trade_id='1002',
             contract_name='NQ',
             entered_at=datetime(2025, 8, 10, 16, 23, 28, tzinfo=tz),
             exited_at=datetime(2025, 8, 10, 16, 31, 3, tzinfo=tz),

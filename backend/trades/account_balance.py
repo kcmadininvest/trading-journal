@@ -39,10 +39,10 @@ def _peak_balances_sql(
     """
     Pic net/brut via fenêtre SQL (dépôts/retraits avant trades du jour, ordre intraday).
     """
-    from .models import AccountTransaction, TopStepTrade
+    from .models import AccountTransaction, ImportedTrade
 
     initial_capital: Decimal = trading_account.initial_capital or Decimal('0')
-    trade_table = TopStepTrade._meta.db_table
+    trade_table = ImportedTrade._meta.db_table
     tx_table = AccountTransaction._meta.db_table
 
     tx_exclude_sql = ''
@@ -157,14 +157,14 @@ def compute_topstep_best_day(
     if trading_account.account_type != 'topstep':
         return None
 
-    from .models import TopStepTrade
+    from .models import ImportedTrade
 
     _pnl_money = DecimalField(max_digits=18, decimal_places=9)
     _zero_pnl = Value(Decimal('0'), output_field=_pnl_money)
     gross_expr = Coalesce(F('pnl'), F('net_pnl'), _zero_pnl, output_field=_pnl_money)
 
     rows = (
-        trading_account.topstep_trades.filter(trade_day__isnull=False)
+        trading_account.imported_trades.filter(trade_day__isnull=False)
         .values('trade_day')
         .annotate(
             day_pnl_net=Sum('net_pnl'),
@@ -191,10 +191,10 @@ def _balance_before_calendar_date_sql(
     Solde de trésorerie juste avant ``before_date`` (événements des jours strictement antérieurs).
     Applique tx avant trades pour chaque journée (aligné sur le pic SQL).
     """
-    from .models import AccountTransaction, TopStepTrade
+    from .models import AccountTransaction, ImportedTrade
 
     initial_capital: Decimal = trading_account.initial_capital or Decimal('0')
-    trade_table = TopStepTrade._meta.db_table
+    trade_table = ImportedTrade._meta.db_table
     tx_table = AccountTransaction._meta.db_table
 
     sql = f"""
@@ -367,7 +367,7 @@ def compute_trading_account_balance(
     """
     initial_capital: Decimal = trading_account.initial_capital or Decimal('0')
 
-    trades_qs = trading_account.topstep_trades.all()
+    trades_qs = trading_account.imported_trades.all()
     _pnl_money = DecimalField(max_digits=18, decimal_places=9)
     _zero_pnl = Value(Decimal('0'), output_field=_pnl_money)
     gross_expr = Coalesce(F('pnl'), F('net_pnl'), _zero_pnl, output_field=_pnl_money)

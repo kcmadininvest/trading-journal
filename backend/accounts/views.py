@@ -52,10 +52,10 @@ from .serializers import (
 
 # Imports des modèles trades pour éviter les erreurs de linting
 try:
-    from trades.models import TopStepTrade, TopStepImportLog, TradeStrategy, PositionStrategy, TradingAccount
+    from trades.models import ImportedTrade, TopStepImportLog, TradeStrategy, PositionStrategy, TradingAccount
 except ImportError:
     # Les modèles trades n'existent pas encore
-    TopStepTrade = TopStepImportLog = TradeStrategy = PositionStrategy = TradingAccount = None
+    ImportedTrade = TopStepImportLog = TradeStrategy = PositionStrategy = TradingAccount = None
 
 def safe_count(model, user):
     """Compte les objets d'un modèle pour un utilisateur de manière sécurisée"""
@@ -528,13 +528,13 @@ class UserProfileView(APIView):
             user = request.user
             
             # Supprimer tous les modèles associés à l'utilisateur
-            from trades.models import TopStepTrade, TopStepImportLog, TradeStrategy
+            from trades.models import ImportedTrade, TopStepImportLog, TradeStrategy
             
             # Supprimer les stratégies de trades (doit être fait avant les trades)
             TradeStrategy.objects.filter(user=user).delete()
             
             # Supprimer tous les trades associés à l'utilisateur
-            TopStepTrade.objects.filter(user=user).delete()
+            ImportedTrade.objects.filter(user=user).delete()
             
             # Supprimer les logs d'import
             TopStepImportLog.objects.filter(user=user).delete()
@@ -771,7 +771,7 @@ class AdminUserDetailView(generics.RetrieveUpdateDestroyAPIView):
         stats = {
             'user_email': user_to_delete.email,
             'trading_accounts': TradingAccount.objects.filter(user=user_to_delete).count(),
-            'trades': TopStepTrade.objects.filter(user=user_to_delete).count(),
+            'trades': ImportedTrade.objects.filter(user=user_to_delete).count(),
             'import_logs': TopStepImportLog.objects.filter(user=user_to_delete).count(),
             'trade_strategies': TradeStrategy.objects.filter(user=user_to_delete).count(),
             'position_strategies': PositionStrategy.objects.filter(user=user_to_delete).count(),
@@ -830,13 +830,13 @@ class AdminUserDeletionPreviewView(APIView):
             },
             'data_summary': {
                 'trading_accounts': safe_count(TradingAccount, user_to_delete),
-                'trades': safe_count(TopStepTrade, user_to_delete),
+                'trades': safe_count(ImportedTrade, user_to_delete),
                 'import_logs': safe_count(TopStepImportLog, user_to_delete),
                 'trade_strategies': safe_count(TradeStrategy, user_to_delete),
                 'position_strategies': safe_count(PositionStrategy, user_to_delete),
             },
             'recent_activity': {
-                'last_trade': safe_first(TopStepTrade, user_to_delete, '-entered_at'),
+                'last_trade': safe_first(ImportedTrade, user_to_delete, '-entered_at'),
                 'last_import': safe_first(TopStepImportLog, user_to_delete, '-imported_at'),
             }
         }
@@ -890,7 +890,7 @@ class AdminBulkDeleteUsersView(APIView):
                 stats = {
                     'user_email': user_to_delete.email,
                     'trading_accounts': safe_count(TradingAccount, user_to_delete),
-                    'trades': safe_count(TopStepTrade, user_to_delete),
+                    'trades': safe_count(ImportedTrade, user_to_delete),
                     'import_logs': safe_count(TopStepImportLog, user_to_delete),
                     'trade_strategies': safe_count(TradeStrategy, user_to_delete),
                     'position_strategies': safe_count(PositionStrategy, user_to_delete),
@@ -1632,12 +1632,12 @@ class DataExportView(APIView):
             
             # Trades
             try:
-                from trades.models import TopStepTrade
-                trades = TopStepTrade.objects.filter(user=user)
+                from trades.models import ImportedTrade
+                trades = ImportedTrade.objects.filter(user=user)
                 for trade in trades:
                     export_data['trades'].append({
                         'id': trade.id,
-                        'topstep_id': trade.topstep_id,
+                        'external_trade_id': trade.external_trade_id,
                         'contract_name': trade.contract_name,
                         'entered_at': trade.entered_at.isoformat() if trade.entered_at else None,
                         'exited_at': trade.exited_at.isoformat() if trade.exited_at else None,
@@ -1671,7 +1671,7 @@ class DataExportView(APIView):
                     export_data['strategies'].append({
                         'id': strategy.id,
                         'trade_id': strategy.trade.id if strategy.trade else None,
-                        'trade_topstep_id': strategy.trade.topstep_id if strategy.trade else None,
+                        'trade_external_trade_id': strategy.trade.external_trade_id if strategy.trade else None,
                         'strategy_respected': strategy.strategy_respected,
                         'gain_if_strategy_respected': strategy.gain_if_strategy_respected,
                         'dominant_emotions': strategy.dominant_emotions,

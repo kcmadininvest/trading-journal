@@ -13,7 +13,7 @@ from django.db.models import Count, Max, Min, Q, Sum
 from django.db.models.functions import Coalesce, Extract, TruncDate
 
 from ..compliance_streaks import get_position_strategy_family_ids
-from ..models import PositionStrategy, TopStepTrade, TradingAccount
+from ..models import PositionStrategy, ImportedTrade, TradingAccount
 from ..models_rollup import STRATEGY_ROOT_UNASSIGNED, TradeDailyRollup
 
 logger = logging.getLogger(__name__)
@@ -38,7 +38,7 @@ def resolve_strategy_root_from_filter(user, position_strategy_id: Optional[int])
     return resolve_strategy_root_id(user, position_strategy_id)
 
 
-def get_trade_day(trade: TopStepTrade, user_tz=None) -> Optional[date]:
+def get_trade_day(trade: ImportedTrade, user_tz=None) -> Optional[date]:
     if trade.trade_day:
         return trade.trade_day
     if trade.entered_at:
@@ -65,7 +65,7 @@ def _trade_buckets_in_period(
     if not account_ids:
         return set()
 
-    qs = TopStepTrade.objects.filter(user=user, trading_account_id__in=account_ids)
+    qs = ImportedTrade.objects.filter(user=user, trading_account_id__in=account_ids)
     if start_date:
         qs = qs.filter(
             Q(trade_day__gte=start_date)
@@ -129,7 +129,7 @@ def rollups_cover_period(
 
 
 def _trades_for_bucket(user_id: int, account_id: int, trade_day: date, strategy_root_id: int):
-    qs = TopStepTrade.objects.filter(
+    qs = ImportedTrade.objects.filter(
         user_id=user_id,
         trading_account_id=account_id,
     ).annotate(
@@ -193,7 +193,7 @@ def recalculate_rollup_bucket(user_id: int, account_id: int, trade_day: date, st
     )
 
 
-def buckets_for_trade(trade: TopStepTrade, user_tz=None) -> Set[RollupBucket]:
+def buckets_for_trade(trade: ImportedTrade, user_tz=None) -> Set[RollupBucket]:
     if not trade.trading_account_id:
         return set()
     trade_day = get_trade_day(trade, user_tz)
@@ -203,7 +203,7 @@ def buckets_for_trade(trade: TopStepTrade, user_tz=None) -> Set[RollupBucket]:
     return {(trade.trading_account_id, trade_day, root)}
 
 
-def handle_trade_rollup_update(instance: TopStepTrade, old_instance: Optional[TopStepTrade] = None) -> None:
+def handle_trade_rollup_update(instance: ImportedTrade, old_instance: Optional[ImportedTrade] = None) -> None:
     if not instance.user_id:
         return
 
@@ -307,7 +307,7 @@ def rebuild_rollups_for_user(user_id: int) -> int:
     """Recalcule tous les rollups d'un utilisateur. Retourne le nombre de lignes créées."""
     TradeDailyRollup.objects.filter(user_id=user_id).delete()
 
-    trades = TopStepTrade.objects.filter(user_id=user_id).select_related('user', 'trading_account')
+    trades = ImportedTrade.objects.filter(user_id=user_id).select_related('user', 'trading_account')
     buckets: Set[RollupBucket] = set()
 
     for trade in trades.iterator(chunk_size=500):

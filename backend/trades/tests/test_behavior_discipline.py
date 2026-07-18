@@ -7,7 +7,7 @@ from django.utils import timezone
 from rest_framework.test import APITestCase
 
 from accounts.models import User, UserPreferences
-from trades.models import TopStepTrade, TradingAccount
+from trades.models import ImportedTrade, TradingAccount
 from trades.services.behavior_discipline import (
     compute_behavior_discipline,
     compute_revenge_trading,
@@ -40,19 +40,19 @@ class BehaviorDisciplineServiceTests(APITestCase):
 
     def _create_trade(
         self,
-        topstep_id: str,
+        external_trade_id: str,
         offset_minutes: int,
         size: str,
         pnl: str,
         contract_name: str = 'NQ',
         trade_day: Optional[date] = None,
-    ) -> TopStepTrade:
+    ) -> ImportedTrade:
         entered = self.base_time + timedelta(minutes=offset_minutes)
         day = trade_day or entered.date()
-        return TopStepTrade.objects.create(
+        return ImportedTrade.objects.create(
             user=self.user,
             trading_account=self.account,
-            topstep_id=topstep_id,
+            external_trade_id=external_trade_id,
             contract_name=contract_name,
             entered_at=entered,
             exited_at=entered + timedelta(minutes=10),
@@ -125,7 +125,7 @@ class BehaviorDisciplineServiceTests(APITestCase):
         self._create_trade('l4', 80, '4', '-20')
         self._create_trade('l5', 90, '4', '-10')
 
-        qs = TopStepTrade.objects.filter(trading_account=self.account)
+        qs = ImportedTrade.objects.filter(trading_account=self.account)
         result = compute_sizing_discipline(qs, self.pnl_field)
         # winners size 2 * 20 = 40, losers 4 * 20 = 80 -> 100% larger
         self.assertEqual(result['avg_size_winning_trades'], 40.0)
@@ -149,7 +149,7 @@ class BehaviorDisciplineServiceTests(APITestCase):
 
         self.client.force_authenticate(user=self.user)
         response = self.client.get(
-            '/api/trades/topstep/analytics/',
+            '/api/trades/imported/analytics/',
             {'trading_account': self.account.id},
         )
         self.assertEqual(response.status_code, 200, response.data)
@@ -163,7 +163,7 @@ class BehaviorDisciplineServiceTests(APITestCase):
     def test_analytics_empty_behavior_discipline_without_trades(self) -> None:
         self.client.force_authenticate(user=self.user)
         response = self.client.get(
-            '/api/trades/topstep/analytics/',
+            '/api/trades/imported/analytics/',
             {'trading_account': self.account.id},
         )
         self.assertEqual(response.status_code, 200)

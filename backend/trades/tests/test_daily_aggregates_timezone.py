@@ -8,7 +8,7 @@ import pytz
 from rest_framework.test import APITestCase
 
 from accounts.models import User, UserPreferences
-from trades.models import TopStepTrade, TradingAccount
+from trades.models import ImportedTrade, TradingAccount
 
 
 class DailyAggregatesTimezoneTests(APITestCase):
@@ -37,10 +37,10 @@ class DailyAggregatesTimezoneTests(APITestCase):
         self.client.force_authenticate(user=self.user)
 
     def _create_trade(self, entered_at: datetime, trade_day: date, pnl: str = '100.00') -> None:
-        TopStepTrade.objects.create(
+        ImportedTrade.objects.create(
             user=self.user,
             trading_account=self.account,
-            topstep_id=f'tz-{entered_at.isoformat()}',
+            external_trade_id=f'tz-{entered_at.isoformat()}',
             contract_name='NQ',
             entered_at=entered_at,
             exited_at=entered_at + timedelta(hours=1),
@@ -63,7 +63,7 @@ class DailyAggregatesTimezoneTests(APITestCase):
         self._create_trade(entered_ny_may25, date(2026, 5, 25), pnl='75.00')
 
         url = (
-            f'/api/trades/topstep/daily_aggregates/'
+            f'/api/trades/imported/daily_aggregates/'
             f'?trading_account={self.account.id}'
             f'&start_date=2026-05-25&end_date=2026-05-25'
         )
@@ -78,7 +78,7 @@ class DailyAggregatesTimezoneTests(APITestCase):
         entered = self.ny_tz.localize(datetime(2026, 6, 1, 10, 0, 0))
         self._create_trade(entered, date(2026, 6, 1), pnl='40.00')
 
-        url = f'/api/trades/topstep/daily_aggregates/?trading_account={self.account.id}'
+        url = f'/api/trades/imported/daily_aggregates/?trading_account={self.account.id}'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['count'], 1)

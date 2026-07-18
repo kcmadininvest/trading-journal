@@ -10,7 +10,7 @@ Usage:
     python manage.py recalculate_pnl --dry-run     # Pour voir les changements sans les appliquer
 """
 from django.core.management.base import BaseCommand
-from trades.models import TopStepTrade
+from trades.models import ImportedTrade
 from decimal import Decimal
 
 
@@ -34,7 +34,7 @@ class Command(BaseCommand):
         dry_run = options.get('dry_run', False)
         
         # Filtrer les trades
-        trades = TopStepTrade.objects.all()
+        trades = ImportedTrade.objects.all()
         if account_id:
             trades = trades.filter(trading_account_id=account_id)
             self.stdout.write(f'Recalcul du PnL pour le compte {account_id}...')

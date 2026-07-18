@@ -2,7 +2,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 
-from trades.models import TradingAccount, TopStepTrade
+from trades.models import TradingAccount, ImportedTrade
 from .validators import validate_journal_image
 
 
@@ -293,7 +293,7 @@ class QuestionnaireAnswer(models.Model):
     )
     date = models.DateField(null=True, blank=True, verbose_name='Date')
     trade = models.ForeignKey(
-        TopStepTrade,
+        ImportedTrade,
         on_delete=models.CASCADE,
         null=True,
         blank=True,

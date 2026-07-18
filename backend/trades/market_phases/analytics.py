@@ -9,7 +9,7 @@ from typing import Any
 import pytz
 from django.db.models import QuerySet
 
-from trades.models import TopStepTrade
+from trades.models import ImportedTrade
 
 from trades.contract_utils.market_quote_mapping import (
     market_quote_instrument_label,
@@ -48,7 +48,7 @@ def _confidence(trade_count: int, sample_sessions: int) -> str:
     return 'low'
 
 
-def _trade_pnl_value(trade: TopStepTrade, pnl_mode: str) -> Decimal:
+def _trade_pnl_value(trade: ImportedTrade, pnl_mode: str) -> Decimal:
     if pnl_mode == 'gross' and trade.pnl is not None:
         return trade.pnl
     if trade.net_pnl is not None:
@@ -200,7 +200,7 @@ def build_asset_market_profile(
 def build_period_profile(
     *,
     asset_profile: dict[str, Any],
-    trades_qs: QuerySet[TopStepTrade],
+    trades_qs: QuerySet[ImportedTrade],
     blocks_qs: QuerySet[SessionMarketPhaseBlock],
     period: AnalyticalPeriod,
     tz_name: str,
@@ -211,7 +211,7 @@ def build_period_profile(
     for block in blocks:
         blocks_by_session[block.session_date].append(block)
 
-    period_trades: list[TopStepTrade] = []
+    period_trades: list[ImportedTrade] = []
     wins = 0
     total_pnl = Decimal('0')
     win_rate_by_regime: dict[str, dict[str, int]] = defaultdict(lambda: {'wins': 0, 'total': 0})
@@ -263,7 +263,7 @@ def build_ranking(
     *,
     blocks_qs: QuerySet[SessionMarketPhaseBlock],
     events_qs: QuerySet[SessionMarketPhaseEvent],
-    trades_qs: QuerySet[TopStepTrade],
+    trades_qs: QuerySet[ImportedTrade],
     periods: list[AnalyticalPeriod],
     instrument_key: str,
     tz_name: str,
@@ -299,9 +299,9 @@ def build_ranking(
 
 
 def filter_trades_for_instrument(
-    trades_qs: QuerySet[TopStepTrade],
+    trades_qs: QuerySet[ImportedTrade],
     instrument_key: str,
-) -> QuerySet[TopStepTrade]:
+) -> QuerySet[ImportedTrade]:
     ids: list[int] = []
     for trade in trades_qs.only('id', 'contract_name'):
         if resolve_market_quote_instrument_key(trade.contract_name) == instrument_key:

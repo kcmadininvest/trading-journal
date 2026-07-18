@@ -3,7 +3,7 @@ from django.core.exceptions import ValidationError
 from django.core.validators import URLValidator
 from django.utils.translation import gettext_lazy as _
 from decimal import Decimal
-from .models import TopStepTrade, TopStepImportLog, TradeStrategy, PositionStrategy, TradingAccount, Currency, TradingGoal, AccountTransaction, AccountDailyMetrics, DayStrategyCompliance, ExportTemplate
+from .models import ImportedTrade, TopStepImportLog, TradeStrategy, PositionStrategy, TradingAccount, Currency, TradingGoal, AccountTransaction, AccountDailyMetrics, DayStrategyCompliance, ExportTemplate
 import logging
 
 from .protected_screenshot_urls import (
@@ -84,7 +84,7 @@ class TradingAccountSerializer(serializers.ModelSerializer):
 
     def get_trades_count(self, obj):
         """Retourne le nombre de trades associés à ce compte."""
-        return obj.topstep_trades.count()
+        return obj.imported_trades.count()
 
     def validate_copy_imports_from(self, leader):
         if leader is None:
@@ -179,10 +179,10 @@ class TradingAccountListSerializer(serializers.ModelSerializer):
 
     def get_trades_count(self, obj):
         """Retourne le nombre de trades associés à ce compte."""
-        return obj.topstep_trades.count()
+        return obj.imported_trades.count()
 
 
-class TopStepTradeSerializer(serializers.ModelSerializer):
+class ImportedTradeSerializer(serializers.ModelSerializer):
     """
     Serializer pour les trades TopStep avec les données calculées.
     """
@@ -198,10 +198,10 @@ class TopStepTradeSerializer(serializers.ModelSerializer):
     position_strategy_title = serializers.CharField(source='position_strategy.title', read_only=True)
     
     class Meta:
-        model = TopStepTrade
+        model = ImportedTrade
         fields = [
             'id',
-            'topstep_id',
+            'external_trade_id',
             'user',
             'user_username',
             'trading_account',
@@ -237,7 +237,7 @@ class TopStepTradeSerializer(serializers.ModelSerializer):
             'imported_at',
             'updated_at'
         ]
-        read_only_fields = ['user', 'topstep_id', 'imported_at', 'updated_at', 'position_strategy_title', 'net_pnl', 'pnl_percentage', 'is_profitable', 'duration_str', 'formatted_entry_date', 'formatted_exit_date', 'user_username', 'trading_account_name', 'trading_account_type', 'planned_risk_reward_ratio', 'actual_risk_reward_ratio']
+        read_only_fields = ['user', 'external_trade_id', 'imported_at', 'updated_at', 'position_strategy_title', 'net_pnl', 'pnl_percentage', 'is_profitable', 'duration_str', 'formatted_entry_date', 'formatted_exit_date', 'user_username', 'trading_account_name', 'trading_account_type', 'planned_risk_reward_ratio', 'actual_risk_reward_ratio']
         extra_kwargs = {
             'trading_account': {'required': False, 'allow_null': True}
         }
@@ -256,22 +256,22 @@ class TopStepTradeSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         """
         Permet la création manuelle d'un trade:
-        - Génère un topstep_id si absent
+        - Génère un external_trade_id si absent
         - Assigne l'utilisateur courant
         - Assigne le compte de trading par défaut si non fourni
         - Renseigne trade_day si déductible
         """
-        from .models import TradingAccount, TopStepTrade
+        from .models import TradingAccount, ImportedTrade
         request = self.context.get('request')
         if request and request.user and request.user.is_authenticated:
             validated_data['user'] = request.user
         else:
             raise serializers.ValidationError('Utilisateur non authentifié')
 
-        # Générer un topstep_id si manquant
-        if not validated_data.get('topstep_id'):
+        # Générer un external_trade_id si manquant
+        if not validated_data.get('external_trade_id'):
             import uuid
-            validated_data['topstep_id'] = f"MANUAL-{uuid.uuid4().hex[:20]}"
+            validated_data['external_trade_id'] = f"MANUAL-{uuid.uuid4().hex[:20]}"
 
         # Compte de trading: utiliser celui fourni ou le compte par défaut
         trading_account = validated_data.get('trading_account')
@@ -291,11 +291,11 @@ class TopStepTradeSerializer(serializers.ModelSerializer):
         if entered_at and not validated_data.get('trade_day'):
             validated_data['trade_day'] = entered_at.date()
 
-        instance = TopStepTrade.objects.create(**validated_data)
+        instance = ImportedTrade.objects.create(**validated_data)
         return instance
 
 
-class TopStepTradeListSerializer(serializers.ModelSerializer):
+class ImportedTradeListSerializer(serializers.ModelSerializer):
     """
     Serializer simplifié pour la liste des trades (performance).
     """
@@ -307,10 +307,10 @@ class TopStepTradeListSerializer(serializers.ModelSerializer):
     position_strategy_title = serializers.CharField(source='position_strategy.title', read_only=True)
     
     class Meta:
-        model = TopStepTrade
+        model = ImportedTrade
         fields = [
             'id',
-            'topstep_id',
+            'external_trade_id',
             'trading_account',
             'trading_account_name',
             'contract_name',
@@ -576,7 +576,7 @@ class TradeStrategySerializer(serializers.ModelSerializer):
     def get_trade_info(self, obj):
         """Retourne les informations du trade associé."""
         return {
-            'topstep_id': obj.trade.topstep_id,
+            'external_trade_id': obj.trade.external_trade_id,
             'contract_name': obj.trade.contract_name,
             'trade_type': obj.trade.trade_type,
             'size': str(obj.trade.size),

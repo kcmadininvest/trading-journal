@@ -15,7 +15,7 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.db.models import QuerySet
 from decimal import Decimal
-from trades.models import TopStepTrade
+from trades.models import ImportedTrade
 
 
 class StyleProtocol(Protocol):
@@ -54,8 +54,8 @@ class Command(BaseCommand):
             self.stdout.write(self.style.WARNING('Mode DRY-RUN : aucune modification ne sera effectuée'))
         
         # Construire le queryset de base pour les R:R réels
-        trades_manager = getattr(TopStepTrade, 'objects')
-        queryset_real: QuerySet[TopStepTrade] = trades_manager.filter(
+        trades_manager = getattr(ImportedTrade, 'objects')
+        queryset_real: QuerySet[ImportedTrade] = trades_manager.filter(
             entry_price__isnull=False,
             exit_price__isnull=False,
             planned_stop_loss__isnull=False,
@@ -63,7 +63,7 @@ class Command(BaseCommand):
         )
         
         # Construire le queryset pour les R:R prévus
-        queryset_planned: QuerySet[TopStepTrade] = trades_manager.filter(
+        queryset_planned: QuerySet[ImportedTrade] = trades_manager.filter(
             entry_price__isnull=False,
             planned_stop_loss__isnull=False,
             planned_take_profit__isnull=False,
@@ -77,7 +77,7 @@ class Command(BaseCommand):
         
         # Combiner les deux querysets (union)
         all_trade_ids = set(queryset_real.values_list('id', flat=True)) | set(queryset_planned.values_list('id', flat=True))
-        queryset: QuerySet[TopStepTrade] = trades_manager.filter(id__in=all_trade_ids)
+        queryset: QuerySet[ImportedTrade] = trades_manager.filter(id__in=all_trade_ids)
         
         total_trades = queryset.count()
         self.stdout.write(f'\nTraitement de {total_trades} trade(s)...\n')

@@ -1,11 +1,11 @@
 """
-Mapping API TopStepX (Trade/search) → format TopStepTrade.
+Mapping API TopStepX (Trade/search) → format ImportedTrade.
 
-Stratégie topstep_id (spike documenté):
+Stratégie external_trade_id (spike documenté):
 - L'API renvoie des fills (demi-tours). On apparie entrée (profitAndLoss null) + sortie (PnL renseigné).
-- topstep_id = str(id) du fill de sortie (clôture), aligné sur l'identifiant broker quand l'export
+- external_trade_id = str(id) du fill de sortie (clôture), aligné sur l'identifiant broker quand l'export
   CSV utilise le même Id pour le round-trip.
-- Si un trade CSV existe déjà avec le même topstep_id, la sync l'ignore (insert-only).
+- Si un trade CSV existe déjà avec le même external_trade_id, la sync l'ignore (insert-only).
 """
 from __future__ import annotations
 
@@ -117,7 +117,7 @@ def _build_parsed_round_trip(
     trade_day = entered_at.date() if entered_at else exit_ts.date()
 
     return {
-        'topstep_id': str(exit_fill['id']),
+        'external_trade_id': str(exit_fill['id']),
         'contract_name': contract_name,
         'entered_at': entered_at,
         'exited_at': exited_at,

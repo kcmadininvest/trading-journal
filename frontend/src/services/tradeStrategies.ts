@@ -9,7 +9,7 @@ export interface TradeStrategy {
   user_username: string;
   trade: number;
   trade_info: {
-    topstep_id: string;
+    external_trade_id: string;
     contract_name: string;
     trade_type: 'Long' | 'Short';
     size: string;
@@ -110,7 +110,7 @@ export interface DailyCompliance {
 
 export interface BulkStrategyData {
   trade_id: string;
-  /** Résout l’ambiguïté si le même topstep_id existe sur plusieurs comptes */
+  /** Résout l’ambiguïté si le même external_trade_id existe sur plusieurs comptes */
   trading_account_id?: number;
   strategy_respected?: boolean | null;
   dominant_emotions?: string[];

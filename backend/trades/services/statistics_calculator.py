@@ -32,7 +32,7 @@ from ..fx_conversion import (
     resolve_fx_pnl_resolver,
     sum_converted_pnl_for_queryset,
 )
-from ..models import TopStepTrade, TradeStrategy, TradingAccount
+from ..models import ImportedTrade, TradeStrategy, TradingAccount
 from ..risk_metrics import compute_sharpe_annualized_from_trades, compute_sharpe_per_trade
 from ..serializers import TradeStatisticsSerializer
 from ..statistics_temporal import compute_avg_daily_exposure_time, compute_avg_time_between_trades
@@ -484,7 +484,7 @@ def compute_statistics_payload(request, trades, pf: str) -> Dict[str, Any]:
             try:
                 # Calculer le PnL cumulé de tous les trades avant la période filtrée
                 trades_before_period = (
-                    TopStepTrade.objects
+                    ImportedTrade.objects
                     .filter(user=request.user)  # type: ignore
                 )
                 if trading_account_id:
@@ -513,7 +513,7 @@ def compute_statistics_payload(request, trades, pf: str) -> Dict[str, Any]:
     # Max drawdown global (sans filtres de date, mais avec les autres filtres comme le compte)
     # Créer un queryset global en gardant les filtres de compte mais sans les filtres de date
     global_trades = (
-        TopStepTrade.objects
+        ImportedTrade.objects
         .filter(user=request.user)  # type: ignore
         .select_related('trading_account', 'user')
     )

@@ -9,9 +9,9 @@ from .statistics_calculator import EMPTY_STATISTICS_PAYLOAD, compute_statistics_
 
 
 def _trades_queryset_and_pnl_field(request):
-    from ..views import TopStepTradeViewSet
+    from ..views import ImportedTradeViewSet
 
-    viewset = TopStepTradeViewSet()
+    viewset = ImportedTradeViewSet()
     viewset.request = request
     viewset.action = 'list'
     viewset.format_kwarg = None

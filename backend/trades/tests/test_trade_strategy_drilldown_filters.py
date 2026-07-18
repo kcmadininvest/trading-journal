@@ -7,7 +7,7 @@ from django.utils import timezone
 from rest_framework.test import APIClient
 
 from billing.models import CustomerSubscription
-from trades.models import TopStepTrade, TradeStrategy, TradingAccount
+from trades.models import ImportedTrade, TradeStrategy, TradingAccount
 
 User = get_user_model()
 
@@ -28,10 +28,10 @@ class TradeStrategyDrilldownFiltersTests(TestCase):
         )
 
         entered1 = datetime(2025, 1, 10, 10, 0, 0)
-        trade_respected = TopStepTrade.objects.create(
+        trade_respected = ImportedTrade.objects.create(
             user=self.user,
             trading_account=self.account,
-            topstep_id='R1',
+            external_trade_id='R1',
             contract_name='ES',
             trade_type='Long',
             entered_at=entered1,
@@ -44,10 +44,10 @@ class TradeStrategyDrilldownFiltersTests(TestCase):
             pnl=Decimal('100'),
         )
         entered2 = datetime(2025, 1, 11, 10, 0, 0)
-        trade_not = TopStepTrade.objects.create(
+        trade_not = ImportedTrade.objects.create(
             user=self.user,
             trading_account=self.account,
-            topstep_id='R2',
+            external_trade_id='R2',
             contract_name='ES',
             trade_type='Short',
             entered_at=entered2,
@@ -60,10 +60,10 @@ class TradeStrategyDrilldownFiltersTests(TestCase):
             pnl=Decimal('-50'),
         )
         entered3 = datetime(2025, 1, 12, 10, 0, 0)
-        trade_uneval = TopStepTrade.objects.create(
+        trade_uneval = ImportedTrade.objects.create(
             user=self.user,
             trading_account=self.account,
-            topstep_id='R3',
+            external_trade_id='R3',
             contract_name='NQ',
             trade_type='Long',
             entered_at=entered3,
@@ -76,10 +76,10 @@ class TradeStrategyDrilldownFiltersTests(TestCase):
             pnl=Decimal('20'),
         )
         entered4 = datetime(2025, 1, 13, 10, 0, 0)
-        trade_win_tp1 = TopStepTrade.objects.create(
+        trade_win_tp1 = ImportedTrade.objects.create(
             user=self.user,
             trading_account=self.account,
-            topstep_id='R4',
+            external_trade_id='R4',
             contract_name='ES',
             trade_type='Long',
             entered_at=entered4,
@@ -129,7 +129,7 @@ class TradeStrategyDrilldownFiltersTests(TestCase):
         self.assertEqual(response.status_code, 200, response.content)
         data = response.json()
         results = data['results'] if isinstance(data, dict) else data
-        return {row['trade_info']['topstep_id'] for row in results}
+        return {row['trade_info']['external_trade_id'] for row in results}
 
     def test_filter_strategy_respected(self):
         self.assertEqual(self._ids({'strategy_respected': 'true'}), {'R1'})
@@ -175,12 +175,12 @@ class TradeStrategyDrilldownFiltersTests(TestCase):
     def test_pagination_page_two_disjoint(self):
         page1 = self._paginated({'page': '1', 'page_size': '2', 'ordering': 'trade_day'})
         page2 = self._paginated({'page': '2', 'page_size': '2', 'ordering': 'trade_day'})
-        ids1 = {row['trade_info']['topstep_id'] for row in page1['results']}
-        ids2 = {row['trade_info']['topstep_id'] for row in page2['results']}
+        ids1 = {row['trade_info']['external_trade_id'] for row in page1['results']}
+        ids2 = {row['trade_info']['external_trade_id'] for row in page2['results']}
         self.assertEqual(len(ids1 & ids2), 0)
         self.assertEqual(len(ids1 | ids2), 4)
 
     def test_ordering_trade_day_chronological(self):
         data = self._paginated({'ordering': 'trade_day', 'page_size': '10'})
-        ids = [row['trade_info']['topstep_id'] for row in data['results']]
+        ids = [row['trade_info']['external_trade_id'] for row in data['results']]
         self.assertEqual(ids, ['R1', 'R2', 'R3', 'R4'])

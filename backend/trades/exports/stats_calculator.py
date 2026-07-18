@@ -30,10 +30,10 @@ class PortfolioStatsCalculator:
         
     def get_trades_queryset(self) -> QuerySet:
         """Retourne le queryset des trades filtrés par période."""
-        from trades.models import TopStepTrade
+        from trades.models import ImportedTrade
 
         trades = (
-            TopStepTrade.objects.filter(
+            ImportedTrade.objects.filter(
                 user=self.user,
                 trading_account=self.trading_account,
             )

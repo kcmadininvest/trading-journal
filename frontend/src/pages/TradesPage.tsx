@@ -455,7 +455,7 @@ const TradesPage: React.FC = () => {
 
       const rows = allTrades.map(trade => [
         trade.id.toString(),
-        trade.topstep_id || '',
+        trade.external_trade_id || '',
         trade.trading_account_name || '',
         trade.contract_name || '',
         trade.trade_type || '',

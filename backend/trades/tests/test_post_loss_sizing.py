@@ -7,7 +7,7 @@ from django.utils import timezone
 from rest_framework.test import APITestCase
 
 from accounts.models import User, UserPreferences
-from trades.models import TopStepTrade, TradingAccount
+from trades.models import ImportedTrade, TradingAccount
 from trades.contract_utils.contract_family import (
     get_base_symbol,
     get_contract_family_key,
@@ -39,23 +39,23 @@ class PostLossSizingServiceTests(APITestCase):
 
     def _create_trade(
         self,
-        topstep_id: str,
+        external_trade_id: str,
         offset_minutes: int,
         size: str,
         pnl: str,
         net_pnl: Optional[str] = None,
         contract_name: str = 'NQ',
         point_value: Optional[str] = None,
-    ) -> TopStepTrade:
+    ) -> ImportedTrade:
         entered = self.base_time + timedelta(minutes=offset_minutes)
         net = net_pnl if net_pnl is not None else pnl
         kwargs: dict = {}
         if point_value is not None:
             kwargs['point_value'] = Decimal(point_value)
-        return TopStepTrade.objects.create(
+        return ImportedTrade.objects.create(
             user=self.user,
             trading_account=self.account,
-            topstep_id=topstep_id,
+            external_trade_id=external_trade_id,
             contract_name=contract_name,
             entered_at=entered,
             exited_at=entered + timedelta(minutes=5),
@@ -77,7 +77,7 @@ class PostLossSizingServiceTests(APITestCase):
         self._create_trade('pl-5', 40, '3', '-20', '-20')
         self._create_trade('pl-6', 50, '1', '5', '5')
 
-        qs = TopStepTrade.objects.filter(user=self.user, trading_account=self.account)
+        qs = ImportedTrade.objects.filter(user=self.user, trading_account=self.account)
         result = compute_post_loss_sizing(qs, 'net_pnl')
 
         self.assertEqual(result['sample_size'], 3)
@@ -93,7 +93,7 @@ class PostLossSizingServiceTests(APITestCase):
         self._create_trade('pl-w1', 0, '1', '-50', '-50')
         self._create_trade('pl-w2', 10, '2', '100', '100')
 
-        qs = TopStepTrade.objects.filter(user=self.user, trading_account=self.account)
+        qs = ImportedTrade.objects.filter(user=self.user, trading_account=self.account)
         result = compute_post_loss_sizing(qs, 'net_pnl')
 
         larger = result['vs_losing_trade']['larger']
@@ -103,7 +103,7 @@ class PostLossSizingServiceTests(APITestCase):
 
     def test_empty_when_no_loss_followed_by_trade(self) -> None:
         self._create_trade('pl-win', 0, '1', '50', '50')
-        qs = TopStepTrade.objects.filter(user=self.user, trading_account=self.account)
+        qs = ImportedTrade.objects.filter(user=self.user, trading_account=self.account)
         result = compute_post_loss_sizing(qs, 'net_pnl')
         self.assertEqual(result['sample_size'], 0)
 
@@ -113,7 +113,7 @@ class PostLossSizingServiceTests(APITestCase):
         self._create_trade('pl-loss', 40, '2', '-50', '-50')
         self._create_trade('pl-next', 50, '4', '-10', '-10')
 
-        qs = TopStepTrade.objects.filter(user=self.user, trading_account=self.account)
+        qs = ImportedTrade.objects.filter(user=self.user, trading_account=self.account)
         result = compute_post_loss_sizing(qs, 'net_pnl')
 
         self.assertGreater(result['median_sample_size'], 0)
@@ -150,7 +150,7 @@ class PostLossSizingServiceTests(APITestCase):
             contract_name='CON.F.US.MNQ.M26',
         )
 
-        qs = TopStepTrade.objects.filter(user=self.user, trading_account=self.account)
+        qs = ImportedTrade.objects.filter(user=self.user, trading_account=self.account)
         result = compute_post_loss_sizing(qs, 'net_pnl')
 
         self.assertEqual(result['sample_size'], 1)
@@ -160,7 +160,7 @@ class PostLossSizingServiceTests(APITestCase):
         self._create_trade('pl-nq', 0, '1', '-50', '-50', contract_name='NQM6')
         self._create_trade('pl-mnq', 10, '5', '10', '10', contract_name='MNQM6')
 
-        qs = TopStepTrade.objects.filter(user=self.user, trading_account=self.account)
+        qs = ImportedTrade.objects.filter(user=self.user, trading_account=self.account)
         result = compute_post_loss_sizing(qs, 'net_pnl')
 
         self.assertEqual(result['sample_size'], 1)
@@ -186,7 +186,7 @@ class PostLossSizingServiceTests(APITestCase):
             contract_name='CON.F.US.MNQ.M26',
         )
 
-        qs = TopStepTrade.objects.filter(user=self.user, trading_account=self.account)
+        qs = ImportedTrade.objects.filter(user=self.user, trading_account=self.account)
         result = compute_post_loss_sizing(qs, 'net_pnl')
 
         self.assertEqual(result['sample_size'], 1)
@@ -196,7 +196,7 @@ class PostLossSizingServiceTests(APITestCase):
         self._create_trade('pl-nq2', 0, '1', '-50', '-50', contract_name='NQM6')
         self._create_trade('pl-cl', 10, '1', '10', '10', contract_name='CLZ5')
 
-        qs = TopStepTrade.objects.filter(user=self.user, trading_account=self.account)
+        qs = ImportedTrade.objects.filter(user=self.user, trading_account=self.account)
         result = compute_post_loss_sizing(qs, 'net_pnl')
 
         self.assertEqual(result['sample_size'], 0)
@@ -208,7 +208,7 @@ class PostLossSizingServiceTests(APITestCase):
         self._create_trade('pl-h-loss', 20, '1', '-50', '-50', contract_name='NQM6')
         self._create_trade('pl-h-next', 30, '3', '-10', '-10', contract_name='NQM6')
 
-        qs = TopStepTrade.objects.filter(user=self.user, trading_account=self.account)
+        qs = ImportedTrade.objects.filter(user=self.user, trading_account=self.account)
         result = compute_post_loss_sizing(qs, 'net_pnl')
 
         self.assertEqual(result['sample_size'], 1)
@@ -236,10 +236,10 @@ class PostLossSizingAnalyticsApiTests(APITestCase):
             status='active',
         )
         now = timezone.now()
-        TopStepTrade.objects.create(
+        ImportedTrade.objects.create(
             user=self.user,
             trading_account=self.account,
-            topstep_id='api-pl-1',
+            external_trade_id='api-pl-1',
             contract_name='NQ',
             entered_at=now,
             exited_at=now + timedelta(minutes=5),
@@ -251,10 +251,10 @@ class PostLossSizingAnalyticsApiTests(APITestCase):
             pnl=Decimal('-50.000000000'),
             net_pnl=Decimal('-50.000000000'),
         )
-        TopStepTrade.objects.create(
+        ImportedTrade.objects.create(
             user=self.user,
             trading_account=self.account,
-            topstep_id='api-pl-2',
+            external_trade_id='api-pl-2',
             contract_name='NQ',
             entered_at=now + timedelta(minutes=10),
             exited_at=now + timedelta(minutes=15),
@@ -270,7 +270,7 @@ class PostLossSizingAnalyticsApiTests(APITestCase):
     def test_analytics_includes_post_loss_sizing(self) -> None:
         self.client.force_authenticate(user=self.user)
         response = self.client.get(
-            '/api/trades/topstep/analytics/',
+            '/api/trades/imported/analytics/',
             {'trading_account': self.account.id},
         )
         self.assertEqual(response.status_code, 200, response.data)
@@ -282,10 +282,10 @@ class PostLossSizingAnalyticsApiTests(APITestCase):
         self.assertIn('skipped_cross_instrument', pls)
 
     def test_analytics_empty_post_loss_sizing_without_trades(self) -> None:
-        TopStepTrade.objects.all().delete()
+        ImportedTrade.objects.all().delete()
         self.client.force_authenticate(user=self.user)
         response = self.client.get(
-            '/api/trades/topstep/analytics/',
+            '/api/trades/imported/analytics/',
             {'trading_account': self.account.id},
         )
         self.assertEqual(response.status_code, 200)

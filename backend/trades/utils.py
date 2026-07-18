@@ -4,7 +4,7 @@ Utilitaires pour l'import de trades depuis TopStep.
 import csv
 from decimal import Decimal
 from django.db import transaction
-from .models import TopStepTrade, TopStepImportLog, TradingAccount
+from .models import ImportedTrade, TopStepImportLog, TradingAccount
 from .contract_utils.contract_specs import get_point_value_from_contract
 
 
@@ -19,7 +19,7 @@ def _recalculate_mll_for_topstep_accounts(accounts):
             continue
         seen_ids.add(acct.id)
         trade_dates = (
-            acct.topstep_trades.filter(trade_day__isnull=False)
+            acct.imported_trades.filter(trade_day__isnull=False)
             .values_list('trade_day', flat=True)
             .distinct()
             .order_by('trade_day')
@@ -72,32 +72,32 @@ class TopStepCSVImporter:
         if not self.target_accounts:
             raise ValueError("Aucun compte de trading par défaut trouvé pour cet utilisateur")
 
-    def _row_exists(self, topstep_id, trading_account):
+    def _row_exists(self, external_trade_id, trading_account):
         from trades.sync.trade_upsert import trade_exists
-        return trade_exists(self.user, trading_account, topstep_id)
+        return trade_exists(self.user, trading_account, external_trade_id)
 
     def _parse_row(self, row, row_num):
         """Parse commun CSV → dict pour création / validation."""
-        topstep_id = row['Id'].strip()
-        entered_at = TopStepTrade.parse_us_datetime(row['EnteredAt'])
-        exited_at = TopStepTrade.parse_us_datetime(row['ExitedAt']) if row['ExitedAt'].strip() else None
+        external_trade_id = row['Id'].strip()
+        entered_at = ImportedTrade.parse_us_datetime(row['EnteredAt'])
+        exited_at = ImportedTrade.parse_us_datetime(row['ExitedAt']) if row['ExitedAt'].strip() else None
 
         trade_day = None
         if row['TradeDay'].strip():
             try:
-                trade_day_dt = TopStepTrade.parse_us_datetime(row['TradeDay'])
+                trade_day_dt = ImportedTrade.parse_us_datetime(row['TradeDay'])
                 trade_day = trade_day_dt.date()
             except Exception:
                 trade_day = entered_at.date()
         else:
             trade_day = entered_at.date()
 
-        entry_price = TopStepTrade.parse_us_decimal(row['EntryPrice'])
-        exit_price = TopStepTrade.parse_us_decimal(row['ExitPrice'])
-        fees = TopStepTrade.parse_us_decimal(row['Fees']) or Decimal('0')
-        size = TopStepTrade.parse_us_decimal(row['Size'])
-        commissions = TopStepTrade.parse_us_decimal(row['Commissions']) or Decimal('0')
-        trade_duration = TopStepTrade.parse_duration(row['TradeDuration'])
+        entry_price = ImportedTrade.parse_us_decimal(row['EntryPrice'])
+        exit_price = ImportedTrade.parse_us_decimal(row['ExitPrice'])
+        fees = ImportedTrade.parse_us_decimal(row['Fees']) or Decimal('0')
+        size = ImportedTrade.parse_us_decimal(row['Size'])
+        commissions = ImportedTrade.parse_us_decimal(row['Commissions']) or Decimal('0')
+        trade_duration = ImportedTrade.parse_duration(row['TradeDuration'])
         trade_type = row['Type'].strip()
         if trade_type not in ['Long', 'Short']:
             raise ValueError(f"Type de trade invalide: {trade_type} (ligne {row_num})")
@@ -106,7 +106,7 @@ class TopStepCSVImporter:
         point_value = get_point_value_from_contract(contract_name)
 
         return {
-            'topstep_id': topstep_id,
+            'external_trade_id': external_trade_id,
             'entered_at': entered_at,
             'exited_at': exited_at,
             'trade_day': trade_day,
@@ -249,7 +249,7 @@ class TopStepCSVImporter:
                     try:
                         parsed = self._parse_row(row, row_num)
                         for i, acct in enumerate(self.target_accounts):
-                            if self._row_exists(parsed['topstep_id'], acct):
+                            if self._row_exists(parsed['external_trade_id'], acct):
                                 self.skipped_count += 1
                             else:
                                 self.success_count += 1
@@ -349,7 +349,7 @@ class TopStepCSVImporter:
         self._ensure_targets()
         parsed = self._parse_row(row, row_num)
         primary = self.target_accounts[0]
-        if self._row_exists(parsed['topstep_id'], primary):
+        if self._row_exists(parsed['external_trade_id'], primary):
             return {'skip': True}
         return {
             'pnl': self._estimated_pnl(parsed),

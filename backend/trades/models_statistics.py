@@ -124,7 +124,7 @@ class TradeTagAssignment(models.Model):
     """
     
     trade = models.ForeignKey(
-        'TopStepTrade',
+        'ImportedTrade',
         on_delete=models.CASCADE,
         related_name='tag_assignments',
         verbose_name='Trade'

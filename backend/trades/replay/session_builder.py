@@ -18,7 +18,7 @@ from trades.models import (
     SessionEvent,
     SessionInsight,
     SessionJournalDraft,
-    TopStepTrade,
+    ImportedTrade,
     TradingAccount,
     TradingSession,
 )
@@ -131,7 +131,7 @@ def _order_events(order: dict[str, Any]) -> list[dict[str, Any]]:
     return events
 
 
-def _fill_events(fills: list[dict[str, Any]], trade_by_topstep_id: dict[str, TopStepTrade]) -> list[dict[str, Any]]:
+def _fill_events(fills: list[dict[str, Any]], trade_by_external_trade_id: dict[str, ImportedTrade]) -> list[dict[str, Any]]:
     events: list[dict[str, Any]] = []
     active = [f for f in fills if not f.get('voided')]
     active.sort(key=lambda f: f.get('creationTimestamp') or '')
@@ -145,9 +145,9 @@ def _fill_events(fills: list[dict[str, Any]], trade_by_topstep_id: dict[str, Top
             continue
         occurred_at = parse_api_timestamp(str(ts_raw))
         pnl = fill.get('profitAndLoss')
-        trade = trade_by_topstep_id.get(fill_id)
+        trade = trade_by_external_trade_id.get(fill_id)
         if pnl is None and trade is None:
-            for tid, t in trade_by_topstep_id.items():
+            for tid, t in trade_by_external_trade_id.items():
                 raw = t.raw_data if isinstance(t.raw_data, dict) else {}
                 entry = raw.get('entry_fill') or {}
                 if str(entry.get('id')) == fill_id:
@@ -169,8 +169,8 @@ def _fill_events(fills: list[dict[str, Any]], trade_by_topstep_id: dict[str, Top
         raw = row.get('raw_data') or {}
         entry = raw.get('entry_fill') or {}
         exit_fill = raw.get('exit_fill') or {}
-        topstep_id = str(row.get('topstep_id', ''))
-        trade = trade_by_topstep_id.get(topstep_id)
+        external_trade_id = str(row.get('external_trade_id', ''))
+        trade = trade_by_external_trade_id.get(external_trade_id)
 
         if entry.get('id') and entry.get('creationTimestamp'):
             open_external_id = f"open-{entry['id']}"
@@ -288,19 +288,19 @@ class SessionReplayBuilder:
                 'api_empty',
             )
 
-        trades_qs = TopStepTrade.objects.filter(
+        trades_qs = ImportedTrade.objects.filter(
             user=user,
             trading_account=trading_account,
             trade_day=session_date,
         )
-        trade_by_topstep_id: dict[str, TopStepTrade] = {
-            str(t.topstep_id): t for t in trades_qs if t.topstep_id
+        trade_by_external_trade_id: dict[str, ImportedTrade] = {
+            str(t.external_trade_id): t for t in trades_qs if t.external_trade_id
         }
 
         raw_events: list[dict[str, Any]] = []
         for order in orders:
             raw_events.extend(_order_events(order))
-        raw_events.extend(_fill_events(fills, trade_by_topstep_id))
+        raw_events.extend(_fill_events(fills, trade_by_external_trade_id))
         raw_events.extend(_pnl_tick_events(raw_events))
 
         raw_events.sort(key=_event_sort_key)

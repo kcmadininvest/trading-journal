@@ -5,10 +5,10 @@ from django.utils import timezone
 from rest_framework.test import APITestCase
 
 from accounts.models import User
-from trades.models import TopStepTrade, TradingAccount
+from trades.models import ImportedTrade, TradingAccount
 
 
-class TopStepTradePlannedLevelsUpdateTests(APITestCase):
+class ImportedTradePlannedLevelsUpdateTests(APITestCase):
     def setUp(self) -> None:
         self.user = User.objects.create_user(
             email='planned-levels@example.com',
@@ -27,10 +27,10 @@ class TopStepTradePlannedLevelsUpdateTests(APITestCase):
             status='active',
         )
         now = timezone.now()
-        self.trade = TopStepTrade.objects.create(
+        self.trade = ImportedTrade.objects.create(
             user=self.user,
             trading_account=self.account,
-            topstep_id='planned-levels-1',
+            external_trade_id='planned-levels-1',
             contract_name='CON.FUS.MNQ.M26',
             entered_at=now,
             exited_at=now,
@@ -49,7 +49,7 @@ class TopStepTradePlannedLevelsUpdateTests(APITestCase):
     def test_patch_null_clears_planned_stop_loss_and_take_profit(self) -> None:
         self.client.force_authenticate(user=self.user)
         response = self.client.patch(
-            f'/api/trades/topstep/{self.trade.id}/',
+            f'/api/trades/imported/{self.trade.id}/',
             {
                 'planned_stop_loss': None,
                 'planned_take_profit': None,

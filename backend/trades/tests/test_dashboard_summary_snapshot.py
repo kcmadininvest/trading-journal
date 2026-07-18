@@ -9,7 +9,7 @@ from rest_framework.request import Request
 from rest_framework.test import APIClient, APIRequestFactory
 
 from accounts.models import User, UserPreferences
-from trades.models import TopStepTrade, TradingAccount
+from trades.models import ImportedTrade, TradingAccount
 from trades.services.dashboard_summary_service import compute_dashboard_summary_payload
 
 
@@ -51,10 +51,10 @@ class DashboardSummarySnapshotTests(TestCase):
             is_default=True,
         )
         entered = datetime(2026, 6, 15, 10, 0)
-        TopStepTrade.objects.create(
+        ImportedTrade.objects.create(
             user=self.user,
             trading_account=self.account,
-            topstep_id='snap-1',
+            external_trade_id='snap-1',
             contract_name='ES',
             trade_type='Long',
             entered_at=entered,

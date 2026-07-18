@@ -8,7 +8,7 @@ from typing import cast, TYPE_CHECKING
 if TYPE_CHECKING:
     from ..models import TradingAccount
 
-from ..models import TradingGoal, TopStepTrade, TradeStrategy, AccountTransaction
+from ..models import TradingGoal, ImportedTrade, TradeStrategy, AccountTransaction
 from ..pnl_basis import get_trade_pnl_field, trade_pnl_as_decimal
 
 
@@ -102,13 +102,13 @@ class GoalProgressCalculator:
         """Récupère les trades pertinents pour l'objectif."""
         if goal.trading_account:
             trading_account = cast('TradingAccount', goal.trading_account)
-            topstep_trades = getattr(trading_account, 'topstep_trades')
-            trades: QuerySet[TopStepTrade] = topstep_trades.filter(
+            imported_trades = getattr(trading_account, 'imported_trades')
+            trades: QuerySet[ImportedTrade] = imported_trades.filter(
                 user=goal.user
             )
         else:
-            trades_manager = getattr(TopStepTrade, 'objects')
-            all_trades: QuerySet[TopStepTrade] = trades_manager.filter(
+            trades_manager = getattr(ImportedTrade, 'objects')
+            all_trades: QuerySet[ImportedTrade] = trades_manager.filter(
                 user=goal.user
             )
             trades = all_trades.filter(

@@ -4,7 +4,7 @@ Signaux Django pour la gestion automatique des fichiers media et des métriques.
 
 from django.db.models.signals import pre_delete, pre_save, post_save, post_delete
 from django.dispatch import receiver
-from .models import TradeStrategy, DayStrategyCompliance, PositionStrategy, TopStepTrade, AccountTransaction
+from .models import TradeStrategy, DayStrategyCompliance, PositionStrategy, ImportedTrade, AccountTransaction
 from .account_balance import refresh_trading_account_balance_after_mutation
 from .image_processor import image_processor
 from .services.metrics_calculator import AccountMetricsCalculator
@@ -166,15 +166,15 @@ def delete_old_position_strategy_screenshot(sender, instance, **kwargs):
         logger.error(f"Erreur lors de la suppression automatique de l'ancien screenshot de PositionStrategy {instance.id}: {e}")
 
 
-@receiver(pre_save, sender=TopStepTrade)
+@receiver(pre_save, sender=ImportedTrade)
 def capture_old_trade_for_rollup(sender, instance, **kwargs):
     """Conserve l'état précédent pour recalcul rollup si stratégie/compte/jour change."""
     if not instance.pk:
         instance._rollup_old_instance = None  # type: ignore[attr-defined]
         return
     try:
-        instance._rollup_old_instance = TopStepTrade.objects.get(pk=instance.pk)  # type: ignore[attr-defined]
-    except TopStepTrade.DoesNotExist:
+        instance._rollup_old_instance = ImportedTrade.objects.get(pk=instance.pk)  # type: ignore[attr-defined]
+    except ImportedTrade.DoesNotExist:
         instance._rollup_old_instance = None  # type: ignore[attr-defined]
 
 
@@ -184,7 +184,7 @@ def _invalidate_stats_after_trade_mutation(user_id: int) -> None:
     schedule_debounced_stats_invalidation(user_id)
 
 
-@receiver(post_save, sender=TopStepTrade)
+@receiver(post_save, sender=ImportedTrade)
 def update_rollups_after_trade_save(sender, instance, created, **kwargs):
     if not instance.user_id or not instance.trading_account_id:
         return
@@ -202,7 +202,7 @@ def update_rollups_after_trade_save(sender, instance, created, **kwargs):
         logger.error('Erreur rollup post_save trade %s: %s', instance.id, e)
 
 
-@receiver(post_delete, sender=TopStepTrade)
+@receiver(post_delete, sender=ImportedTrade)
 def update_rollups_after_trade_delete(sender, instance, **kwargs):
     if not instance.user_id or not instance.trading_account_id:
         return
@@ -217,7 +217,7 @@ def update_rollups_after_trade_delete(sender, instance, **kwargs):
         logger.error('Erreur rollup post_delete trade %s: %s', instance.id, e)
 
 
-@receiver(post_save, sender=TopStepTrade)
+@receiver(post_save, sender=ImportedTrade)
 def recalculate_metrics_after_trade_save(sender, instance, created, **kwargs):
     """
     Recalcule automatiquement les métriques MLL après l'ajout ou la modification d'un trade.
@@ -240,7 +240,7 @@ def recalculate_metrics_after_trade_save(sender, instance, created, **kwargs):
         logger.error(f"Erreur lors du recalcul automatique des métriques après sauvegarde du trade {instance.id}: {e}")
 
 
-@receiver(post_delete, sender=TopStepTrade)
+@receiver(post_delete, sender=ImportedTrade)
 def recalculate_metrics_after_trade_delete(sender, instance, **kwargs):
     """
     Recalcule automatiquement les métriques MLL après la suppression d'un trade.
@@ -257,7 +257,7 @@ def recalculate_metrics_after_trade_delete(sender, instance, **kwargs):
         from .models import AccountDailyMetrics
         
         # Vérifier s'il reste des trades pour cette date
-        remaining_trades = TopStepTrade.objects.filter(
+        remaining_trades = ImportedTrade.objects.filter(
             trading_account=instance.trading_account,
             trade_day=instance.trade_day
         ).exists()
@@ -291,13 +291,13 @@ def _refresh_balance_cache_for_account(trading_account_id) -> None:
         )
 
 
-@receiver(post_save, sender=TopStepTrade)
+@receiver(post_save, sender=ImportedTrade)
 def refresh_balance_cache_after_trade_save(sender, instance, **kwargs):
     if instance.trading_account_id:
         _refresh_balance_cache_for_account(instance.trading_account_id)
 
 
-@receiver(post_delete, sender=TopStepTrade)
+@receiver(post_delete, sender=ImportedTrade)
 def refresh_balance_cache_after_trade_delete(sender, instance, **kwargs):
     if instance.trading_account_id:
         _refresh_balance_cache_for_account(instance.trading_account_id)

@@ -11,7 +11,7 @@ from trades.contract_utils.contract_family import (
     get_contract_family_key,
     risk_units_from_values,
 )
-from trades.models import SessionEvent, SessionInsight, TopStepTrade, TradingAccount, TradingSession
+from trades.models import SessionEvent, SessionInsight, ImportedTrade, TradingAccount, TradingSession
 
 
 def _get_threshold(name: str, default: Any) -> Any:
@@ -28,7 +28,7 @@ MLL_PRESSURE_RATIO = lambda: _get_threshold('SESSION_REPLAY_MLL_PRESSURE_RATIO',
 
 def _median_size(account: TradingAccount, user) -> Decimal | None:
     sizes = list(
-        TopStepTrade.objects.filter(
+        ImportedTrade.objects.filter(
             user=user,
             trading_account=account,
         )

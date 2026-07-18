@@ -5,7 +5,7 @@ from unittest.mock import patch
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 
-from trades.models import DayStrategyCompliance, TopStepTrade, TradeStrategy, TradingAccount
+from trades.models import DayStrategyCompliance, ImportedTrade, TradeStrategy, TradingAccount
 from trades.models_rollup import STRATEGY_ROOT_UNASSIGNED, TradeDailyRollup
 from trades.services.rollup_service import (
     get_daily_aggregates_from_rollups,
@@ -49,12 +49,12 @@ class RollupServiceTests(TestCase):
     def test_resolve_strategy_root_unassigned(self):
         self.assertEqual(resolve_strategy_root_id(self.user, None), STRATEGY_ROOT_UNASSIGNED)
 
-    def _create_trade(self, topstep_id, trade_day, net_pnl, pnl=None):
+    def _create_trade(self, external_trade_id, trade_day, net_pnl, pnl=None):
         entered = datetime.combine(trade_day, datetime.min.time().replace(hour=10))
-        return TopStepTrade.objects.create(
+        return ImportedTrade.objects.create(
             user=self.user,
             trading_account=self.account,
-            topstep_id=topstep_id,
+            external_trade_id=external_trade_id,
             contract_name='ES',
             trade_type='Long',
             entered_at=entered,
@@ -107,12 +107,12 @@ class RollupServiceTests(TestCase):
         self.assertEqual(count, 1)
 
     def test_distinct_user_ids_for_rebuild_command_ignores_model_ordering(self):
-        """Meta.ordering sur TopStepTrade ne doit pas dupliquer user_id dans --all."""
+        """Meta.ordering sur ImportedTrade ne doit pas dupliquer user_id dans --all."""
         self._create_trade('T4a', date(2026, 6, 4), '5', '5')
         self._create_trade('T4b', date(2026, 6, 5), '7', '7')
-        raw = list(TopStepTrade.objects.values_list('user_id', flat=True).distinct())
+        raw = list(ImportedTrade.objects.values_list('user_id', flat=True).distinct())
         fixed = list(
-            TopStepTrade.objects.order_by().values_list('user_id', flat=True).distinct()
+            ImportedTrade.objects.order_by().values_list('user_id', flat=True).distinct()
         )
         self.assertGreater(len(raw), len(fixed))
         self.assertEqual(fixed.count(self.user.id), 1)

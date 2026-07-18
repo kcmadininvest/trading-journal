@@ -140,7 +140,7 @@ class CalendarService {
     if (pnlDisplay) {
       params.append('pnl_display', pnlDisplay);
     }
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/topstep/calendar_data/?${params}`);
+    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/imported/calendar_data/?${params}`);
     if (!res.ok) throw new Error('Erreur lors du chargement des données mensuelles');
     return res.json();
   }
@@ -162,7 +162,7 @@ class CalendarService {
     if (pnlDisplay) {
       params.append('pnl_display', pnlDisplay);
     }
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/topstep/calendar_monthly_data/?${params}`);
+    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/imported/calendar_monthly_data/?${params}`);
     if (!res.ok) throw new Error('Erreur lors du chargement des données annuelles');
     return res.json();
   }
@@ -184,7 +184,7 @@ class CalendarService {
     if (pnlDisplay) {
       params.append('pnl_display', pnlDisplay);
     }
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/topstep/calendar_weekly_data/?${params}`);
+    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/imported/calendar_weekly_data/?${params}`);
     if (!res.ok) throw new Error('Erreur lors du chargement des données hebdomadaires');
     return res.json();
   }

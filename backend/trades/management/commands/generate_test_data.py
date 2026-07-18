@@ -10,7 +10,7 @@ from django.utils import timezone
 from django.db import transaction
 from django.conf import settings
 from accounts.models import User
-from trades.models import TradingAccount, TopStepTrade, TradeStrategy
+from trades.models import TradingAccount, ImportedTrade, TradeStrategy
 from decimal import Decimal
 from datetime import datetime, timedelta
 import random
@@ -353,13 +353,13 @@ class Command(BaseCommand):
         commissions = Decimal(str(random.uniform(0.5, 2.0))) * size
         
         # Générer un ID TopStep unique
-        topstep_id = f"TEST-{uuid.uuid4().hex[:20]}"
+        external_trade_id = f"TEST-{uuid.uuid4().hex[:20]}"
         
         # Créer le trade
-        trade = TopStepTrade.objects.create(
+        trade = ImportedTrade.objects.create(
             user=user,
             trading_account=account,
-            topstep_id=topstep_id,
+            external_trade_id=external_trade_id,
             contract_name=contract_name,
             entered_at=entered_at,
             exited_at=exited_at,

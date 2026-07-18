@@ -31,8 +31,8 @@ class TestImports(unittest.TestCase):
     def test_app_imports(self):
         """Test des imports de l'application."""
         try:
-            from trades.models import TopStepTrade
-            from trades.serializers import TopStepTradeSerializer
+            from trades.models import ImportedTrade
+            from trades.serializers import ImportedTradeSerializer
             from accounts.models import User
             print("✅ Modules de l'application importés avec succès")
         except ImportError as e:

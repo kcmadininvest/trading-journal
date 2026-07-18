@@ -13,7 +13,7 @@ from rest_framework.test import APIClient
 from accounts.models import User
 from integrations.credentials_crypto import encrypt_json
 from integrations.models import UserApiIntegration
-from trades.models import TopStepTrade, TradeSyncLog, TradingAccount
+from trades.models import ImportedTrade, TradeSyncLog, TradingAccount
 from trades.replay.auto_build import ReplayAutoBuildSummary
 from trades.sync.topstepx_mapper import map_api_trades_to_parsed_rows, parse_api_timestamp
 from integrations.topstepx_accounts import resolve_projectx_account_id
@@ -52,7 +52,7 @@ class TopStepXMapperTests(TestCase):
         ]
         rows = map_api_trades_to_parsed_rows(fills)
         self.assertEqual(len(rows), 1)
-        self.assertEqual(rows[0]['topstep_id'], '1002')
+        self.assertEqual(rows[0]['external_trade_id'], '1002')
         self.assertEqual(rows[0]['trade_type'], 'Long')
         self.assertEqual(rows[0]['fees'], Decimal('8.4'))
         self.assertEqual(rows[0]['commissions'], Decimal('3'))
@@ -171,12 +171,12 @@ class TopStepXMapperTests(TestCase):
         ]
         rows = map_api_trades_to_parsed_rows(fills)
         self.assertEqual(len(rows), 2)
-        self.assertEqual(rows[0]['topstep_id'], '3002')
+        self.assertEqual(rows[0]['external_trade_id'], '3002')
         self.assertEqual(rows[0]['entered_at'], parse_api_timestamp('2026-05-19T15:00:00.000Z'))
         self.assertNotEqual(rows[0]['entered_at'], rows[0]['exited_at'])
         # Entrée size=3 fees=4 : prorata 1/3 sur la 1re sortie, pas la totalité des frais d'entrée
         self.assertEqual(rows[0]['fees'], Decimal('4') * Decimal('1') / Decimal('3') + Decimal('2'))
-        self.assertEqual(rows[1]['topstep_id'], '3003')
+        self.assertEqual(rows[1]['external_trade_id'], '3003')
         self.assertEqual(rows[1]['entry_price'], Decimal('25250.0'))
         self.assertEqual(rows[1]['fees'], Decimal('4') * Decimal('2') / Decimal('3') + Decimal('3'))
 
@@ -285,7 +285,7 @@ class TopStepXTradeUpsertTests(TestCase):
         )
         tz = ZoneInfo('UTC')
         self.parsed = {
-            'topstep_id': 'api-42',
+            'external_trade_id': 'api-42',
             'contract_name': 'NQZ5',
             'entered_at': datetime(2025, 8, 10, 16, 0, tzinfo=tz),
             'exited_at': datetime(2025, 8, 10, 17, 0, tzinfo=tz),
@@ -309,7 +309,7 @@ class TopStepXTradeUpsertTests(TestCase):
         tz = ZoneInfo('UTC')
         parsed_day2 = {
             **self.parsed,
-            'topstep_id': 'api-43',
+            'external_trade_id': 'api-43',
             'entered_at': datetime(2025, 8, 11, 16, 0, tzinfo=tz),
             'exited_at': datetime(2025, 8, 11, 17, 0, tzinfo=tz),
             'trade_day': date(2025, 8, 11),
@@ -328,10 +328,10 @@ class TopStepXTradeUpsertTests(TestCase):
         self.assertEqual(result['created_trade_days'], set())
 
     def test_existing_trade_notes_preserved_on_skip(self) -> None:
-        trade = TopStepTrade.objects.create(
+        trade = ImportedTrade.objects.create(
             user=self.user,
             trading_account=self.account,
-            topstep_id='api-42',
+            external_trade_id='api-42',
             contract_name='NQZ5',
             entered_at=self.parsed['entered_at'],
             exited_at=self.parsed['exited_at'],
@@ -342,14 +342,14 @@ class TopStepXTradeUpsertTests(TestCase):
             trade_type='Long',
             trade_day=self.parsed['trade_day'],
             notes='Note utilisateur',
-            position_strategy='breakout',
+            strategy='breakout',
         )
         result = import_parsed_trades(self.user, self.account, [self.parsed])
         self.assertEqual(result['skipped'], 1)
         self.assertEqual(result['created'], 0)
         trade.refresh_from_db()
         self.assertEqual(trade.notes, 'Note utilisateur')
-        self.assertEqual(trade.position_strategy, 'breakout')
+        self.assertEqual(trade.strategy, 'breakout')
 
 
 @override_settings(
@@ -471,8 +471,8 @@ class TopStepXSyncApiTests(TestCase):
         )
         self.client = APIClient()
         self.client.force_authenticate(user=self.user)
-        self.sync_url = reverse('trading-account-sync', kwargs={'pk': self.account.pk})
-        self.status_url = reverse('trading-account-sync-status', kwargs={'pk': self.account.pk})
+        self.sync_url = reverse('trades:trading-account-sync', kwargs={'pk': self.account.pk})
+        self.status_url = reverse('trades:trading-account-sync-status', kwargs={'pk': self.account.pk})
 
     @patch.object(TopStepXSyncService, 'sync_account')
     def test_sync_endpoint_returns_counts(self, mock_sync) -> None:

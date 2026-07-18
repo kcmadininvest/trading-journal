@@ -1,12 +1,12 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import TopStepTrade, TopStepImportLog, AccountTransaction, DayStrategyCompliance, ExportTemplate
+from .models import ImportedTrade, TopStepImportLog, AccountTransaction, DayStrategyCompliance, ExportTemplate
 
 
-@admin.register(TopStepTrade)
-class TopStepTradeAdmin(admin.ModelAdmin):
+@admin.register(ImportedTrade)
+class ImportedTradeAdmin(admin.ModelAdmin):
     list_display = [
-        'topstep_id',
+        'external_trade_id',
         'contract_name',
         'trade_type',
         'formatted_entry',
@@ -25,13 +25,13 @@ class TopStepTradeAdmin(admin.ModelAdmin):
         'imported_at'
     ]
     search_fields = [
-        'topstep_id',
+        'external_trade_id',
         'contract_name',
         'notes',
         'strategy'
     ]
     readonly_fields = [
-        'topstep_id',
+        'external_trade_id',
         'net_pnl',
         'pnl_percentage',
         'imported_at',
@@ -42,7 +42,7 @@ class TopStepTradeAdmin(admin.ModelAdmin):
     ]
     fieldsets = (
         ('Identification', {
-            'fields': ('user', 'topstep_id', 'contract_name')
+            'fields': ('user', 'external_trade_id', 'contract_name')
         }),
         ('Détails du Trade', {
             'fields': (

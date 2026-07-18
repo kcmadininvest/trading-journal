@@ -469,12 +469,12 @@ class AccountDailyMetrics(models.Model):
         return f"{self.trading_account.name} - {self.date} - MLL: {self.maximum_loss_limit}"
 
 
-class TopStepTrade(models.Model):
+class ImportedTrade(models.Model):
     """
-    Modèle pour stocker les trades importés depuis TopStep.
-    Les données sont importées au format américain et converties au format européen.
-    
-    Format d'import CSV:
+    Trade importé depuis un export broker (CSV) ou une sync API, ou créé manuellement.
+    Les données CSV sont typiquement au format américain et converties au format européen.
+
+    Format d'import CSV (colonne Id → external_trade_id):
     Id,ContractName,EnteredAt,ExitedAt,EntryPrice,ExitPrice,Fees,PnL,Size,Type,TradeDay,TradeDuration,Commissions
     """
     
@@ -487,7 +487,7 @@ class TopStepTrade(models.Model):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, 
         on_delete=models.CASCADE, 
-        related_name='topstep_trades',
+        related_name='imported_trades',
         verbose_name='Utilisateur'
     )
     
@@ -495,15 +495,15 @@ class TopStepTrade(models.Model):
     trading_account = models.ForeignKey(
         TradingAccount,
         on_delete=models.CASCADE,
-        related_name='topstep_trades',
+        related_name='imported_trades',
         verbose_name='Compte de trading',
         help_text='Compte de trading associé à ce trade'
     )
     
-    # Id (champ original TopStep) — unicité par (user, trading_account, topstep_id), pas globalement
-    topstep_id = models.CharField(
+    # ID externe broker — unicité par (user, trading_account, external_trade_id), pas globalement
+    external_trade_id = models.CharField(
         max_length=50,
-        verbose_name='ID TopStep',
+        verbose_name='ID trade broker',
         help_text='ID du trade dans l’export broker (unique par compte pour cet utilisateur)'
     )
     
@@ -726,16 +726,16 @@ class TopStepTrade(models.Model):
     
     class Meta:
         ordering = ['-entered_at']
-        verbose_name = 'Trade TopStep'
-        verbose_name_plural = 'Trades TopStep'
-        unique_together = ['user', 'trading_account', 'topstep_id']
+        verbose_name = 'Trade importé'
+        verbose_name_plural = 'Trades importés'
+        unique_together = ['user', 'trading_account', 'external_trade_id']
         indexes = [
             models.Index(fields=['user', '-entered_at']),
             models.Index(fields=['trading_account', '-entered_at']),
             models.Index(fields=['contract_name']),
             models.Index(fields=['trade_type']),
             models.Index(fields=['trade_day']),
-            models.Index(fields=['topstep_id']),
+            models.Index(fields=['external_trade_id']),
             # Optimisation StrategiesPage : filtres par user + trade_day
             models.Index(fields=['user', 'trade_day']),
             # Optimisation StrategiesPage : filtres par user + compte + trade_day
@@ -1085,9 +1085,9 @@ class TradeStrategy(models.Model):
         verbose_name='Utilisateur'
     )
     
-    # Lien vers le trade TopStep
+    # Lien vers le trade importé
     trade = models.ForeignKey(
-        TopStepTrade,
+        ImportedTrade,
         on_delete=models.CASCADE,
         related_name='strategy_data',
         verbose_name='Trade associé'
@@ -2128,7 +2128,7 @@ class SessionEvent(models.Model):
     occurred_at = models.DateTimeField(verbose_name='Horodatage', db_index=True)
     payload = models.JSONField(default=dict, verbose_name='Données')
     trade = models.ForeignKey(
-        'TopStepTrade',
+        'ImportedTrade',
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -2240,7 +2240,7 @@ __all__ = [
     'TradingAccount',
     'AccountTransaction',
     'AccountDailyMetrics',
-    'TopStepTrade',
+    'ImportedTrade',
     'TopStepImportLog',
     'TradeStrategy',
     'PositionStrategy',

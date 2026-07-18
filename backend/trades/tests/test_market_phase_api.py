@@ -7,7 +7,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from trades.market_phases.capture_service import bulk_upsert_capture
-from trades.models import TopStepTrade, TradingAccount
+from trades.models import ImportedTrade, TradingAccount
 
 User = get_user_model()
 
@@ -85,10 +85,10 @@ class MarketPhaseApiTests(APITestCase):
         exited = dj_tz.make_aware(
             __import__('datetime').datetime(2026, 7, 10, 12, 45),
         )
-        TopStepTrade.objects.create(
+        ImportedTrade.objects.create(
             user=self.user,
             trading_account=self.account,
-            topstep_id='t1',
+            external_trade_id='t1',
             contract_name='NQM6',
             entered_at=entered,
             exited_at=exited,
