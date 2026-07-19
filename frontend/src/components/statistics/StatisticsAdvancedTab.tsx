@@ -264,7 +264,8 @@ export const StatisticsAdvancedTab: React.FC<StatisticsTabBaseProps> = ({
               label={t('statistics:riskReward.averageActualRR', { defaultValue: 'R:R moyen réel' })}
               value={statisticsData.avg_actual_rr > 0 ? `1:${formatNumber(statisticsData.avg_actual_rr, 3)}` : '—'}
               tooltip={t('statistics:riskReward.averageActualRRTooltip', {
-                defaultValue: 'Ratio Risk/Reward moyen réel sur les trades gagnants uniquement',
+                defaultValue:
+                  'Ratio Risk/Reward moyen réel sur les trades gagnants hors break-even (PnL = 0 ou BE déclaré sans TP)',
               })}
               variant={
                 statisticsData.avg_actual_rr >= 2.0
@@ -296,7 +297,8 @@ export const StatisticsAdvancedTab: React.FC<StatisticsTabBaseProps> = ({
               label={t('statistics:riskReward.tradesWithBothRR', { defaultValue: 'Trades comparables' })}
               value={statisticsData.trades_with_both_rr}
               tooltip={t('statistics:riskReward.tradesWithBothRRTooltip', {
-                defaultValue: 'Nombre de trades gagnants ayant à la fois un R:R prévu et un R:R réel',
+                defaultValue:
+                  'Nombre de trades gagnants hors break-even ayant à la fois un R:R prévu et un R:R réel',
               })}
               variant="default"
             />
@@ -306,7 +308,8 @@ export const StatisticsAdvancedTab: React.FC<StatisticsTabBaseProps> = ({
                 value={statisticsData.plan_respect_rate}
                 config={GAUGE_CONFIGS.planRespectRate}
                 tooltip={t('statistics:riskReward.planRespectRateTooltip', {
-                  defaultValue: 'Pourcentage de trades gagnants où le R:R réel est supérieur ou égal au R:R prévu',
+                  defaultValue:
+                    'Pourcentage de trades gagnants hors break-even où le R:R réel est supérieur ou égal au R:R prévu',
                 })}
                 formatValue={(val: number) => `${formatNumber(val, 1)}%`}
                 showLabels

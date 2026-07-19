@@ -193,13 +193,13 @@
     "tradesWithPlannedRR": "Trades with planned R:R",
     "tradesWithPlannedRRTooltip": "Number of trades with a defined planned R:R",
     "averageActualRR": "Average actual R:R",
-    "averageActualRRTooltip": "Average Risk/Reward ratio on winning trades only",
+    "averageActualRRTooltip": "Average Risk/Reward ratio on winning trades excluding break-even (PnL = 0 or declared BE without TP)",
     "tradesWithActualRR": "Trades with actual R:R",
     "tradesWithActualRRTooltip": "Number of trades with a calculated actual R:R",
     "planRespectRate": "Respect rate",
-    "planRespectRateTooltip": "Percentage of winning trades where actual R:R is greater than or equal to planned R:R",
+    "planRespectRateTooltip": "Percentage of winning non-break-even trades where actual R:R is greater than or equal to planned R:R",
     "tradesWithBothRR": "Comparable trades",
-    "tradesWithBothRRTooltip": "Number of winning trades with both planned and actual R:R",
+    "tradesWithBothRRTooltip": "Number of winning non-break-even trades with both planned and actual R:R",
     "noDataMessage": "No R:R data available. Add a Stop Loss and planned Take Profit when creating or modifying a trade to see R:R statistics."
   },
   "exportModal": {

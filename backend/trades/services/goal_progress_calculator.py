@@ -1,7 +1,7 @@
 """
 Services pour le calcul de progression des objectifs de trading.
 """
-from django.db.models import Sum, Avg, QuerySet
+from django.db.models import Avg, Exists, OuterRef, QuerySet, Sum
 from decimal import Decimal
 from typing import cast, TYPE_CHECKING
 
@@ -354,12 +354,19 @@ class GoalProgressCalculator:
         }
 
     def _calculate_avg_rr_actual_goal(self, goal: TradingGoal, trades) -> dict:
-        """Calcule la progression pour un objectif de R:R réel moyen (gagnants seulement)."""
+        """Calcule la progression pour un objectif de R:R réel moyen (gagnants hors BE)."""
         pf = self._pnl_field_for_goal(goal)
+        positive_be_exists = Exists(
+            TradeStrategy.objects.filter(
+                trade=OuterRef('pk'),
+                tp1_reached=False,
+                tp2_plus_reached=False,
+            )
+        )
         rr_avg = trades.filter(
             actual_risk_reward_ratio__isnull=False,
             **{f'{pf}__gt': 0},
-        ).aggregate(
+        ).filter(~positive_be_exists).aggregate(
             avg=Avg('actual_risk_reward_ratio')
         )['avg']
         current_value = self._to_decimal(rr_avg)

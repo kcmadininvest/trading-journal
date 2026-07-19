@@ -1,4 +1,4 @@
-"""R:R réel moyen et respect du plan : trades gagnants uniquement."""
+"""R:R réel moyen et respect du plan : gagnants hors break-even."""
 from decimal import Decimal
 
 from django.test import TestCase
@@ -7,7 +7,7 @@ from rest_framework.request import Request
 from rest_framework.test import APIRequestFactory
 
 from accounts.models import User, UserPreferences
-from trades.models import ImportedTrade, TradingAccount
+from trades.models import ImportedTrade, TradeStrategy, TradingAccount
 from trades.services.statistics_calculator import compute_statistics_payload
 
 
@@ -33,8 +33,8 @@ class StatisticsRrWinnersOnlyTests(TestCase):
         self.factory = APIRequestFactory()
         now = timezone.now()
         # Long: entry 100, SL 90 (risk=10), TP 120 (planned RR=2)
-        # Gagnant exit 120 → actual RR = 2.0
-        ImportedTrade.objects.create(
+        # Gagnant exit 120 → actual RR = 2.0 (TP atteint)
+        win = ImportedTrade.objects.create(
             user=self.user,
             trading_account=self.account,
             external_trade_id='rr-win',
@@ -50,6 +50,12 @@ class StatisticsRrWinnersOnlyTests(TestCase):
             trade_day=now.date(),
             pnl=Decimal('200.00'),
             net_pnl=Decimal('200.00'),
+        )
+        TradeStrategy.objects.create(
+            user=self.user,
+            trade=win,
+            tp1_reached=True,
+            tp2_plus_reached=False,
         )
         # Perdant exit 80 → |reward|/risk = 2.0 (aurait faussé moyenne et respect du plan)
         ImportedTrade.objects.create(
@@ -69,7 +75,7 @@ class StatisticsRrWinnersOnlyTests(TestCase):
             pnl=Decimal('-200.00'),
             net_pnl=Decimal('-200.00'),
         )
-        # Gagnant partiel exit 110 → actual RR = 1.0 (< prévu 2.0)
+        # Gagnant partiel sans revue stratégie → actual RR = 1.0 (inclus)
         ImportedTrade.objects.create(
             user=self.user,
             trading_account=self.account,
@@ -87,6 +93,30 @@ class StatisticsRrWinnersOnlyTests(TestCase):
             pnl=Decimal('100.00'),
             net_pnl=Decimal('100.00'),
         )
+        # BE positif déclaré (PnL > 0, aucun TP) → exclu du R:R réel
+        be_trade = ImportedTrade.objects.create(
+            user=self.user,
+            trading_account=self.account,
+            external_trade_id='rr-be-positive',
+            contract_name='ES',
+            entered_at=now + timezone.timedelta(days=3),
+            exited_at=now + timezone.timedelta(days=3, minutes=30),
+            entry_price=Decimal('100.000000000'),
+            exit_price=Decimal('105.000000000'),
+            planned_stop_loss=Decimal('90.000000000'),
+            planned_take_profit=Decimal('120.000000000'),
+            size=Decimal('1.0000'),
+            trade_type='Long',
+            trade_day=(now + timezone.timedelta(days=3)).date(),
+            pnl=Decimal('50.00'),
+            net_pnl=Decimal('50.00'),
+        )
+        TradeStrategy.objects.create(
+            user=self.user,
+            trade=be_trade,
+            tp1_reached=False,
+            tp2_plus_reached=False,
+        )
 
     def _request(self):
         wsgi = self.factory.get(
@@ -97,22 +127,20 @@ class StatisticsRrWinnersOnlyTests(TestCase):
         request.user = self.user
         return request
 
-    def test_avg_actual_rr_excludes_losing_trades(self) -> None:
+    def test_avg_actual_rr_excludes_losing_and_positive_be_trades(self) -> None:
         trades = ImportedTrade.objects.filter(trading_account=self.account)
         stats = compute_statistics_payload(self._request(), trades, 'net_pnl')
 
-        # Couverture : les 3 trades ont un R:R réel
-        self.assertEqual(stats['trades_with_actual_rr'], 3)
-        # Moyenne sur gagnants seulement : (2.0 + 1.0) / 2 = 1.5 (pas 5/3 ≈ 1.67)
+        # Couverture : les 4 trades ont un R:R réel
+        self.assertEqual(stats['trades_with_actual_rr'], 4)
+        # Moyenne hors perdant et BE positif : (2.0 + 1.0) / 2 = 1.5
         self.assertAlmostEqual(stats['avg_actual_rr'], 1.5, places=4)
-        # Prévu : 2.0 sur les 3 trades
         self.assertAlmostEqual(stats['avg_planned_rr'], 2.0, places=4)
 
-    def test_plan_respect_rate_uses_winning_trades_only(self) -> None:
+    def test_plan_respect_rate_excludes_losing_and_positive_be(self) -> None:
         trades = ImportedTrade.objects.filter(trading_account=self.account)
         stats = compute_statistics_payload(self._request(), trades, 'net_pnl')
 
-        # 2 gagnants comparables ; 1 respecte (2.0 >= 2.0), 1 non (1.0 < 2.0)
-        # Le perdant à abs RR=2.0 ne doit pas compter comme respect du plan
+        # 2 comparables (win TP + win partiel) ; BE déclaré et perdant exclus
         self.assertEqual(stats['trades_with_both_rr'], 2)
         self.assertAlmostEqual(stats['plan_respect_rate'], 50.0, places=2)

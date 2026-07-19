@@ -192,13 +192,13 @@
     "tradesWithPlannedRR": "Trades mit geplantem R:R",
     "tradesWithPlannedRRTooltip": "Anzahl der Trades mit einem definierten geplanten R:R",
     "averageActualRR": "Durchschnittliches tatsächliches R:R",
-    "averageActualRRTooltip": "Durchschnittliches Risiko/Rendite-Verhältnis nur bei Gewinn-Trades",
+    "averageActualRRTooltip": "Durchschnittliches Risiko/Rendite-Verhältnis bei Gewinn-Trades ohne Break-even (PnL = 0 oder deklariertes BE ohne TP)",
     "tradesWithActualRR": "Trades mit tatsächlichem R:R",
     "tradesWithActualRRTooltip": "Anzahl der Trades mit einem berechneten tatsächlichen R:R",
     "planRespectRate": "Einhaltungsrate",
-    "planRespectRateTooltip": "Prozentsatz der Gewinn-Trades, bei denen das tatsächliche R:R größer oder gleich dem geplanten R:R ist",
+    "planRespectRateTooltip": "Prozentsatz der Gewinn-Trades ohne Break-even, bei denen das tatsächliche R:R größer oder gleich dem geplanten R:R ist",
     "tradesWithBothRR": "Vergleichbare Trades",
-    "tradesWithBothRRTooltip": "Anzahl der Gewinn-Trades mit sowohl geplantem als auch tatsächlichem R:R",
+    "tradesWithBothRRTooltip": "Anzahl der Gewinn-Trades ohne Break-even mit sowohl geplantem als auch tatsächlichem R:R",
     "noDataMessage": "Keine R:R-Daten verfügbar. Fügen Sie beim Erstellen oder Ändern eines Trades einen Stop Loss und einen geplanten Take Profit hinzu, um R:R-Statistiken zu sehen."
   },
   "exportModal": {

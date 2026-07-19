@@ -674,14 +674,24 @@ def compute_statistics_payload(request, trades, pf: str) -> Dict[str, Any]:
     
     # Statistiques Risk/Reward Ratio
     # R:R prévu : tous les trades planifiés (intention à l'entrée).
-    # R:R réel / respect du plan : trades gagnants uniquement — un |reward|/risk
-    # sur un perdant fausserait la moyenne (ex. −1R → 1.0) et le respect du plan.
+    # R:R réel / respect du plan : gagnants hors break-even uniquement.
+    # - Perdants : |reward|/risk fausse la moyenne (ex. −1R → 1.0).
+    # - BE zéro (PnL = 0) : exclus via pf > 0.
+    # - BE positif / déclaré : TradeStrategy sans TP1 ni TP2+ (même règle que break_even_positive).
     winning_q = Q(**{f'{pf}__gt': 0})
+    positive_be_exists = Exists(
+        TradeStrategy.objects.filter(
+            trade=OuterRef('pk'),
+            tp1_reached=False,
+            tp2_plus_reached=False,
+        )
+    )
+    rr_eligible_q = winning_q & ~positive_be_exists
     trades_with_planned_rr = trades.filter(planned_risk_reward_ratio__isnull=False)
     trades_with_actual_rr = trades.filter(actual_risk_reward_ratio__isnull=False)
-    winning_trades_with_actual_rr = trades_with_actual_rr.filter(winning_q)
+    winning_trades_with_actual_rr = trades_with_actual_rr.filter(rr_eligible_q)
     trades_with_both_rr = trades.filter(
-        winning_q,
+        rr_eligible_q,
         planned_risk_reward_ratio__isnull=False,
         actual_risk_reward_ratio__isnull=False,
     )
@@ -692,7 +702,7 @@ def compute_statistics_payload(request, trades, pf: str) -> Dict[str, Any]:
         avg_planned_rr_agg = trades_with_planned_rr.aggregate(avg=Avg('planned_risk_reward_ratio'))
         avg_planned_rr = float(avg_planned_rr_agg['avg'] or 0.0)
     
-    # R:R moyen réel (gagnants seulement)
+    # R:R moyen réel (gagnants hors break-even)
     avg_actual_rr = 0.0
     if winning_trades_with_actual_rr.exists():
         avg_actual_rr_agg = winning_trades_with_actual_rr.aggregate(
@@ -700,7 +710,7 @@ def compute_statistics_payload(request, trades, pf: str) -> Dict[str, Any]:
         )
         avg_actual_rr = float(avg_actual_rr_agg['avg'] or 0.0)
     
-    # Taux de respect du plan (gagnants où R:R réel >= R:R prévu)
+    # Taux de respect du plan (gagnants hors BE où R:R réel >= R:R prévu)
     plan_respect_rate = 0.0
     plan_respect_count = 0
     both_rr_count = trades_with_both_rr.count()

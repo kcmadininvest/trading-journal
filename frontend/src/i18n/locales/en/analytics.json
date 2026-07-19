@@ -566,9 +566,9 @@
         "mixed": "Plan and direction",
         "challenging": "Process to reinforce"
       },
-      "planRespectGood": "On {{comparableCount}} comparable winning trades (planned and actual R/R), {{rate}} % achieved actual R/R greater than or equal to planned R/R.",
-      "planRespectLow": "On {{comparableCount}} comparable winning trades (planned and actual R/R), only {{rate}} % met planned R/R — often an early exit or a wider stop than planned.",
-      "rrGap": "Planned R/R {{planned}} vs realized {{actual}} on average (realized on winners).",
+      "planRespectGood": "On {{comparableCount}} comparable winning non-break-even trades (planned and actual R/R), {{rate}} % achieved actual R/R greater than or equal to planned R/R.",
+      "planRespectLow": "On {{comparableCount}} comparable winning non-break-even trades (planned and actual R/R), only {{rate}} % met planned R/R — often an early exit or a wider stop than planned.",
+      "rrGap": "Planned R/R {{planned}} vs realized {{actual}} on average (realized on winners excluding BE).",
       "biasLong": "Strong long bias ({{longPct}} % long / {{shortPct}} % short).",
       "biasShort": "Strong short bias ({{longPct}} % long / {{shortPct}} % short)."
     },
