@@ -81,7 +81,7 @@ async function generatePrerenderedHTML(route, lang, query = '') {
         },
         en: {
           title: 'Free Trading Journal & Performance Tracker | K&C Trading Journal',
-          description: 'Professional trading journal software to track trades, analyze performance, and improve your strategy. Free forever with CSV import, multi-account support, advanced statistics, and analytics. No hidden fees.',
+          description: 'Professional trading journal software to track trades, analyze performance, and improve your strategy. Free with CSV import, multi-account support, advanced statistics, and analytics. No hidden fees.',
           keywords: 'trading journal, trading diary, trade tracker, trading log, stock trading journal, forex trading journal, crypto trading journal, day trading journal, trading performance tracker, trading analytics, free trading journal software, trading journal app, trade management, position tracking',
           locale: 'en_US',
         },

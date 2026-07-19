@@ -250,7 +250,7 @@ const AboutPage: React.FC = () => {
                 </svg>
                 <span className="text-white font-semibold text-lg">
                   {t('about:mission.content3', {
-                    defaultValue: '100% Gratuit, pour toujours',
+                    defaultValue: '100% Gratuit',
                   })}
                 </span>
               </div>
