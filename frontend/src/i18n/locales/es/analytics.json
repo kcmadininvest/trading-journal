@@ -563,9 +563,9 @@
         "mixed": "Plan y dirección",
         "challenging": "Reforzar el proceso"
       },
-      "planRespectGood": "En {{comparableCount}} operaciones comparables (R/R planificado y real), el {{rate}} % alcanzó R/R real ≥ R/R planificado.",
-      "planRespectLow": "En {{comparableCount}} operaciones comparables, solo el {{rate}} % cumplió el R/R planificado — a menudo salida anticipada o stop más amplio.",
-      "rrGap": "R/R planificado {{planned}} vs realizado {{actual}}.",
+      "planRespectGood": "En {{comparableCount}} operaciones ganadoras comparables (R/R planificado y real), el {{rate}} % alcanzó R/R real ≥ R/R planificado.",
+      "planRespectLow": "En {{comparableCount}} operaciones ganadoras comparables, solo el {{rate}} % cumplió el R/R planificado — a menudo salida anticipada o stop más amplio.",
+      "rrGap": "R/R planificado {{planned}} vs realizado {{actual}} (realizado en ganadoras).",
       "biasLong": "Sesgo long ({{longPct}} % / {{shortPct}} %).",
       "biasShort": "Sesgo short ({{longPct}} % / {{shortPct}} %)."
     },

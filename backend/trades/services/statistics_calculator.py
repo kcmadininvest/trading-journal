@@ -673,11 +673,17 @@ def compute_statistics_payload(request, trades, pf: str) -> Dict[str, Any]:
                 break
     
     # Statistiques Risk/Reward Ratio
+    # R:R prévu : tous les trades planifiés (intention à l'entrée).
+    # R:R réel / respect du plan : trades gagnants uniquement — un |reward|/risk
+    # sur un perdant fausserait la moyenne (ex. −1R → 1.0) et le respect du plan.
+    winning_q = Q(**{f'{pf}__gt': 0})
     trades_with_planned_rr = trades.filter(planned_risk_reward_ratio__isnull=False)
     trades_with_actual_rr = trades.filter(actual_risk_reward_ratio__isnull=False)
+    winning_trades_with_actual_rr = trades_with_actual_rr.filter(winning_q)
     trades_with_both_rr = trades.filter(
+        winning_q,
         planned_risk_reward_ratio__isnull=False,
-        actual_risk_reward_ratio__isnull=False
+        actual_risk_reward_ratio__isnull=False,
     )
     
     # R:R moyen prévu
@@ -686,21 +692,24 @@ def compute_statistics_payload(request, trades, pf: str) -> Dict[str, Any]:
         avg_planned_rr_agg = trades_with_planned_rr.aggregate(avg=Avg('planned_risk_reward_ratio'))
         avg_planned_rr = float(avg_planned_rr_agg['avg'] or 0.0)
     
-    # R:R moyen réel
+    # R:R moyen réel (gagnants seulement)
     avg_actual_rr = 0.0
-    if trades_with_actual_rr.exists():
-        avg_actual_rr_agg = trades_with_actual_rr.aggregate(avg=Avg('actual_risk_reward_ratio'))
+    if winning_trades_with_actual_rr.exists():
+        avg_actual_rr_agg = winning_trades_with_actual_rr.aggregate(
+            avg=Avg('actual_risk_reward_ratio')
+        )
         avg_actual_rr = float(avg_actual_rr_agg['avg'] or 0.0)
     
-    # Taux de respect du plan (trades où R:R réel >= R:R prévu)
+    # Taux de respect du plan (gagnants où R:R réel >= R:R prévu)
     plan_respect_rate = 0.0
     plan_respect_count = 0
-    if trades_with_both_rr.exists():
+    both_rr_count = trades_with_both_rr.count()
+    if both_rr_count > 0:
         for trade in trades_with_both_rr:
             if trade.actual_risk_reward_ratio and trade.planned_risk_reward_ratio:
                 if trade.actual_risk_reward_ratio >= trade.planned_risk_reward_ratio:
                     plan_respect_count += 1
-        plan_respect_rate = (plan_respect_count / trades_with_both_rr.count()) * 100 if trades_with_both_rr.count() > 0 else 0.0
+        plan_respect_rate = (plan_respect_count / both_rr_count) * 100
     
     stats = {
         'total_trades': total_trades,

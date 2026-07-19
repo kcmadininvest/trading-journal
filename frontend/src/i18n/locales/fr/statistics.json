@@ -192,13 +192,13 @@
     "tradesWithPlannedRR": "Trades avec R:R prévu",
     "tradesWithPlannedRRTooltip": "Nombre de trades ayant un R:R prévu défini",
     "averageActualRR": "R:R moyen réel",
-    "averageActualRRTooltip": "Ratio Risque/Récompense moyen réel obtenu à la sortie des trades",
+    "averageActualRRTooltip": "Ratio Risque/Récompense moyen réel sur les trades gagnants uniquement",
     "tradesWithActualRR": "Trades avec R:R réel",
     "tradesWithActualRRTooltip": "Nombre de trades ayant un R:R réel calculé",
     "planRespectRate": "Taux de respect",
-    "planRespectRateTooltip": "Pourcentage de trades où le R:R réel est supérieur ou égal au R:R prévu",
+    "planRespectRateTooltip": "Pourcentage de trades gagnants où le R:R réel est supérieur ou égal au R:R prévu",
     "tradesWithBothRR": "Trades comparables",
-    "tradesWithBothRRTooltip": "Nombre de trades ayant à la fois un R:R prévu et un R:R réel",
+    "tradesWithBothRRTooltip": "Nombre de trades gagnants ayant à la fois un R:R prévu et un R:R réel",
     "noDataMessage": "Aucun R:R disponible. Ajoutez un Stop Loss et un Take Profit prévu lors de la création ou modification d'un trade pour voir les statistiques R:R."
   },
   "exportModal": {

@@ -563,9 +563,9 @@
         "mixed": "Plan und Richtung",
         "challenging": "Prozess stärken"
       },
-      "planRespectGood": "Bei {{comparableCount}} vergleichbaren Trades (geplant + realisiertes R/R): {{rate}} % mit realisiertem R/R ≥ geplantem R/R.",
-      "planRespectLow": "Bei {{comparableCount}} vergleichbaren Trades nur {{rate}} % mit erreichtem geplantem R/R — oft früher Ausstieg oder weiterer Stop.",
-      "rrGap": "Geplantes R/R {{planned}} vs. realisiert {{actual}}.",
+      "planRespectGood": "Bei {{comparableCount}} vergleichbaren Gewinn-Trades (geplant + realisiertes R/R): {{rate}} % mit realisiertem R/R ≥ geplantem R/R.",
+      "planRespectLow": "Bei {{comparableCount}} vergleichbaren Gewinn-Trades nur {{rate}} % mit erreichtem geplantem R/R — oft früher Ausstieg oder weiterer Stop.",
+      "rrGap": "Geplantes R/R {{planned}} vs. realisiert {{actual}} (realisiert bei Gewinnern).",
       "biasLong": "Long-Schwerpunkt ({{longPct}} % / {{shortPct}} %).",
       "biasShort": "Short-Schwerpunkt ({{longPct}} % / {{shortPct}} %)."
     },

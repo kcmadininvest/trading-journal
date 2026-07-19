@@ -354,8 +354,12 @@ class GoalProgressCalculator:
         }
 
     def _calculate_avg_rr_actual_goal(self, goal: TradingGoal, trades) -> dict:
-        """Calcule la progression pour un objectif de R:R réel moyen."""
-        rr_avg = trades.filter(actual_risk_reward_ratio__isnull=False).aggregate(
+        """Calcule la progression pour un objectif de R:R réel moyen (gagnants seulement)."""
+        pf = self._pnl_field_for_goal(goal)
+        rr_avg = trades.filter(
+            actual_risk_reward_ratio__isnull=False,
+            **{f'{pf}__gt': 0},
+        ).aggregate(
             avg=Avg('actual_risk_reward_ratio')
         )['avg']
         current_value = self._to_decimal(rr_avg)

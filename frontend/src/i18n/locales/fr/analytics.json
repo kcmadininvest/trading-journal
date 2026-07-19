@@ -566,9 +566,9 @@
         "mixed": "Plan et direction",
         "challenging": "Processus à renforcer"
       },
-      "planRespectGood": "Sur {{comparableCount}} trades comparables (R/R prévu et réel renseignés), {{rate}} % ont un R/R réalisé supérieur ou égal au R/R prévu.",
-      "planRespectLow": "Sur {{comparableCount}} trades comparables (R/R prévu et réel), seulement {{rate}} % ont atteint le R/R prévu — souvent une sortie trop tôt ou un stop élargi par rapport au plan initial.",
-      "rrGap": "R/R planifié {{planned}} vs réalisé {{actual}} en moyenne.",
+      "planRespectGood": "Sur {{comparableCount}} trades gagnants comparables (R/R prévu et réel renseignés), {{rate}} % ont un R/R réalisé supérieur ou égal au R/R prévu.",
+      "planRespectLow": "Sur {{comparableCount}} trades gagnants comparables (R/R prévu et réel), seulement {{rate}} % ont atteint le R/R prévu — souvent une sortie trop tôt ou un stop élargi par rapport au plan initial.",
+      "rrGap": "R/R planifié {{planned}} vs réalisé {{actual}} en moyenne (réalisé sur les gagnants).",
       "biasLong": "Forte orientation long ({{longPct}} % long / {{shortPct}} % short).",
       "biasShort": "Forte orientation short ({{longPct}} % long / {{shortPct}} % short)."
     },
