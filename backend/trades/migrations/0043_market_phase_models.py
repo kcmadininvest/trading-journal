@@ -153,9 +153,7 @@ class Migration(migrations.Migration):
             constraint=models.UniqueConstraint(condition=models.Q(('is_system', True), ('user__isnull', True)), fields=('code',), name='uniq_market_phase_def_system_code'),
         ),
         migrations.RunPython(
-            lambda apps, schema_editor: __import__(
-                'trades.market_phases.seeds', fromlist=['seed_system_definitions']
-            ).seed_system_definitions(apps, schema_editor),
+            migrations.RunPython.noop,
             migrations.RunPython.noop,
         ),
     ]

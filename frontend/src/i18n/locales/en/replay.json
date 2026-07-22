@@ -63,12 +63,7 @@
   "tabs": {
     "replay": "Session replay",
     "insights": "Alerts",
-    "journal": "Journal",
-    "marketPhases": "Market phases"
-  },
-  "marketPhasesIntro": {
-    "title": "What is this tab for?",
-    "description": "Manually document market behavior by time slot: phase (e.g. Range), context, and a sequence of events (body/wick breakouts, re-entries, sweeps). These notes feed the Analytics observatory — range frequency, typical hours, and exit patterns."
+    "journal": "Journal"
   },
   "noInsights": "No alerts detected",
   "journalDraftTitle": "Journal draft",

@@ -173,18 +173,9 @@ import esCalculator from './locales/es/calculator.json';
 import deCalculator from './locales/de/calculator.json';
 import frBilling from './locales/fr/billing.json';
 import frReplay from './locales/fr/replay.json';
-import frMarketPhases from './locales/fr/marketPhases.json';
 import enReplay from './locales/en/replay.json';
-import enMarketPhases from './locales/en/marketPhases.json';
 import esReplay from './locales/es/replay.json';
-import esMarketPhases from './locales/es/marketPhases.json';
 import deReplay from './locales/de/replay.json';
-import deMarketPhases from './locales/de/marketPhases.json';
-import itMarketPhases from './locales/it/marketPhases.json';
-import ptMarketPhases from './locales/pt/marketPhases.json';
-import jaMarketPhases from './locales/ja/marketPhases.json';
-import koMarketPhases from './locales/ko/marketPhases.json';
-import zhMarketPhases from './locales/zh/marketPhases.json';
 import frJournalQuestions from './locales/fr/journalQuestions.json';
 import enJournalQuestions from './locales/en/journalQuestions.json';
 import esJournalQuestions from './locales/es/journalQuestions.json';
@@ -276,7 +267,6 @@ const resources = {
     calculator: frCalculator,
     billing: frBilling,
     replay: frReplay,
-    marketPhases: frMarketPhases,
     journalQuestions: frJournalQuestions,
     trading_activity: frTradingActivity,
   },
@@ -305,7 +295,6 @@ const resources = {
     calculator: enCalculator,
     billing: enBilling,
     replay: enReplay,
-    marketPhases: enMarketPhases,
     journalQuestions: enJournalQuestions,
     trading_activity: enTradingActivity,
   },
@@ -334,7 +323,6 @@ const resources = {
     calculator: esCalculator,
     billing: esBilling,
     replay: esReplay,
-    marketPhases: esMarketPhases,
     journalQuestions: esJournalQuestions,
     trading_activity: esTradingActivity,
   },
@@ -363,7 +351,6 @@ const resources = {
     calculator: deCalculator,
     billing: deBilling,
     replay: deReplay,
-    marketPhases: deMarketPhases,
     journalQuestions: deJournalQuestions,
     trading_activity: deTradingActivity,
   },
@@ -382,7 +369,6 @@ const resources = {
     auth: itAuth,
     billing: itBilling,
     replay: enReplay,
-    marketPhases: itMarketPhases,
     journalQuestions: itJournalQuestions,
     trading_activity: enTradingActivity,
   },
@@ -401,7 +387,6 @@ const resources = {
     auth: ptAuth,
     billing: ptBilling,
     replay: enReplay,
-    marketPhases: ptMarketPhases,
     journalQuestions: ptJournalQuestions,
     trading_activity: enTradingActivity,
   },
@@ -420,7 +405,6 @@ const resources = {
     auth: jaAuth,
     billing: jaBilling,
     replay: enReplay,
-    marketPhases: jaMarketPhases,
     journalQuestions: jaJournalQuestions,
     trading_activity: enTradingActivity,
   },
@@ -439,7 +423,6 @@ const resources = {
     auth: koAuth,
     billing: koBilling,
     replay: enReplay,
-    marketPhases: koMarketPhases,
     journalQuestions: koJournalQuestions,
     trading_activity: enTradingActivity,
   },
@@ -458,7 +441,6 @@ const resources = {
     auth: zhAuth,
     billing: zhBilling,
     replay: enReplay,
-    marketPhases: zhMarketPhases,
     journalQuestions: zhJournalQuestions,
     trading_activity: enTradingActivity,
   },
@@ -524,7 +506,7 @@ i18n
     fallbackLng: getDefaultLanguage(),
     supportedLngs: ['fr', 'en', 'es', 'de', 'it', 'pt', 'ja', 'ko', 'zh'],
     defaultNS: 'common',
-    ns: ['common', 'trades', 'settings', 'navigation', 'dashboard', 'calendar', 'strategies', 'statistics', 'analytics', 'users', 'accounts', 'auth', 'home', 'strategy', 'positionStrategies', 'goals', 'transactions', 'legal', 'about', 'features', 'contact', 'calculator', 'billing', 'replay', 'trading_activity', 'marketPhases', 'journalQuestions'],
+    ns: ['common', 'trades', 'settings', 'navigation', 'dashboard', 'calendar', 'strategies', 'statistics', 'analytics', 'users', 'accounts', 'auth', 'home', 'strategy', 'positionStrategies', 'goals', 'transactions', 'legal', 'about', 'features', 'contact', 'calculator', 'billing', 'replay', 'trading_activity', 'journalQuestions'],
     
     interpolation: {
       escapeValue: false, // React échappe déjà les valeurs

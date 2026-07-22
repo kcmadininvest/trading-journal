@@ -62,12 +62,7 @@
   "tabs": {
     "replay": "Replay de sesión",
     "insights": "Alertas",
-    "journal": "Diario",
-    "marketPhases": "Fases de mercado"
-  },
-  "marketPhasesIntro": {
-    "title": "¿Para qué sirve esta pestaña?",
-    "description": "Documente manualmente el comportamiento del mercado por tramo horario: fase (p. ej. Range), contexto y secuencia de eventos (rupturas cuerpo/mecha, reentradas, sweeps). Estas notas alimentan el observatorio en Analítica — frecuencia de rangos, horas típicas y patrones de salida."
+    "journal": "Diario"
   },
   "insightsTitle": "Alertas",
   "noInsights": "Ninguna alerta detectada",

@@ -5,25 +5,6 @@ import { replayDateInputClass } from '../replay/replayStyles';
 
 export const SESSION_CLOCK_COLUMN_WIDTH = '7rem';
 
-/** Grille : libellé | début | fin | action */
-export const MARKET_PHASE_PERIOD_FORM_GRID_CLASS =
-  'grid grid-cols-1 items-end gap-2 sm:grid-cols-[minmax(0,1fr)_7rem_7rem_auto]';
-
-export const MARKET_PHASE_FORM_LABEL_CLASS =
-  'mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300';
-
-export const MARKET_PHASE_FORM_FIELD_HEIGHT_CLASS = '!h-9 !min-h-9 !max-h-9';
-
-export const MARKET_PHASE_FORM_CONTROL_CLASS =
-  `${replayDateInputClass} box-border ${MARKET_PHASE_FORM_FIELD_HEIGHT_CLASS} !py-0 !leading-none text-xs`;
-
-export const MARKET_PHASE_FORM_CLOCK_CLASS =
-  `${MARKET_PHASE_FORM_FIELD_HEIGHT_CLASS} !py-0 !leading-none text-xs`;
-
-export const MARKET_PHASE_FORM_BUTTON_CLASS =
-  `inline-flex w-full items-center justify-center box-border rounded-md bg-blue-600 px-3 text-xs font-medium text-white shadow-sm transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600 ${MARKET_PHASE_FORM_FIELD_HEIGHT_CLASS} !py-0 !leading-none`;
-
-/** @deprecated Préférer la grille MARKET_PHASE_PERIOD_FORM_GRID_CLASS */
 export const SESSION_CLOCK_FIELD_CLASS = 'min-w-0 w-full overflow-hidden';
 
 export const SESSION_CLOCK_FIELD_STYLE: React.CSSProperties = {

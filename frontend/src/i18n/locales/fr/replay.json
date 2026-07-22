@@ -63,12 +63,7 @@
   "tabs": {
     "replay": "Session replay",
     "insights": "Alertes",
-    "journal": "Journal",
-    "marketPhases": "Phases marché"
-  },
-  "marketPhasesIntro": {
-    "title": "À quoi sert cet onglet ?",
-    "description": "Documentez manuellement le comportement du marché par tranche horaire : phase (ex. Range), contexte et enchaînement d'événements (cassures corps/mèche, réintégrations, sweeps). Ces notes alimentent l'observatoire dans Analytique — fréquence des ranges, horaires typiques et schémas de sortie."
+    "journal": "Journal"
   },
   "noInsights": "Aucune alerte détectée",
   "journalDraftTitle": "Brouillon journal",

@@ -62,12 +62,7 @@
   "tabs": {
     "replay": "Session-Replay",
     "insights": "Hinweise",
-    "journal": "Tagebuch",
-    "marketPhases": "Marktphasen"
-  },
-  "marketPhasesIntro": {
-    "title": "Wozu dient dieser Tab?",
-    "description": "Dokumentieren Sie das Marktverhalten manuell nach Zeitfenster: Phase (z. B. Range), Kontext und Ereignisfolge (Ausbrüche Körper/Docht, Reentries, Sweeps). Diese Notizen speisen das Observatorium in Analytics — Range-Häufigkeit, typische Stunden und Ausbruchsmuster."
+    "journal": "Tagebuch"
   },
   "insightsTitle": "Hinweise",
   "noInsights": "Keine Hinweise erkannt",
