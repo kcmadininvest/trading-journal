@@ -1,4 +1,5 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import {
   DndContext,
@@ -30,8 +31,17 @@ import {
   Questionnaire,
   QuestionnaireQuestion,
   QuestionnaireScope,
+  ShowIfCondition,
+  ShowIfRule,
   journalQuestionsService,
 } from '../../services/journalQuestions';
+import {
+  getAnchorQuestionId,
+  getQuestionDepth,
+  isBranchableType,
+  normalizeShowIf,
+  sortQuestionsForDisplay,
+} from '../../utils/questionnaireVisibility';
 
 const ANSWER_TYPES: AnswerType[] = [
   'boolean',
@@ -57,9 +67,11 @@ interface EditorState {
   required: boolean;
   is_active: boolean;
   choices: QuestionChoice[];
+  show_if: ShowIfRule | null;
+  use_show_if: boolean;
 }
 
-const emptyEditor = (mode: EditorMode): EditorState => ({
+const emptyEditor = (mode: EditorMode, showIf?: ShowIfRule | null): EditorState => ({
   mode,
   label: '',
   help_text: '',
@@ -68,6 +80,8 @@ const emptyEditor = (mode: EditorMode): EditorState => ({
   required: false,
   is_active: true,
   choices: [],
+  show_if: showIf ?? null,
+  use_show_if: !!showIf,
 });
 
 interface JournalQuestionsSettingsProps {
@@ -161,6 +175,8 @@ export const JournalQuestionsSettings: React.FC<JournalQuestionsSettingsProps> =
       required: false,
       is_active: tpl.is_active,
       choices: tpl.choices?.length ? [...tpl.choices] : [],
+      show_if: null,
+      use_show_if: false,
     });
   };
 
@@ -169,7 +185,22 @@ export const JournalQuestionsSettings: React.FC<JournalQuestionsSettingsProps> =
     setEditor(emptyEditor('instance'));
   };
 
+  const openConditionalInstance = (
+    scope: QuestionnaireScope,
+    parent: QuestionnaireQuestion,
+    value: boolean | number
+  ) => {
+    setEditorScope(scope);
+    setEditor(
+      emptyEditor('instance', {
+        logic: 'and',
+        conditions: [{ question_id: parent.id, operator: 'eq', value }],
+      })
+    );
+  };
+
   const openEditInstance = (scope: QuestionnaireScope, q: QuestionnaireQuestion) => {
+    const showIf = normalizeShowIf(q.show_if);
     setEditorScope(scope);
     setEditor({
       mode: 'instance',
@@ -181,6 +212,8 @@ export const JournalQuestionsSettings: React.FC<JournalQuestionsSettingsProps> =
       required: q.required,
       is_active: q.is_active,
       choices: q.choices?.length ? [...q.choices] : [],
+      show_if: showIf,
+      use_show_if: !!showIf,
     });
   };
 
@@ -193,11 +226,22 @@ export const JournalQuestionsSettings: React.FC<JournalQuestionsSettingsProps> =
       notify('error', t('journalQuestions:choicesRequired'));
       return;
     }
+    if (editor.mode === 'instance' && editor.use_show_if) {
+      const rule = normalizeShowIf(editor.show_if);
+      if (!rule) {
+        notify('error', t('journalQuestions:conditionsRequired'));
+        return;
+      }
+    }
     setBusy(true);
     try {
       const choices = editor.choices
         .filter((c) => c.label.trim())
-        .map((c, i) => ({ label: c.label.trim(), order: i }));
+        .map((c, i) => ({
+          ...(c.id ? { id: c.id } : {}),
+          label: c.label.trim(),
+          order: i,
+        }));
       const payload = {
         label: editor.label.trim(),
         help_text: editor.help_text,
@@ -216,15 +260,18 @@ export const JournalQuestionsSettings: React.FC<JournalQuestionsSettingsProps> =
       } else {
         const qId = editorScope === 'day' ? dayQ?.id : posQ?.id;
         if (!qId) throw new Error('Questionnaire missing');
+        const show_if = editor.use_show_if ? normalizeShowIf(editor.show_if) : null;
         if (editor.id) {
           await journalQuestionsService.updateQuestion(editor.id, {
             ...payload,
             required: editor.required,
+            show_if,
           });
         } else {
           await journalQuestionsService.createQuestion(qId, {
             ...payload,
             required: editor.required,
+            show_if,
           });
         }
       }
@@ -386,6 +433,7 @@ export const JournalQuestionsSettings: React.FC<JournalQuestionsSettingsProps> =
           onClone={() => setClonePickerScope('day')}
           onEdit={(q) => openEditInstance('day', q)}
           onDelete={requestDeleteInstance}
+          onAddIf={(parent, value) => openConditionalInstance('day', parent, value)}
           onReorder={(ids) => reorderQuestions('day', ids)}
           t={t}
         />
@@ -400,6 +448,7 @@ export const JournalQuestionsSettings: React.FC<JournalQuestionsSettingsProps> =
           onClone={() => setClonePickerScope('position')}
           onEdit={(q) => openEditInstance('position', q)}
           onDelete={requestDeleteInstance}
+          onAddIf={(parent, value) => openConditionalInstance('position', parent, value)}
           onReorder={(ids) => reorderQuestions('position', ids)}
           t={t}
         />
@@ -413,6 +462,9 @@ export const JournalQuestionsSettings: React.FC<JournalQuestionsSettingsProps> =
           onClose={() => setEditor(null)}
           busy={busy}
           t={t}
+          siblingQuestions={
+            editorScope === 'day' ? dayQuestions : editorScope === 'position' ? posQuestions : []
+          }
         />
       )}
 
@@ -459,20 +511,56 @@ function DragHandleIcon({ size = 'sm' }: { size?: 'sm' | 'md' }) {
   );
 }
 
+function formatShowIfBadge(
+  question: QuestionnaireQuestion,
+  allQuestions: QuestionnaireQuestion[],
+  t: any
+): string | null {
+  const rule = normalizeShowIf(question.show_if);
+  if (!rule) return null;
+  if (rule.conditions.length > 1) {
+    return t('journalQuestions:badgeIfMulti', {
+      logic: rule.logic === 'or' ? t('journalQuestions:logicOrBadge') : t('journalQuestions:logicAndBadge'),
+      count: rule.conditions.length,
+    });
+  }
+  const cond = rule.conditions[0];
+  const source = allQuestions.find((q) => q.id === cond.question_id);
+  let label = '?';
+  if (source?.answer_type === 'boolean') {
+    label = cond.value === true ? t('journalQuestions:yes') : t('journalQuestions:no');
+  } else if (source) {
+    const choice = source.choices.find((c) => c.id === cond.value);
+    label = choice?.label || String(cond.value);
+  }
+  return cond.operator === 'neq'
+    ? t('journalQuestions:badgeIfNeq', { label })
+    : t('journalQuestions:badgeIf', { label });
+}
+
 function SortableQuestionRow({
   question,
+  depth,
+  badge,
   onEdit,
   onDelete,
+  onAddIf,
   t,
 }: {
   question: QuestionnaireQuestion;
+  depth: number;
+  badge: string | null;
   onEdit: (q: QuestionnaireQuestion) => void;
   onDelete: (id: number) => void;
+  onAddIf: (parent: QuestionnaireQuestion, value: boolean | number) => void;
   t: any;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: question.id,
   });
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const addIfBtnRef = useRef<HTMLButtonElement>(null);
+  const [pickerPos, setPickerPos] = useState<{ top: number; left: number } | null>(null);
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -480,8 +568,70 @@ function SortableQuestionRow({
     opacity: isDragging ? 0.4 : 1,
   };
 
+  const triggerOptions: Array<{ label: string; value: boolean | number }> = [];
+  if (isBranchableType(question.answer_type)) {
+    if (question.answer_type === 'boolean') {
+      triggerOptions.push(
+        { label: t('journalQuestions:yes'), value: true },
+        { label: t('journalQuestions:no'), value: false }
+      );
+    } else {
+      for (const c of question.choices) {
+        if (c.id != null) triggerOptions.push({ label: c.label, value: c.id });
+      }
+    }
+  }
+
+  useLayoutEffect(() => {
+    if (!pickerOpen || !addIfBtnRef.current) {
+      setPickerPos(null);
+      return;
+    }
+    const updatePos = () => {
+      const btn = addIfBtnRef.current;
+      if (!btn) return;
+      const rect = btn.getBoundingClientRect();
+      const menuWidth = 320; // w-80
+      const estimatedHeight = 56 + triggerOptions.length * 40;
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const openUp = spaceBelow < estimatedHeight + 8 && rect.top > spaceBelow;
+      const top = openUp ? rect.top - estimatedHeight - 4 : rect.bottom + 4;
+      const left = Math.min(
+        Math.max(8, rect.right - menuWidth),
+        window.innerWidth - menuWidth - 8
+      );
+      setPickerPos({ top, left });
+    };
+    updatePos();
+    window.addEventListener('scroll', updatePos, true);
+    window.addEventListener('resize', updatePos);
+    return () => {
+      window.removeEventListener('scroll', updatePos, true);
+      window.removeEventListener('resize', updatePos);
+    };
+  }, [pickerOpen, triggerOptions.length]);
+
+  const nestMarginRem = depth > 0 ? 1.75 + (depth - 1) * 1.25 : 0;
+
   return (
-    <li ref={setNodeRef} style={style} className="py-3 flex items-center gap-3">
+    <li ref={setNodeRef} style={style} className="py-1.5">
+      <div
+        className={`flex items-center gap-3 py-2.5 pr-1 ${
+          depth > 0
+            ? 'rounded-r-lg border-l-[3px] border-amber-400 dark:border-amber-500 bg-amber-50/50 dark:bg-amber-900/20 pl-3'
+            : 'pl-0'
+        }`}
+        style={nestMarginRem > 0 ? { marginLeft: `${nestMarginRem}rem` } : undefined}
+      >
+        {depth > 0 && (
+          <span
+            className="flex-shrink-0 text-amber-500 dark:text-amber-400 select-none text-base leading-none"
+            aria-hidden
+            title={badge || undefined}
+          >
+            └
+          </span>
+        )}
       <div
         {...attributes}
         {...listeners}
@@ -498,11 +648,72 @@ function SortableQuestionRow({
         >
           {question.label}
         </div>
-        <div className="text-xs text-gray-500">
-          {t(`journalQuestions:types.${question.answer_type}`)}
-          {question.required ? ` · ${t('journalQuestions:required')}` : ''}
+        <div className="text-xs text-gray-500 dark:text-gray-400 flex flex-wrap items-center gap-1.5 mt-0.5">
+          <span>
+            {t(`journalQuestions:types.${question.answer_type}`)}
+            {question.required ? ` · ${t('journalQuestions:required')}` : ''}
+          </span>
+          {badge && (
+            <span className="inline-flex items-center rounded-md bg-amber-100 dark:bg-amber-900/50 px-1.5 py-0.5 text-amber-800 dark:text-amber-200 border border-amber-300 dark:border-amber-700 font-medium">
+              {badge}
+            </span>
+          )}
         </div>
       </div>
+      {triggerOptions.length > 0 && (
+        <>
+          <Tooltip content={t('journalQuestions:addIf')} position="top">
+            <button
+              ref={addIfBtnRef}
+              type="button"
+              onClick={() => setPickerOpen((o) => !o)}
+              className="p-2 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/30 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500"
+              aria-label={t('journalQuestions:addIf')}
+              aria-expanded={pickerOpen}
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+              </svg>
+            </button>
+          </Tooltip>
+          {pickerOpen &&
+            pickerPos &&
+            typeof document !== 'undefined' &&
+            createPortal(
+              <>
+                <div
+                  className="fixed inset-0 z-[80]"
+                  onClick={() => setPickerOpen(false)}
+                  aria-hidden
+                />
+                <div
+                  className="fixed z-[90] w-80 max-w-[calc(100vw-1rem)] rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 shadow-lg py-1"
+                  style={{ top: pickerPos.top, left: pickerPos.left }}
+                  role="menu"
+                >
+                  <div className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400 leading-snug border-b border-gray-100 dark:border-gray-700">
+                    {t('journalQuestions:pickTrigger')}
+                  </div>
+                  {triggerOptions.map((opt) => (
+                    <button
+                      key={String(opt.value)}
+                      type="button"
+                      role="menuitem"
+                      className="w-full text-left px-3 py-2 text-sm text-gray-800 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700"
+                      onClick={() => {
+                        setPickerOpen(false);
+                        onAddIf(question, opt.value);
+                      }}
+                    >
+                      {t('journalQuestions:pickTriggerOption', { label: opt.label })}
+                    </button>
+                  ))}
+                </div>
+              </>,
+              document.body
+            )}
+        </>
+      )}
       <Tooltip content={t('journalQuestions:edit')} position="top">
         <button
           type="button"
@@ -535,6 +746,7 @@ function SortableQuestionRow({
           </svg>
         </button>
       </Tooltip>
+      </div>
     </li>
   );
 }
@@ -547,6 +759,7 @@ function QuestionnaireSection({
   onClone,
   onEdit,
   onDelete,
+  onAddIf,
   onReorder,
   t,
 }: {
@@ -557,9 +770,12 @@ function QuestionnaireSection({
   onClone: () => void;
   onEdit: (q: QuestionnaireQuestion) => void;
   onDelete: (id: number) => void;
+  onAddIf: (parent: QuestionnaireQuestion, value: boolean | number) => void;
   onReorder: (orderedIds: number[]) => void;
   t: any;
 }) {
+  const displayQuestions = sortQuestionsForDisplay(questions);
+  const byId = Object.fromEntries(questions.map((q) => [q.id, q]));
   const [activeId, setActiveId] = useState<number | null>(null);
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -578,13 +794,21 @@ function QuestionnaireSection({
     const { active, over } = event;
     setActiveId(null);
     if (!over || active.id === over.id) return;
-    const oldIndex = questions.findIndex((q) => q.id === active.id);
-    const newIndex = questions.findIndex((q) => q.id === over.id);
+    const activeQ = byId[Number(active.id)];
+    const overQ = byId[Number(over.id)];
+    if (!activeQ || !overQ) return;
+    // Restreindre le DnD aux sœurs (même ancre show_if)
+    const activeAnchor = getAnchorQuestionId(activeQ.show_if);
+    const overAnchor = getAnchorQuestionId(overQ.show_if);
+    if (activeAnchor !== overAnchor) return;
+
+    const oldIndex = displayQuestions.findIndex((q) => q.id === active.id);
+    const newIndex = displayQuestions.findIndex((q) => q.id === over.id);
     if (oldIndex < 0 || newIndex < 0) return;
-    onReorder(arrayMove(questions, oldIndex, newIndex).map((q) => q.id));
+    onReorder(arrayMove(displayQuestions, oldIndex, newIndex).map((q) => q.id));
   };
 
-  const activeQuestion = activeId != null ? questions.find((q) => q.id === activeId) : null;
+  const activeQuestion = activeId != null ? byId[activeId] : null;
 
   return (
     <SettingsSection
@@ -617,7 +841,7 @@ function QuestionnaireSection({
           {t('journalQuestions:newQuestion')}
         </button>
       </div>
-      {questions.length === 0 ? (
+      {displayQuestions.length === 0 ? (
         <p className="text-sm text-gray-500 dark:text-gray-400">{t('journalQuestions:emptyQuestions')}</p>
       ) : (
         <DndContext
@@ -626,14 +850,17 @@ function QuestionnaireSection({
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
         >
-          <SortableContext items={questions.map((q) => q.id)} strategy={verticalListSortingStrategy}>
+          <SortableContext items={displayQuestions.map((q) => q.id)} strategy={verticalListSortingStrategy}>
             <ul className="divide-y divide-gray-200 dark:divide-gray-700">
-              {questions.map((q) => (
+              {displayQuestions.map((q) => (
                 <SortableQuestionRow
                   key={q.id}
                   question={q}
+                  depth={getQuestionDepth(q, byId)}
+                  badge={formatShowIfBadge(q, questions, t)}
                   onEdit={onEdit}
                   onDelete={onDelete}
+                  onAddIf={onAddIf}
                   t={t}
                 />
               ))}
@@ -722,6 +949,7 @@ function EditorModal({
   onClose,
   busy,
   t,
+  siblingQuestions,
 }: {
   editor: EditorState;
   setEditor: React.Dispatch<React.SetStateAction<EditorState | null>>;
@@ -729,6 +957,7 @@ function EditorModal({
   onClose: () => void;
   busy: boolean;
   t: any;
+  siblingQuestions: QuestionnaireQuestion[];
 }) {
   const update = (patch: Partial<EditorState>) =>
     setEditor((prev) => (prev ? { ...prev, ...patch } : prev));
@@ -739,13 +968,63 @@ function EditorModal({
     }
   };
 
+  const branchableSources = siblingQuestions.filter(
+    (q) => isBranchableType(q.answer_type) && q.id !== editor.id && q.is_active
+  );
+
+  const updateShowIf = (rule: ShowIfRule | null) => update({ show_if: rule });
+
+  const setCondition = (index: number, patch: Partial<ShowIfCondition>) => {
+    const current = editor.show_if || { logic: 'and' as const, conditions: [] };
+    const conditions = [...current.conditions];
+    conditions[index] = { ...conditions[index], ...patch };
+    updateShowIf({ ...current, conditions });
+  };
+
+  const addCondition = () => {
+    const first = branchableSources[0];
+    if (!first) return;
+    let defaultValue: boolean | number = true;
+    if (first.answer_type === 'boolean') defaultValue = true;
+    else if (first.choices[0]?.id != null) defaultValue = first.choices[0].id;
+    else return;
+    const current = editor.show_if || { logic: 'and' as const, conditions: [] };
+    updateShowIf({
+      ...current,
+      conditions: [
+        ...current.conditions,
+        { question_id: first.id, operator: 'eq', value: defaultValue },
+      ],
+    });
+  };
+
+  const enableShowIf = (enabled: boolean) => {
+    if (!enabled) {
+      update({ use_show_if: false, show_if: null });
+      return;
+    }
+    const first = branchableSources[0];
+    let defaultValue: boolean | number = true;
+    if (first?.answer_type === 'boolean') defaultValue = true;
+    else if (first?.choices[0]?.id != null) defaultValue = first.choices[0].id;
+    update({
+      use_show_if: true,
+      show_if: first
+        ? {
+            logic: 'and',
+            conditions: [{ question_id: first.id, operator: 'eq', value: defaultValue }],
+          }
+        : { logic: 'and', conditions: [] },
+    });
+  };
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200"
       onClick={handleBackdropClick}
     >
       <div
-        className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col transform transition-all duration-300 animate-in zoom-in-95 slide-in-from-bottom-4 border border-gray-100 dark:border-gray-700 overflow-hidden"
+        className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] flex flex-col transform transition-all duration-300 animate-in zoom-in-95 slide-in-from-bottom-4 border border-gray-100 dark:border-gray-700 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="relative border-b border-blue-100 dark:border-blue-900/40 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 px-6 py-4 flex-shrink-0">
@@ -764,7 +1043,7 @@ function EditorModal({
               type="button"
               onClick={onClose}
               onMouseDown={(e) => e.stopPropagation()}
-              className="absolute top-4 right-3 z-20 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors p-2 hover:bg-white/80 dark:hover:bg-gray-700/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 cursor-pointer"
+              className="absolute top-4 right-3 z-20 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors p-2 hover:bg-white/80 dark:hover:bg-gray-700/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 cursor-pointer"
               aria-label={t('common:close')}
             >
               <svg className="w-6 h-6 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -774,7 +1053,7 @@ function EditorModal({
           )}
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+        <div className="flex-1 overflow-y-auto p-6 space-y-4 text-gray-900 dark:text-gray-100">
           <label className="block text-sm">
             <span className="font-medium text-gray-700 dark:text-gray-300">{t('journalQuestions:label')}</span>
             <input
@@ -830,7 +1109,7 @@ function EditorModal({
                   <input
                     type="number"
                     disabled={busy}
-                    className="mt-1 w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-2 py-1.5 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="mt-1 w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-2 py-1.5 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     value={editor.config[key] != null ? Number(editor.config[key]) : ''}
                     onChange={(e) =>
                       update({
@@ -864,7 +1143,7 @@ function EditorModal({
                 </button>
               </div>
               {editor.choices.map((choice, index) => (
-                <div key={index} className="flex gap-2 items-center">
+                <div key={choice.id ?? `new-${index}`} className="flex gap-2 items-center">
                   <input
                     disabled={busy}
                     className="flex-1 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-2 py-1.5 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -892,15 +1171,206 @@ function EditorModal({
           )}
 
           {editor.mode === 'instance' && (
-            <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-              <input
-                type="checkbox"
-                checked={editor.required}
+            <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+              <span>{t('journalQuestions:required')}</span>
+              <SettingsStyleToggle
+                pressed={editor.required}
+                onPressedChange={(next) => update({ required: next })}
                 disabled={busy}
-                onChange={(e) => update({ required: e.target.checked })}
               />
-              {t('journalQuestions:required')}
-            </label>
+            </div>
+          )}
+
+          {editor.mode === 'instance' && branchableSources.length > 0 && (
+            <div className="rounded-lg border border-gray-200 dark:border-gray-600 p-3 space-y-3">
+              <div>
+                <div className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                  {t('journalQuestions:showIfSection')}
+                </div>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 leading-snug">
+                  {t('journalQuestions:showIfHint')}
+                </p>
+              </div>
+              <div className="flex flex-col gap-2 text-sm text-gray-700 dark:text-gray-300">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="show_if_mode"
+                    checked={!editor.use_show_if}
+                    disabled={busy}
+                    onChange={() => enableShowIf(false)}
+                  />
+                  {t('journalQuestions:showAlways')}
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="show_if_mode"
+                    checked={editor.use_show_if}
+                    disabled={busy}
+                    onChange={() => enableShowIf(true)}
+                  />
+                  {t('journalQuestions:showIf')}
+                </label>
+              </div>
+
+              {editor.use_show_if && editor.show_if && (
+                <div className="space-y-3 pl-1 border-l-2 border-amber-300 dark:border-amber-700 ml-1">
+                  <p className="text-xs font-medium text-gray-600 dark:text-gray-400 pl-3">
+                    {t('journalQuestions:showIfWhen')}
+                  </p>
+
+                  {editor.show_if.conditions.map((cond, index) => {
+                    const source =
+                      branchableSources.find((q) => q.id === cond.question_id) ||
+                      siblingQuestions.find((q) => q.id === cond.question_id);
+                    return (
+                      <div key={index} className="pl-3 space-y-2">
+                        {index > 0 && (
+                          <div className="text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">
+                            {editor.show_if!.logic === 'or'
+                              ? t('journalQuestions:logicOrBadge')
+                              : t('journalQuestions:logicAndBadge')}
+                          </div>
+                        )}
+                        <div className="rounded-md bg-gray-50 dark:bg-gray-900/40 p-2.5 space-y-2">
+                          <div className="flex items-start gap-2">
+                            <span className="mt-2 text-xs font-medium text-gray-500 dark:text-gray-400 flex-shrink-0">
+                              {t('journalQuestions:conditionIf')}
+                            </span>
+                            <div className="flex-1 min-w-0">
+                              <CustomSelect
+                                value={String(cond.question_id)}
+                                disabled={busy}
+                                onChange={(v) => {
+                                  const qid = Number(v);
+                                  const src = branchableSources.find((q) => q.id === qid);
+                                  let value: boolean | number = true;
+                                  if (src?.answer_type === 'boolean') value = true;
+                                  else if (src?.choices[0]?.id != null) value = src.choices[0].id;
+                                  setCondition(index, {
+                                    question_id: qid,
+                                    value,
+                                    operator: 'eq',
+                                  });
+                                }}
+                                options={branchableSources.map((q) => ({
+                                  value: String(q.id),
+                                  label: q.label,
+                                }))}
+                              />
+                            </div>
+                            {editor.show_if!.conditions.length > 1 && (
+                              <button
+                                type="button"
+                                disabled={busy}
+                                aria-label={t('journalQuestions:removeCondition')}
+                                className="mt-0.5 w-9 h-9 flex-shrink-0 inline-flex items-center justify-center rounded-lg text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20"
+                                onClick={() => {
+                                  const conditions = editor.show_if!.conditions.filter(
+                                    (_, i) => i !== index
+                                  );
+                                  updateShowIf({ ...editor.show_if!, conditions });
+                                }}
+                              >
+                                <svg
+                                  className="w-4 h-4"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M6 18L18 6M6 6l12 12"
+                                  />
+                                </svg>
+                              </button>
+                            )}
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 pl-0 sm:pl-6">
+                            <CustomSelect
+                              value={cond.operator}
+                              disabled={busy}
+                              onChange={(v) =>
+                                setCondition(index, { operator: v === 'neq' ? 'neq' : 'eq' })
+                              }
+                              options={[
+                                { value: 'eq', label: t('journalQuestions:operatorEq') },
+                                { value: 'neq', label: t('journalQuestions:operatorNeq') },
+                              ]}
+                            />
+                            {source?.answer_type === 'boolean' ? (
+                              <CustomSelect
+                                value={cond.value === true ? 'true' : 'false'}
+                                disabled={busy}
+                                onChange={(v) => setCondition(index, { value: v === 'true' })}
+                                options={[
+                                  { value: 'true', label: t('journalQuestions:yes') },
+                                  { value: 'false', label: t('journalQuestions:no') },
+                                ]}
+                              />
+                            ) : (
+                              <CustomSelect
+                                value={String(cond.value)}
+                                disabled={busy}
+                                onChange={(v) => setCondition(index, { value: Number(v) })}
+                                options={(source?.choices || [])
+                                  .filter((c) => c.id != null)
+                                  .map((c) => ({
+                                    value: String(c.id),
+                                    label: c.label,
+                                  }))}
+                              />
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {editor.show_if.conditions.length >= 2 && (
+                    <div className="pl-3 space-y-1.5 text-sm text-gray-700 dark:text-gray-300">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {t('journalQuestions:logicExplain')}
+                      </p>
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="radio"
+                          name="show_if_logic"
+                          checked={editor.show_if.logic !== 'or'}
+                          disabled={busy}
+                          onChange={() => updateShowIf({ ...editor.show_if!, logic: 'and' })}
+                        />
+                        {t('journalQuestions:logicAnd')}
+                      </label>
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="radio"
+                          name="show_if_logic"
+                          checked={editor.show_if.logic === 'or'}
+                          disabled={busy}
+                          onChange={() => updateShowIf({ ...editor.show_if!, logic: 'or' })}
+                        />
+                        {t('journalQuestions:logicOr')}
+                      </label>
+                    </div>
+                  )}
+
+                  <div className="pl-3">
+                    <button
+                      type="button"
+                      disabled={busy || branchableSources.length === 0}
+                      className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline disabled:opacity-50"
+                      onClick={addCondition}
+                    >
+                      {t('journalQuestions:addCondition')}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           )}
 
           <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
@@ -966,7 +1436,7 @@ function ClonePickerModal({
       onClick={handleBackdropClick}
     >
       <div
-        className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col transform transition-all duration-300 animate-in zoom-in-95 slide-in-from-bottom-4 border border-gray-100 dark:border-gray-700 overflow-hidden"
+        className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col transform transition-all duration-300 animate-in zoom-in-95 slide-in-from-bottom-4 border border-gray-100 dark:border-gray-700 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="relative border-b border-blue-100 dark:border-blue-900/40 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 px-6 py-4 flex-shrink-0">
@@ -984,7 +1454,7 @@ function ClonePickerModal({
             type="button"
             onClick={onClose}
             onMouseDown={(e) => e.stopPropagation()}
-            className="absolute top-4 right-3 z-20 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors p-2 hover:bg-white/80 dark:hover:bg-gray-700/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 cursor-pointer"
+            className="absolute top-4 right-3 z-20 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors p-2 hover:bg-white/80 dark:hover:bg-gray-700/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 cursor-pointer"
             aria-label={t('common:close')}
           >
             <svg className="w-6 h-6 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -1002,7 +1472,7 @@ function ClonePickerModal({
               {templates.map((tpl) => (
                 <li key={tpl.id} className="px-3 py-2.5 flex items-center justify-between gap-2">
                   <div className="min-w-0">
-                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{tpl.label}</div>
+                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100 break-words">{tpl.label}</div>
                     <div className="text-xs text-gray-500">{t(`journalQuestions:types.${tpl.answer_type}`)}</div>
                   </div>
                   <button

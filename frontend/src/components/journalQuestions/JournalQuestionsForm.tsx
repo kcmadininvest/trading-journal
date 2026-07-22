@@ -12,6 +12,7 @@ import {
   QuestionnaireScope,
   journalQuestionsService,
 } from '../../services/journalQuestions';
+import { isQuestionVisible } from '../../utils/questionnaireVisibility';
 
 interface JournalQuestionsFormProps {
   scope: QuestionnaireScope;
@@ -44,6 +45,11 @@ export const JournalQuestionsForm: React.FC<JournalQuestionsFormProps> = ({
   const [values, setValues] = useState<Record<number, unknown>>({});
   const valuesRef = useRef(values);
   valuesRef.current = values;
+
+  const questionsById = Object.fromEntries(questions.map((q) => [q.id, q]));
+  const visibleQuestions = questions.filter((q) =>
+    isQuestionVisible(q, values, questionsById)
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -96,13 +102,25 @@ export const JournalQuestionsForm: React.FC<JournalQuestionsFormProps> = ({
     setSuccess(null);
     try {
       const currentValues = valuesRef.current;
-      const answersPayload = questions
-        .map((q) => ({ question_id: q.id, value: currentValues[q.id] ?? null }))
-        .filter((a) => {
-          if (a.value === null || a.value === '') return false;
-          if (Array.isArray(a.value) && a.value.length === 0) return false;
-          return true;
-        });
+      const byId = Object.fromEntries(questions.map((q) => [q.id, q]));
+      const visibleIds = new Set(
+        questions
+          .filter((q) => isQuestionVisible(q, currentValues, byId))
+          .map((q) => q.id)
+      );
+
+      const answersPayload = questions.map((q) => {
+        if (!visibleIds.has(q.id)) {
+          // null explicite pour que le bulk efface les réponses masquées
+          return { question_id: q.id, value: null };
+        }
+        return { question_id: q.id, value: currentValues[q.id] ?? null };
+      }).filter((a) => {
+        if (!visibleIds.has(a.question_id)) return true; // garder null pour masquées
+        if (a.value === null || a.value === '') return false;
+        if (Array.isArray(a.value) && a.value.length === 0) return false;
+        return true;
+      });
 
       await journalQuestionsService.bulkSaveAnswers({
         scope,
@@ -170,7 +188,7 @@ export const JournalQuestionsForm: React.FC<JournalQuestionsFormProps> = ({
         </div>
       )}
 
-      {questions.map((q) => (
+      {visibleQuestions.map((q) => (
         <div key={q.id} className="space-y-1.5">
           <label className="block text-sm font-medium text-gray-800 dark:text-gray-200">
             {q.label}
@@ -286,7 +304,7 @@ const QuestionField: React.FC<QuestionFieldProps> = ({
             const raw = e.target.value;
             onChange(raw === '' ? null : Number(raw));
           }}
-          className={`${inputClass} max-w-[160px]`}
+          className={`${inputClass} max-w-[160px] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
         />
         {value != null && value !== '' && (
           <span className="text-xs text-gray-500">

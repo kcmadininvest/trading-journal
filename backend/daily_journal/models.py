@@ -22,6 +22,8 @@ QUESTIONNAIRE_SCOPE_CHOICES = [
 ]
 
 CHOICE_ANSWER_TYPES = frozenset({'single_choice', 'multiple_choice'})
+BRANCHABLE_ANSWER_TYPES = frozenset({'boolean', 'single_choice', 'multiple_choice'})
+SHOW_IF_MAX_CONDITIONS = 10
 
 
 def daily_journal_image_path(instance, filename: str) -> str:
@@ -234,6 +236,13 @@ class QuestionnaireQuestion(models.Model):
     required = models.BooleanField(default=False, verbose_name='Obligatoire')
     order = models.PositiveIntegerField(default=0, verbose_name='Ordre')
     is_active = models.BooleanField(default=True, verbose_name='Actif')
+    show_if = models.JSONField(
+        null=True,
+        blank=True,
+        default=None,
+        verbose_name='Condition d\'affichage',
+        help_text='{"logic":"and|or","conditions":[{"question_id":…,"operator":"eq|neq","value":…}]}',
+    )
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Créé le')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='Modifié le')
 
@@ -247,6 +256,13 @@ class QuestionnaireQuestion(models.Model):
 
     def __str__(self) -> str:
         return self.label
+
+    def clean(self):
+        from .conditional_visibility import django_validate_show_if
+
+        super().clean()
+        if self.questionnaire_id:
+            django_validate_show_if(self)
 
 
 class QuestionnaireQuestionChoice(models.Model):

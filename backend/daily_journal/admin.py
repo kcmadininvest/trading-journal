@@ -53,7 +53,7 @@ class QuestionnaireQuestionChoiceInline(admin.TabularInline):
 class QuestionnaireQuestionInline(admin.TabularInline):
     model = QuestionnaireQuestion
     extra = 0
-    fields = ('label', 'answer_type', 'required', 'order', 'is_active', 'source_template')
+    fields = ('label', 'answer_type', 'required', 'order', 'is_active', 'show_if', 'source_template')
     show_change_link = True
 
 

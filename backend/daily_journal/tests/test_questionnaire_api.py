@@ -283,6 +283,244 @@ class QuestionnaireApiTests(APITestCase):
             question=choice_q, date=date(2026, 7, 18), trading_account=self.account
         )
         self.assertEqual(existing.value, choice.id)
+
+    def test_show_if_create_and_visibility_bulk(self):
+        questionnaire = Questionnaire.get_or_create_for_scope(self.user, 'day')
+        parent = QuestionnaireQuestion.objects.create(
+            questionnaire=questionnaire,
+            label='Plan OK?',
+            answer_type='boolean',
+            order=0,
+        )
+        create_url = f'/api/daily-journal/questionnaires/{questionnaire.id}/questions/'
+        child_res = self.client.post(
+            create_url,
+            {
+                'label': 'Pourquoi?',
+                'answer_type': 'text',
+                'required': True,
+                'show_if': {
+                    'logic': 'and',
+                    'conditions': [
+                        {'question_id': parent.id, 'operator': 'eq', 'value': True},
+                    ],
+                },
+            },
+            format='json',
+        )
+        self.assertEqual(child_res.status_code, status.HTTP_201_CREATED, child_res.data)
+        child_id = child_res.data['id']
+        self.assertEqual(child_res.data['show_if']['conditions'][0]['value'], True)
+
+        # Parent = Non → enfant masqué : required ignoré, pas de réponse enfant
+        bulk = self.client.put(
+            '/api/daily-journal/answers/bulk/',
+            {
+                'scope': 'day',
+                'date': '2026-07-20',
+                'trading_account': self.account.id,
+                'answers': [
+                    {'question_id': parent.id, 'value': False},
+                    {'question_id': child_id, 'value': None},
+                ],
+            },
+            format='json',
+        )
+        self.assertEqual(bulk.status_code, status.HTTP_200_OK, bulk.data)
+        self.assertFalse(
+            QuestionnaireAnswer.objects.filter(question_id=child_id, date=date(2026, 7, 20)).exists()
+        )
+
+        # Parent = Oui → enfant requis
+        missing = self.client.put(
+            '/api/daily-journal/answers/bulk/',
+            {
+                'scope': 'day',
+                'date': '2026-07-20',
+                'trading_account': self.account.id,
+                'answers': [
+                    {'question_id': parent.id, 'value': True},
+                    {'question_id': child_id, 'value': None},
+                ],
+            },
+            format='json',
+        )
+        self.assertEqual(missing.status_code, status.HTTP_400_BAD_REQUEST)
+
+        ok = self.client.put(
+            '/api/daily-journal/answers/bulk/',
+            {
+                'scope': 'day',
+                'date': '2026-07-20',
+                'trading_account': self.account.id,
+                'answers': [
+                    {'question_id': parent.id, 'value': True},
+                    {'question_id': child_id, 'value': 'Parce que'},
+                ],
+            },
+            format='json',
+        )
+        self.assertEqual(ok.status_code, status.HTTP_200_OK, ok.data)
+        self.assertTrue(
+            QuestionnaireAnswer.objects.filter(question_id=child_id, date=date(2026, 7, 20)).exists()
+        )
+
+        # Repasser parent à Non efface la réponse enfant
+        cleared = self.client.put(
+            '/api/daily-journal/answers/bulk/',
+            {
+                'scope': 'day',
+                'date': '2026-07-20',
+                'trading_account': self.account.id,
+                'answers': [
+                    {'question_id': parent.id, 'value': False},
+                    {'question_id': child_id, 'value': None},
+                ],
+            },
+            format='json',
+        )
+        self.assertEqual(cleared.status_code, status.HTTP_200_OK)
+        self.assertFalse(
+            QuestionnaireAnswer.objects.filter(question_id=child_id, date=date(2026, 7, 20)).exists()
+        )
+
+    def test_show_if_neq_and_or_and_cycle(self):
+        questionnaire = Questionnaire.get_or_create_for_scope(self.user, 'day')
+        from daily_journal.models import QuestionnaireQuestionChoice
+
+        parent = QuestionnaireQuestion.objects.create(
+            questionnaire=questionnaire,
+            label='Émotion',
+            answer_type='single_choice',
+            order=0,
+        )
+        calm = QuestionnaireQuestionChoice.objects.create(question=parent, label='Calme', order=0)
+        stress = QuestionnaireQuestionChoice.objects.create(question=parent, label='Stress', order=1)
+
+        create_url = f'/api/daily-journal/questionnaires/{questionnaire.id}/questions/'
+        child = self.client.post(
+            create_url,
+            {
+                'label': 'Détails stress',
+                'answer_type': 'text',
+                'show_if': {
+                    'logic': 'or',
+                    'conditions': [
+                        {'question_id': parent.id, 'operator': 'neq', 'value': calm.id},
+                    ],
+                },
+            },
+            format='json',
+        )
+        self.assertEqual(child.status_code, status.HTTP_201_CREATED, child.data)
+        child_id = child.data['id']
+
+        # Auto-référence
+        bad_self = self.client.patch(
+            reverse('daily_journal:questionnaire-question-detail', kwargs={'pk': child_id}),
+            {
+                'show_if': {
+                    'logic': 'and',
+                    'conditions': [
+                        {'question_id': child_id, 'operator': 'eq', 'value': True},
+                    ],
+                }
+            },
+            format='json',
+        )
+        self.assertEqual(bad_self.status_code, status.HTTP_400_BAD_REQUEST)
+
+        # Cycle A→B→A : B dépend de parent, parent ne peut pas dépendre de B
+        b = QuestionnaireQuestion.objects.create(
+            questionnaire=questionnaire,
+            label='B',
+            answer_type='boolean',
+            order=10,
+            show_if={
+                'logic': 'and',
+                'conditions': [{'question_id': parent.id, 'operator': 'eq', 'value': True}],
+            },
+        )
+        cycle = self.client.patch(
+            reverse('daily_journal:questionnaire-question-detail', kwargs={'pk': parent.id}),
+            {
+                'show_if': {
+                    'logic': 'and',
+                    'conditions': [
+                        {'question_id': b.id, 'operator': 'eq', 'value': True},
+                    ],
+                }
+            },
+            format='json',
+        )
+        self.assertEqual(cycle.status_code, status.HTTP_400_BAD_REQUEST)
+
+        # neq : Calme → enfant masqué ; Stress → visible
+        hide = self.client.put(
+            '/api/daily-journal/answers/bulk/',
+            {
+                'scope': 'day',
+                'date': '2026-07-21',
+                'trading_account': self.account.id,
+                'answers': [
+                    {'question_id': parent.id, 'value': calm.id},
+                    {'question_id': child_id, 'value': None},
+                ],
+            },
+            format='json',
+        )
+        self.assertEqual(hide.status_code, status.HTTP_200_OK)
+        show = self.client.put(
+            '/api/daily-journal/answers/bulk/',
+            {
+                'scope': 'day',
+                'date': '2026-07-21',
+                'trading_account': self.account.id,
+                'answers': [
+                    {'question_id': parent.id, 'value': stress.id},
+                    {'question_id': child_id, 'value': 'détail'},
+                ],
+            },
+            format='json',
+        )
+        self.assertEqual(show.status_code, status.HTTP_200_OK, show.data)
+
+    def test_soft_delete_deactivates_dependents(self):
+        questionnaire = Questionnaire.get_or_create_for_scope(self.user, 'day')
+        parent = QuestionnaireQuestion.objects.create(
+            questionnaire=questionnaire,
+            label='Parent',
+            answer_type='boolean',
+            order=0,
+        )
+        child = QuestionnaireQuestion.objects.create(
+            questionnaire=questionnaire,
+            label='Child',
+            answer_type='text',
+            order=1,
+            show_if={
+                'logic': 'and',
+                'conditions': [{'question_id': parent.id, 'operator': 'eq', 'value': True}],
+            },
+        )
+        QuestionnaireAnswer.objects.create(
+            user=self.user,
+            question=parent,
+            trading_account=self.account,
+            date=date(2026, 7, 22),
+            value=True,
+            question_label_snapshot='Parent',
+            answer_type_snapshot='boolean',
+        )
+        res = self.client.delete(
+            reverse('daily_journal:questionnaire-question-detail', kwargs={'pk': parent.id})
+        )
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        parent.refresh_from_db()
+        child.refresh_from_db()
+        self.assertFalse(parent.is_active)
+        self.assertFalse(child.is_active)
+
     def test_cannot_access_other_user_template(self):
         tpl = QuestionTemplate.objects.create(
             user=self.other,

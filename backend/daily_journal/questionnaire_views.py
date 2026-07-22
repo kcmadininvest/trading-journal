@@ -172,10 +172,19 @@ class QuestionnaireQuestionViewSet(viewsets.ModelViewSet):
         return ctx
 
     def destroy(self, request, *args, **kwargs):
+        from .conditional_visibility import (
+            collect_dependency_ids,
+            deactivate_dependent_questions,
+        )
+
         instance = self.get_object()
+        questionnaire_id = instance.questionnaire_id
+        target_id = instance.id
+
         if instance.answers.exists():
             instance.is_active = False
             instance.save(update_fields=['is_active', 'updated_at'])
+            deactivate_dependent_questions(instance)
             return Response(
                 {
                     'detail': 'Question désactivée (des réponses existent).',
@@ -183,6 +192,26 @@ class QuestionnaireQuestionViewSet(viewsets.ModelViewSet):
                 },
                 status=status.HTTP_200_OK,
             )
+
+        deactivate_dependent_questions(instance)
+        # Nettoyer show_if des questions qui référençaient encore cette id
+        for q in QuestionnaireQuestion.objects.filter(questionnaire_id=questionnaire_id):
+            show_if = q.show_if if isinstance(q.show_if, dict) else None
+            if target_id not in collect_dependency_ids(show_if):
+                continue
+            conditions = [
+                c
+                for c in (show_if or {}).get('conditions', [])
+                if c.get('question_id') != target_id
+            ]
+            q.show_if = (
+                {'logic': (show_if or {}).get('logic', 'and'), 'conditions': conditions}
+                if conditions
+                else None
+            )
+            q.is_active = False
+            q.save(update_fields=['show_if', 'is_active', 'updated_at'])
+
         instance.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 

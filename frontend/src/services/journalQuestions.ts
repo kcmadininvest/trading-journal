@@ -1,5 +1,8 @@
 import { getApiBaseUrl } from '../utils/apiConfig';
 import { authService } from './auth';
+import type { ShowIfRule } from '../utils/questionnaireVisibility';
+
+export type { ShowIfRule, ShowIfCondition, ShowIfLogic, ShowIfOperator } from '../utils/questionnaireVisibility';
 
 export type AnswerType =
   | 'boolean'
@@ -41,6 +44,7 @@ export interface QuestionnaireQuestion {
   required: boolean;
   order: number;
   is_active: boolean;
+  show_if?: ShowIfRule | null;
   choices: QuestionChoice[];
   created_at: string;
   updated_at: string;

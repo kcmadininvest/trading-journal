@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { journalQuestionsService } from '../../services/journalQuestions';
+import { isQuestionVisible } from '../../utils/questionnaireVisibility';
 
 interface JournalQuestionsStatusLinkProps {
   date: string;
@@ -30,16 +31,30 @@ export const JournalQuestionsStatusLink: React.FC<JournalQuestionsStatusLinkProp
           trading_account: tradingAccountId,
         });
         if (cancelled) return;
-        const activeCount = payload.questions.filter((q) => q.is_active).length;
-        const answeredCount = payload.answers.filter((a) => {
-          const q = payload.questions.find((qq) => qq.id === a.question_id);
-          return q && (q.is_active || true) && a.value !== null && a.value !== '';
+
+        const questionsById = Object.fromEntries(
+          payload.questions.map((q) => [q.id, q])
+        );
+        const answersByQid: Record<number, unknown> = {};
+        for (const a of payload.answers) {
+          answersByQid[a.question_id] = a.value;
+        }
+
+        const activeVisible = payload.questions.filter(
+          (q) => q.is_active && isQuestionVisible(q, answersByQid, questionsById)
+        );
+        const answeredCount = activeVisible.filter((q) => {
+          const value = answersByQid[q.id];
+          if (value === null || value === undefined || value === '') return false;
+          if (Array.isArray(value) && value.length === 0) return false;
+          return true;
         }).length;
-        if (activeCount === 0 && payload.answers.length === 0) {
+
+        if (activeVisible.length === 0 && payload.answers.length === 0) {
           setVisible(false);
           return;
         }
-        setTotal(Math.max(activeCount, payload.questions.length));
+        setTotal(activeVisible.length);
         setAnswered(answeredCount);
         setVisible(true);
       } catch {
