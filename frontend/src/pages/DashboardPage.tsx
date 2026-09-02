@@ -171,7 +171,8 @@ const getPerformanceLabel = (
 };
 
 /** Seuils d'agrégation automatique pour le graphique waterfall (affichage uniquement). */
-const WATERFALL_DAILY_BAR_MAX = 90;
+const WATERFALL_DAILY_BAR_MAX = 60;
+const WATERFALL_CALENDAR_SPAN_DAYS_MAX = 120;
 const WATERFALL_WEEKLY_AGGREGATE_MAX_DAYS = 730;
 const BALANCE_DAILY_POINT_MAX = 180;
 const BALANCE_WEEKLY_AGGREGATE_MAX_DAYS = 730;
@@ -195,6 +196,13 @@ interface WaterfallDisplayPoint extends WaterfallDailyPoint {
   aggregation: WaterfallAggregation;
   rangeStartKey: string;
   rangeEndKey: string;
+}
+
+/** Nombre de jours civils entre deux clés ISO YYYY-MM-DD (inclusif). */
+function calendarSpanDays(firstKey: string, lastKey: string): number {
+  const a = Date.UTC(+firstKey.slice(0, 4), +firstKey.slice(5, 7) - 1, +firstKey.slice(8, 10));
+  const b = Date.UTC(+lastKey.slice(0, 4), +lastKey.slice(5, 7) - 1, +lastKey.slice(8, 10));
+  return Math.round((b - a) / 86400000) + 1;
 }
 
 /** Lundi ISO (UTC) pour regrouper les jours civils YYYY-MM-DD. */
@@ -1038,6 +1046,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     const tz = preferences.timezone;
     const firstKey = daily[0].dateKey;
     const lastKey = daily[daily.length - 1].dateKey;
+    const spanDays = calendarSpanDays(firstKey, lastKey);
     const spanMultipleYears = firstKey.slice(0, 4) !== lastKey.slice(0, 4);
     const includeYearOnDayLabels = spanMultipleYears || daily.length > 365;
 
@@ -1049,7 +1058,10 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       rangeEndKey: row.dateKey,
     });
 
-    if (daily.length <= WATERFALL_DAILY_BAR_MAX) {
+    const useDailyBars =
+      daily.length <= WATERFALL_DAILY_BAR_MAX && spanDays <= WATERFALL_CALENDAR_SPAN_DAYS_MAX;
+
+    if (useDailyBars) {
       return { rows: daily.map(wrapDay), mode: 'day' as WaterfallAggregation };
     }
 
