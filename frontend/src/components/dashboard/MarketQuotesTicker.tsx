@@ -8,6 +8,7 @@ import { getPriceFlashDirection, type PriceFlashDirection } from '../../utils/ma
 import {
   formatMarketQuoteChangePercent,
   formatMarketQuotePrice,
+  quotePriceDecimalPlaces,
 } from '../../utils/marketQuotesFormat';
 import { MarketQuoteInstrumentIcon } from './marketQuoteIcons';
 import { quoteIconContainerClass } from './quoteIconContainerClass';
@@ -68,15 +69,20 @@ function QuoteRow({
   const [flash, setFlash] = useState<PriceFlashDirection>(null);
 
   useEffect(() => {
-    const direction = getPriceFlashDirection(prevPriceRef.current, quote.last_price);
+    const decimals = quotePriceDecimalPlaces(quote.key);
+    const direction = getPriceFlashDirection(
+      prevPriceRef.current,
+      quote.last_price,
+      decimals,
+    );
     prevPriceRef.current = quote.last_price;
     if (direction === null) {
       return;
     }
     setFlash(direction);
-    const timer = window.setTimeout(() => setFlash(null), 500);
+    const timer = window.setTimeout(() => setFlash(null), 450);
     return () => window.clearTimeout(timer);
-  }, [quote.last_price]);
+  }, [quote.key, quote.last_price]);
 
   const label =
     t(`dashboard:marketQuotes.instruments.${quote.key}`, { defaultValue: quote.label }) ||
@@ -210,36 +216,18 @@ export const MarketQuotesTicker: React.FC = () => {
       <StatusContent message={statusMessage} pulse={statusPulse} />
     </div>
   ) : (
-    <>
-      <div className={TICKER_ROW_CLASS} aria-live="polite">
-        <LiveStatus live={isLive} />
-        <VerticalRule />
-        {quotes.map((quote, index) => (
-          <QuoteRow
-            key={quote.key}
-            quote={quote}
-            numberFormat={numberFormat}
-            showSeparator={index < quotes.length - 1}
-          />
-        ))}
-      </div>
-      <style>{`
-        @keyframes marketQuoteFlashUp {
-          0% { background-color: rgba(52, 211, 153, 0.45); }
-          100% { background-color: transparent; }
-        }
-        @keyframes marketQuoteFlashDown {
-          0% { background-color: rgba(248, 113, 113, 0.45); }
-          100% { background-color: transparent; }
-        }
-        .market-quote-flash-up {
-          animation: marketQuoteFlashUp 0.5s ease-out;
-        }
-        .market-quote-flash-down {
-          animation: marketQuoteFlashDown 0.5s ease-out;
-        }
-      `}</style>
-    </>
+    <div className={TICKER_ROW_CLASS} aria-live="polite">
+      <LiveStatus live={isLive} />
+      <VerticalRule />
+      {quotes.map((quote, index) => (
+        <QuoteRow
+          key={quote.key}
+          quote={quote}
+          numberFormat={numberFormat}
+          showSeparator={index < quotes.length - 1}
+        />
+      ))}
+    </div>
   );
 
   return <TickerShell ariaLabel={tickerTitle}>{tickerContent}</TickerShell>;

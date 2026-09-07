@@ -2,7 +2,7 @@ import React from 'react';
 
 /** Dégradé bleu nuit — réservé aux cotations live (MarketQuotesTicker). */
 export const BAND_SHELL_VISUAL =
-  'w-full min-w-0 rounded-xl border border-white/10 bg-gradient-to-r from-[#0f172a] via-[#172554] to-[#0f172a] shadow-lg shadow-blue-950/30 text-white backdrop-blur-xl dark:from-slate-950 dark:via-blue-950 dark:to-slate-950';
+  'w-full min-w-0 rounded-xl border border-white/10 bg-gradient-to-r from-[#0f172a] via-[#172554] to-[#0f172a] shadow-lg shadow-blue-950/30 text-white dark:from-slate-950 dark:via-blue-950 dark:to-slate-950';
 
 /** Cartes dashboard (filtres, panneaux, stats) — fond uni, pas de dégradé. */
 export const DASHBOARD_CARD_SHELL =

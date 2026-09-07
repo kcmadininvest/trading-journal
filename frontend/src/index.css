@@ -287,6 +287,37 @@ html.font-size-large {
   animation: fadeIn 0.2s ease-in;
 }
 
+/*
+  Flash prix du bandeau cotations.
+  Ne pas animer vers `transparent` : certains moteurs interpolent via du blanc
+  (flash très visible sur fond sombre). Finir sur la même teinte à alpha 0.
+*/
+@keyframes marketQuoteFlashUp {
+  0% {
+    background-color: rgba(52, 211, 153, 0.28);
+  }
+  100% {
+    background-color: rgba(52, 211, 153, 0);
+  }
+}
+
+@keyframes marketQuoteFlashDown {
+  0% {
+    background-color: rgba(248, 113, 113, 0.28);
+  }
+  100% {
+    background-color: rgba(248, 113, 113, 0);
+  }
+}
+
+.market-quote-flash-up {
+  animation: marketQuoteFlashUp 0.45s ease-out;
+}
+
+.market-quote-flash-down {
+  animation: marketQuoteFlashDown 0.45s ease-out;
+}
+
 /* Safe area pour mobile */
 .safe-area-bottom {
   padding-bottom: env(safe-area-inset-bottom);

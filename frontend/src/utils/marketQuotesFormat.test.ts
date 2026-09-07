@@ -42,4 +42,10 @@ describe('marketQuote flash', () => {
   it('ignores first render', () => {
     expect(getPriceFlashDirection(undefined, 100)).toBe(null);
   });
+
+  it('ignores changes below display precision', () => {
+    expect(getPriceFlashDirection(100.001, 100.004, 2)).toBe(null);
+    expect(getPriceFlashDirection(1.16501, 1.16504, 4)).toBe(null);
+    expect(getPriceFlashDirection(100.0, 100.01, 2)).toBe('up');
+  });
 });
