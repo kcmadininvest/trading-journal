@@ -372,7 +372,7 @@ function StrategyList({
       .filter((item) => item.position_strategy)
       .map((item) => [item.position_strategy as number, item])
   );
-  if (loading) return <p className="text-sm text-gray-500">{t('loading')}</p>;
+  if (loading) return <p className="text-sm text-gray-500 dark:text-gray-400">{t('loading')}</p>;
   if (positionStrategies.length === 0) return null;
   return (
     <div className="grid gap-3 md:grid-cols-2">
@@ -388,13 +388,13 @@ function StrategyList({
             <div className="flex items-start justify-between gap-2">
               <h2 className="font-medium text-gray-900 dark:text-gray-100">{item.title}</h2>
               {journal?.campaign_count ? (
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-gray-500 dark:text-gray-400">
                   {journal.campaign_count} {t('campaigns').toLowerCase()}
                 </span>
               ) : null}
             </div>
             {item.description && (
-              <p className="mt-1 text-sm text-gray-500">{item.description}</p>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{item.description}</p>
             )}
           </button>
         );
@@ -502,7 +502,7 @@ function CampaignWorkspace({
     <div className="flex min-h-0 flex-1 flex-col gap-4">
       <section className={`${replayCardClass} space-y-3 p-4`}>
         <div className="grid gap-3 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1.2fr)_minmax(12rem,1fr)]">
-          <label className="text-sm">
+          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
             {t('selectStrategy')}
             <div className="mt-1">
               <CustomSelect
@@ -517,7 +517,7 @@ function CampaignWorkspace({
               />
             </div>
           </label>
-          <label className="text-sm">
+          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
             {t('selectCampaign')}
             <div className="mt-1">
               <CustomSelect
@@ -531,7 +531,7 @@ function CampaignWorkspace({
               />
             </div>
           </label>
-          <label className="text-sm">
+          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
             {t('instrument')}
             <InstrumentPicker value={instrument} onChange={setInstrument} />
             {savingInstrument && (
@@ -663,22 +663,22 @@ function CampaignSection({
   return (
     <section className="space-y-3">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="font-medium">{t('campaigns')}</h2>
+        <h2 className="font-medium text-gray-900 dark:text-gray-100">{t('campaigns')}</h2>
         <button type="button" className={replayPrimaryButtonClass} onClick={startCreate} disabled={!version}>
           {t('newCampaign')}
         </button>
       </div>
       <p className="text-sm text-gray-500 dark:text-gray-400">{t('campaignsHint')}</p>
       {campaigns.length === 0 && (
-        <p className="text-sm text-gray-500">{t('emptyCampaigns')}</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">{t('emptyCampaigns')}</p>
       )}
       <div className="grid gap-3 md:grid-cols-2">
         {campaigns.map((item) => (
           <div key={item.id} className={`${replayCardClass} p-4`}>
             <button type="button" className="w-full text-left" onClick={() => onOpen(item.id)}>
-              <h3 className="font-medium">{item.name}</h3>
-              <p className="text-sm text-gray-500">{item.instrument || '—'}</p>
-              <p className="text-xs text-gray-400">
+              <h3 className="font-medium text-gray-900 dark:text-gray-100">{item.name}</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{item.instrument || '—'}</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500">
                 {formatDate(item.period_start, preferences.date_format, false, preferences.timezone)}
                 {' → '}
                 {formatDate(item.period_end, preferences.date_format, false, preferences.timezone)}
@@ -728,20 +728,20 @@ function CampaignSection({
       {open && version && (
         <div className={`${replayCardClass} space-y-3 p-4`}>
           <input
-            className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
+            className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
             placeholder={t('name')}
             value={name}
             onChange={(event) => setName(event.target.value)}
           />
           <div className="grid gap-3 md:grid-cols-2">
-            <label className="text-sm">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
               {t('instrument')}
               <InstrumentPicker value={instrument} onChange={setInstrument} />
             </label>
             <DateInput value={start} onChange={setStart} />
             <DateInput value={end} onChange={setEnd} />
             <input
-              className="rounded-md border border-gray-300 bg-white px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
+              className="rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
               value={sessionTz}
               onChange={(event) => setSessionTz(event.target.value)}
               placeholder={t('campaignTimezone')}
@@ -798,9 +798,9 @@ function CampaignSection({
 function MetricCard({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
     <div className={`${replayCardClass} p-4`}>
-      <p className="text-xs uppercase tracking-wide text-gray-500">{label}</p>
-      <p className="mt-1 text-lg font-semibold tabular-nums">{value}</p>
-      {hint && <p className="mt-1 text-xs text-gray-500">{hint}</p>}
+      <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">{label}</p>
+      <p className="mt-1 text-lg font-semibold tabular-nums text-gray-900 dark:text-gray-100">{value}</p>
+      {hint && <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{hint}</p>}
     </div>
   );
 }
@@ -856,7 +856,7 @@ function CampaignDashboard({ campaign, nonce }: { campaign: BacktestCampaign; no
       </div>
       {stats && (
         <>
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-gray-500 dark:text-gray-400">
             {t(`sample.${stats.sample_label}`)} — {t('sample.disclaimer')}
           </p>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -883,7 +883,7 @@ function CampaignDashboard({ campaign, nonce }: { campaign: BacktestCampaign; no
       )}
       <div className="grid gap-4 lg:grid-cols-2">
         <div className={`${replayCardClass} p-4`}>
-          <h3 className="mb-2 text-sm font-medium">{t('equityTaken')}</h3>
+          <h3 className="mb-2 text-sm font-medium text-gray-900 dark:text-gray-100">{t('equityTaken')}</h3>
           <BacktestEquityChart
             points={equity?.taken || []}
             mode="equity"
@@ -893,7 +893,7 @@ function CampaignDashboard({ campaign, nonce }: { campaign: BacktestCampaign; no
           />
         </div>
         <div className={`${replayCardClass} p-4`}>
-          <h3 className="mb-2 text-sm font-medium">{t('drawdown')}</h3>
+          <h3 className="mb-2 text-sm font-medium text-gray-900 dark:text-gray-100">{t('drawdown')}</h3>
           <BacktestEquityChart
             points={equity?.taken || []}
             mode="drawdown"
@@ -904,12 +904,13 @@ function CampaignDashboard({ campaign, nonce }: { campaign: BacktestCampaign; no
         </div>
       </div>
       <div className={`${replayCardClass} p-4`}>
-        <h3 className="mb-2 text-sm font-medium">{t('recent')}</h3>
-        <ul className="space-y-1 text-sm">
+        <h3 className="mb-2 text-sm font-medium text-gray-900 dark:text-gray-100">{t('recent')}</h3>
+        <ul className="space-y-1 text-sm text-gray-900 dark:text-gray-100">
           {recent.map((obs) => (
             <li key={obs.id} className="flex justify-between tabular-nums">
               <span>
-                {formatDateTimeShort(obs.market_datetime, preferences.date_format, preferences.timezone)} · {obs.direction}
+                {formatDateTimeShort(obs.market_datetime, preferences.date_format, preferences.timezone)} ·{' '}
+                {obs.direction === 'SHORT' ? t('short') : t('long')}
                 {!obs.trade_taken ? ` · ${t('theoretical')}` : ''}
               </span>
               <span>{obs.result_r != null ? formatNumber(obs.result_r, 2, nf) : '—'}</span>
@@ -1034,8 +1035,8 @@ function AnalysisView({
       </div>
       {data && (
         <div className={`${replayCardClass} overflow-auto`}>
-          <table className="min-w-full text-sm">
-            <thead className="bg-gray-100 dark:bg-gray-800">
+          <table className="min-w-full text-sm text-gray-800 dark:text-gray-200">
+            <thead className="bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300">
               <tr>
                 <th className="px-3 py-2 text-left">{t('groupBy')}</th>
                 <th className="px-3 py-2 text-right tabular-nums">N</th>
@@ -1063,8 +1064,16 @@ function AnalysisView({
               {data.groups.map((group) => (
                 <tr key={group.group} className="border-t border-gray-100 dark:border-gray-800">
                   <td className="px-3 py-2">
-                    {filters.group_by === 'weekday' ? t(`weekday.${group.group}`) : group.group}
-                    <div className="text-[11px] text-gray-500">{t(`sample.${group.sample_label}`)}</div>
+                    {filters.group_by === 'weekday'
+                      ? t(`weekday.${group.group}`)
+                      : filters.group_by === 'direction'
+                        ? group.group === 'SHORT'
+                          ? t('short')
+                          : t('long')
+                        : filters.group_by === 'result'
+                          ? t(`result${group.group}`, { defaultValue: group.group })
+                          : group.group}
+                    <div className="text-[11px] text-gray-500 dark:text-gray-400">{t(`sample.${group.sample_label}`)}</div>
                   </td>
                   <td className="px-3 py-2 text-right tabular-nums">{formatNumber(group.sample_size, 0, nf)}</td>
                   <td className="px-3 py-2 text-right tabular-nums">

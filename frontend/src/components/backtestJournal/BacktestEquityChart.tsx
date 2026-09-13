@@ -54,7 +54,14 @@ export function BacktestEquityChart({
           label: mode === 'equity' ? t('equityTaken') : t('drawdown'),
           data: values,
           borderColor: color,
-          backgroundColor: isDark ? 'rgba(52, 211, 153, 0.12)' : 'rgba(5, 150, 105, 0.12)',
+          backgroundColor:
+            mode === 'equity'
+              ? isDark
+                ? 'rgba(52, 211, 153, 0.12)'
+                : 'rgba(5, 150, 105, 0.12)'
+              : isDark
+                ? 'rgba(248, 113, 113, 0.12)'
+                : 'rgba(220, 38, 38, 0.12)',
           fill: true,
           tension: 0.25,
           pointRadius: 0,

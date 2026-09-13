@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast/headless';
 import { ConfirmModal, PaginationControls, Tooltip } from '../ui';
-import { SimpleDateTimeInput } from '../common/SimpleDateTimeInput';
+import { DateTimeInput } from '../common/DateTimeInput';
 import { usePreferences } from '../../hooks/usePreferences';
 import { DEFAULT_ITEMS_PER_PAGE } from '../../hooks/preferencesProvider';
 import { formatDateTimeShort } from '../../utils/dateFormat';
@@ -113,6 +113,18 @@ function formatEditableNumber(
   const parsed = parseLocalizedNumber(String(value), numberFormat);
   if (parsed == null) return String(value);
   return formatNumber(parsed, digits, numberFormat);
+}
+
+/** Ne conserve que les chiffres et un seul séparateur décimal (selon Settings). */
+function sanitizeNumericInput(raw: string, numberFormat: NumberFormatType): string {
+  const decimal = numberFormat === 'comma' ? ',' : '.';
+  const stripped = raw.replace(numberFormat === 'comma' ? /[^0-9,]/g : /[^0-9.]/g, '');
+  const firstSep = stripped.indexOf(decimal);
+  if (firstSep === -1) return stripped;
+  return (
+    stripped.slice(0, firstSep + 1) +
+    stripped.slice(firstSep + 1).replaceAll(decimal, '')
+  );
 }
 
 function fromApi(
@@ -486,7 +498,7 @@ export function ObservationGrid({ campaign, onStatsInvalidate }: Props) {
   );
   const cellClass = compact ? 'px-1 py-1 text-xs' : 'px-2 py-1.5 text-sm';
   const inputClass =
-    'w-full min-w-[5.5rem] rounded border border-transparent bg-transparent px-1 py-0.5 tabular-nums focus:border-blue-500 focus:outline-none dark:focus:border-blue-400';
+    'w-full min-w-[5.5rem] rounded border border-transparent bg-transparent px-1 py-0.5 text-gray-900 tabular-nums focus:border-blue-500 focus:outline-none dark:text-gray-100 dark:focus:border-blue-400';
   /** Même principe que PageSizeSelector : pas de flèche native du navigateur. */
   const selectClass = `${inputClass} cursor-pointer appearance-none pr-5`;
   const selectChevron = (
@@ -573,7 +585,7 @@ export function ObservationGrid({ campaign, onStatsInvalidate }: Props) {
           <tbody>
             {rows.length === 0 && (
               <tr>
-                <td className={`${cellClass} text-gray-500`} colSpan={GRID_COLUMNS.length - 1}>
+                <td className={`${cellClass} text-gray-500 dark:text-gray-400`} colSpan={GRID_COLUMNS.length - 1}>
                   {t('emptyObservations')}
                 </td>
                 <td className={`${cellClass} whitespace-nowrap`}>
@@ -603,11 +615,12 @@ export function ObservationGrid({ campaign, onStatsInvalidate }: Props) {
                     {rowNumber}
                   </td>
                   <td className={`${cellClass} min-w-[12.5rem]`}>
-                    <SimpleDateTimeInput
+                    <DateTimeInput
                       className={inputClass}
                       value={row.market_datetime}
                       onChange={(value) => patchRow(row.key, { market_datetime: value })}
                       aria-label={t('datetime')}
+                      compact
                       onKeyDown={(event) => {
                         if (event.key === 'Enter') {
                           event.preventDefault();
@@ -625,7 +638,7 @@ export function ObservationGrid({ campaign, onStatsInvalidate }: Props) {
                       }}
                     />
                     {row.errors.market_datetime && (
-                      <div className="text-[11px] text-red-600">{row.errors.market_datetime}</div>
+                      <div className="text-[11px] text-red-600 dark:text-red-400">{row.errors.market_datetime}</div>
                     )}
                   </td>
                   <td className={`${cellClass} min-w-[5.5rem]`}>
@@ -663,8 +676,13 @@ export function ObservationGrid({ campaign, onStatsInvalidate }: Props) {
                     <td key={field} className={`${cellClass} min-w-[5.5rem]`}>
                       <input
                         className={inputClass}
+                        inputMode="decimal"
                         value={row[field]}
-                        onChange={(event) => patchRow(row.key, { [field]: event.target.value })}
+                        onChange={(event) =>
+                          patchRow(row.key, {
+                            [field]: sanitizeNumericInput(event.target.value, numberFormat),
+                          })
+                        }
                         onBlur={(event) => onNumberBlur(row.key, field, event.target.value, 4)}
                         aria-label={t(
                           field === 'entry_price'
@@ -675,7 +693,7 @@ export function ObservationGrid({ campaign, onStatsInvalidate }: Props) {
                         )}
                       />
                       {row.errors[field] && (
-                        <div className="text-[11px] text-red-600">{row.errors[field]}</div>
+                        <div className="text-[11px] text-red-600 dark:text-red-400">{row.errors[field]}</div>
                       )}
                     </td>
                   ))}
@@ -683,7 +701,7 @@ export function ObservationGrid({ campaign, onStatsInvalidate }: Props) {
                     <span
                       className={`tabular-nums ${
                         pointsPreview == null
-                          ? 'text-gray-400'
+                          ? 'text-gray-400 dark:text-gray-500'
                           : pointsPreview > 0
                             ? 'text-green-600 dark:text-green-400'
                             : pointsPreview < 0
@@ -737,7 +755,7 @@ export function ObservationGrid({ campaign, onStatsInvalidate }: Props) {
                       aria-label={t('resultR')}
                     />
                     {row.warnings.includes('r_divergence') && (
-                      <div className="text-[11px] text-amber-700">{t('rDivergence')}</div>
+                      <div className="text-[11px] text-amber-700 dark:text-amber-400">{t('rDivergence')}</div>
                     )}
                   </td>
                   <td className={`${cellClass} min-w-[8rem]`}>
@@ -833,13 +851,13 @@ export function ObservationGrid({ campaign, onStatsInvalidate }: Props) {
       {detail && (
         <aside className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
           <div className="mb-3 flex items-center justify-between">
-            <h3 className="text-sm font-medium">{t('detail')}</h3>
+            <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">{t('detail')}</h3>
             <button type="button" className={replaySecondaryButtonClass} onClick={() => setDetailKey(null)}>
               {t('closeDetail')}
             </button>
           </div>
           <div className="grid gap-3 md:grid-cols-2">
-            <label className="flex items-center gap-2 text-sm">
+            <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
               <input
                 type="checkbox"
                 checked={detail.setup_valid}
@@ -847,44 +865,44 @@ export function ObservationGrid({ campaign, onStatsInvalidate }: Props) {
               />
               {t('setupValid')}
             </label>
-            <label className="text-sm">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
               {t('target')}
               <input
-                className="mt-1 w-full rounded-md border border-gray-300 bg-white p-2 tabular-nums dark:border-gray-600 dark:bg-gray-700"
+                className="mt-1 w-full rounded-md border border-gray-300 bg-white p-2 text-gray-900 tabular-nums dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                 value={detail.target_price}
                 onChange={(event) => patchRow(detail.key, { target_price: event.target.value })}
                 onBlur={(event) => onNumberBlur(detail.key, 'target_price', event.target.value, 4)}
               />
             </label>
-            <label className="text-sm">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
               {t('refusalReason')}
               <textarea
-                className="mt-1 w-full rounded-md border border-gray-300 bg-white p-2 dark:border-gray-600 dark:bg-gray-700"
+                className="mt-1 w-full rounded-md border border-gray-300 bg-white p-2 text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                 value={detail.refusal_reason}
                 onChange={(event) => patchRow(detail.key, { refusal_reason: event.target.value })}
               />
             </label>
-            <label className="text-sm">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
               {t('notes')}
               <textarea
-                className="mt-1 w-full rounded-md border border-gray-300 bg-white p-2 dark:border-gray-600 dark:bg-gray-700"
+                className="mt-1 w-full rounded-md border border-gray-300 bg-white p-2 text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                 value={detail.notes}
                 onChange={(event) => patchRow(detail.key, { notes: event.target.value })}
               />
             </label>
-            <label className="text-sm">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
               {t('mfe')}
               <input
-                className="mt-1 w-full rounded-md border border-gray-300 bg-white p-2 tabular-nums dark:border-gray-600 dark:bg-gray-700"
+                className="mt-1 w-full rounded-md border border-gray-300 bg-white p-2 text-gray-900 tabular-nums dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                 value={detail.mfe}
                 onChange={(event) => patchRow(detail.key, { mfe: event.target.value })}
                 onBlur={(event) => onNumberBlur(detail.key, 'mfe', event.target.value, 4)}
               />
             </label>
-            <label className="text-sm">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
               {t('mae')}
               <input
-                className="mt-1 w-full rounded-md border border-gray-300 bg-white p-2 tabular-nums dark:border-gray-600 dark:bg-gray-700"
+                className="mt-1 w-full rounded-md border border-gray-300 bg-white p-2 text-gray-900 tabular-nums dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                 value={detail.mae}
                 onChange={(event) => patchRow(detail.key, { mae: event.target.value })}
                 onBlur={(event) => onNumberBlur(detail.key, 'mae', event.target.value, 4)}
@@ -917,12 +935,12 @@ export function ObservationGrid({ campaign, onStatsInvalidate }: Props) {
               </>
             )}
             {detail.created_at && (
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-gray-500 dark:text-gray-400">
                 {t('createdAt')}: {formatDateTimeShort(detail.created_at, dateFormat, timezone)}
               </p>
             )}
             {detail.updated_at && (
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-gray-500 dark:text-gray-400">
                 {t('updatedAt')}: {formatDateTimeShort(detail.updated_at, dateFormat, timezone)}
               </p>
             )}
@@ -952,7 +970,7 @@ function ScreenshotField({
   onUpload: (file: File) => Promise<void>;
 }) {
   return (
-    <label className="text-sm">
+    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
       {label}
       {url && (
         <img src={url} alt="" className="mt-1 max-h-32 rounded border border-gray-200 dark:border-gray-700" />
@@ -960,7 +978,7 @@ function ScreenshotField({
       <input
         type="file"
         accept="image/png,image/jpeg,image/webp"
-        className="mt-1 block text-xs"
+        className="mt-1 block text-xs text-gray-700 dark:text-gray-300"
         onChange={(event) => {
           const file = event.target.files?.[0];
           if (file) void onUpload(file);
