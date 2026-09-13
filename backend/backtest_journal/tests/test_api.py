@@ -45,7 +45,6 @@ class BacktestJournalApiTests(APITestCase):
             {
                 'position_strategy': position.id,
                 'default_instrument': 'NQ',
-                'default_timeframe': '5m',
             },
             format='json',
         )
@@ -59,7 +58,6 @@ class BacktestJournalApiTests(APITestCase):
                 'strategy_version': version_id,
                 'name': name,
                 'instrument': 'NQ',
-                'timeframe': '5m',
                 'period_start': '2026-03-01',
                 'period_end': '2026-03-31',
                 'timezone': 'America/New_York',
@@ -327,7 +325,6 @@ class BacktestJournalApiTests(APITestCase):
                 'strategy_version': version_id,
                 'name': 'Hack',
                 'instrument': 'NQ',
-                'timeframe': '5m',
                 'period_start': '2026-03-01',
                 'period_end': '2026-03-31',
             },

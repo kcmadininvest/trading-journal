@@ -77,7 +77,7 @@ type GridRow = {
 function emptyRow(carry: Partial<GridRow> = {}): GridRow {
   return {
     key: `tmp-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-    dirty: true,
+    dirty: false,
     errors: {},
     market_datetime: carry.market_datetime || '',
     direction: carry.direction || 'LONG',

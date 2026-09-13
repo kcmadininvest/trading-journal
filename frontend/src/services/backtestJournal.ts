@@ -24,7 +24,6 @@ export interface BacktestStrategy {
   name: string;
   description: string;
   default_instrument: string;
-  default_timeframe: string;
   status: 'active' | 'archived';
   versions?: BacktestVersion[];
   latest_version?: BacktestVersion | null;
@@ -46,7 +45,6 @@ export interface BacktestCampaign {
   version_number: number;
   name: string;
   instrument: string;
-  timeframe: string;
   period_start: string;
   period_end: string;
   session_start: string | null;

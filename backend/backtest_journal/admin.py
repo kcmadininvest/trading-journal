@@ -29,7 +29,6 @@ class ManualBacktestCampaignAdmin(admin.ModelAdmin):
         'user',
         'name',
         'instrument',
-        'timeframe',
         'status',
         'updated_at',
     )

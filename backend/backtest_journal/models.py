@@ -45,7 +45,6 @@ class ManualBacktestStrategy(models.Model):
     name = models.CharField(max_length=200)
     description = models.TextField(blank=True)
     default_instrument = models.CharField(max_length=32, blank=True)
-    default_timeframe = models.CharField(max_length=8, blank=True)
     status = models.CharField(
         max_length=16,
         choices=STRATEGY_STATUS_CHOICES,
@@ -129,7 +128,6 @@ class ManualBacktestCampaign(models.Model):
     )
     name = models.CharField(max_length=200)
     instrument = models.CharField(max_length=32)
-    timeframe = models.CharField(max_length=8)
     period_start = models.DateField()
     period_end = models.DateField()
     session_start = models.TimeField(null=True, blank=True)
@@ -160,7 +158,7 @@ class ManualBacktestCampaign(models.Model):
         ]
 
     def __str__(self) -> str:
-        return f'{self.name} ({self.instrument} {self.timeframe})'
+        return f'{self.name} ({self.instrument})'
 
 
 class ManualBacktestObservation(models.Model):

@@ -19,8 +19,6 @@
   "instrumentUseCustom": "Usar « {{code}} »",
   "instrumentNoMatch": "Ningún instrumento en la lista",
   "instrumentApiUnavailable": "Lista no disponible: escriba el instrumento manualmente.",
-  "timeframe": "Temporalidad",
-  "timeframeShort": "TF",
   "status": "Estado",
   "version": "Versión",
   "locked": "Bloqueada",

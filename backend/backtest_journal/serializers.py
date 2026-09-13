@@ -6,7 +6,6 @@ from django.db.models import Max
 from django.utils import timezone
 from rest_framework import serializers
 
-from market_data.services.timeframes import ALLOWED_TIMEFRAMES, UnknownTimeframe, parse_timeframe
 from trades.models import PositionStrategy
 from trades.protected_screenshot_urls import (
     normalize_screenshot_url_for_storage,
@@ -30,17 +29,6 @@ LOCKED_VERSION_FIELDS = {
     'invalidation_rules',
     'notes',
 }
-
-
-def _validate_timeframe(value: str) -> str:
-    if not value:
-        return value
-    try:
-        return parse_timeframe(value).code
-    except UnknownTimeframe as exc:
-        raise serializers.ValidationError(
-            f'Timeframe non supporté. Autorisés: {", ".join(ALLOWED_TIMEFRAMES)}'
-        ) from exc
 
 
 def _validate_timezone(value: str) -> str:
@@ -121,7 +109,6 @@ class ManualBacktestStrategySerializer(serializers.ModelSerializer):
             'name',
             'description',
             'default_instrument',
-            'default_timeframe',
             'status',
             'position_strategy',
             'position_strategy_title',
@@ -139,9 +126,6 @@ class ManualBacktestStrategySerializer(serializers.ModelSerializer):
             'created_at',
             'updated_at',
         ]
-
-    def validate_default_timeframe(self, value):
-        return _validate_timeframe(value)
 
     def validate_position_strategy(self, value: PositionStrategy) -> PositionStrategy:
         request = self.context.get('request')
@@ -206,7 +190,6 @@ class ManualBacktestStrategyListSerializer(serializers.ModelSerializer):
             'name',
             'description',
             'default_instrument',
-            'default_timeframe',
             'status',
             'position_strategy',
             'latest_version_id',
@@ -238,7 +221,6 @@ class ManualBacktestCampaignSerializer(serializers.ModelSerializer):
             'version_number',
             'name',
             'instrument',
-            'timeframe',
             'period_start',
             'period_end',
             'session_start',
@@ -259,9 +241,6 @@ class ManualBacktestCampaignSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'instrument': {'allow_blank': True},
         }
-
-    def validate_timeframe(self, value):
-        return _validate_timeframe(value)
 
     def validate_timezone(self, value):
         return _validate_timezone(value)

@@ -89,7 +89,6 @@ async function ensureCampaign(
     strategy_version: version.id,
     name: options.name,
     instrument: full.default_instrument || '',
-    timeframe: full.default_timeframe || '5m',
     period_start: period.period_start,
     period_end: period.period_end,
     timezone: options.timezone || 'America/New_York',
@@ -340,7 +339,8 @@ const BacktestJournalPage: React.FC = () => {
               if (remaining.length > 0) {
                 setHash(currentTab, strategy.id, remaining[0].id);
               } else {
-                await openWorkspace(strategy, currentTab);
+                setCampaign(null);
+                setHash('list');
               }
             }
           } catch {
@@ -433,27 +433,46 @@ function CampaignWorkspace({
   onDeleteCampaign: (id: number) => void;
 }) {
   const { t } = useTranslation('backtestJournal');
-  const [instrument, setInstrument] = useState(campaign.instrument || strategy.default_instrument);
+  const [instrument, setInstrument] = useState(campaign.instrument || strategy.default_instrument || '');
+  const [savingInstrument, setSavingInstrument] = useState(false);
 
   useEffect(() => {
-    setInstrument(campaign.instrument || strategy.default_instrument);
+    setInstrument(campaign.instrument || strategy.default_instrument || '');
   }, [campaign.id, campaign.instrument, strategy.default_instrument]);
 
-  const save = async () => {
-    try {
-      await backtestJournalService.updateStrategy(strategy.id, {
-        default_instrument: instrument,
-      });
-      await backtestJournalService.updateCampaign(campaign.id, {
-        instrument,
-      });
-      toast.success(t('saved'));
-      await onReload();
-      onStatsInvalidate();
-    } catch {
-      toast.error(t('saveError'));
-    }
-  };
+  const savedInstrument = campaign.instrument || strategy.default_instrument || '';
+
+  useEffect(() => {
+    if (instrument === savedInstrument) return;
+    const timer = window.setTimeout(() => {
+      void (async () => {
+        setSavingInstrument(true);
+        try {
+          await backtestJournalService.updateStrategy(strategy.id, {
+            default_instrument: instrument,
+          });
+          await backtestJournalService.updateCampaign(campaign.id, {
+            instrument,
+          });
+          await onReload();
+          onStatsInvalidate();
+        } catch {
+          toast.error(t('saveError'));
+        } finally {
+          setSavingInstrument(false);
+        }
+      })();
+    }, 500);
+    return () => window.clearTimeout(timer);
+  }, [
+    instrument,
+    savedInstrument,
+    strategy.id,
+    campaign.id,
+    onReload,
+    onStatsInvalidate,
+    t,
+  ]);
 
   const strategyOptions = useMemo(() => {
     const options = positionStrategies.map((item) => ({
@@ -478,8 +497,6 @@ function CampaignWorkspace({
     () => campaigns.map((item) => ({ value: item.id, label: item.name })),
     [campaigns],
   );
-  const savedInstrument = campaign.instrument || strategy.default_instrument || '';
-  const instrumentDirty = instrument !== savedInstrument;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4">
@@ -517,15 +534,11 @@ function CampaignWorkspace({
           <label className="text-sm">
             {t('instrument')}
             <InstrumentPicker value={instrument} onChange={setInstrument} />
+            {savingInstrument && (
+              <span className="mt-1 block text-xs text-gray-500 dark:text-gray-400">{t('saving')}</span>
+            )}
           </label>
         </div>
-        {instrumentDirty && (
-          <div className="flex flex-wrap gap-2">
-            <button type="button" className={replayPrimaryButtonClass} onClick={() => void save()}>
-              {t('save')}
-            </button>
-          </div>
-        )}
       </section>
 
       <div className="grid w-full grid-cols-3 gap-2">
@@ -598,7 +611,6 @@ function CampaignSection({
   const [editingId, setEditingId] = useState<number | null>(null);
   const [name, setName] = useState('');
   const [instrument, setInstrument] = useState(strategy.default_instrument || '');
-  const [timeframe, setTimeframe] = useState(strategy.default_timeframe || '5m');
   const [start, setStart] = useState('');
   const [end, setEnd] = useState('');
   const [sessionTz, setSessionTz] = useState('America/New_York');
@@ -608,7 +620,6 @@ function CampaignSection({
     setOpen(false);
     setName('');
     setInstrument(strategy.default_instrument || '');
-    setTimeframe(strategy.default_timeframe || '5m');
     setStart('');
     setEnd('');
     setSessionTz('America/New_York');
@@ -623,7 +634,6 @@ function CampaignSection({
     setEditingId(item.id);
     setName(item.name);
     setInstrument(item.instrument);
-    setTimeframe(item.timeframe || '5m');
     setStart(item.period_start);
     setEnd(item.period_end);
     setSessionTz(item.timezone || 'America/New_York');
@@ -637,7 +647,6 @@ function CampaignSection({
         strategy_version: version.id,
         name: `${item.name} (${t('copySuffix')})`,
         instrument: item.instrument,
-        timeframe: item.timeframe,
         period_start: item.period_start,
         period_end: item.period_end,
         timezone: item.timezone,
@@ -668,10 +677,7 @@ function CampaignSection({
           <div key={item.id} className={`${replayCardClass} p-4`}>
             <button type="button" className="w-full text-left" onClick={() => onOpen(item.id)}>
               <h3 className="font-medium">{item.name}</h3>
-              <p className="text-sm text-gray-500">
-                {item.instrument}
-                {item.timeframe ? ` · ${item.timeframe}` : ''}
-              </p>
+              <p className="text-sm text-gray-500">{item.instrument || '—'}</p>
               <p className="text-xs text-gray-400">
                 {formatDate(item.period_start, preferences.date_format, false, preferences.timezone)}
                 {' → '}
@@ -763,7 +769,6 @@ function CampaignSection({
                       strategy_version: version.id,
                       name: name || t('newCampaign'),
                       instrument,
-                      timeframe,
                       period_start: start,
                       period_end: end,
                       timezone: sessionTz,
@@ -840,7 +845,7 @@ function CampaignDashboard({ campaign, nonce }: { campaign: BacktestCampaign; no
     <div className="space-y-4">
       <div className={`${replayCardClass} p-4 text-sm text-gray-600 dark:text-gray-300`}>
         <p>
-          {campaign.strategy_name} · v{campaign.version_number} · {campaign.instrument} {campaign.timeframe}
+          {campaign.strategy_name} · v{campaign.version_number} · {campaign.instrument}
         </p>
         <p>
           {formatDate(campaign.period_start, preferences.date_format, false, preferences.timezone)}
