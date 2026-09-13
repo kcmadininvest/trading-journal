@@ -994,18 +994,18 @@ const HistoricalDataPage: React.FC = () => {
                           {t('noCoverageFiltered')}
                         </p>
                       ) : (
-                        <div className="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
+                        <>
                           <div className="overflow-x-auto">
                             <table className="min-w-full text-left text-sm">
                               <thead className="border-b border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400">
                                 <tr>
-                                  <th className="py-2 px-3 font-medium">{t('contract')}</th>
-                                  <th className="py-2 px-3 font-medium">{t('timeframe')}</th>
-                                  <th className="py-2 px-3 font-medium">{t('status')}</th>
-                                  <th className="py-2 px-3 font-medium">{t('barsStored')}</th>
-                                  <th className="py-2 px-3 font-medium">{t('barsExpected')}</th>
-                                  <th className="py-2 px-3 font-medium">{t('missing')}</th>
-                                  <th className="py-2 px-3 font-medium">{t('range')}</th>
+                                  <th className="py-2 pr-4 font-medium">{t('contract')}</th>
+                                  <th className="py-2 pr-4 font-medium">{t('timeframe')}</th>
+                                  <th className="py-2 pr-4 font-medium">{t('status')}</th>
+                                  <th className="py-2 pr-4 font-medium">{t('barsStored')}</th>
+                                  <th className="py-2 pr-4 font-medium">{t('barsExpected')}</th>
+                                  <th className="py-2 pr-4 font-medium">{t('missing')}</th>
+                                  <th className="py-2 font-medium">{t('range')}</th>
                                 </tr>
                               </thead>
                               <tbody>
@@ -1014,17 +1014,17 @@ const HistoricalDataPage: React.FC = () => {
                                     key={`${c.contract_id}-${c.timeframe}-${c.start_utc}`}
                                     className="border-b border-gray-100 dark:border-gray-800 text-gray-900 dark:text-gray-100"
                                   >
-                                    <td className="py-2.5 px-3 whitespace-nowrap">{c.contract_id}</td>
-                                    <td className="py-2.5 px-3 whitespace-nowrap">{c.timeframe}</td>
-                                    <td className="py-2.5 px-3">
+                                    <td className="py-2.5 pr-4 whitespace-nowrap">{c.contract_id}</td>
+                                    <td className="py-2.5 pr-4 whitespace-nowrap">{c.timeframe}</td>
+                                    <td className="py-2.5 pr-4">
                                       <StatusBadge status={c.status} label={statusLabel(c.status)} />
                                     </td>
-                                    <td className="py-2.5 px-3">{fmtNum(c.bars_stored)}</td>
-                                    <td className="py-2.5 px-3">{fmtNum(c.bars_expected)}</td>
-                                    <td className="py-2.5 px-3">
+                                    <td className="py-2.5 pr-4">{fmtNum(c.bars_stored)}</td>
+                                    <td className="py-2.5 pr-4">{fmtNum(c.bars_expected)}</td>
+                                    <td className="py-2.5 pr-4">
                                       {fmtNum(c.unexpected_missing_count)}
                                     </td>
-                                    <td className="py-2.5 px-3 whitespace-nowrap">
+                                    <td className="py-2.5 whitespace-nowrap">
                                       {fmtDateIso(c.start_utc)} → {fmtDateIso(c.end_utc)}
                                     </td>
                                   </tr>
@@ -1032,18 +1032,21 @@ const HistoricalDataPage: React.FC = () => {
                               </tbody>
                             </table>
                           </div>
-                          <PaginationControls
-                            currentPage={coveragePage}
-                            totalPages={coverageTotalPages}
-                            totalItems={coverageTotalItems}
-                            itemsPerPage={coveragePageSize}
-                            startIndex={coverageStartIndex}
-                            endIndex={coverageEndIndex}
-                            onPageChange={goToCoveragePage}
-                            onPageSizeChange={handleCoveragePageSizeChange}
-                            pageSizeOptions={[5, 10, 25, 50, 100]}
-                          />
-                        </div>
+                          <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow dark:border-gray-700 dark:bg-gray-800">
+                            <PaginationControls
+                              currentPage={coveragePage}
+                              totalPages={coverageTotalPages}
+                              totalItems={coverageTotalItems}
+                              itemsPerPage={coveragePageSize}
+                              startIndex={coverageStartIndex}
+                              endIndex={coverageEndIndex}
+                              onPageChange={goToCoveragePage}
+                              onPageSizeChange={handleCoveragePageSizeChange}
+                              pageSizeOptions={[5, 10, 25, 50, 100]}
+                              className="border-t-0"
+                            />
+                          </div>
+                        </>
                       )}
                     </div>
                   )
