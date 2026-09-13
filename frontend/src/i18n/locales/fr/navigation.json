@@ -5,6 +5,7 @@
   "dailyJournal": "Journal",
   "strategies": "Suivi de Stratégie",
   "positionStrategies": "Gestion de Stratégie",
+  "backtestJournal": "Journal de backtest",
   "statistics": "Statistiques",
   "analytics": "Analyses",
   "behavior": "Comportement",

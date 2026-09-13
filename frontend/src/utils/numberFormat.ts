@@ -104,3 +104,35 @@ export function getCurrencySymbolForCode(
   return currencies.find((c) => c.code === currencyCode)?.symbol ?? '';
 }
 
+/** Parse une saisie utilisateur selon le format Settings (virgule ou point décimal). */
+export function parseLocalizedNumber(
+  value: string | number | null | undefined,
+  numberFormat: NumberFormatType = 'comma'
+): number | null {
+  if (value === null || value === undefined || value === '') {
+    return null;
+  }
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : null;
+  }
+  let normalized = value.trim();
+  if (!normalized) {
+    return null;
+  }
+  // Valeurs déjà canoniques (API Decimal → "2.0000") : ne pas appliquer le locale.
+  if (/^-?\d+\.\d+$/.test(normalized) && !normalized.includes(',')) {
+    const canonical = Number(normalized);
+    return Number.isFinite(canonical) ? canonical : null;
+  }
+  if (numberFormat === 'comma') {
+    normalized = normalized.replace(/\s/g, '');
+    if (normalized.includes(',')) {
+      normalized = normalized.replace(/\./g, '').replace(',', '.');
+    }
+  } else {
+    normalized = normalized.replace(/,/g, '');
+  }
+  const num = Number(normalized);
+  return Number.isFinite(num) ? num : null;
+}
+

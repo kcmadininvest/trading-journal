@@ -5,9 +5,10 @@ from __future__ import annotations
 
 from collections import defaultdict
 from datetime import date, timedelta
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from django.db import models
+from django.db.models import Count, Q
 from django.utils import timezone
 
 from .models import (
@@ -36,6 +37,98 @@ def get_position_strategy_family_ids(user, position_strategy_id):
         return family_ids
     except PositionStrategy.DoesNotExist:
         return [position_strategy_id]
+
+
+def count_classified_respect_days(
+    strategies_qs,
+    trades_qs,
+    strategy_dates: Set[date],
+) -> Tuple[int, int, int]:
+    """
+    Compte les jours classables (tous les trades du jour ont une stratégie évaluée).
+
+    Un jour est respecté si tous ses trades évalués sont respectés.
+    Un jour est non respecté s'il a au moins un trade non respecté.
+    Les jours incomplets (trade sans stratégie évaluée) sont exclus du dénominateur.
+
+    Returns:
+        (days_respected, days_not_respected, evaluated_trades_on_classified_days)
+    """
+    if not strategy_dates:
+        return 0, 0, 0
+
+    dates = list(strategy_dates)
+    trades_by_day = dict(
+        trades_qs.filter(trade_day__in=dates)
+        .values('trade_day')
+        .annotate(total=Count('id'))
+        .values_list('trade_day', 'total')
+    )
+    strategies_by_day = {
+        row['trade__trade_day']: {
+            'total': row['total'],
+            'not_respected': row['not_respected'],
+        }
+        for row in strategies_qs.filter(trade__trade_day__in=dates)
+        .values('trade__trade_day')
+        .annotate(
+            total=Count('id'),
+            not_respected=Count('id', filter=Q(strategy_respected=False)),
+        )
+    }
+
+    days_respected = 0
+    days_not_respected = 0
+    classified_trades = 0
+    for trade_date in strategy_dates:
+        trade_count = trades_by_day.get(trade_date, 0)
+        strat_info = strategies_by_day.get(trade_date)
+        if not strat_info:
+            continue
+        if trade_count != strat_info['total']:
+            continue
+        classified_trades += strat_info['total']
+        if strat_info['not_respected'] == 0:
+            days_respected += 1
+        else:
+            days_not_respected += 1
+
+    return days_respected, days_not_respected, classified_trades
+
+
+def compute_day_level_respect_totals(
+    strategies_with_respect_qs,
+    trades_qs,
+    compliance_qs,
+) -> Dict[str, Any]:
+    """
+    Taux de respect au niveau jour : jours classables + compliances sans trades.
+
+    Invariant : days_respected + days_not_respected == total_days.
+    """
+    strategy_dates = {
+        d
+        for d in strategies_with_respect_qs.values_list('trade__trade_day', flat=True)
+        if d is not None
+    }
+    days_respected, days_not_respected, classified_trades = count_classified_respect_days(
+        strategies_with_respect_qs,
+        trades_qs,
+        strategy_dates,
+    )
+    days_respected += compliance_qs.filter(strategy_respected=True).count()
+    days_not_respected += compliance_qs.filter(strategy_respected=False).count()
+    total_days = days_respected + days_not_respected
+    respect_percentage = (days_respected / total_days * 100) if total_days > 0 else 0.0
+    not_respect_percentage = (days_not_respected / total_days * 100) if total_days > 0 else 0.0
+    return {
+        'days_respected': days_respected,
+        'days_not_respected': days_not_respected,
+        'total_days': total_days,
+        'classified_trades': classified_trades,
+        'respect_percentage': respect_percentage,
+        'not_respect_percentage': not_respect_percentage,
+    }
 
 
 def get_rolling_twelve_month_date_range(user_tz) -> Tuple[str, str]:

@@ -202,6 +202,15 @@ import frHistoricalData from './locales/fr/historicalData.json';
 import enHistoricalData from './locales/en/historicalData.json';
 import esHistoricalData from './locales/es/historicalData.json';
 import deHistoricalData from './locales/de/historicalData.json';
+import frBacktestJournal from './locales/fr/backtestJournal.json';
+import enBacktestJournal from './locales/en/backtestJournal.json';
+import esBacktestJournal from './locales/es/backtestJournal.json';
+import deBacktestJournal from './locales/de/backtestJournal.json';
+import itBacktestJournal from './locales/it/backtestJournal.json';
+import ptBacktestJournal from './locales/pt/backtestJournal.json';
+import jaBacktestJournal from './locales/ja/backtestJournal.json';
+import koBacktestJournal from './locales/ko/backtestJournal.json';
+import zhBacktestJournal from './locales/zh/backtestJournal.json';
 
 // Custom detector qui utilise navigator.languages pour respecter l'ordre de préférence (comme YouTube)
 const customNavigatorLanguagesDetector = {
@@ -274,6 +283,7 @@ const resources = {
     journalQuestions: frJournalQuestions,
     trading_activity: frTradingActivity,
     historicalData: frHistoricalData,
+    backtestJournal: frBacktestJournal,
   },
   en: {
     common: enCommon,
@@ -303,6 +313,7 @@ const resources = {
     journalQuestions: enJournalQuestions,
     trading_activity: enTradingActivity,
     historicalData: enHistoricalData,
+    backtestJournal: enBacktestJournal,
   },
   es: {
     common: esCommon,
@@ -332,6 +343,7 @@ const resources = {
     journalQuestions: esJournalQuestions,
     trading_activity: esTradingActivity,
     historicalData: esHistoricalData,
+    backtestJournal: esBacktestJournal,
   },
   de: {
     common: deCommon,
@@ -361,6 +373,7 @@ const resources = {
     journalQuestions: deJournalQuestions,
     trading_activity: deTradingActivity,
     historicalData: deHistoricalData,
+    backtestJournal: deBacktestJournal,
   },
   it: {
     common: itCommon,
@@ -379,6 +392,7 @@ const resources = {
     replay: enReplay,
     journalQuestions: itJournalQuestions,
     trading_activity: enTradingActivity,
+    backtestJournal: itBacktestJournal,
   },
   pt: {
     common: ptCommon,
@@ -397,6 +411,7 @@ const resources = {
     replay: enReplay,
     journalQuestions: ptJournalQuestions,
     trading_activity: enTradingActivity,
+    backtestJournal: ptBacktestJournal,
   },
   ja: {
     common: jaCommon,
@@ -415,6 +430,7 @@ const resources = {
     replay: enReplay,
     journalQuestions: jaJournalQuestions,
     trading_activity: enTradingActivity,
+    backtestJournal: jaBacktestJournal,
   },
   ko: {
     common: koCommon,
@@ -433,6 +449,7 @@ const resources = {
     replay: enReplay,
     journalQuestions: koJournalQuestions,
     trading_activity: enTradingActivity,
+    backtestJournal: koBacktestJournal,
   },
   zh: {
     common: zhCommon,
@@ -451,6 +468,7 @@ const resources = {
     replay: enReplay,
     journalQuestions: zhJournalQuestions,
     trading_activity: enTradingActivity,
+    backtestJournal: zhBacktestJournal,
   },
 };
 
@@ -514,7 +532,7 @@ i18n
     fallbackLng: getDefaultLanguage(),
     supportedLngs: ['fr', 'en', 'es', 'de', 'it', 'pt', 'ja', 'ko', 'zh'],
     defaultNS: 'common',
-    ns: ['common', 'trades', 'settings', 'navigation', 'dashboard', 'calendar', 'strategies', 'statistics', 'analytics', 'users', 'accounts', 'auth', 'home', 'strategy', 'positionStrategies', 'goals', 'transactions', 'legal', 'about', 'features', 'contact', 'calculator', 'billing', 'replay', 'trading_activity', 'journalQuestions', 'historicalData'],
+    ns: ['common', 'trades', 'settings', 'navigation', 'dashboard', 'calendar', 'strategies', 'statistics', 'analytics', 'users', 'accounts', 'auth', 'home', 'strategy', 'positionStrategies', 'goals', 'transactions', 'legal', 'about', 'features', 'contact', 'calculator', 'billing', 'replay', 'trading_activity', 'journalQuestions', 'historicalData', 'backtestJournal'],
     
     interpolation: {
       escapeValue: false, // React échappe déjà les valeurs

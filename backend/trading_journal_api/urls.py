@@ -234,6 +234,7 @@ urlpatterns = [
     path('api/billing/', include('billing.urls')),
     path('api/trading-activity/', include('trading_activity.urls')),
     path('api/market-data/', include('market_data.urls')),
+    path('api/backtest-journal/', include('backtest_journal.urls')),
 ]
 
 if settings.DEBUG:

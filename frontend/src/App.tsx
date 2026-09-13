@@ -38,6 +38,7 @@ const JournalQuestionsPage = lazy(() => import('./pages/JournalQuestionsPage'));
 const SessionReplayPage = lazy(() => import('./pages/SessionReplayPage'));
 const CalculatorPage = lazy(() => import('./pages/CalculatorPage'));
 const HistoricalDataPage = lazy(() => import('./pages/HistoricalDataPage'));
+const BacktestJournalPage = lazy(() => import('./pages/BacktestJournalPage'));
 const CalculatorPopup = lazy(() => import('./pages/CalculatorPopup'));
 const BillingPage = lazy(() => import('./pages/BillingPage'));
 const SubscriptionRequiredPage = lazy(() => import('./pages/SubscriptionRequiredPage'));
@@ -60,6 +61,7 @@ const PREMIUM_LOCKED_PAGES = new Set([
   'calculator',
   'strategies',
   'position-strategies',
+  'backtest-journal',
   'trading-activity',
   'session-replay',
 ]);
@@ -85,6 +87,7 @@ const VALID_HASH_PAGES = [
   'behavior',
   'strategies',
   'position-strategies',
+  'backtest-journal',
   'analytics',
   'users',
   'settings',
@@ -564,6 +567,14 @@ function App() {
               }} />;
             }
             return <LazyPage><PositionStrategiesPage /></LazyPage>;
+          case 'backtest-journal':
+            if (lockedPremiumPages.has('backtest-journal')) {
+              return <SubscriptionRequiredPage onBackToDashboard={() => {
+                window.location.hash = 'dashboard';
+                setCurrentPage('dashboard');
+              }} />;
+            }
+            return <LazyPage><BacktestJournalPage /></LazyPage>;
           case 'analytics':
             if (lockedPremiumPages.has('analytics')) {
               return <SubscriptionRequiredPage onBackToDashboard={() => {

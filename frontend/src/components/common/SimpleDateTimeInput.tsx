@@ -8,6 +8,8 @@ interface SimpleDateTimeInputProps {
   required?: boolean;
   disabled?: boolean;
   placeholder?: string;
+  onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+  'aria-label'?: string;
 }
 
 /**
@@ -22,6 +24,8 @@ export const SimpleDateTimeInput: React.FC<SimpleDateTimeInputProps> = ({
   required = false,
   disabled = false,
   placeholder,
+  onKeyDown,
+  'aria-label': ariaLabel,
 }) => {
   const { preferences } = usePreferences();
   const [displayValue, setDisplayValue] = useState('');
@@ -158,6 +162,7 @@ export const SimpleDateTimeInput: React.FC<SimpleDateTimeInputProps> = ({
     if (e.key === 'Enter') {
       e.currentTarget.blur();
     }
+    onKeyDown?.(e);
   };
 
   // Générer le placeholder selon le format
@@ -178,6 +183,7 @@ export const SimpleDateTimeInput: React.FC<SimpleDateTimeInputProps> = ({
       className={className}
       required={required}
       disabled={disabled}
+      aria-label={ariaLabel}
     />
   );
 };

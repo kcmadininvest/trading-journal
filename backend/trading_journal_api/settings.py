@@ -81,6 +81,7 @@ INSTALLED_APPS = [
     'trading_activity',
     'integrations',
     'market_data',
+    'backtest_journal',
     'channels',
 ]
 

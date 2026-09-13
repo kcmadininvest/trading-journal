@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'react-hot-toast/headless';
 import { useTranslation } from 'react-i18next';
 import { PageShell } from '../components/layout';
@@ -6,16 +6,20 @@ import { DateInput } from '../components/common/DateInput';
 import { CustomSelect } from '../components/common/CustomSelect';
 import { CustomMultiSelect } from '../components/common/CustomMultiSelect';
 import { NumberInputStepper } from '../components/common/NumberInputStepper';
+import { PaginationControls } from '../components/ui';
 import {
   replayCardClass,
   replayDateInputClass,
   replayPrimaryButtonClass,
   replaySecondaryButtonClass,
 } from '../components/replay/replayStyles';
+import { usePagination } from '../hooks';
 import { usePreferences } from '../hooks/usePreferences';
+import { DEFAULT_ITEMS_PER_PAGE } from '../hooks/preferencesProvider';
 import { formatDate } from '../utils/dateFormat';
 import { formatNumber } from '../utils/numberFormat';
 import { getTodayDateInTimezone, addCalendarDays } from '../components/replay/replayDateNav';
+import { userService } from '../services/userService';
 import historicalDataService, {
   CoverageEntry,
   DownloadJob,
@@ -34,7 +38,7 @@ const labelClass = 'block text-sm font-medium text-gray-700 dark:text-gray-300 m
 
 const HistoricalDataPage: React.FC = () => {
   const { t } = useTranslation('historicalData');
-  const { preferences } = usePreferences();
+  const { preferences, loading: preferencesLoading } = usePreferences();
   const numberFormat = preferences.number_format;
   const dateFormat = preferences.date_format;
   const todayIso = useMemo(
@@ -60,6 +64,9 @@ const HistoricalDataPage: React.FC = () => {
   const [bottomTab, setBottomTab] = useState<'coverage' | 'issues'>('coverage');
   const [pageTab, setPageTab] = useState<'download' | 'sync'>('download');
   const [coverageFilter, setCoverageFilter] = useState<'all' | 'with_data' | 'empty'>('with_data');
+  const [coveragePageSize, setCoveragePageSize] = useState(
+    () => preferences.items_per_page ?? DEFAULT_ITEMS_PER_PAGE,
+  );
   const [exporting, setExporting] = useState(false);
   const [syncSettings, setSyncSettings] = useState<SyncSettings | null>(null);
   const [syncEnabled, setSyncEnabled] = useState(false);
@@ -332,6 +339,53 @@ const HistoricalDataPage: React.FC = () => {
     }
     return coverage;
   }, [coverage, coverageFilter]);
+
+  const {
+    currentPage: coveragePage,
+    totalPages: coverageTotalPages,
+    paginatedItems: paginatedCoverage,
+    totalItems: coverageTotalItems,
+    goToPage: goToCoveragePage,
+    startIndex: coverageStartIndex,
+    endIndex: coverageEndIndex,
+  } = usePagination(filteredCoverage, {
+    itemsPerPage: coveragePageSize,
+    initialPage: 1,
+  });
+
+  const goToCoveragePageRef = useRef(goToCoveragePage);
+  useEffect(() => {
+    goToCoveragePageRef.current = goToCoveragePage;
+  }, [goToCoveragePage]);
+
+  useEffect(() => {
+    if (preferencesLoading) return;
+    const prefSize = preferences.items_per_page ?? DEFAULT_ITEMS_PER_PAGE;
+    setCoveragePageSize((prev) => (prev === prefSize ? prev : prefSize));
+    goToCoveragePageRef.current(1);
+  }, [preferencesLoading, preferences.items_per_page]);
+
+  useEffect(() => {
+    goToCoveragePageRef.current(1);
+  }, [coverageFilter]);
+
+  useEffect(() => {
+    if (coverageTotalPages > 0 && coveragePage > coverageTotalPages) {
+      goToCoveragePageRef.current(coverageTotalPages);
+    }
+  }, [coveragePage, coverageTotalPages]);
+
+  const handleCoveragePageSizeChange = async (size: number) => {
+    const sanitized = Number.isFinite(size) && size > 0 ? size : DEFAULT_ITEMS_PER_PAGE;
+    setCoveragePageSize(sanitized);
+    goToCoveragePage(1);
+    try {
+      await userService.updatePreferences({ items_per_page: sanitized });
+      window.dispatchEvent(new CustomEvent('preferences:updated'));
+    } catch (error) {
+      console.error('[HistoricalDataPage] Failed to persist items_per_page', error);
+    }
+  };
 
   const coverageTotals = useMemo(() => {
     return filteredCoverage.reduce(
@@ -940,40 +994,55 @@ const HistoricalDataPage: React.FC = () => {
                           {t('noCoverageFiltered')}
                         </p>
                       ) : (
-                        <div className="overflow-x-auto">
-                          <table className="min-w-full text-left text-sm">
-                            <thead className="border-b border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400">
-                              <tr>
-                                <th className="py-2 pr-4 font-medium">{t('contract')}</th>
-                                <th className="py-2 pr-4 font-medium">{t('timeframe')}</th>
-                                <th className="py-2 pr-4 font-medium">{t('status')}</th>
-                                <th className="py-2 pr-4 font-medium">{t('barsStored')}</th>
-                                <th className="py-2 pr-4 font-medium">{t('barsExpected')}</th>
-                                <th className="py-2 pr-4 font-medium">{t('missing')}</th>
-                                <th className="py-2 font-medium">{t('range')}</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {filteredCoverage.map((c) => (
-                                <tr
-                                  key={`${c.contract_id}-${c.timeframe}-${c.start_utc}`}
-                                  className="border-b border-gray-100 dark:border-gray-800 text-gray-900 dark:text-gray-100"
-                                >
-                                  <td className="py-2.5 pr-4 whitespace-nowrap">{c.contract_id}</td>
-                                  <td className="py-2.5 pr-4 whitespace-nowrap">{c.timeframe}</td>
-                                  <td className="py-2.5 pr-4">
-                                    <StatusBadge status={c.status} label={statusLabel(c.status)} />
-                                  </td>
-                                  <td className="py-2.5 pr-4">{fmtNum(c.bars_stored)}</td>
-                                  <td className="py-2.5 pr-4">{fmtNum(c.bars_expected)}</td>
-                                  <td className="py-2.5 pr-4">{fmtNum(c.unexpected_missing_count)}</td>
-                                  <td className="py-2.5 whitespace-nowrap">
-                                    {fmtDateIso(c.start_utc)} → {fmtDateIso(c.end_utc)}
-                                  </td>
+                        <div className="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
+                          <div className="overflow-x-auto">
+                            <table className="min-w-full text-left text-sm">
+                              <thead className="border-b border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400">
+                                <tr>
+                                  <th className="py-2 px-3 font-medium">{t('contract')}</th>
+                                  <th className="py-2 px-3 font-medium">{t('timeframe')}</th>
+                                  <th className="py-2 px-3 font-medium">{t('status')}</th>
+                                  <th className="py-2 px-3 font-medium">{t('barsStored')}</th>
+                                  <th className="py-2 px-3 font-medium">{t('barsExpected')}</th>
+                                  <th className="py-2 px-3 font-medium">{t('missing')}</th>
+                                  <th className="py-2 px-3 font-medium">{t('range')}</th>
                                 </tr>
-                              ))}
-                            </tbody>
-                          </table>
+                              </thead>
+                              <tbody>
+                                {paginatedCoverage.map((c) => (
+                                  <tr
+                                    key={`${c.contract_id}-${c.timeframe}-${c.start_utc}`}
+                                    className="border-b border-gray-100 dark:border-gray-800 text-gray-900 dark:text-gray-100"
+                                  >
+                                    <td className="py-2.5 px-3 whitespace-nowrap">{c.contract_id}</td>
+                                    <td className="py-2.5 px-3 whitespace-nowrap">{c.timeframe}</td>
+                                    <td className="py-2.5 px-3">
+                                      <StatusBadge status={c.status} label={statusLabel(c.status)} />
+                                    </td>
+                                    <td className="py-2.5 px-3">{fmtNum(c.bars_stored)}</td>
+                                    <td className="py-2.5 px-3">{fmtNum(c.bars_expected)}</td>
+                                    <td className="py-2.5 px-3">
+                                      {fmtNum(c.unexpected_missing_count)}
+                                    </td>
+                                    <td className="py-2.5 px-3 whitespace-nowrap">
+                                      {fmtDateIso(c.start_utc)} → {fmtDateIso(c.end_utc)}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                          <PaginationControls
+                            currentPage={coveragePage}
+                            totalPages={coverageTotalPages}
+                            totalItems={coverageTotalItems}
+                            itemsPerPage={coveragePageSize}
+                            startIndex={coverageStartIndex}
+                            endIndex={coverageEndIndex}
+                            onPageChange={goToCoveragePage}
+                            onPageSizeChange={handleCoveragePageSizeChange}
+                            pageSizeOptions={[5, 10, 25, 50, 100]}
+                          />
                         </div>
                       )}
                     </div>
