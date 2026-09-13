@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { PageShell } from '../components/layout';
 import { DateInput } from '../components/common/DateInput';
 import { CustomSelect } from '../components/common/CustomSelect';
+import { CustomMultiSelect } from '../components/common/CustomMultiSelect';
 import { NumberInputStepper } from '../components/common/NumberInputStepper';
 import {
   replayCardClass,
@@ -68,7 +69,7 @@ const HistoricalDataPage: React.FC = () => {
   const [syncSaving, setSyncSaving] = useState(false);
   const [syncRunning, setSyncRunning] = useState(false);
   const [syncTargetInstrument, setSyncTargetInstrument] = useState('');
-  const [syncTargetTimeframe, setSyncTargetTimeframe] = useState('1m');
+  const [syncTargetTimeframes, setSyncTargetTimeframes] = useState<string[]>(['1m']);
 
   const busy = starting || (job != null && !TERMINAL.has(job.status));
 
@@ -421,20 +422,27 @@ const HistoricalDataPage: React.FC = () => {
   const addSyncTarget = () => {
     const instr = (syncTargetInstrument || instrument || '').toUpperCase();
     if (!instr) return;
-    const exists = syncTargets.some(
-      (tg) =>
-        tg.instrument === instr &&
-        tg.timeframe === syncTargetTimeframe &&
-        !(tg.contract_id || ''),
-    );
-    if (exists) {
+    if (syncTargetTimeframes.length === 0) {
+      toast.error(t('syncSelectTimeframes'));
+      return;
+    }
+    const toAdd: SyncTarget[] = [];
+    for (const tf of syncTargetTimeframes) {
+      const exists = syncTargets.some(
+        (tg) =>
+          tg.instrument === instr &&
+          tg.timeframe === tf &&
+          !(tg.contract_id || ''),
+      );
+      if (!exists) {
+        toAdd.push({ instrument: instr, timeframe: tf, contract_id: '' });
+      }
+    }
+    if (toAdd.length === 0) {
       toast.error(t('syncTargetExists'));
       return;
     }
-    setSyncTargets((prev) => [
-      ...prev,
-      { instrument: instr, timeframe: syncTargetTimeframe, contract_id: '' },
-    ]);
+    setSyncTargets((prev) => [...prev, ...toAdd]);
   };
 
   const removeSyncTarget = (index: number) => {
@@ -554,12 +562,15 @@ const HistoricalDataPage: React.FC = () => {
                   />
                 </div>
                 <div className="min-w-0">
-                  <label className={labelClass}>{t('timeframe')}</label>
-                  <CustomSelect
+                  <label className={labelClass}>{t('timeframesLabel')}</label>
+                  <CustomMultiSelect
                     className="w-full"
-                    value={syncTargetTimeframe}
-                    onChange={(value) => setSyncTargetTimeframe(String(value || '1m'))}
+                    value={syncTargetTimeframes}
+                    onChange={setSyncTargetTimeframes}
                     options={timeframeOptions}
+                    placeholder={t('syncTimeframesPlaceholder')}
+                    clearLabel={t('syncTimeframesClear')}
+                    selectedCountLabel={(count) => t('syncTimeframesCount', { count })}
                   />
                 </div>
                 <button type="button" onClick={addSyncTarget} className={replaySecondaryButtonClass}>
