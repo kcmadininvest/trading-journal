@@ -110,6 +110,14 @@ const HistoricalDataPage: React.FC = () => {
     [instruments],
   );
 
+  const instrumentLabelByCode = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const i of instruments) {
+      map.set(i.instrument, `${i.instrument} — ${i.name}`);
+    }
+    return map;
+  }, [instruments]);
+
   const contractOptions = useMemo(
     () => [
       { value: '', label: t('allContracts') },
@@ -419,6 +427,40 @@ const HistoricalDataPage: React.FC = () => {
     }
   };
 
+  const timeframeOrder = useMemo(
+    () => new Map(timeframeOptions.map((opt, idx) => [opt.value, idx])),
+    [timeframeOptions],
+  );
+
+  const syncTargetGroups = useMemo(() => {
+    const groups = new Map<
+      string,
+      { instrument: string; contract_id: string; timeframes: string[] }
+    >();
+    for (const tg of syncTargets) {
+      const contractId = tg.contract_id || '';
+      const key = `${tg.instrument}\0${contractId}`;
+      const existing = groups.get(key);
+      if (existing) {
+        if (!existing.timeframes.includes(tg.timeframe)) {
+          existing.timeframes.push(tg.timeframe);
+        }
+      } else {
+        groups.set(key, {
+          instrument: tg.instrument,
+          contract_id: contractId,
+          timeframes: [tg.timeframe],
+        });
+      }
+    }
+    return Array.from(groups.values()).map((group) => ({
+      ...group,
+      timeframes: [...group.timeframes].sort(
+        (a, b) => (timeframeOrder.get(a) ?? 999) - (timeframeOrder.get(b) ?? 999),
+      ),
+    }));
+  }, [syncTargets, timeframeOrder]);
+
   const addSyncTarget = () => {
     const instr = (syncTargetInstrument || instrument || '').toUpperCase();
     if (!instr) return;
@@ -445,8 +487,12 @@ const HistoricalDataPage: React.FC = () => {
     setSyncTargets((prev) => [...prev, ...toAdd]);
   };
 
-  const removeSyncTarget = (index: number) => {
-    setSyncTargets((prev) => prev.filter((_, i) => i !== index));
+  const removeSyncTargetGroup = (instrument: string, contractId: string) => {
+    setSyncTargets((prev) =>
+      prev.filter(
+        (tg) => !(tg.instrument === instrument && (tg.contract_id || '') === contractId),
+      ),
+    );
   };
 
   return (
@@ -578,22 +624,30 @@ const HistoricalDataPage: React.FC = () => {
                 </button>
               </div>
 
-              {syncTargets.length === 0 ? (
+              {syncTargetGroups.length === 0 ? (
                 <p className="text-sm text-gray-500 dark:text-gray-400">{t('syncNoTargets')}</p>
               ) : (
                 <ul className="divide-y divide-gray-200 dark:divide-gray-700 rounded-md border border-gray-200 dark:border-gray-700">
-                  {syncTargets.map((tg, idx) => (
+                  {syncTargetGroups.map((group) => (
                     <li
-                      key={`${tg.instrument}-${tg.timeframe}-${tg.contract_id}-${idx}`}
+                      key={`${group.instrument}-${group.contract_id}`}
                       className="flex items-center justify-between gap-3 px-3 py-2 text-sm"
                     >
-                      <span className="text-gray-900 dark:text-gray-100">
-                        {tg.instrument} · {tg.timeframe}
-                        {tg.contract_id ? ` · ${tg.contract_id}` : ` · ${t('allContracts')}`}
+                      <span className="min-w-0 flex flex-1 flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                        <span className="shrink-0 font-semibold text-gray-900 dark:text-gray-100">
+                          {instrumentLabelByCode.get(group.instrument) || group.instrument}
+                        </span>
+                        <span className="min-w-0 text-gray-600 dark:text-gray-400">
+                          {group.timeframes.join(', ')}
+                          {' · '}
+                          {group.contract_id || t('allContracts')}
+                        </span>
                       </span>
                       <button
                         type="button"
-                        onClick={() => removeSyncTarget(idx)}
+                        onClick={() =>
+                          removeSyncTargetGroup(group.instrument, group.contract_id)
+                        }
                         className="p-1.5 rounded-lg text-rose-600 transition-colors hover:bg-rose-50 hover:text-rose-800 focus:outline-none focus:ring-2 focus:ring-rose-500 dark:text-rose-400 dark:hover:bg-rose-900/30 dark:hover:text-rose-300"
                         title={t('syncRemoveTarget')}
                         aria-label={t('syncRemoveTarget')}
