@@ -176,6 +176,33 @@ const NavigationMenu: React.FC<NavigationMenuProps> = ({
       badgeText: isLocked('calculator') ? premiumBadge : undefined,
     },
     {
+      id: 'historical-data',
+      label: t('navigation:historicalData', { defaultValue: 'Données historiques' }),
+      icon: (
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M4 7c0 1.657 3.582 3 8 3s8-1.343 8-3-3.582-3-8-3-8 1.343-8 3z"
+          />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M4 7v10c0 1.657 3.582 3 8 3s8-1.343 8-3V7"
+          />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M4 12c0 1.657 3.582 3 8 3s8-1.343 8-3"
+          />
+        </svg>
+      ),
+      visible: true,
+    },
+    {
       id: 'accounts',
       label: t('navigation:accounts'),
       icon: (

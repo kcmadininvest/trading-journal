@@ -37,6 +37,7 @@ const DailyJournalPage = lazy(() => import('./pages/DailyJournalPage'));
 const JournalQuestionsPage = lazy(() => import('./pages/JournalQuestionsPage'));
 const SessionReplayPage = lazy(() => import('./pages/SessionReplayPage'));
 const CalculatorPage = lazy(() => import('./pages/CalculatorPage'));
+const HistoricalDataPage = lazy(() => import('./pages/HistoricalDataPage'));
 const CalculatorPopup = lazy(() => import('./pages/CalculatorPopup'));
 const BillingPage = lazy(() => import('./pages/BillingPage'));
 const SubscriptionRequiredPage = lazy(() => import('./pages/SubscriptionRequiredPage'));
@@ -92,6 +93,7 @@ const VALID_HASH_PAGES = [
   'trading-activity',
   'goals',
   'calculator',
+  'historical-data',
   'legal-notice',
   'billing',
   'billing-success',
@@ -606,6 +608,8 @@ function App() {
               }} />;
             }
             return <LazyPage><CalculatorPage /></LazyPage>;
+          case 'historical-data':
+            return <LazyPage><HistoricalDataPage /></LazyPage>;
           case 'billing':
           case 'billing-success':
           case 'billing-cancel':

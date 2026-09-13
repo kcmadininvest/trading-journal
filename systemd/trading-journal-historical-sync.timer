@@ -1,0 +1,12 @@
+[Unit]
+Description=Timer for Trading Journal historical market data sync (every 15 min)
+Requires=trading-journal-historical-sync.service
+
+[Timer]
+OnCalendar=*:0/15
+AccuracySec=1min
+Persistent=true
+Unit=trading-journal-historical-sync.service
+
+[Install]
+WantedBy=timers.target

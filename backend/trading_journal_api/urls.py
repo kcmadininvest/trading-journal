@@ -233,6 +233,7 @@ urlpatterns = [
     path('api/daily-journal/', include('daily_journal.urls')),
     path('api/billing/', include('billing.urls')),
     path('api/trading-activity/', include('trading_activity.urls')),
+    path('api/market-data/', include('market_data.urls')),
 ]
 
 if settings.DEBUG:

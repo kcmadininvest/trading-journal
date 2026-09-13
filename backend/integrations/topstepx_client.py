@@ -211,14 +211,20 @@ class TopStepXApiClient:
                 return None
 
         timestamp = row.get('t') or row.get('timestamp')
-        return {
+        known = {'t', 'timestamp', 'o', 'h', 'l', 'c', 'v', 'open', 'high', 'low', 'close', 'volume'}
+        normalized = {
             't': str(timestamp) if timestamp is not None else '',
-            'o': _float('o'),
-            'h': _float('h'),
-            'l': _float('l'),
-            'c': _float('c'),
-            'v': _float('v'),
+            'o': _float('o') if 'o' in row else _float('open'),
+            'h': _float('h') if 'h' in row else _float('high'),
+            'l': _float('l') if 'l' in row else _float('low'),
+            'c': _float('c') if 'c' in row else _float('close'),
+            'v': _float('v') if 'v' in row else _float('volume'),
         }
+        # Conserver les champs bruts non mappés (trades, OI, …) pour le stockage historique.
+        for key, value in row.items():
+            if key not in known:
+                normalized[key] = value
+        return normalized
 
     def list_available_contracts(
         self,

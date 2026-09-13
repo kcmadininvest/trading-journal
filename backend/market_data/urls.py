@@ -1,0 +1,27 @@
+from django.urls import path
+
+from market_data.views import (
+    BarsCsvExportView,
+    ContractListView,
+    CoverageListView,
+    DownloadJobDetailView,
+    DownloadJobIssuesView,
+    DownloadJobListCreateView,
+    InstrumentListView,
+    SyncSettingsRunNowView,
+    SyncSettingsView,
+)
+
+app_name = 'market_data'
+
+urlpatterns = [
+    path('instruments/', InstrumentListView.as_view(), name='instruments'),
+    path('contracts/', ContractListView.as_view(), name='contracts'),
+    path('coverage/', CoverageListView.as_view(), name='coverage'),
+    path('bars/export/', BarsCsvExportView.as_view(), name='bars_csv_export'),
+    path('downloads/', DownloadJobListCreateView.as_view(), name='downloads'),
+    path('downloads/<int:job_id>/', DownloadJobDetailView.as_view(), name='download_detail'),
+    path('downloads/<int:job_id>/issues/', DownloadJobIssuesView.as_view(), name='download_issues'),
+    path('sync-settings/', SyncSettingsView.as_view(), name='sync_settings'),
+    path('sync-settings/run-now/', SyncSettingsRunNowView.as_view(), name='sync_settings_run_now'),
+]

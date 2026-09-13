@@ -1,0 +1,975 @@
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { toast } from 'react-hot-toast/headless';
+import { useTranslation } from 'react-i18next';
+import { PageShell } from '../components/layout';
+import { DateInput } from '../components/common/DateInput';
+import { CustomSelect } from '../components/common/CustomSelect';
+import { NumberInputStepper } from '../components/common/NumberInputStepper';
+import {
+  replayCardClass,
+  replayDateInputClass,
+  replayPrimaryButtonClass,
+  replaySecondaryButtonClass,
+} from '../components/replay/replayStyles';
+import { usePreferences } from '../hooks/usePreferences';
+import { formatDate } from '../utils/dateFormat';
+import { formatNumber } from '../utils/numberFormat';
+import { getTodayDateInTimezone, addCalendarDays } from '../components/replay/replayDateNav';
+import historicalDataService, {
+  CoverageEntry,
+  DownloadJob,
+  MarketContract,
+  MarketInstrument,
+  QualityIssue,
+  SyncSettings,
+  SyncTarget,
+} from '../services/historicalData';
+
+const TERMINAL = new Set(['completed', 'failed', 'cancelled']);
+/** Fenêtre par défaut : historique TopStepX sim souvent limité au contrat front récent. */
+const DEFAULT_LOOKBACK_DAYS = 7;
+
+const labelClass = 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2';
+
+const HistoricalDataPage: React.FC = () => {
+  const { t } = useTranslation('historicalData');
+  const { preferences } = usePreferences();
+  const numberFormat = preferences.number_format;
+  const dateFormat = preferences.date_format;
+  const todayIso = useMemo(
+    () => getTodayDateInTimezone(preferences.timezone || 'Europe/Paris'),
+    [preferences.timezone],
+  );
+
+  const [instruments, setInstruments] = useState<MarketInstrument[]>([]);
+  const [instrument, setInstrument] = useState('');
+  const [contracts, setContracts] = useState<MarketContract[]>([]);
+  const [contractsLoading, setContractsLoading] = useState(false);
+  const [contractId, setContractId] = useState('');
+  const [start, setStart] = useState(() =>
+    addCalendarDays(getTodayDateInTimezone('Europe/Paris'), -DEFAULT_LOOKBACK_DAYS),
+  );
+  const [end, setEnd] = useState(() => getTodayDateInTimezone('Europe/Paris'));
+  const [timeframe, setTimeframe] = useState('1m');
+  const [job, setJob] = useState<DownloadJob | null>(null);
+  const [coverage, setCoverage] = useState<CoverageEntry[]>([]);
+  const [issues, setIssues] = useState<QualityIssue[]>([]);
+  const [bootLoading, setBootLoading] = useState(true);
+  const [starting, setStarting] = useState(false);
+  const [bottomTab, setBottomTab] = useState<'coverage' | 'issues'>('coverage');
+  const [pageTab, setPageTab] = useState<'download' | 'sync'>('download');
+  const [coverageFilter, setCoverageFilter] = useState<'all' | 'with_data' | 'empty'>('with_data');
+  const [exporting, setExporting] = useState(false);
+  const [syncSettings, setSyncSettings] = useState<SyncSettings | null>(null);
+  const [syncEnabled, setSyncEnabled] = useState(false);
+  const [syncHour, setSyncHour] = useState(2);
+  const [syncMinute, setSyncMinute] = useState(0);
+  const [syncTargets, setSyncTargets] = useState<SyncTarget[]>([]);
+  const [syncSaving, setSyncSaving] = useState(false);
+  const [syncRunning, setSyncRunning] = useState(false);
+  const [syncTargetInstrument, setSyncTargetInstrument] = useState('');
+  const [syncTargetTimeframe, setSyncTargetTimeframe] = useState('1m');
+
+  const busy = starting || (job != null && !TERMINAL.has(job.status));
+
+  useEffect(() => {
+    setEnd((prev) => (prev > todayIso ? todayIso : prev));
+    setStart((prev) => {
+      const maxStart = todayIso;
+      if (prev > maxStart) {
+        return addCalendarDays(todayIso, -DEFAULT_LOOKBACK_DAYS);
+      }
+      return prev;
+    });
+  }, [todayIso]);
+
+  useEffect(() => {
+    if (start > end) setStart(end);
+  }, [start, end]);
+
+  const timeframeOptions = useMemo(
+    () => [
+      { value: '1m', label: t('timeframes.1m') },
+      { value: '2m', label: t('timeframes.2m') },
+      { value: '5m', label: t('timeframes.5m') },
+      { value: '15m', label: t('timeframes.15m') },
+      { value: '30m', label: t('timeframes.30m') },
+      { value: '1h', label: t('timeframes.1h') },
+      { value: '4h', label: t('timeframes.4h') },
+    ],
+    [t],
+  );
+
+  const instrumentOptions = useMemo(
+    () =>
+      instruments.map((i) => ({
+        value: i.instrument,
+        label: `${i.instrument} — ${i.name}`,
+      })),
+    [instruments],
+  );
+
+  const contractOptions = useMemo(
+    () => [
+      { value: '', label: t('allContracts') },
+      ...contracts
+        .filter((c) => !instrument || c.instrument === instrument)
+        .map((c) => {
+          const expiryLabel = c.expiry_date
+            ? ` (${t('contractExpiry')}: ${formatDate(c.expiry_date, dateFormat)})`
+            : '';
+          return {
+            value: c.contract_id,
+            label: `${c.symbol || c.contract_id}${expiryLabel}`,
+          };
+        }),
+    ],
+    [contracts, dateFormat, instrument, t],
+  );
+
+  const loadInstruments = useCallback(async () => {
+    setBootLoading(true);
+    try {
+      const list = await historicalDataService.listInstruments();
+      setInstruments(list);
+      setInstrument((prev) => prev || (list[0]?.instrument ?? ''));
+      setSyncTargetInstrument((prev) => prev || (list[0]?.instrument ?? ''));
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : t('loadError');
+      toast.error(
+        /throttl|trop de téléchargement|too many download/i.test(msg)
+          ? t('throttleError')
+          : msg,
+      );
+    } finally {
+      setBootLoading(false);
+    }
+  }, [t]);
+
+  const loadSyncSettings = useCallback(async () => {
+    try {
+      const data = await historicalDataService.getSyncSettings();
+      setSyncSettings(data);
+      setSyncEnabled(data.enabled);
+      setSyncHour(data.hour);
+      setSyncMinute(data.minute);
+      setSyncTargets(data.targets || []);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const loadCoverage = useCallback(async (instr: string) => {
+    if (!instr) {
+      setCoverage([]);
+      return;
+    }
+    try {
+      const data = await historicalDataService.getCoverage(instr);
+      setCoverage(data);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const loadContracts = useCallback(
+    async (instr: string) => {
+      if (!instr) {
+        setContracts([]);
+        setContractId('');
+        setContractsLoading(false);
+        return;
+      }
+      setContractsLoading(true);
+      try {
+        const list = await historicalDataService.listContracts(instr, start, end);
+        setContracts(list);
+        setContractId((prev) =>
+          prev && list.some((c) => c.contract_id === prev) ? prev : '',
+        );
+      } catch (e) {
+        setContracts([]);
+        setContractId('');
+        toast.error(e instanceof Error ? e.message : t('loadError'));
+      } finally {
+        setContractsLoading(false);
+      }
+    },
+    [start, end, t],
+  );
+
+  useEffect(() => {
+    void loadInstruments();
+    void loadSyncSettings();
+  }, [loadInstruments, loadSyncSettings]);
+
+  useEffect(() => {
+    if (!instrument) return;
+    void loadContracts(instrument);
+    void loadCoverage(instrument);
+  }, [instrument, loadContracts, loadCoverage]);
+
+  const activeJobId = job && !TERMINAL.has(job.status) ? job.id : null;
+
+  useEffect(() => {
+    if (activeJobId == null) return undefined;
+    let authFailures = 0;
+    const timer = window.setInterval(async () => {
+      try {
+        const updated = await historicalDataService.getJob(activeJobId);
+        authFailures = 0;
+        setJob(updated);
+          if (TERMINAL.has(updated.status)) {
+            const iss = await historicalDataService.getJobIssues(updated.id);
+            setIssues(iss);
+            void loadCoverage(updated.instrument);
+            if (updated.status === 'completed') {
+              if (updated.error) {
+                toast(updated.error);
+              } else {
+                toast.success(t('statusCompleted'));
+              }
+            } else if (updated.status === 'failed') {
+              toast.error(updated.error || t('statusFailed'));
+            }
+          }
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : '';
+        if (msg === 'AUTH_REQUIRED') {
+          authFailures += 1;
+          if (authFailures >= 2) {
+            toast.error(t('authExpired'));
+            setJob((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    status: 'failed',
+                    error: t('authExpired'),
+                  }
+                : null,
+            );
+          }
+        }
+      }
+    }, 2000);
+    return () => window.clearInterval(timer);
+  }, [activeJobId, loadCoverage, t]);
+
+  const handleStart = async () => {
+    if (!instrument || !start || !end) return;
+    const endClamped = end > todayIso ? todayIso : end;
+    if (endClamped !== end) setEnd(endClamped);
+    setStarting(true);
+    setIssues([]);
+    try {
+      const created = await historicalDataService.startDownload({
+        instrument,
+        contract_id: contractId || undefined,
+        timeframe,
+        start: `${start}T00:00:00Z`,
+        end: `${endClamped}T23:59:59Z`,
+      });
+      setJob(created);
+      setBottomTab('coverage');
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : t('loadError');
+      toast.error(
+        /throttl|trop de téléchargement|too many download/i.test(msg)
+          ? t('throttleError')
+          : msg,
+      );
+    } finally {
+      setStarting(false);
+    }
+  };
+
+  const statusLabel = (status: string) => {
+    const map: Record<string, string> = {
+      complete: t('statusComplete'),
+      partial: t('statusPartial'),
+      empty: t('statusEmpty'),
+      pending: t('statusPending'),
+      running: t('statusRunning'),
+      completed: t('statusCompleted'),
+      failed: t('statusFailed'),
+    };
+    return map[status] || status;
+  };
+
+  const fmtNum = (n: number) => formatNumber(n, 0, numberFormat);
+  const fmtDateIso = (iso: string) => {
+    try {
+      return formatDate(iso.slice(0, 10), dateFormat);
+    } catch {
+      return iso;
+    }
+  };
+
+  const coverageFilterOptions = useMemo(
+    () => [
+      { value: 'all', label: t('coverageFilterAll') },
+      { value: 'with_data', label: t('coverageFilterWithData') },
+      { value: 'empty', label: t('coverageFilterEmpty') },
+    ],
+    [t],
+  );
+
+  const filteredCoverage = useMemo(() => {
+    if (coverageFilter === 'with_data') {
+      return coverage.filter((c) => c.bars_stored > 0);
+    }
+    if (coverageFilter === 'empty') {
+      return coverage.filter((c) => c.bars_stored <= 0);
+    }
+    return coverage;
+  }, [coverage, coverageFilter]);
+
+  const coverageTotals = useMemo(() => {
+    return filteredCoverage.reduce(
+      (acc, row) => {
+        acc.stored += row.bars_stored;
+        acc.expected += row.bars_expected;
+        acc.missing += row.unexpected_missing_count;
+        if (row.status === 'complete') acc.complete += 1;
+        else if (row.status === 'partial') acc.partial += 1;
+        return acc;
+      },
+      { stored: 0, expected: 0, missing: 0, complete: 0, partial: 0 },
+    );
+  }, [filteredCoverage]);
+
+  const handleExportCsv = async () => {
+    if (!instrument || !start || !end) return;
+    setExporting(true);
+    try {
+      const blob = await historicalDataService.exportBarsCsv({
+        instrument,
+        timeframe,
+        start: `${start}T00:00:00Z`,
+        end: `${end}T23:59:59Z`,
+        contract_id: contractId || undefined,
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${instrument}_${timeframe}_${start}_${end}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast.success(t('exportSuccess'));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t('exportError'));
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleSaveSync = async () => {
+    setSyncSaving(true);
+    try {
+      const updated = await historicalDataService.updateSyncSettings({
+        enabled: syncEnabled,
+        hour: syncHour,
+        minute: syncMinute,
+        targets: syncTargets.map((tg, idx) => ({
+          instrument: tg.instrument,
+          timeframe: tg.timeframe,
+          contract_id: tg.contract_id || '',
+          ordering: idx,
+        })),
+      });
+      setSyncSettings(updated);
+      setSyncTargets(updated.targets || []);
+      toast.success(t('syncSaved'));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t('syncSaveError'));
+    } finally {
+      setSyncSaving(false);
+    }
+  };
+
+  const handleRunSyncNow = async () => {
+    setSyncRunning(true);
+    try {
+      await historicalDataService.updateSyncSettings({
+        enabled: syncEnabled,
+        hour: syncHour,
+        minute: syncMinute,
+        targets: syncTargets.map((tg, idx) => ({
+          instrument: tg.instrument,
+          timeframe: tg.timeframe,
+          contract_id: tg.contract_id || '',
+          ordering: idx,
+        })),
+      });
+      const result = await historicalDataService.runSyncNow();
+      setSyncSettings(result.settings);
+      if (result.jobs?.length) {
+        setJob(result.jobs[0]);
+        toast.success(t('syncRunStarted'));
+      } else {
+        toast.success(result.settings.last_error || t('syncNothingToDo'));
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t('syncRunError'));
+    } finally {
+      setSyncRunning(false);
+    }
+  };
+
+  const addSyncTarget = () => {
+    const instr = (syncTargetInstrument || instrument || '').toUpperCase();
+    if (!instr) return;
+    const exists = syncTargets.some(
+      (tg) =>
+        tg.instrument === instr &&
+        tg.timeframe === syncTargetTimeframe &&
+        !(tg.contract_id || ''),
+    );
+    if (exists) {
+      toast.error(t('syncTargetExists'));
+      return;
+    }
+    setSyncTargets((prev) => [
+      ...prev,
+      { instrument: instr, timeframe: syncTargetTimeframe, contract_id: '' },
+    ]);
+  };
+
+  const removeSyncTarget = (index: number) => {
+    setSyncTargets((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  return (
+    <PageShell>
+      <div className="mb-4 sm:mb-6">
+        <div className="border-b border-gray-200 dark:border-gray-700">
+          <nav className="-mb-px flex gap-6 overflow-x-auto" aria-label={t('pageTabsAria')}>
+            {(
+              [
+                { id: 'download' as const, label: t('downloadTab') },
+                { id: 'sync' as const, label: t('syncTab') },
+              ] as const
+            ).map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setPageTab(tab.id)}
+                className={`whitespace-nowrap border-b-2 px-1 py-3 text-sm font-medium transition-colors ${
+                  pageTab === tab.id
+                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                }`}
+                aria-current={pageTab === tab.id ? 'page' : undefined}
+              >
+                {tab.label}
+                {tab.id === 'sync' && syncEnabled ? ` · ${t('syncOn')}` : ''}
+              </button>
+            ))}
+          </nav>
+        </div>
+      </div>
+
+      {pageTab === 'sync' ? (
+        bootLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-500 mx-auto mb-4" />
+              <p className="text-gray-600 dark:text-gray-400">{t('loading')}</p>
+            </div>
+          </div>
+        ) : (
+          <div className={`${replayCardClass} p-4 sm:p-5`}>
+            <div className="flex min-w-0 flex-col gap-4">
+              <div>
+                <h2 className="text-base font-semibold text-gray-900 dark:text-white">
+                  {t('syncTitle')}
+                </h2>
+                <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">{t('syncSubtitle')}</p>
+              </div>
+
+              <label className="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                <input
+                  type="checkbox"
+                  checked={syncEnabled}
+                  onChange={(e) => setSyncEnabled(e.target.checked)}
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                {t('syncEnabled')}
+              </label>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-md">
+                <div>
+                  <label className={labelClass} htmlFor="historical-sync-hour">
+                    {t('syncHour')}
+                  </label>
+                  <NumberInputStepper
+                    id="historical-sync-hour"
+                    min={0}
+                    max={23}
+                    step={1}
+                    digits={0}
+                    value={syncHour}
+                    onChange={(v) => {
+                      const n = parseInt(v, 10);
+                      setSyncHour(Number.isNaN(n) ? 0 : Math.min(23, Math.max(0, n)));
+                    }}
+                    inputClassName={replayDateInputClass}
+                  />
+                </div>
+                <div>
+                  <label className={labelClass} htmlFor="historical-sync-minute">
+                    {t('syncMinute')}
+                  </label>
+                  <NumberInputStepper
+                    id="historical-sync-minute"
+                    min={0}
+                    max={59}
+                    step={1}
+                    digits={0}
+                    value={syncMinute}
+                    onChange={(v) => {
+                      const n = parseInt(v, 10);
+                      setSyncMinute(Number.isNaN(n) ? 0 : Math.min(59, Math.max(0, n)));
+                    }}
+                    inputClassName={replayDateInputClass}
+                  />
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                {t('syncTimezoneHint', { timezone: preferences.timezone || 'Europe/Paris' })}
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+                <div className="min-w-0">
+                  <label className={labelClass}>{t('instrument')}</label>
+                  <CustomSelect
+                    className="w-full"
+                    value={syncTargetInstrument || null}
+                    onChange={(value) => setSyncTargetInstrument(value ? String(value) : '')}
+                    options={instrumentOptions}
+                    searchable
+                    placeholder={t('instrumentPlaceholder')}
+                  />
+                </div>
+                <div className="min-w-0">
+                  <label className={labelClass}>{t('timeframe')}</label>
+                  <CustomSelect
+                    className="w-full"
+                    value={syncTargetTimeframe}
+                    onChange={(value) => setSyncTargetTimeframe(String(value || '1m'))}
+                    options={timeframeOptions}
+                  />
+                </div>
+                <button type="button" onClick={addSyncTarget} className={replaySecondaryButtonClass}>
+                  {t('syncAddTarget')}
+                </button>
+              </div>
+
+              {syncTargets.length === 0 ? (
+                <p className="text-sm text-gray-500 dark:text-gray-400">{t('syncNoTargets')}</p>
+              ) : (
+                <ul className="divide-y divide-gray-200 dark:divide-gray-700 rounded-md border border-gray-200 dark:border-gray-700">
+                  {syncTargets.map((tg, idx) => (
+                    <li
+                      key={`${tg.instrument}-${tg.timeframe}-${tg.contract_id}-${idx}`}
+                      className="flex items-center justify-between gap-3 px-3 py-2 text-sm"
+                    >
+                      <span className="text-gray-900 dark:text-gray-100">
+                        {tg.instrument} · {tg.timeframe}
+                        {tg.contract_id ? ` · ${tg.contract_id}` : ` · ${t('allContracts')}`}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => removeSyncTarget(idx)}
+                        className="p-1.5 rounded-lg text-rose-600 transition-colors hover:bg-rose-50 hover:text-rose-800 focus:outline-none focus:ring-2 focus:ring-rose-500 dark:text-rose-400 dark:hover:bg-rose-900/30 dark:hover:text-rose-300"
+                        title={t('syncRemoveTarget')}
+                        aria-label={t('syncRemoveTarget')}
+                      >
+                        <svg
+                          className="h-4 w-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                          aria-hidden
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                          />
+                        </svg>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => void handleSaveSync()}
+                  disabled={syncSaving || bootLoading}
+                  className={replayPrimaryButtonClass}
+                >
+                  {syncSaving ? t('loading') : t('syncSave')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handleRunSyncNow()}
+                  disabled={syncRunning || bootLoading || syncTargets.length === 0}
+                  className={replaySecondaryButtonClass}
+                >
+                  {syncRunning ? t('downloading') : t('syncRunNow')}
+                </button>
+              </div>
+
+              {syncSettings?.last_run_at ? (
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  {t('syncLastRun')}:{' '}
+                  {formatDate(syncSettings.last_run_at, dateFormat, true, preferences.timezone)}
+                </p>
+              ) : null}
+              {syncSettings?.last_error ? (
+                <p className="text-sm text-amber-700 dark:text-amber-400">
+                  {t('syncLastError')}: {syncSettings.last_error}
+                </p>
+              ) : null}
+            </div>
+          </div>
+        )
+      ) : (
+        <>
+          <div className={`${replayCardClass} p-3 sm:p-4 mb-4 sm:mb-6`}>
+            <div className="flex min-w-0 flex-col gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
+                <div className="min-w-0 sm:col-span-2 xl:col-span-1">
+                  <label className={labelClass}>{t('instrument')}</label>
+                  <CustomSelect
+                    className="w-full"
+                    value={instrument || null}
+                    onChange={(value) => {
+                      const next = value ? String(value) : '';
+                      setInstrument(next);
+                      setContractId('');
+                      setContracts([]);
+                      if (!next) {
+                        setCoverage([]);
+                      }
+                    }}
+                    options={instrumentOptions}
+                    placeholder={t('instrumentPlaceholder')}
+                    searchable
+                    searchPlaceholder={t('instrumentPlaceholder')}
+                    disabled={bootLoading}
+                  />
+                </div>
+
+                <div className="min-w-0">
+                  <label className={labelClass}>{t('contract')}</label>
+                  <CustomSelect
+                    className="w-full"
+                    value={contractId}
+                    onChange={(value) => setContractId(value == null ? '' : String(value))}
+                    options={contractOptions}
+                    disabled={bootLoading || !instrument || contractsLoading}
+                    searchable={contracts.length > 8}
+                    searchPlaceholder={t('instrumentPlaceholder')}
+                    placeholder={
+                      !instrument
+                        ? t('contractNeedsInstrument')
+                        : contractsLoading
+                          ? t('loading')
+                          : t('allContracts')
+                    }
+                  />
+                </div>
+
+                <div className="min-w-0">
+                  <label className={labelClass}>{t('timeframe')}</label>
+                  <CustomSelect
+                    className="w-full"
+                    value={timeframe}
+                    onChange={(value) => setTimeframe(value ? String(value) : '1m')}
+                    options={timeframeOptions}
+                    disabled={bootLoading}
+                  />
+                </div>
+
+                <div className="min-w-0">
+                  <label className={labelClass}>{t('startDate')}</label>
+                  <DateInput
+                    value={start}
+                    onChange={(value) => {
+                      const next = value > todayIso ? todayIso : value;
+                      setStart(next);
+                      if (next > end) setEnd(next);
+                    }}
+                    className={replayDateInputClass}
+                    size="sm"
+                    max={end || todayIso}
+                  />
+                </div>
+
+                <div className="min-w-0">
+                  <label className={labelClass}>{t('endDate')}</label>
+                  <DateInput
+                    value={end}
+                    onChange={(value) => setEnd(value > todayIso ? todayIso : value)}
+                    className={replayDateInputClass}
+                    size="sm"
+                    min={start || undefined}
+                    max={todayIso}
+                  />
+                </div>
+              </div>
+
+              <div className="flex w-full flex-wrap items-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => void handleStart()}
+                  disabled={!instrument || bootLoading || starting}
+                  className={replayPrimaryButtonClass}
+                >
+                  {starting
+                    ? t('downloading')
+                    : busy
+                      ? t('restartDownload')
+                      : t('startDownload')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void loadCoverage(instrument)}
+                  disabled={!instrument || bootLoading}
+                  className={replaySecondaryButtonClass}
+                >
+                  {t('refresh')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handleExportCsv()}
+                  disabled={!instrument || bootLoading || exporting}
+                  className={replaySecondaryButtonClass}
+                >
+                  {exporting ? t('exporting') : t('exportCsv')}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {bootLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-500 mx-auto mb-4" />
+                <p className="text-gray-600 dark:text-gray-400">{t('loading')}</p>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4 sm:space-y-6">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+                <StatCard label={t('barsStored')} value={fmtNum(coverageTotals.stored)} />
+                <StatCard label={t('barsExpected')} value={fmtNum(coverageTotals.expected)} />
+                <StatCard label={t('missing')} value={fmtNum(coverageTotals.missing)} />
+                <StatCard label={t('statusComplete')} value={fmtNum(coverageTotals.complete)} />
+                <StatCard label={t('statusPartial')} value={fmtNum(coverageTotals.partial)} />
+              </div>
+
+              {job && (
+                <div className={`${replayCardClass} p-4 sm:p-5`}>
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{t('status')}</p>
+                      <p className="text-lg font-bold text-gray-900 dark:text-white">
+                        {statusLabel(job.status)}
+                      </p>
+                    </div>
+                    <div className="text-right text-sm text-gray-600 dark:text-gray-400">
+                      <p>
+                        {t('barsFetched')}:{' '}
+                        <span className="font-medium text-gray-900 dark:text-gray-100">
+                          {fmtNum(job.bars_fetched)}
+                        </span>
+                      </p>
+                      <p>
+                        {t('chunksDone')}:{' '}
+                        <span className="font-medium text-gray-900 dark:text-gray-100">
+                          {fmtNum(job.chunks_done)}
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+                  <div className="h-2 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+                    <div
+                      className="h-full rounded-full bg-blue-600 dark:bg-blue-500 transition-all"
+                      style={{ width: `${job.progress_pct}%` }}
+                    />
+                  </div>
+                  <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                    {t('progress')}: {fmtNum(job.progress_pct)}%
+                  </p>
+                  {job.error && (
+                    <p
+                      className={`mt-3 text-sm ${
+                        job.status === 'failed'
+                          ? 'text-red-600 dark:text-red-400'
+                          : 'text-amber-700 dark:text-amber-400'
+                      }`}
+                    >
+                      {job.status === 'failed' ? t('error') : t('warning')}: {job.error}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <div className={`${replayCardClass} p-4 sm:p-5`}>
+                <div className="mb-4 border-b border-gray-200 dark:border-gray-700">
+                  <nav className="-mb-px flex gap-4 overflow-x-auto" aria-label="Historical coverage tabs">
+                    {(
+                      [
+                        { id: 'coverage' as const, label: t('coverage') },
+                        { id: 'issues' as const, label: t('issues') },
+                      ] as const
+                    ).map((tab) => (
+                      <button
+                        key={tab.id}
+                        type="button"
+                        onClick={() => setBottomTab(tab.id)}
+                        className={`whitespace-nowrap border-b-2 px-1 py-2 text-sm font-medium transition-colors ${
+                          bottomTab === tab.id
+                            ? 'border-sky-500 text-sky-600 dark:text-sky-400'
+                            : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                        }`}
+                        aria-current={bottomTab === tab.id ? 'page' : undefined}
+                      >
+                        {tab.label}
+                        {tab.id === 'issues' && issues.length > 0 ? ` (${issues.length})` : ''}
+                      </button>
+                    ))}
+                  </nav>
+                </div>
+
+                {bottomTab === 'coverage' ? (
+                  coverage.length === 0 ? (
+                    <p className="text-sm text-gray-600 dark:text-gray-400 py-4 text-center">
+                      {t('noCoverage')}
+                    </p>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="max-w-xs">
+                        <label className={labelClass}>{t('coverageFilter')}</label>
+                        <CustomSelect
+                          className="w-full"
+                          value={coverageFilter}
+                          onChange={(value) =>
+                            setCoverageFilter(
+                              (value === 'with_data' || value === 'empty' ? value : 'all'),
+                            )
+                          }
+                          options={coverageFilterOptions}
+                        />
+                      </div>
+                      {filteredCoverage.length === 0 ? (
+                        <p className="text-sm text-gray-600 dark:text-gray-400 py-4 text-center">
+                          {t('noCoverageFiltered')}
+                        </p>
+                      ) : (
+                        <div className="overflow-x-auto">
+                          <table className="min-w-full text-left text-sm">
+                            <thead className="border-b border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400">
+                              <tr>
+                                <th className="py-2 pr-4 font-medium">{t('contract')}</th>
+                                <th className="py-2 pr-4 font-medium">{t('timeframe')}</th>
+                                <th className="py-2 pr-4 font-medium">{t('status')}</th>
+                                <th className="py-2 pr-4 font-medium">{t('barsStored')}</th>
+                                <th className="py-2 pr-4 font-medium">{t('barsExpected')}</th>
+                                <th className="py-2 pr-4 font-medium">{t('missing')}</th>
+                                <th className="py-2 font-medium">{t('range')}</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {filteredCoverage.map((c) => (
+                                <tr
+                                  key={`${c.contract_id}-${c.timeframe}-${c.start_utc}`}
+                                  className="border-b border-gray-100 dark:border-gray-800 text-gray-900 dark:text-gray-100"
+                                >
+                                  <td className="py-2.5 pr-4 whitespace-nowrap">{c.contract_id}</td>
+                                  <td className="py-2.5 pr-4 whitespace-nowrap">{c.timeframe}</td>
+                                  <td className="py-2.5 pr-4">
+                                    <StatusBadge status={c.status} label={statusLabel(c.status)} />
+                                  </td>
+                                  <td className="py-2.5 pr-4">{fmtNum(c.bars_stored)}</td>
+                                  <td className="py-2.5 pr-4">{fmtNum(c.bars_expected)}</td>
+                                  <td className="py-2.5 pr-4">{fmtNum(c.unexpected_missing_count)}</td>
+                                  <td className="py-2.5 whitespace-nowrap">
+                                    {fmtDateIso(c.start_utc)} → {fmtDateIso(c.end_utc)}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                  )
+                ) : issues.length === 0 ? (
+                  <p className="text-sm text-gray-600 dark:text-gray-400 py-4 text-center">
+                    {t('noIssues')}
+                  </p>
+                ) : (
+                  <ul className="max-h-80 space-y-2 overflow-y-auto text-sm">
+                    {issues.slice(0, 100).map((iss) => (
+                      <li
+                        key={iss.id}
+                        className="rounded-md border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/30 px-3 py-2 text-gray-700 dark:text-gray-300"
+                      >
+                        <span className="font-medium text-gray-900 dark:text-gray-100">
+                          {iss.issue_type}
+                        </span>
+                        <span className="text-gray-500 dark:text-gray-400"> · {iss.severity}</span>
+                        {iss.timestamp_utc ? (
+                          <span className="block sm:inline sm:before:content-['·_'] text-gray-500 dark:text-gray-400">
+                            {iss.timestamp_utc}
+                          </span>
+                        ) : null}
+                        {iss.contract_id ? (
+                          <span className="block sm:inline sm:before:content-['·_'] text-gray-500 dark:text-gray-400">
+                            {iss.contract_id}
+                          </span>
+                        ) : null}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </PageShell>
+  );
+};
+
+const StatCard: React.FC<{ label: string; value: string }> = ({ label, value }) => (
+  <div className={`${replayCardClass} p-4`}>
+    <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{label}</p>
+    <p className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">{value}</p>
+  </div>
+);
+
+const StatusBadge: React.FC<{ status: string; label: string }> = ({ status, label }) => {
+  const tone =
+    status === 'complete'
+      ? 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400'
+      : status === 'partial'
+        ? 'bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400'
+        : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300';
+  return (
+    <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${tone}`}>
+      {label}
+    </span>
+  );
+};
+
+export default HistoricalDataPage;

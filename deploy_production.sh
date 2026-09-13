@@ -817,6 +817,32 @@ else
     warn "Fichier systemd manquant: $MARKET_QUOTES_UNIT"
 fi
 
+# Sync historique quotidien (timer 15 min, sans Celery Beat)
+HIST_SYNC_SERVICE_UNIT="$PROJECT_ROOT/systemd/trading-journal-historical-sync.service"
+HIST_SYNC_TIMER_UNIT="$PROJECT_ROOT/systemd/trading-journal-historical-sync.timer"
+if sudo mkdir -p "$LOG_DIR_MARKET" 2>/dev/null; then
+    sudo touch "$LOG_DIR_MARKET/historical-sync.log" "$LOG_DIR_MARKET/historical-sync_error.log" 2>/dev/null || true
+    sudo chown apache:apache "$LOG_DIR_MARKET/historical-sync.log" "$LOG_DIR_MARKET/historical-sync_error.log" 2>/dev/null || true
+fi
+if [ -f "$HIST_SYNC_SERVICE_UNIT" ] && [ -f "$HIST_SYNC_TIMER_UNIT" ]; then
+    if sudo cp "$HIST_SYNC_SERVICE_UNIT" "$HIST_SYNC_TIMER_UNIT" /etc/systemd/system/ 2>/dev/null; then
+        info "✅ Unités systemd historical-sync installées"
+        sudo systemctl daemon-reload 2>/dev/null || true
+        sudo systemctl enable trading-journal-historical-sync.timer 2>/dev/null || \
+            warn "Impossible d'activer trading-journal-historical-sync.timer"
+        if sudo systemctl restart trading-journal-historical-sync.timer 2>/dev/null || \
+             sudo systemctl start trading-journal-historical-sync.timer 2>/dev/null; then
+            info "✅ Timer trading-journal-historical-sync actif"
+        else
+            warn "Impossible de démarrer trading-journal-historical-sync.timer"
+        fi
+    else
+        warn "Impossible de copier les unités historical-sync vers /etc/systemd/system/"
+    fi
+else
+    warn "Fichiers systemd historical-sync manquants"
+fi
+
 if redis-cli ping >/dev/null 2>&1; then
     MARKET_KEYS_COUNT=$(redis-cli -n 1 --scan --pattern '*market*' 2>/dev/null | wc -l | tr -d '[:space:]')
     MARKET_KEYS_COUNT=${MARKET_KEYS_COUNT:-0}

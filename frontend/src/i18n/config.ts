@@ -198,6 +198,10 @@ import frTradingActivity from './locales/fr/trading_activity.json';
 import enTradingActivity from './locales/en/trading_activity.json';
 import esTradingActivity from './locales/es/trading_activity.json';
 import deTradingActivity from './locales/de/trading_activity.json';
+import frHistoricalData from './locales/fr/historicalData.json';
+import enHistoricalData from './locales/en/historicalData.json';
+import esHistoricalData from './locales/es/historicalData.json';
+import deHistoricalData from './locales/de/historicalData.json';
 
 // Custom detector qui utilise navigator.languages pour respecter l'ordre de préférence (comme YouTube)
 const customNavigatorLanguagesDetector = {
@@ -269,6 +273,7 @@ const resources = {
     replay: frReplay,
     journalQuestions: frJournalQuestions,
     trading_activity: frTradingActivity,
+    historicalData: frHistoricalData,
   },
   en: {
     common: enCommon,
@@ -297,6 +302,7 @@ const resources = {
     replay: enReplay,
     journalQuestions: enJournalQuestions,
     trading_activity: enTradingActivity,
+    historicalData: enHistoricalData,
   },
   es: {
     common: esCommon,
@@ -325,6 +331,7 @@ const resources = {
     replay: esReplay,
     journalQuestions: esJournalQuestions,
     trading_activity: esTradingActivity,
+    historicalData: esHistoricalData,
   },
   de: {
     common: deCommon,
@@ -353,6 +360,7 @@ const resources = {
     replay: deReplay,
     journalQuestions: deJournalQuestions,
     trading_activity: deTradingActivity,
+    historicalData: deHistoricalData,
   },
   it: {
     common: itCommon,
@@ -506,7 +514,7 @@ i18n
     fallbackLng: getDefaultLanguage(),
     supportedLngs: ['fr', 'en', 'es', 'de', 'it', 'pt', 'ja', 'ko', 'zh'],
     defaultNS: 'common',
-    ns: ['common', 'trades', 'settings', 'navigation', 'dashboard', 'calendar', 'strategies', 'statistics', 'analytics', 'users', 'accounts', 'auth', 'home', 'strategy', 'positionStrategies', 'goals', 'transactions', 'legal', 'about', 'features', 'contact', 'calculator', 'billing', 'replay', 'trading_activity', 'journalQuestions'],
+    ns: ['common', 'trades', 'settings', 'navigation', 'dashboard', 'calendar', 'strategies', 'statistics', 'analytics', 'users', 'accounts', 'auth', 'home', 'strategy', 'positionStrategies', 'goals', 'transactions', 'legal', 'about', 'features', 'contact', 'calculator', 'billing', 'replay', 'trading_activity', 'journalQuestions', 'historicalData'],
     
     interpolation: {
       escapeValue: false, // React échappe déjà les valeurs
