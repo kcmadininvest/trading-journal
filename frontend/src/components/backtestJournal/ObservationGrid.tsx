@@ -38,6 +38,7 @@ const PAGE_SIZE_OPTIONS = [5, 10, 25, 50, 100];
 const GRID_COLUMNS = [
   'colNumber',
   'datetime',
+  'exitDatetime',
   'direction',
   'tradeTaken',
   'entry',
@@ -57,6 +58,7 @@ type GridRow = {
   dirty: boolean;
   errors: Record<string, string>;
   market_datetime: string;
+  exit_datetime: string;
   direction: 'LONG' | 'SHORT';
   setup_valid: boolean;
   trade_taken: boolean;
@@ -88,6 +90,7 @@ function emptyRow(carry: Partial<GridRow> = {}): GridRow {
     dirty: false,
     errors: {},
     market_datetime: carry.market_datetime || '',
+    exit_datetime: '',
     direction: carry.direction || 'LONG',
     setup_valid: true,
     trade_taken: true,
@@ -146,6 +149,7 @@ function fromApi(
     dirty: false,
     errors: {},
     market_datetime: isoToDatetimeLocal(obs.market_datetime, timeZone),
+    exit_datetime: isoToDatetimeLocal(obs.exit_datetime, timeZone),
     direction: obs.direction,
     setup_valid: obs.setup_valid,
     trade_taken: obs.trade_taken,
@@ -266,6 +270,9 @@ export function ObservationGrid({ campaign, onStatsInvalidate }: Props) {
     const payload: Record<string, unknown> = {
       client_key: row.key,
       market_datetime: datetimeLocalToIso(row.market_datetime, timezone),
+      exit_datetime: row.exit_datetime
+        ? datetimeLocalToIso(row.exit_datetime, timezone)
+        : null,
       direction: row.direction,
       setup_valid: row.setup_valid,
       trade_taken: row.trade_taken,
@@ -654,6 +661,33 @@ export function ObservationGrid({ campaign, onStatsInvalidate }: Props) {
                     />
                     {row.errors.market_datetime && (
                       <div className="text-[11px] text-red-600 dark:text-red-400">{row.errors.market_datetime}</div>
+                    )}
+                  </td>
+                  <td className={`${cellClass} min-w-[12.5rem]`}>
+                    <DateTimeInput
+                      className={inputClass}
+                      value={row.exit_datetime}
+                      onChange={(value) => patchRow(row.key, { exit_datetime: value })}
+                      aria-label={t('exitDatetime')}
+                      compact
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter') {
+                          event.preventDefault();
+                          const inputs = tableRef.current?.querySelectorAll<HTMLInputElement | HTMLSelectElement>(
+                            'tbody input, tbody select'
+                          );
+                          if (!inputs) return;
+                          const list = Array.from(inputs);
+                          const idx = list.indexOf(event.currentTarget);
+                          const nextRowStart = list.findIndex(
+                            (el, i) => i > idx && el.closest('tr') !== event.currentTarget.closest('tr')
+                          );
+                          if (nextRowStart >= 0) list[nextRowStart].focus();
+                        }
+                      }}
+                    />
+                    {row.errors.exit_datetime && (
+                      <div className="text-[11px] text-red-600 dark:text-red-400">{row.errors.exit_datetime}</div>
                     )}
                   </td>
                   <td className={`${cellClass} min-w-[5.5rem]`}>

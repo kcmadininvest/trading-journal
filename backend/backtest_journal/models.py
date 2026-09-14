@@ -173,6 +173,7 @@ class ManualBacktestObservation(models.Model):
         related_name='manual_backtest_observations',
     )
     market_datetime = models.DateTimeField()
+    exit_datetime = models.DateTimeField(null=True, blank=True)
     direction = models.CharField(max_length=8, choices=DIRECTION_CHOICES)
     setup_valid = models.BooleanField(default=True)
     trade_taken = models.BooleanField(default=True)

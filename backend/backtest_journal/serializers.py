@@ -288,6 +288,7 @@ class ManualBacktestObservationSerializer(serializers.ModelSerializer):
             'id',
             'campaign',
             'market_datetime',
+            'exit_datetime',
             'direction',
             'setup_valid',
             'trade_taken',

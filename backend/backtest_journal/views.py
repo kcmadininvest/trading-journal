@@ -484,6 +484,7 @@ class ManualBacktestObservationViewSet(UserScopedMixin, viewsets.GenericViewSet)
             campaign=obs.campaign,
             user=request.user,
             market_datetime=obs.market_datetime,
+            exit_datetime=obs.exit_datetime,
             direction=obs.direction,
             setup_valid=obs.setup_valid,
             trade_taken=obs.trade_taken,
@@ -597,6 +598,7 @@ def _build_csv(user, campaign: ManualBacktestCampaign, observations) -> str:
     headers = [
         'id',
         'market_datetime',
+        'exit_datetime',
         'direction',
         'setup_valid',
         'trade_taken',
@@ -623,6 +625,7 @@ def _build_csv(user, campaign: ManualBacktestCampaign, observations) -> str:
             [
                 obs.pk,
                 _fmt_dt(obs.market_datetime, prefs),
+                _fmt_dt(obs.exit_datetime, prefs),
                 obs.direction,
                 obs.setup_valid,
                 obs.trade_taken,

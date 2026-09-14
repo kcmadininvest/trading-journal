@@ -42,6 +42,7 @@ class ManualBacktestObservationAdmin(admin.ModelAdmin):
         'id',
         'campaign',
         'market_datetime',
+        'exit_datetime',
         'direction',
         'trade_taken',
         'result_status',

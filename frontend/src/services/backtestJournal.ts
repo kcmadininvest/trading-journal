@@ -74,6 +74,7 @@ export interface BacktestObservation {
   id: number;
   campaign: number;
   market_datetime: string;
+  exit_datetime: string | null;
   direction: 'LONG' | 'SHORT';
   setup_valid: boolean;
   trade_taken: boolean;

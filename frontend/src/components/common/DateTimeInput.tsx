@@ -46,14 +46,19 @@ export const DateTimeInput: React.FC<DateTimeInputProps> = ({
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedHour, setSelectedHour] = useState(0);
   const [selectedMinute, setSelectedMinute] = useState(0);
+  const [editingHours, setEditingHours] = useState<string | null>(null);
+  const [editingMinutes, setEditingMinutes] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const calendarRef = useRef<HTMLDivElement>(null);
+  const hoursInputRef = useRef<HTMLInputElement>(null);
+  const minutesInputRef = useRef<HTMLInputElement>(null);
   const [calendarStyle, setCalendarStyle] = useState<{
     top?: string;
     bottom?: string;
     left?: string;
     width?: string;
+    maxHeight?: string;
   }>({});
 
   const isCompact = compact || className.includes('text-xs') || className.includes('text-sm');
@@ -95,6 +100,8 @@ export const DateTimeInput: React.FC<DateTimeInputProps> = ({
       ) {
         setShowCalendar(false);
         setShowTimePicker(false);
+        setEditingHours(null);
+        setEditingMinutes(null);
       }
     };
 
@@ -111,43 +118,54 @@ export const DateTimeInput: React.FC<DateTimeInputProps> = ({
       if (!containerRef.current) return;
 
       const containerRect = containerRef.current.getBoundingClientRect();
-      const calendarHeight = isCompact ? 360 : 420;
-      const spaceBelow = window.innerHeight - containerRect.bottom;
-      const spaceAbove = containerRect.top;
-      const calendarWidth = isCompact ? 320 : 380;
+      const measuredHeight = calendarRef.current?.offsetHeight;
+      const calendarHeight = measuredHeight && measuredHeight > 0
+        ? measuredHeight
+        : isCompact
+          ? 420
+          : 480;
+      const calendarWidth = isCompact ? 300 : 340;
+      const gap = 8;
       const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      const spaceRight = viewportWidth - containerRect.right - gap;
+      const spaceLeft = containerRect.left - gap;
 
-      let top: string | undefined;
-      let bottom: string | undefined;
-      let position: 'bottom' | 'top' = 'bottom';
-
-      if (spaceBelow < calendarHeight + 10 && spaceAbove > calendarHeight + 10) {
-        position = 'top';
-        bottom = `${window.innerHeight - containerRect.top + 4}px`;
+      let left: number;
+      // Préférer à droite du champ (évite de sortir en bas dans les tableaux).
+      if (spaceRight >= calendarWidth || spaceRight >= spaceLeft) {
+        left = Math.min(containerRect.right + gap, viewportWidth - calendarWidth - gap);
+        if (left < gap) left = gap;
       } else {
-        position = 'bottom';
-        top = `${containerRect.bottom + 4}px`;
+        left = Math.max(gap, containerRect.left - calendarWidth - gap);
       }
 
+      // Aligner verticalement sur le champ, puis clamper dans le viewport.
+      const maxTop = Math.max(gap, viewportHeight - calendarHeight - gap);
+      const top = Math.min(Math.max(gap, containerRect.top), maxTop);
+
       setCalendarStyle({
-        top: position === 'bottom' ? top : undefined,
-        bottom: position === 'top' ? bottom : undefined,
-        left: `${Math.max(8, Math.min(containerRect.left, viewportWidth - calendarWidth - 8))}px`,
+        top: `${top}px`,
+        bottom: undefined,
+        left: `${left}px`,
         width: `${calendarWidth}px`,
+        maxHeight: `${viewportHeight - gap * 2}px`,
       });
     };
 
     calculatePosition();
     const timeoutId = setTimeout(calculatePosition, 0);
+    const rafId = requestAnimationFrame(calculatePosition);
     window.addEventListener('scroll', calculatePosition, true);
     window.addEventListener('resize', calculatePosition);
 
     return () => {
       clearTimeout(timeoutId);
+      cancelAnimationFrame(rafId);
       window.removeEventListener('scroll', calculatePosition, true);
       window.removeEventListener('resize', calculatePosition);
     };
-  }, [showCalendar, showTimePicker, isCompact]);
+  }, [showCalendar, showTimePicker, isCompact, selectedHour, selectedMinute]);
 
   const parseToISO = (displayValue: string): string | null => {
     if (!displayValue.trim()) return null;
@@ -253,8 +271,10 @@ export const DateTimeInput: React.FC<DateTimeInputProps> = ({
   };
 
   const handleTimeChange = (hour: number, minute: number) => {
-    setSelectedHour(hour);
-    setSelectedMinute(minute);
+    const wrappedHour = ((hour % 24) + 24) % 24;
+    const wrappedMinute = ((minute % 60) + 60) % 60;
+    setSelectedHour(wrappedHour);
+    setSelectedMinute(wrappedMinute);
 
     if (value) {
       const date = new Date(value);
@@ -262,10 +282,39 @@ export const DateTimeInput: React.FC<DateTimeInputProps> = ({
         const year = date.getFullYear();
         const month = date.getMonth();
         const day = date.getDate();
-        const isoValue = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+        const isoValue = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}T${String(wrappedHour).padStart(2, '0')}:${String(wrappedMinute).padStart(2, '0')}`;
         onChange(isoValue);
       }
     }
+  };
+
+  const adjustTime = (type: 'hours' | 'minutes', delta: number) => {
+    let hour = selectedHour;
+    let minute = selectedMinute;
+
+    if (editingHours !== null) {
+      const parsed = parseInt(editingHours, 10);
+      if (!Number.isNaN(parsed) && parsed >= 0 && parsed <= 23) hour = parsed;
+      setEditingHours(null);
+    }
+    if (editingMinutes !== null) {
+      const parsed = parseInt(editingMinutes, 10);
+      if (!Number.isNaN(parsed) && parsed >= 0 && parsed <= 59) minute = parsed;
+      setEditingMinutes(null);
+    }
+
+    if (type === 'hours') {
+      handleTimeChange(hour + delta, minute);
+    } else {
+      handleTimeChange(hour, minute + delta);
+    }
+  };
+
+  const closePicker = () => {
+    setShowCalendar(false);
+    setShowTimePicker(false);
+    setEditingHours(null);
+    setEditingMinutes(null);
   };
 
   const navigateMonth = (direction: 'prev' | 'next') => {
@@ -320,15 +369,35 @@ export const DateTimeInput: React.FC<DateTimeInputProps> = ({
     days.push(day);
   }
 
-  const hours = Array.from({ length: 24 }, (_, i) => i);
-  const minutes = Array.from({ length: 60 }, (_, i) => i);
+  const stepperBtnClass = isCompact
+    ? 'w-8 h-7 flex items-center justify-center rounded-md bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors'
+    : 'w-10 h-8 flex items-center justify-center rounded-md bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors';
+
+  const stepperValueClass = isCompact
+    ? 'w-12 h-10 flex items-center justify-center text-base font-semibold text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:border-blue-500 dark:hover:border-blue-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 tabular-nums'
+    : 'w-16 h-12 flex items-center justify-center text-lg font-semibold text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:border-blue-500 dark:hover:border-blue-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 tabular-nums';
+
+  const stepperValueEditingClass = isCompact
+    ? 'w-12 h-10 text-center text-base font-semibold text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 border-2 border-blue-500 dark:border-blue-400 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none'
+    : 'w-16 h-12 text-center text-lg font-semibold text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 border-2 border-blue-500 dark:border-blue-400 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none';
+
+  const chevronUp = (
+    <svg className={isCompact ? 'h-3.5 w-3.5' : 'h-4 w-4'} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+    </svg>
+  );
+  const chevronDown = (
+    <svg className={isCompact ? 'h-3.5 w-3.5' : 'h-4 w-4'} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+    </svg>
+  );
 
   const calendarPanel =
     (showCalendar || showTimePicker) &&
     createPortal(
       <div
         ref={calendarRef}
-        className={`fixed z-[9999] bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-xl ${
+        className={`fixed z-[9999] overflow-y-auto bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-xl ${
           isCompact ? 'p-3' : 'p-4'
         }`}
         style={calendarStyle}
@@ -422,42 +491,118 @@ export const DateTimeInput: React.FC<DateTimeInputProps> = ({
                 {t('common:time', { defaultValue: 'Heure' })}
               </span>
             </div>
-            <div className={`flex items-center ${isCompact ? 'gap-2' : 'gap-3'}`}>
-              <div className="flex-1">
-                <label className={`block ${isCompact ? 'text-[10px]' : 'text-xs'} text-gray-500 dark:text-gray-400 mb-1`}>
+
+            <div className="flex items-center justify-center gap-4">
+              <div className="flex flex-col items-center">
+                <label className={`mb-2 ${isCompact ? 'text-[10px]' : 'text-xs'} font-medium text-gray-500 dark:text-gray-400`}>
                   {t('common:hours', { defaultValue: 'Heures' })}
                 </label>
-                <select
-                  value={selectedHour}
-                  onChange={(e) => handleTimeChange(parseInt(e.target.value, 10), selectedMinute)}
-                  className={`w-full ${isCompact ? 'px-2 py-1 text-xs' : 'px-3 py-2 text-sm'} border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                >
-                  {hours.map((h) => (
-                    <option key={h} value={h}>
-                      {String(h).padStart(2, '0')}
-                    </option>
-                  ))}
-                </select>
+                <div className="flex flex-col items-center gap-1">
+                  <button type="button" className={stepperBtnClass} onClick={() => adjustTime('hours', 1)} aria-label={t('common:increaseHours', { defaultValue: 'Augmenter les heures' })}>
+                    {chevronUp}
+                  </button>
+                  {editingHours !== null ? (
+                    <input
+                      ref={hoursInputRef}
+                      type="number"
+                      min={0}
+                      max={23}
+                      value={editingHours}
+                      onChange={(event) => {
+                        const val = event.target.value;
+                        if (val === '' || (parseInt(val, 10) >= 0 && parseInt(val, 10) <= 23)) {
+                          setEditingHours(val);
+                        }
+                      }}
+                      onBlur={() => {
+                        const val = parseInt(editingHours, 10);
+                        if (!Number.isNaN(val) && val >= 0 && val <= 23) {
+                          handleTimeChange(val, selectedMinute);
+                        }
+                        setEditingHours(null);
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter') event.currentTarget.blur();
+                        if (event.key === 'Escape') setEditingHours(null);
+                      }}
+                      className={stepperValueEditingClass}
+                      autoFocus
+                    />
+                  ) : (
+                    <button
+                      type="button"
+                      className={stepperValueClass}
+                      onClick={() => {
+                        setEditingHours(String(selectedHour));
+                        window.setTimeout(() => hoursInputRef.current?.select(), 0);
+                      }}
+                    >
+                      {String(selectedHour).padStart(2, '0')}
+                    </button>
+                  )}
+                  <button type="button" className={stepperBtnClass} onClick={() => adjustTime('hours', -1)} aria-label={t('common:decreaseHours', { defaultValue: 'Diminuer les heures' })}>
+                    {chevronDown}
+                  </button>
+                </div>
               </div>
-              <div className={`${isCompact ? 'text-lg' : 'text-xl'} font-bold text-gray-400 dark:text-gray-500 pt-5`}>:</div>
-              <div className="flex-1">
-                <label className={`block ${isCompact ? 'text-[10px]' : 'text-xs'} text-gray-500 dark:text-gray-400 mb-1`}>
+
+              <div className={`${isCompact ? 'text-xl' : 'text-2xl'} font-bold text-gray-400 dark:text-gray-500 mt-6`}>:</div>
+
+              <div className="flex flex-col items-center">
+                <label className={`mb-2 ${isCompact ? 'text-[10px]' : 'text-xs'} font-medium text-gray-500 dark:text-gray-400`}>
                   {t('common:minutes', { defaultValue: 'Minutes' })}
                 </label>
-                <select
-                  value={selectedMinute}
-                  onChange={(e) => handleTimeChange(selectedHour, parseInt(e.target.value, 10))}
-                  className={`w-full ${isCompact ? 'px-2 py-1 text-xs' : 'px-3 py-2 text-sm'} border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                >
-                  {minutes.map((m) => (
-                    <option key={m} value={m}>
-                      {String(m).padStart(2, '0')}
-                    </option>
-                  ))}
-                </select>
+                <div className="flex flex-col items-center gap-1">
+                  <button type="button" className={stepperBtnClass} onClick={() => adjustTime('minutes', 1)} aria-label={t('common:increaseMinutes', { defaultValue: 'Augmenter les minutes' })}>
+                    {chevronUp}
+                  </button>
+                  {editingMinutes !== null ? (
+                    <input
+                      ref={minutesInputRef}
+                      type="number"
+                      min={0}
+                      max={59}
+                      value={editingMinutes}
+                      onChange={(event) => {
+                        const val = event.target.value;
+                        if (val === '' || (parseInt(val, 10) >= 0 && parseInt(val, 10) <= 59)) {
+                          setEditingMinutes(val);
+                        }
+                      }}
+                      onBlur={() => {
+                        const val = parseInt(editingMinutes, 10);
+                        if (!Number.isNaN(val) && val >= 0 && val <= 59) {
+                          handleTimeChange(selectedHour, val);
+                        }
+                        setEditingMinutes(null);
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter') event.currentTarget.blur();
+                        if (event.key === 'Escape') setEditingMinutes(null);
+                      }}
+                      className={stepperValueEditingClass}
+                      autoFocus
+                    />
+                  ) : (
+                    <button
+                      type="button"
+                      className={stepperValueClass}
+                      onClick={() => {
+                        setEditingMinutes(String(selectedMinute));
+                        window.setTimeout(() => minutesInputRef.current?.select(), 0);
+                      }}
+                    >
+                      {String(selectedMinute).padStart(2, '0')}
+                    </button>
+                  )}
+                  <button type="button" className={stepperBtnClass} onClick={() => adjustTime('minutes', -1)} aria-label={t('common:decreaseMinutes', { defaultValue: 'Diminuer les minutes' })}>
+                    {chevronDown}
+                  </button>
+                </div>
               </div>
             </div>
-            <div className={`flex ${isCompact ? 'gap-1.5 mt-2' : 'gap-2 mt-3'}`}>
+
+            <div className={`flex justify-center ${isCompact ? 'gap-1.5 mt-3' : 'gap-2 mt-4'}`}>
               <button
                 type="button"
                 onClick={() => {
@@ -470,10 +615,7 @@ export const DateTimeInput: React.FC<DateTimeInputProps> = ({
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  setShowCalendar(false);
-                  setShowTimePicker(false);
-                }}
+                onClick={closePicker}
                 className={`${isCompact ? 'px-2 py-1 text-[10px]' : 'px-3 py-1.5 text-xs'} bg-blue-600 hover:bg-blue-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors`}
               >
                 {t('common:done', { defaultValue: 'Terminé' })}
