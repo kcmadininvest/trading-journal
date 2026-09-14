@@ -19,12 +19,20 @@ import {
   isoToDatetimeLocal,
   previewResultPoints,
   previewResultR,
-  statusFromPoints,
 } from './datetimeLocal';
 import {
   replayCardClass,
   replaySecondaryButtonClass,
 } from '../replay/replayStyles';
+
+const RESULT_STATUS_OPTIONS: ResultStatus[] = [
+  'WIN',
+  'LOSS',
+  'BREAKEVEN',
+  'PARTIAL',
+  'OPEN',
+  'NOT_TAKEN',
+];
 
 const PAGE_SIZE_OPTIONS = [5, 10, 25, 50, 100];
 const GRID_COLUMNS = [
@@ -249,24 +257,12 @@ export function ObservationGrid({ campaign, onStatsInvalidate }: Props) {
     setRows((prev) =>
       prev.map((row) => {
         if (row.key !== key) return row;
-        const next = { ...row, ...partial, dirty: true, errors: {} };
-        const points = previewResultPoints(
-          next.direction,
-          parseLocalizedNumber(next.entry_price, numberFormat),
-          parseLocalizedNumber(next.exit_price, numberFormat),
-        );
-        next.result_status = statusFromPoints(points, next.trade_taken);
-        return next;
+        return { ...row, ...partial, dirty: true, errors: {} };
       })
     );
   };
 
   const toPayload = useCallback((row: GridRow) => {
-    const points = previewResultPoints(
-      row.direction,
-      parseLocalizedNumber(row.entry_price, numberFormat),
-      parseLocalizedNumber(row.exit_price, numberFormat),
-    );
     const payload: Record<string, unknown> = {
       client_key: row.key,
       market_datetime: datetimeLocalToIso(row.market_datetime, timezone),
@@ -274,7 +270,7 @@ export function ObservationGrid({ campaign, onStatsInvalidate }: Props) {
       setup_valid: row.setup_valid,
       trade_taken: row.trade_taken,
       refusal_reason: row.refusal_reason,
-      result_status: statusFromPoints(points, row.trade_taken),
+      result_status: row.result_status,
       result_r_source: row.result_r_source,
       context: row.context,
       structure: row.structure,
@@ -387,10 +383,30 @@ export function ObservationGrid({ campaign, onStatsInvalidate }: Props) {
     if (page > totalPages) setPage(totalPages);
   }, [page, totalPages]);
 
+  const sortedRows = useMemo(() => {
+    return rows
+      .map((row, index) => ({ row, index }))
+      .sort((a, b) => {
+        const aDt = a.row.market_datetime.trim();
+        const bDt = b.row.market_datetime.trim();
+        if (!aDt && !bDt) return a.index - b.index;
+        if (!aDt) return -1;
+        if (!bDt) return 1;
+        const byDate = bDt.localeCompare(aDt);
+        if (byDate !== 0) return byDate;
+        // Même horodatage : id décroissant (plus récent en base en premier)
+        const aId = a.row.id ?? 0;
+        const bId = b.row.id ?? 0;
+        if (aId !== bId) return bId - aId;
+        return a.index - b.index;
+      })
+      .map(({ row }) => row);
+  }, [rows]);
+
   const pageStart = (page - 1) * safePageSize;
   const pagedRows = useMemo(
-    () => rows.slice(pageStart, pageStart + safePageSize),
-    [rows, pageStart, safePageSize],
+    () => sortedRows.slice(pageStart, pageStart + safePageSize),
+    [sortedRows, pageStart, safePageSize],
   );
   const paginationStartIndex = rows.length === 0 ? 0 : pageStart;
   const paginationEndIndex = rows.length === 0 ? 0 : Math.min(page * safePageSize, rows.length);
@@ -487,7 +503,7 @@ export function ObservationGrid({ campaign, onStatsInvalidate }: Props) {
       <button
         type="button"
         className={`${paddingClass} rounded-lg text-gray-600 transition-all duration-200 hover:bg-green-50 hover:text-green-600 dark:text-gray-400 dark:hover:bg-green-900/20 dark:hover:text-green-400`}
-        onClick={() => addRow('bottom')}
+        onClick={() => addRow('top')}
         aria-label={t('addRow')}
       >
         <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -599,7 +615,6 @@ export function ObservationGrid({ campaign, onStatsInvalidate }: Props) {
               const exitNum = parseLocalizedNumber(row.exit_price, numberFormat);
               const preview = previewResultR(row.direction, entryNum, stopNum, exitNum);
               const pointsPreview = previewResultPoints(row.direction, entryNum, exitNum);
-              const derivedStatus = statusFromPoints(pointsPreview, row.trade_taken);
               const rowNumber = pageStart + rowIndex + 1;
               return (
                 <tr
@@ -716,18 +731,31 @@ export function ObservationGrid({ campaign, onStatsInvalidate }: Props) {
                     </span>
                   </td>
                   <td className={`${cellClass} min-w-[7rem]`}>
-                    <span
-                      className={`font-medium ${
-                        derivedStatus === 'WIN'
-                          ? 'text-green-600 dark:text-green-400'
-                          : derivedStatus === 'LOSS'
-                            ? 'text-red-600 dark:text-red-400'
-                            : 'text-gray-700 dark:text-gray-200'
-                      }`}
-                      aria-label={t('result')}
-                    >
-                      {t(`result${derivedStatus}`)}
-                    </span>
+                    <div className="relative">
+                      <select
+                        className={`${selectClass} font-medium ${
+                          row.result_status === 'WIN'
+                            ? 'text-green-600 dark:text-green-400'
+                            : row.result_status === 'LOSS'
+                              ? 'text-red-600 dark:text-red-400'
+                              : 'text-gray-700 dark:text-gray-200'
+                        }`}
+                        value={row.result_status}
+                        aria-label={t('result')}
+                        onChange={(event) =>
+                          patchRow(row.key, {
+                            result_status: event.target.value as ResultStatus,
+                          })
+                        }
+                      >
+                        {RESULT_STATUS_OPTIONS.map((status) => (
+                          <option key={status} value={status}>
+                            {t(`result${status}`)}
+                          </option>
+                        ))}
+                      </select>
+                      {selectChevron}
+                    </div>
                     {!row.trade_taken && (
                       <div className="text-[11px] text-amber-700 dark:text-amber-400">{t('theoretical')}</div>
                     )}

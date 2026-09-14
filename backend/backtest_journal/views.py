@@ -222,7 +222,7 @@ class ManualBacktestCampaignViewSet(UserScopedMixin, viewsets.ModelViewSet):
     def _observations(self, campaign: ManualBacktestCampaign):
         return list(
             campaign.observations.all().order_by(
-                'sort_index', 'market_datetime', 'id'
+                '-market_datetime', '-id'
             )
         )
 
@@ -231,7 +231,7 @@ class ManualBacktestCampaignViewSet(UserScopedMixin, viewsets.ModelViewSet):
         campaign = self.get_object()
         if request.method == 'GET':
             rows = campaign.observations.all().order_by(
-                'sort_index', 'market_datetime', 'id'
+                '-market_datetime', '-id'
             )[:MAX_OBSERVATIONS_PER_CAMPAIGN]
             serializer = ManualBacktestObservationSerializer(
                 rows, many=True, context={'request': request}
