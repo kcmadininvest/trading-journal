@@ -20,10 +20,7 @@ import {
   previewResultPoints,
   previewResultR,
 } from './datetimeLocal';
-import {
-  replayCardClass,
-  replaySecondaryButtonClass,
-} from '../replay/replayStyles';
+import { replaySecondaryButtonClass } from '../replay/replayStyles';
 
 const RESULT_STATUS_OPTIONS: ResultStatus[] = [
   'WIN',
@@ -519,7 +516,9 @@ export function ObservationGrid({ campaign, onStatsInvalidate }: Props) {
       </button>
     </Tooltip>
   );
-  const cellClass = compact ? 'px-1 py-1 text-xs' : 'px-2 py-1.5 text-sm';
+  const cellClass = compact
+    ? 'px-1 sm:px-2 py-1 sm:py-1.5 text-xs'
+    : 'px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm';
   const inputClass =
     'w-full min-w-[5.5rem] rounded border border-transparent bg-transparent px-1 py-0.5 text-gray-900 tabular-nums focus:border-blue-500 focus:outline-none dark:text-gray-100 dark:focus:border-blue-400';
   /** Même principe que PageSizeSelector : pas de flèche native du navigateur. */
@@ -582,14 +581,14 @@ export function ObservationGrid({ campaign, onStatsInvalidate }: Props) {
       </div>
       <p className="text-xs text-gray-500 dark:text-gray-400">{t('shortcuts')}</p>
 
-      <div className={`${replayCardClass} min-h-0 flex-1 overflow-auto`}>
-        <table ref={tableRef} className="min-w-full border-collapse">
-          <thead className="sticky top-0 z-10 bg-gray-100 dark:bg-gray-800">
+      <div className="relative min-h-0 flex-1 overflow-auto rounded-lg border border-gray-200 bg-white shadow dark:border-gray-700 dark:bg-gray-800">
+        <table ref={tableRef} className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+          <thead className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-700/50">
             <tr>
               {GRID_COLUMNS.map((col) => (
                 <th
                   key={col}
-                  className={`${cellClass} whitespace-nowrap text-[11px] font-medium uppercase tracking-wide text-gray-600 dark:text-gray-300 ${
+                  className={`${cellClass} whitespace-nowrap text-[10px] sm:text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 ${
                     col === 'colNumber' ? 'w-10 min-w-[2.5rem] text-center' : 'text-left'
                   }`}
                 >
@@ -605,7 +604,7 @@ export function ObservationGrid({ campaign, onStatsInvalidate }: Props) {
               ))}
             </tr>
           </thead>
-          <tbody>
+          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
             {rows.length === 0 && (
               <tr>
                 <td className={`${cellClass} text-gray-500 dark:text-gray-400`} colSpan={GRID_COLUMNS.length - 1}>
@@ -626,7 +625,7 @@ export function ObservationGrid({ campaign, onStatsInvalidate }: Props) {
               return (
                 <tr
                   key={row.key}
-                  className={`border-t border-gray-100 dark:border-gray-800 ${
+                  className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 ${
                     row.dirty ? 'bg-amber-50/70 dark:bg-amber-900/20' : ''
                   } ${Object.keys(row.errors).length ? 'bg-red-50/80 dark:bg-red-900/20' : ''}`}
                 >
@@ -752,9 +751,9 @@ export function ObservationGrid({ campaign, onStatsInvalidate }: Props) {
                         pointsPreview == null
                           ? 'text-gray-400 dark:text-gray-500'
                           : pointsPreview > 0
-                            ? 'text-green-600 dark:text-green-400'
+                            ? 'text-profit'
                             : pointsPreview < 0
-                              ? 'text-red-600 dark:text-red-400'
+                              ? 'text-loss'
                               : 'text-gray-600 dark:text-gray-300'
                       }`}
                       aria-label={t('resultPoints')}
@@ -769,9 +768,9 @@ export function ObservationGrid({ campaign, onStatsInvalidate }: Props) {
                       <select
                         className={`${selectClass} font-medium ${
                           row.result_status === 'WIN'
-                            ? 'text-green-600 dark:text-green-400'
+                            ? 'text-profit'
                             : row.result_status === 'LOSS'
-                              ? 'text-red-600 dark:text-red-400'
+                              ? 'text-loss'
                               : 'text-gray-700 dark:text-gray-200'
                         }`}
                         value={row.result_status}
@@ -882,7 +881,7 @@ export function ObservationGrid({ campaign, onStatsInvalidate }: Props) {
               );
             })}
             {rows.length > 0 && (
-              <tr className="border-t border-gray-100 dark:border-gray-800">
+              <tr>
                 <td className={cellClass} colSpan={GRID_COLUMNS.length - 1} />
                 <td className={`${cellClass} whitespace-nowrap`}>
                   {addRowButton('p-2')}
