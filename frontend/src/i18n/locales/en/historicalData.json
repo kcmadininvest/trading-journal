@@ -75,6 +75,7 @@
   "syncMinute": "Minute",
   "syncTimezoneHint": "Local time ({{timezone}})",
   "syncAddTarget": "Add targets",
+  "syncEditTarget": "Edit timeframes",
   "syncRemoveTarget": "Remove",
   "syncNoTargets": "No targets — add at least one instrument / timeframe.",
   "timeframesLabel": "Timeframes",

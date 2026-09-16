@@ -602,6 +602,41 @@ const HistoricalDataPage: React.FC = () => {
     );
   };
 
+  const updateSyncTargetGroupTimeframes = (
+    instrument: string,
+    contractId: string,
+    nextTimeframes: string[],
+  ) => {
+    if (nextTimeframes.length === 0) {
+      toast.error(t('syncSelectTimeframes'));
+      return;
+    }
+    const unique = [...new Set(nextTimeframes)];
+    setSyncTargets((prev) => {
+      const result: SyncTarget[] = [];
+      let inserted = false;
+      for (const tg of prev) {
+        const same =
+          tg.instrument === instrument && (tg.contract_id || '') === contractId;
+        if (!same) {
+          result.push(tg);
+          continue;
+        }
+        if (!inserted) {
+          for (const tf of unique) {
+            result.push({
+              instrument,
+              timeframe: tf,
+              contract_id: contractId,
+            });
+          }
+          inserted = true;
+        }
+      }
+      return result;
+    });
+  };
+
   return (
     <PageShell>
       <div className="mb-4 sm:mb-6">
@@ -738,24 +773,44 @@ const HistoricalDataPage: React.FC = () => {
                   {syncTargetGroups.map((group) => (
                     <li
                       key={`${group.instrument}-${group.contract_id}`}
-                      className="flex items-center justify-between gap-3 px-3 py-2 text-sm"
+                      className="flex flex-wrap items-center gap-2 px-3 py-2 text-sm sm:flex-nowrap"
                     >
-                      <span className="min-w-0 flex flex-1 flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                        <span className="shrink-0 font-semibold text-gray-900 dark:text-gray-100">
-                          {instrumentLabelByCode.get(group.instrument) || group.instrument}
-                        </span>
-                        <span className="min-w-0 text-gray-600 dark:text-gray-400">
-                          {group.timeframes.join(', ')}
-                          {' · '}
+                      <span className="min-w-0 flex-1 font-semibold text-gray-900 dark:text-gray-100">
+                        {instrumentLabelByCode.get(group.instrument) || group.instrument}
+                        <span className="mt-0.5 block font-normal text-gray-600 dark:text-gray-400">
                           {group.contract_id || t('allContracts')}
                         </span>
                       </span>
+                      <div
+                        className="min-w-0 w-full sm:w-56 sm:flex-none"
+                        title={t('syncEditTarget')}
+                      >
+                        <span className="sr-only">
+                          {t('syncEditTarget')} —{' '}
+                          {instrumentLabelByCode.get(group.instrument) || group.instrument}
+                        </span>
+                        <CustomMultiSelect
+                          className="w-full"
+                          value={group.timeframes}
+                          onChange={(next) =>
+                            updateSyncTargetGroupTimeframes(
+                              group.instrument,
+                              group.contract_id,
+                              next,
+                            )
+                          }
+                          options={timeframeOptions}
+                          placeholder={t('syncTimeframesPlaceholder')}
+                          clearLabel={t('syncTimeframesClear')}
+                          selectedCountLabel={(count) => t('syncTimeframesCount', { count })}
+                        />
+                      </div>
                       <button
                         type="button"
                         onClick={() =>
                           removeSyncTargetGroup(group.instrument, group.contract_id)
                         }
-                        className="p-1.5 rounded-lg text-rose-600 transition-colors hover:bg-rose-50 hover:text-rose-800 focus:outline-none focus:ring-2 focus:ring-rose-500 dark:text-rose-400 dark:hover:bg-rose-900/30 dark:hover:text-rose-300"
+                        className="ml-auto p-1.5 rounded-lg text-rose-600 transition-colors hover:bg-rose-50 hover:text-rose-800 focus:outline-none focus:ring-2 focus:ring-rose-500 dark:text-rose-400 dark:hover:bg-rose-900/30 dark:hover:text-rose-300 sm:ml-0"
                         title={t('syncRemoveTarget')}
                         aria-label={t('syncRemoveTarget')}
                       >
