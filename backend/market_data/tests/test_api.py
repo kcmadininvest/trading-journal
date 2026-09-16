@@ -57,7 +57,10 @@ class MarketDataApiTests(TestCase):
                 format='json',
             )
         self.assertEqual(res.status_code, 201)
-        self.assertEqual(res.json()['instrument'], 'NQ')
+        body = res.json()
+        self.assertEqual(len(body['jobs']), 1)
+        self.assertEqual(body['jobs'][0]['instrument'], 'NQ')
+        self.assertEqual(body['jobs'][0]['timeframe'], '1m')
         job = HistoricalDownloadJob.objects.get(user=self.user)
         mock_dispatch.assert_called_once_with(job.id)
 
@@ -68,12 +71,12 @@ class MarketDataApiTests(TestCase):
                 'instrument': 'NQ',
                 'start': '2025-03-10T00:00:00Z',
                 'end': '2025-03-11T00:00:00Z',
-                'timeframe': '1d',
+                'timeframe': '1w',
             },
             format='json',
         )
         self.assertEqual(res.status_code, 400)
-        self.assertIn('timeframe', res.json())
+        self.assertIn('timeframes', res.json())
 
     def test_create_download_accepts_5m(self):
         with patch('market_data.views.dispatch_historical_download') as mock_dispatch:
@@ -88,8 +91,53 @@ class MarketDataApiTests(TestCase):
                 format='json',
             )
         self.assertEqual(res.status_code, 201)
-        self.assertEqual(res.json()['timeframe'], '5m')
+        self.assertEqual(res.json()['jobs'][0]['timeframe'], '5m')
         mock_dispatch.assert_called_once()
+
+    def test_create_download_multiple_timeframes(self):
+        with patch('market_data.views.dispatch_historical_download') as mock_dispatch:
+            res = self.client.post(
+                '/api/market-data/downloads/',
+                {
+                    'instrument': 'NQ',
+                    'start': '2025-03-10T00:00:00Z',
+                    'end': '2025-03-11T00:00:00Z',
+                    'timeframes': ['5m', '1m', '5m', '1h'],
+                },
+                format='json',
+            )
+        self.assertEqual(res.status_code, 201)
+        jobs = res.json()['jobs']
+        self.assertEqual([j['timeframe'] for j in jobs], ['1m', '5m', '1h'])
+        self.assertEqual(HistoricalDownloadJob.objects.filter(user=self.user).count(), 3)
+        self.assertEqual(mock_dispatch.call_count, 3)
+
+    def test_create_download_rejects_empty_timeframes(self):
+        res = self.client.post(
+            '/api/market-data/downloads/',
+            {
+                'instrument': 'NQ',
+                'start': '2025-03-10T00:00:00Z',
+                'end': '2025-03-11T00:00:00Z',
+                'timeframes': [],
+            },
+            format='json',
+        )
+        self.assertEqual(res.status_code, 400)
+
+    def test_create_download_rejects_invalid_timeframes_list(self):
+        res = self.client.post(
+            '/api/market-data/downloads/',
+            {
+                'instrument': 'NQ',
+                'start': '2025-03-10T00:00:00Z',
+                'end': '2025-03-11T00:00:00Z',
+                'timeframes': ['1m', '1w'],
+            },
+            format='json',
+        )
+        self.assertEqual(res.status_code, 400)
+        self.assertIn('timeframes', res.json())
 
     def test_create_download_abandons_stale_pending(self):
         from django.utils import timezone

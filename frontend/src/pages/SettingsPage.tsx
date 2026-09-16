@@ -186,6 +186,8 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
     email_goal_alerts: true,
     show_pre_market: false,
     pnl_display: 'net',
+    market_replay_logarithmic: false,
+    market_replay_autofit: false,
   });
 
   // Sécurité
@@ -1118,6 +1120,73 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                       }`}
                     />
                   </button>
+                </div>
+              </div>
+              <div className="col-span-full border-t border-gray-200 pt-5 dark:border-gray-700">
+                <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {t('settings:marketReplaySection')}
+                </label>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between gap-3 rounded-lg bg-gray-50 p-3 dark:bg-gray-900">
+                    <div className="min-w-0">
+                      <span className="block text-sm text-gray-700 dark:text-gray-300">
+                        {t('settings:marketReplayLogarithmic')}
+                      </span>
+                      <span className="mt-0.5 block text-xs text-gray-500 dark:text-gray-400">
+                        {t('settings:marketReplayLogarithmicDesc')}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setPreferences({
+                          ...preferences,
+                          market_replay_logarithmic: !preferences.market_replay_logarithmic,
+                        })
+                      }
+                      className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                        preferences.market_replay_logarithmic
+                          ? 'bg-blue-600'
+                          : 'bg-gray-200 dark:bg-gray-700'
+                      }`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                          preferences.market_replay_logarithmic ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between gap-3 rounded-lg bg-gray-50 p-3 dark:bg-gray-900">
+                    <div className="min-w-0">
+                      <span className="block text-sm text-gray-700 dark:text-gray-300">
+                        {t('settings:marketReplayAutofit')}
+                      </span>
+                      <span className="mt-0.5 block text-xs text-gray-500 dark:text-gray-400">
+                        {t('settings:marketReplayAutofitDesc')}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setPreferences({
+                          ...preferences,
+                          market_replay_autofit: !preferences.market_replay_autofit,
+                        })
+                      }
+                      className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                        preferences.market_replay_autofit
+                          ? 'bg-blue-600'
+                          : 'bg-gray-200 dark:bg-gray-700'
+                      }`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                          preferences.market_replay_autofit ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
                 </div>
               </div>
               {isAdmin && (

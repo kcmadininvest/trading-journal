@@ -212,7 +212,7 @@ class SyncSettingsApiTests(TestCase):
                 'enabled': True,
                 'hour': 3,
                 'minute': 0,
-                'targets': [{'instrument': 'MES', 'timeframe': '1d'}],
+                'targets': [{'instrument': 'MES', 'timeframe': '1w'}],
             },
             format='json',
         )

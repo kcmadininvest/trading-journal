@@ -21,5 +21,6 @@
     "logout": "Se déconnecter",
     "appName": "K&C Trading Journal"
   },
-  "journalQuestions": "当日の質問"
+  "journalQuestions": "当日の質問",
+  "marketReplay": "Market Replay"
 }

@@ -2,12 +2,14 @@ from django.urls import path
 
 from market_data.views import (
     BarsCsvExportView,
+    BarsJsonView,
     ContractListView,
     CoverageListView,
     DownloadJobDetailView,
     DownloadJobIssuesView,
     DownloadJobListCreateView,
     InstrumentListView,
+    InstrumentTimeframesView,
     SyncSettingsRunNowView,
     SyncSettingsView,
 )
@@ -16,8 +18,14 @@ app_name = 'market_data'
 
 urlpatterns = [
     path('instruments/', InstrumentListView.as_view(), name='instruments'),
+    path(
+        'instruments/<str:instrument>/timeframes/',
+        InstrumentTimeframesView.as_view(),
+        name='instrument_timeframes',
+    ),
     path('contracts/', ContractListView.as_view(), name='contracts'),
     path('coverage/', CoverageListView.as_view(), name='coverage'),
+    path('bars/', BarsJsonView.as_view(), name='bars_json'),
     path('bars/export/', BarsCsvExportView.as_view(), name='bars_csv_export'),
     path('downloads/', DownloadJobListCreateView.as_view(), name='downloads'),
     path('downloads/<int:job_id>/', DownloadJobDetailView.as_view(), name='download_detail'),

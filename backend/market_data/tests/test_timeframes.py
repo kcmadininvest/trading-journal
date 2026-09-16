@@ -3,6 +3,7 @@ from django.test import SimpleTestCase
 
 from market_data.services.timeframes import (
     ALLOWED_TIMEFRAMES,
+    UNIT_DAY,
     UNIT_HOUR,
     UNIT_MINUTE,
     UnknownTimeframe,
@@ -14,7 +15,7 @@ class ParseTimeframeTests(SimpleTestCase):
     def test_allowed_catalogue(self):
         self.assertEqual(
             ALLOWED_TIMEFRAMES,
-            ('1m', '2m', '5m', '15m', '30m', '1h', '4h'),
+            ('1m', '2m', '5m', '15m', '30m', '1h', '4h', '1d'),
         )
 
     def test_minute_specs(self):
@@ -40,6 +41,13 @@ class ParseTimeframeTests(SimpleTestCase):
         self.assertEqual(parse_timeframe('4h').unit_number, 4)
         self.assertEqual(parse_timeframe('4h').bar_seconds, 14400)
 
+    def test_day_spec(self):
+        self.assertEqual(parse_timeframe('1d').unit, UNIT_DAY)
+        self.assertEqual(parse_timeframe('1d').unit_number, 1)
+        self.assertEqual(parse_timeframe('1d').bar_seconds, 86400)
+        self.assertEqual(parse_timeframe('daily').code, '1d')
+        self.assertEqual(parse_timeframe('D1').code, '1d')
+
     def test_aliases_and_case(self):
         self.assertEqual(parse_timeframe('M1').code, '1m')
         self.assertEqual(parse_timeframe('1Min').code, '1m')
@@ -47,6 +55,6 @@ class ParseTimeframeTests(SimpleTestCase):
 
     def test_unknown_raises(self):
         with self.assertRaises(UnknownTimeframe):
-            parse_timeframe('1d')
+            parse_timeframe('1w')
         with self.assertRaises(UnknownTimeframe):
             parse_timeframe('')

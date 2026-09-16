@@ -12,7 +12,12 @@ from market_data.services.timeframes import ALLOWED_TIMEFRAMES, UnknownTimeframe
 class DownloadJobCreateSerializer(serializers.Serializer):
     instrument = serializers.CharField(max_length=16)
     contract_id = serializers.CharField(max_length=64, required=False, allow_blank=True, default='')
-    timeframe = serializers.ChoiceField(choices=ALLOWED_TIMEFRAMES, default='1m')
+    timeframe = serializers.CharField(required=False, allow_blank=True, default='')
+    timeframes = serializers.ListField(
+        child=serializers.CharField(max_length=8),
+        required=False,
+        allow_empty=False,
+    )
     start = serializers.DateTimeField()
     end = serializers.DateTimeField()
 
@@ -21,11 +26,35 @@ class DownloadJobCreateSerializer(serializers.Serializer):
             raise serializers.ValidationError('start doit être antérieur à end.')
         attrs['instrument'] = attrs['instrument'].upper().strip()
         attrs['contract_id'] = (attrs.get('contract_id') or '').strip()
-        raw_tf = (attrs.get('timeframe') or '1m').strip()
-        try:
-            attrs['timeframe'] = parse_timeframe(raw_tf).code
-        except UnknownTimeframe as exc:
-            raise serializers.ValidationError({'timeframe': str(exc)}) from exc
+
+        raw_list = attrs.get('timeframes')
+        if raw_list is not None:
+            candidates = [str(x).strip() for x in raw_list if str(x).strip()]
+        else:
+            raw_tf = (attrs.get('timeframe') or '1m').strip() or '1m'
+            candidates = [raw_tf]
+
+        if not candidates:
+            raise serializers.ValidationError({'timeframes': 'Au moins un timeframe est requis.'})
+
+        parsed: list[str] = []
+        errors: list[str] = []
+        for raw in candidates:
+            try:
+                parsed.append(parse_timeframe(raw).code)
+            except UnknownTimeframe as exc:
+                errors.append(str(exc))
+        if errors:
+            raise serializers.ValidationError({'timeframes': errors[0]})
+
+        # Déduplique en conservant l’ordre du catalogue.
+        wanted = set(parsed)
+        ordered = [code for code in ALLOWED_TIMEFRAMES if code in wanted]
+        if not ordered:
+            raise serializers.ValidationError({'timeframes': 'Aucun timeframe valide.'})
+
+        attrs['timeframes'] = ordered
+        attrs.pop('timeframe', None)
         return attrs
 
 

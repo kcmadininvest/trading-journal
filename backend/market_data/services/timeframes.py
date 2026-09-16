@@ -26,6 +26,7 @@ _SPECS: dict[str, TimeframeSpec] = {
     '30m': TimeframeSpec('30m', UNIT_MINUTE, 30, 1800),
     '1h': TimeframeSpec('1h', UNIT_HOUR, 1, 3600),
     '4h': TimeframeSpec('4h', UNIT_HOUR, 4, 14400),
+    '1d': TimeframeSpec('1d', UNIT_DAY, 1, 86400),
 }
 
 ALLOWED_TIMEFRAMES: tuple[str, ...] = tuple(_SPECS.keys())
@@ -37,12 +38,14 @@ class UnknownTimeframe(ValueError):
 
 def parse_timeframe(code: str) -> TimeframeSpec:
     """
-    Résout un code timeframe (ex. ``5m``, ``1h``) vers unit / unitNumber / bar_seconds.
+    Résout un code timeframe (ex. ``5m``, ``1h``, ``1d``) vers unit / unitNumber / bar_seconds.
     """
     key = (code or '').strip().lower()
     # Alias historiques éventuels
     if key in ('1min', 'm1'):
         key = '1m'
+    elif key in ('daily', 'd1', '1day'):
+        key = '1d'
     spec = _SPECS.get(key)
     if spec is None:
         raise UnknownTimeframe(

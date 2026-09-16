@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import historicalDataService, { type MarketInstrument } from '../../services/historicalData';
 
 const FIELD_CLASS =
-  'mt-1 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100';
+  'mt-1 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100';
 
 let cachedInstruments: MarketInstrument[] | null = null;
 let inflight: Promise<MarketInstrument[]> | null = null;
@@ -157,9 +157,7 @@ export function InstrumentPicker({ value, onChange, disabled, id }: InstrumentPi
               >
                 <span className="font-medium text-gray-900 dark:text-gray-100">{item.instrument}</span>
                 {item.name && (
-                  <span className="mt-0.5 block text-xs text-gray-500 dark:text-gray-400">
-                    {item.name}
-                  </span>
+                  <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">{item.name}</span>
                 )}
               </button>
             </li>

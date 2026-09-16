@@ -26,6 +26,11 @@ from market_data.serializers import (
     QualityIssueSerializer,
     SyncSettingsSerializer,
 )
+from market_data.services.available_timeframes import (
+    latest_replay_coverage,
+    list_available_timeframes,
+    list_instruments_with_stored_bars,
+)
 from market_data.services.bar_query import get_available_data, get_bars
 from market_data.services.contracts import list_contracts_for_instrument
 from market_data.services.download_dispatch import (
@@ -35,6 +40,7 @@ from market_data.services.download_dispatch import (
     dispatch_historical_download,
 )
 from market_data.services.instruments import list_instruments, search_instruments
+from market_data.services.replay_bars import ReplayBarsError, fetch_replay_bars
 from market_data.services.sync_schedule import run_sync_for_settings
 from market_data.services.timeframes import UnknownTimeframe, parse_timeframe
 
@@ -83,6 +89,36 @@ class InstrumentListView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        with_bars = (request.query_params.get('with_bars') or '').strip().lower() in (
+            '1', 'true', 'yes',
+        )
+        if with_bars:
+            # Pas besoin TopStepX : uniquement les racines présentes en base.
+            roots = set(list_instruments_with_stored_bars())
+            catalog = {i.instrument: i for i in list_instruments()}
+            payload = []
+            for root in sorted(roots):
+                info = catalog.get(root)
+                if info is not None:
+                    payload.append({
+                        'instrument': info.instrument,
+                        'symbol_id': info.symbol_id,
+                        'broker_symbol': info.broker_symbol,
+                        'name': info.name,
+                        'tick_size': info.tick_size,
+                        'tick_value': info.tick_value,
+                    })
+                else:
+                    payload.append({
+                        'instrument': root,
+                        'symbol_id': '',
+                        'broker_symbol': '',
+                        'name': root,
+                        'tick_size': None,
+                        'tick_value': None,
+                    })
+            return Response(payload)
+
         integration, err = _require_topstepx(request.user)
         if err:
             return err
@@ -110,6 +146,47 @@ class InstrumentListView(APIView):
             }
             for i in instruments
         ])
+
+
+class InstrumentTimeframesView(APIView):
+    """Timeframes OHLC réellement disponibles pour un instrument."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, instrument: str):
+        symbol = (instrument or '').upper().strip()
+        if not symbol:
+            return Response({'detail': 'Instrument requis.'}, status=400)
+        timeframes = list_available_timeframes(symbol)
+        coverage = latest_replay_coverage(symbol)
+        return Response({
+            'symbol': symbol,
+            'timeframes': timeframes,
+            'last_bar_at': coverage['last_bar_at'],
+            'latest_session_date': coverage['latest_session_date'],
+        })
+
+
+class BarsJsonView(APIView):
+    """Séries OHLCV JSON multi-timeframe pour Market Replay."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            payload = fetch_replay_bars(
+                instrument=request.query_params.get('instrument') or '',
+                timeframes_raw=request.query_params.get('timeframes') or '',
+                start=request.query_params.get('start') or '',
+                end=request.query_params.get('end') or '',
+                contract=request.query_params.get('contract') or 'front',
+            )
+        except ReplayBarsError as exc:
+            return Response({'detail': str(exc)}, status=400)
+        except Exception as exc:
+            logger.exception('bars JSON failed')
+            return Response({'detail': str(exc)}, status=500)
+        return Response(payload)
 
 
 class ContractListView(APIView):
@@ -273,21 +350,26 @@ class DownloadJobListCreateView(APIView):
             reason='Remplacé par un nouveau téléchargement.',
         )
 
-        job = HistoricalDownloadJob.objects.create(
-            user=request.user,
-            instrument=data['instrument'],
-            contract_id=data.get('contract_id') or '',
-            timeframe=data.get('timeframe') or '1m',
-            trigger=HistoricalDownloadJob.Trigger.MANUAL,
-            start_utc=data['start'],
-            end_utc=data['end'],
-            status=HistoricalDownloadJob.Status.PENDING,
+        jobs = []
+        for tf in data['timeframes']:
+            job = HistoricalDownloadJob.objects.create(
+                user=request.user,
+                instrument=data['instrument'],
+                contract_id=data.get('contract_id') or '',
+                timeframe=tf,
+                trigger=HistoricalDownloadJob.Trigger.MANUAL,
+                start_utc=data['start'],
+                end_utc=data['end'],
+                status=HistoricalDownloadJob.Status.PENDING,
+            )
+            dispatch_historical_download(job.id)
+            job.refresh_from_db()
+            jobs.append(job)
+
+        return Response(
+            {'jobs': DownloadJobSerializer(jobs, many=True).data},
+            status=status.HTTP_201_CREATED,
         )
-
-        dispatch_historical_download(job.id)
-        job.refresh_from_db()
-
-        return Response(DownloadJobSerializer(job).data, status=status.HTTP_201_CREATED)
 
 
 class DownloadJobDetailView(APIView):

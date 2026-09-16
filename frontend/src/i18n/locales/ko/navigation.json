@@ -21,5 +21,6 @@
     "logout": "Se déconnecter",
     "appName": "K&C Trading Journal"
   },
-  "journalQuestions": "오늘의 질문"
+  "journalQuestions": "오늘의 질문",
+  "marketReplay": "Market Replay"
 }

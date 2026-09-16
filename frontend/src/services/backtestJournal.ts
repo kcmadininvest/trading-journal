@@ -343,7 +343,14 @@ class BacktestJournalService {
 
   async saveObservationsBulk(
     campaignId: number,
-    items: Array<Partial<BacktestObservation> & { client_key?: string; id?: number }>
+    items: Array<
+      Partial<BacktestObservation> & {
+        client_key?: string;
+        id?: number;
+        allow_stop_side_override?: boolean;
+        allow_target_side_override?: boolean;
+      }
+    >
   ): Promise<{ items: BacktestObservation[] }> {
     const res = await this.fetchWithAuth(
       `${this.BASE_URL}/api/backtest-journal/campaigns/${campaignId}/observations/bulk/`,

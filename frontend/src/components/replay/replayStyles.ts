@@ -13,6 +13,16 @@ export const replayPrimaryButtonClass =
 export const replaySecondaryButtonClass =
   'inline-flex items-center justify-center h-10 px-3 sm:px-4 text-sm font-medium bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed';
 
+/** Bloc groupé compact (barre d’outils Market Replay). */
+export const replayGroupShellClass =
+  'inline-flex items-center gap-0.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-800/60 p-1 shadow-sm';
+
+export const replayGroupInnerButtonClass =
+  '!h-9 !min-h-9 !px-3 !text-xs font-medium !border-0 !shadow-none rounded-md transition-colors';
+
+/** Hauteur externe d’un bloc groupé (shell p-1 + bouton interne h-9), alignée sur le transport. */
+export const replayGroupOuterHeightClass = '!h-[2.75rem] !min-h-[2.75rem]';
+
 /** Aligné sur TradesFilters / TransactionHistory */
 export const replayDateInputClass =
   'w-full h-10 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500';

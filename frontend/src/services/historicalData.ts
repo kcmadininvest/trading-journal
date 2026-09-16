@@ -161,10 +161,10 @@ class HistoricalDataService {
   async startDownload(payload: {
     instrument: string;
     contract_id?: string;
-    timeframe?: string;
+    timeframes: string[];
     start: string;
     end: string;
-  }): Promise<DownloadJob> {
+  }): Promise<{ jobs: DownloadJob[] }> {
     const res = await this.fetchWithAuth(`${this.BASE_URL}/api/market-data/downloads/`, {
       method: 'POST',
       body: JSON.stringify(payload),
@@ -180,7 +180,11 @@ class HistoricalDataService {
       }
       throw new Error(body.detail || 'Erreur lancement téléchargement');
     }
-    return body;
+    const jobs = Array.isArray(body?.jobs) ? (body.jobs as DownloadJob[]) : [];
+    if (jobs.length === 0) {
+      throw new Error('Aucun job créé');
+    }
+    return { jobs };
   }
 
   async getJob(id: number): Promise<DownloadJob> {

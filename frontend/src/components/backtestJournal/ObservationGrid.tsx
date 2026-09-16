@@ -573,6 +573,19 @@ export function ObservationGrid({ campaign, onStatsInvalidate }: Props) {
         >
           {compact ? t('comfortable') : t('compact')}
         </button>
+        <button
+          type="button"
+          className={replaySecondaryButtonClass}
+          onClick={() => {
+            const params = new URLSearchParams({
+              campaign: String(campaign.id),
+              strategy: String(campaign.strategy_id),
+            });
+            window.location.hash = `market-replay?${params.toString()}`;
+          }}
+        >
+          {t('openMarketReplay', { defaultValue: 'Ouvrir Market Replay' })}
+        </button>
         {saving ? (
           <span className="text-xs text-gray-500 dark:text-gray-400">{t('saving')}</span>
         ) : dirty ? (

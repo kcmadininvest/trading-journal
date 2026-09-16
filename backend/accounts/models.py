@@ -272,6 +272,16 @@ class UserPreferences(models.Model):
         verbose_name=_('Bandeau cours marché activé'),
         help_text=str(_('Champ historique — non utilisé par l’application.')),
     )
+    market_replay_logarithmic = models.BooleanField(
+        default=False,
+        verbose_name=_('Market Replay — échelle logarithmique'),
+        help_text=str(_('Utiliser l’échelle de prix logarithmique sur les graphiques Market Replay.')),
+    )
+    market_replay_autofit = models.BooleanField(
+        default=False,
+        verbose_name=_('Market Replay — autofit continu'),
+        help_text=str(_('Recentrer automatiquement les bougies visibles pendant la lecture Market Replay.')),
+    )
 
     # Métadonnées
     created_at = models.DateTimeField(

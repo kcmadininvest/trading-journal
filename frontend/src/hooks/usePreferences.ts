@@ -39,6 +39,8 @@ export const usePreferences = (): PreferencesContextType => {
         email_goal_alerts: true,
         show_pre_market: false,
         pnl_display: 'net',
+        market_replay_logarithmic: false,
+        market_replay_autofit: false,
       },
       loading: false,
       refreshPreferences: async () => {},

@@ -99,6 +99,8 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
     items_per_page: DEFAULT_ITEMS_PER_PAGE,
     show_pre_market: false,
     pnl_display: 'net',
+    market_replay_logarithmic: false,
+    market_replay_autofit: false,
   });
   const [loading, setLoading] = useState(true);
   const { data: bootstrap, isError: bootstrapError, isLoading: bootstrapLoading } = useBootstrap(
@@ -112,6 +114,8 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
       items_per_page: prefs.items_per_page ?? DEFAULT_ITEMS_PER_PAGE,
       default_currency: prefs.default_currency || 'USD',
       pnl_display: prefs.pnl_display === 'gross' ? 'gross' : 'net',
+      market_replay_logarithmic: !!prefs.market_replay_logarithmic,
+      market_replay_autofit: !!prefs.market_replay_autofit,
     });
     const effectiveTheme: ThemePreference = isThemePreference(prefs.theme) ? prefs.theme : 'light';
     applyThemePreference(effectiveTheme);

@@ -55,8 +55,8 @@ const HistoricalDataPage: React.FC = () => {
     addCalendarDays(getTodayDateInTimezone('Europe/Paris'), -DEFAULT_LOOKBACK_DAYS),
   );
   const [end, setEnd] = useState(() => getTodayDateInTimezone('Europe/Paris'));
-  const [timeframe, setTimeframe] = useState('1m');
-  const [job, setJob] = useState<DownloadJob | null>(null);
+  const [timeframes, setTimeframes] = useState<string[]>(['1m']);
+  const [batchJobs, setBatchJobs] = useState<DownloadJob[]>([]);
   const [coverage, setCoverage] = useState<CoverageEntry[]>([]);
   const [issues, setIssues] = useState<QualityIssue[]>([]);
   const [bootLoading, setBootLoading] = useState(true);
@@ -78,7 +78,21 @@ const HistoricalDataPage: React.FC = () => {
   const [syncTargetInstrument, setSyncTargetInstrument] = useState('');
   const [syncTargetTimeframes, setSyncTargetTimeframes] = useState<string[]>(['1m']);
 
-  const busy = starting || (job != null && !TERMINAL.has(job.status));
+  const busy =
+    starting || batchJobs.some((j) => !TERMINAL.has(j.status));
+  const activeJobIds = useMemo(
+    () => batchJobs.filter((j) => !TERMINAL.has(j.status)).map((j) => j.id),
+    [batchJobs],
+  );
+  const focusJob = useMemo(() => {
+    if (batchJobs.length === 0) return null;
+    return (
+      batchJobs.find((j) => j.status === 'running') ||
+      batchJobs.find((j) => j.status === 'pending') ||
+      batchJobs[batchJobs.length - 1]
+    );
+  }, [batchJobs]);
+  const batchDoneCount = batchJobs.filter((j) => TERMINAL.has(j.status)).length;
 
   useEffect(() => {
     setEnd((prev) => (prev > todayIso ? todayIso : prev));
@@ -104,6 +118,7 @@ const HistoricalDataPage: React.FC = () => {
       { value: '30m', label: t('timeframes.30m') },
       { value: '1h', label: t('timeframes.1h') },
       { value: '4h', label: t('timeframes.4h') },
+      { value: '1d', label: t('timeframes.1d') },
     ],
     [t],
   );
@@ -225,54 +240,85 @@ const HistoricalDataPage: React.FC = () => {
     void loadCoverage(instrument);
   }, [instrument, loadContracts, loadCoverage]);
 
-  const activeJobId = job && !TERMINAL.has(job.status) ? job.id : null;
+  const batchBusyRef = useRef(false);
 
   useEffect(() => {
-    if (activeJobId == null) return undefined;
+    if (activeJobIds.length === 0) return undefined;
+    const ids = [...activeJobIds];
     let authFailures = 0;
     const timer = window.setInterval(async () => {
       try {
-        const updated = await historicalDataService.getJob(activeJobId);
+        const updates = await Promise.all(
+          ids.map((id) => historicalDataService.getJob(id)),
+        );
         authFailures = 0;
-        setJob(updated);
-          if (TERMINAL.has(updated.status)) {
-            const iss = await historicalDataService.getJobIssues(updated.id);
-            setIssues(iss);
-            void loadCoverage(updated.instrument);
-            if (updated.status === 'completed') {
-              if (updated.error) {
-                toast(updated.error);
-              } else {
-                toast.success(t('statusCompleted'));
-              }
-            } else if (updated.status === 'failed') {
-              toast.error(updated.error || t('statusFailed'));
-            }
+        setBatchJobs((prev) => {
+          const byId = new Map(prev.map((j) => [j.id, j]));
+          for (const updated of updates) {
+            byId.set(updated.id, updated);
           }
+          return Array.from(byId.values()).sort((a, b) => a.id - b.id);
+        });
       } catch (e) {
         const msg = e instanceof Error ? e.message : '';
         if (msg === 'AUTH_REQUIRED') {
           authFailures += 1;
           if (authFailures >= 2) {
             toast.error(t('authExpired'));
-            setJob((prev) =>
-              prev
-                ? {
-                    ...prev,
-                    status: 'failed',
-                    error: t('authExpired'),
-                  }
-                : null,
+            setBatchJobs((prev) =>
+              prev.map((j) =>
+                TERMINAL.has(j.status)
+                  ? j
+                  : { ...j, status: 'failed', error: t('authExpired') },
+              ),
             );
           }
         }
       }
     }, 2000);
     return () => window.clearInterval(timer);
-  }, [activeJobId, loadCoverage, t]);
+  }, [activeJobIds, t]);
+
+  useEffect(() => {
+    const isBusy = batchJobs.some((j) => !TERMINAL.has(j.status));
+    if (batchBusyRef.current && !isBusy && batchJobs.length > 0) {
+      const instr = batchJobs[0]?.instrument;
+      void (async () => {
+        try {
+          const issueLists = await Promise.all(
+            batchJobs.map((j) => historicalDataService.getJobIssues(j.id)),
+          );
+          setIssues(issueLists.flat());
+        } catch {
+          /* ignore */
+        }
+        if (instr) void loadCoverage(instr);
+      })();
+
+      const failed = batchJobs.filter((j) => j.status === 'failed');
+      const completed = batchJobs.filter((j) => j.status === 'completed');
+      const total = batchJobs.length;
+      if (failed.length === 0) {
+        toast.success(t('batchCompleted', { done: completed.length, total }));
+      } else if (completed.length === 0) {
+        toast.error(
+          failed[0]?.error || t('batchFailed', { failed: failed.length, total }),
+        );
+      } else {
+        toast(
+          t('batchPartial', {
+            done: completed.length,
+            failed: failed.length,
+            total,
+          }),
+        );
+      }
+    }
+    batchBusyRef.current = isBusy;
+  }, [batchJobs, loadCoverage, t]);
 
   const handleStart = async () => {
-    if (!instrument || !start || !end) return;
+    if (!instrument || !start || !end || timeframes.length === 0) return;
     const endClamped = end > todayIso ? todayIso : end;
     if (endClamped !== end) setEnd(endClamped);
     setStarting(true);
@@ -281,11 +327,11 @@ const HistoricalDataPage: React.FC = () => {
       const created = await historicalDataService.startDownload({
         instrument,
         contract_id: contractId || undefined,
-        timeframe,
+        timeframes,
         start: `${start}T00:00:00Z`,
         end: `${endClamped}T23:59:59Z`,
       });
-      setJob(created);
+      setBatchJobs(created.jobs);
       setBottomTab('coverage');
     } catch (e) {
       const msg = e instanceof Error ? e.message : t('loadError');
@@ -308,6 +354,7 @@ const HistoricalDataPage: React.FC = () => {
       running: t('statusRunning'),
       completed: t('statusCompleted'),
       failed: t('statusFailed'),
+      cancelled: t('statusFailed'),
     };
     return map[status] || status;
   };
@@ -402,25 +449,31 @@ const HistoricalDataPage: React.FC = () => {
   }, [filteredCoverage]);
 
   const handleExportCsv = async () => {
-    if (!instrument || !start || !end) return;
+    if (!instrument || !start || !end || timeframes.length === 0) return;
     setExporting(true);
     try {
-      const blob = await historicalDataService.exportBarsCsv({
-        instrument,
-        timeframe,
-        start: `${start}T00:00:00Z`,
-        end: `${end}T23:59:59Z`,
-        contract_id: contractId || undefined,
-      });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${instrument}_${timeframe}_${start}_${end}.csv`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-      toast.success(t('exportSuccess'));
+      for (const tf of timeframes) {
+        const blob = await historicalDataService.exportBarsCsv({
+          instrument,
+          timeframe: tf,
+          start: `${start}T00:00:00Z`,
+          end: `${end}T23:59:59Z`,
+          contract_id: contractId || undefined,
+        });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${instrument}_${tf}_${start}_${end}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      }
+      toast.success(
+        timeframes.length === 1
+          ? t('exportSuccess')
+          : t('exportSuccessMulti', { count: timeframes.length }),
+      );
     } catch (e) {
       toast.error(e instanceof Error ? e.message : t('exportError'));
     } finally {
@@ -469,7 +522,7 @@ const HistoricalDataPage: React.FC = () => {
       const result = await historicalDataService.runSyncNow();
       setSyncSettings(result.settings);
       if (result.jobs?.length) {
-        setJob(result.jobs[0]);
+        setBatchJobs(result.jobs);
         toast.success(t('syncRunStarted'));
       } else {
         toast.success(result.settings.last_error || t('syncNothingToDo'));
@@ -807,13 +860,16 @@ const HistoricalDataPage: React.FC = () => {
                 </div>
 
                 <div className="min-w-0">
-                  <label className={labelClass}>{t('timeframe')}</label>
-                  <CustomSelect
+                  <label className={labelClass}>{t('timeframesLabel')}</label>
+                  <CustomMultiSelect
                     className="w-full"
-                    value={timeframe}
-                    onChange={(value) => setTimeframe(value ? String(value) : '1m')}
+                    value={timeframes}
+                    onChange={setTimeframes}
                     options={timeframeOptions}
                     disabled={bootLoading}
+                    placeholder={t('syncTimeframesPlaceholder')}
+                    clearLabel={t('syncTimeframesClear')}
+                    selectedCountLabel={(count) => t('syncTimeframesCount', { count })}
                   />
                 </div>
 
@@ -849,7 +905,7 @@ const HistoricalDataPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => void handleStart()}
-                  disabled={!instrument || bootLoading || starting}
+                  disabled={!instrument || bootLoading || starting || timeframes.length === 0}
                   className={replayPrimaryButtonClass}
                 >
                   {starting
@@ -869,7 +925,7 @@ const HistoricalDataPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => void handleExportCsv()}
-                  disabled={!instrument || bootLoading || exporting}
+                  disabled={!instrument || bootLoading || exporting || timeframes.length === 0}
                   className={replaySecondaryButtonClass}
                 >
                   {exporting ? t('exporting') : t('exportCsv')}
@@ -895,26 +951,35 @@ const HistoricalDataPage: React.FC = () => {
                 <StatCard label={t('statusPartial')} value={fmtNum(coverageTotals.partial)} />
               </div>
 
-              {job && (
+              {focusJob && (
                 <div className={`${replayCardClass} p-4 sm:p-5`}>
                   <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                     <div>
-                      <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{t('status')}</p>
+                      <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+                        {t('status')}
+                        {batchJobs.length > 1
+                          ? ` · ${t('batchProgress', {
+                              done: batchDoneCount,
+                              total: batchJobs.length,
+                            })}`
+                          : ''}
+                      </p>
                       <p className="text-lg font-bold text-gray-900 dark:text-white">
-                        {statusLabel(job.status)}
+                        {statusLabel(focusJob.status)}
+                        {focusJob.timeframe ? ` · ${focusJob.timeframe}` : ''}
                       </p>
                     </div>
                     <div className="text-right text-sm text-gray-600 dark:text-gray-400">
                       <p>
                         {t('barsFetched')}:{' '}
                         <span className="font-medium text-gray-900 dark:text-gray-100">
-                          {fmtNum(job.bars_fetched)}
+                          {fmtNum(focusJob.bars_fetched)}
                         </span>
                       </p>
                       <p>
                         {t('chunksDone')}:{' '}
                         <span className="font-medium text-gray-900 dark:text-gray-100">
-                          {fmtNum(job.chunks_done)}
+                          {fmtNum(focusJob.chunks_done)}
                         </span>
                       </p>
                     </div>
@@ -922,21 +987,31 @@ const HistoricalDataPage: React.FC = () => {
                   <div className="h-2 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
                     <div
                       className="h-full rounded-full bg-blue-600 dark:bg-blue-500 transition-all"
-                      style={{ width: `${job.progress_pct}%` }}
+                      style={{ width: `${focusJob.progress_pct}%` }}
                     />
                   </div>
                   <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                    {t('progress')}: {fmtNum(job.progress_pct)}%
+                    {t('progress')}: {fmtNum(focusJob.progress_pct)}%
                   </p>
-                  {job.error && (
+                  {batchJobs.length > 1 ? (
+                    <ul className="mt-3 space-y-1 text-xs text-gray-500 dark:text-gray-400">
+                      {batchJobs.map((j) => (
+                        <li key={j.id} className="flex justify-between gap-2">
+                          <span>{j.timeframe}</span>
+                          <span>{statusLabel(j.status)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                  {focusJob.error && (
                     <p
                       className={`mt-3 text-sm ${
-                        job.status === 'failed'
+                        focusJob.status === 'failed'
                           ? 'text-red-600 dark:text-red-400'
                           : 'text-amber-700 dark:text-amber-400'
                       }`}
                     >
-                      {job.status === 'failed' ? t('error') : t('warning')}: {job.error}
+                      {focusJob.status === 'failed' ? t('error') : t('warning')}: {focusJob.error}
                     </p>
                   )}
                 </div>

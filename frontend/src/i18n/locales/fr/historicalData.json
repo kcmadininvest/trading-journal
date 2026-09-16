@@ -17,7 +17,8 @@
     "15m": "15 minutes",
     "30m": "30 minutes",
     "1h": "1 heure",
-    "4h": "4 heures"
+    "4h": "4 heures",
+    "1d": "1 jour"
   },
   "startDownload": "Lancer le téléchargement",
   "restartDownload": "Relancer (annule le job en cours)",
@@ -38,7 +39,12 @@
   "exportCsv": "Exporter CSV",
   "exporting": "Export…",
   "exportSuccess": "Export CSV téléchargé",
+  "exportSuccessMulti": "{{count}} exports CSV téléchargés",
   "exportError": "Échec de l’export CSV",
+  "batchProgress": "{{done}}/{{total}} timeframes",
+  "batchCompleted": "Téléchargement terminé ({{done}}/{{total}})",
+  "batchFailed": "Échec du téléchargement ({{failed}}/{{total}})",
+  "batchPartial": "Téléchargement partiel : {{done}} OK, {{failed}} échec(s) sur {{total}}",
   "range": "Période",
   "barsStored": "Stockées",
   "barsExpected": "Attendues",

@@ -37,5 +37,6 @@
     "logout": "Abmelden",
     "appName": "K&C Trading Journal"
   },
-  "journalQuestions": "Tagesfragen"
+  "journalQuestions": "Tagesfragen",
+  "marketReplay": "Market Replay"
 }

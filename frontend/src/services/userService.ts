@@ -91,6 +91,10 @@ export interface UserPreferences {
   journal_position_strategies?: JournalPositionStrategiesMap | null;
   /** Agrégats / graphiques : net (défaut API) ou gross (PnL brut). */
   pnl_display?: 'net' | 'gross';
+  /** Market Replay : échelle de prix logarithmique. */
+  market_replay_logarithmic?: boolean;
+  /** Market Replay : autofit continu pendant la lecture. */
+  market_replay_autofit?: boolean;
   created_at?: string;
   updated_at?: string;
 }

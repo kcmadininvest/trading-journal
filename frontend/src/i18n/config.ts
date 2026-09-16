@@ -202,6 +202,10 @@ import frHistoricalData from './locales/fr/historicalData.json';
 import enHistoricalData from './locales/en/historicalData.json';
 import esHistoricalData from './locales/es/historicalData.json';
 import deHistoricalData from './locales/de/historicalData.json';
+import frMarketReplay from './locales/fr/marketReplay.json';
+import enMarketReplay from './locales/en/marketReplay.json';
+import esMarketReplay from './locales/es/marketReplay.json';
+import deMarketReplay from './locales/de/marketReplay.json';
 import frBacktestJournal from './locales/fr/backtestJournal.json';
 import enBacktestJournal from './locales/en/backtestJournal.json';
 import esBacktestJournal from './locales/es/backtestJournal.json';
@@ -283,6 +287,7 @@ const resources = {
     journalQuestions: frJournalQuestions,
     trading_activity: frTradingActivity,
     historicalData: frHistoricalData,
+    marketReplay: frMarketReplay,
     backtestJournal: frBacktestJournal,
   },
   en: {
@@ -313,6 +318,7 @@ const resources = {
     journalQuestions: enJournalQuestions,
     trading_activity: enTradingActivity,
     historicalData: enHistoricalData,
+    marketReplay: enMarketReplay,
     backtestJournal: enBacktestJournal,
   },
   es: {
@@ -343,6 +349,7 @@ const resources = {
     journalQuestions: esJournalQuestions,
     trading_activity: esTradingActivity,
     historicalData: esHistoricalData,
+    marketReplay: esMarketReplay,
     backtestJournal: esBacktestJournal,
   },
   de: {
@@ -373,6 +380,7 @@ const resources = {
     journalQuestions: deJournalQuestions,
     trading_activity: deTradingActivity,
     historicalData: deHistoricalData,
+    marketReplay: deMarketReplay,
     backtestJournal: deBacktestJournal,
   },
   it: {
@@ -392,6 +400,7 @@ const resources = {
     replay: enReplay,
     journalQuestions: itJournalQuestions,
     trading_activity: enTradingActivity,
+    marketReplay: enMarketReplay,
     backtestJournal: itBacktestJournal,
   },
   pt: {
@@ -411,6 +420,7 @@ const resources = {
     replay: enReplay,
     journalQuestions: ptJournalQuestions,
     trading_activity: enTradingActivity,
+    marketReplay: enMarketReplay,
     backtestJournal: ptBacktestJournal,
   },
   ja: {
@@ -430,6 +440,7 @@ const resources = {
     replay: enReplay,
     journalQuestions: jaJournalQuestions,
     trading_activity: enTradingActivity,
+    marketReplay: enMarketReplay,
     backtestJournal: jaBacktestJournal,
   },
   ko: {
@@ -449,6 +460,7 @@ const resources = {
     replay: enReplay,
     journalQuestions: koJournalQuestions,
     trading_activity: enTradingActivity,
+    marketReplay: enMarketReplay,
     backtestJournal: koBacktestJournal,
   },
   zh: {
@@ -468,6 +480,7 @@ const resources = {
     replay: enReplay,
     journalQuestions: zhJournalQuestions,
     trading_activity: enTradingActivity,
+    marketReplay: enMarketReplay,
     backtestJournal: zhBacktestJournal,
   },
 };
@@ -532,7 +545,7 @@ i18n
     fallbackLng: getDefaultLanguage(),
     supportedLngs: ['fr', 'en', 'es', 'de', 'it', 'pt', 'ja', 'ko', 'zh'],
     defaultNS: 'common',
-    ns: ['common', 'trades', 'settings', 'navigation', 'dashboard', 'calendar', 'strategies', 'statistics', 'analytics', 'users', 'accounts', 'auth', 'home', 'strategy', 'positionStrategies', 'goals', 'transactions', 'legal', 'about', 'features', 'contact', 'calculator', 'billing', 'replay', 'trading_activity', 'journalQuestions', 'historicalData', 'backtestJournal'],
+    ns: ['common', 'trades', 'settings', 'navigation', 'dashboard', 'calendar', 'strategies', 'statistics', 'analytics', 'users', 'accounts', 'auth', 'home', 'strategy', 'positionStrategies', 'goals', 'transactions', 'legal', 'about', 'features', 'contact', 'calculator', 'billing', 'replay', 'trading_activity', 'journalQuestions', 'historicalData', 'marketReplay', 'backtestJournal'],
     
     interpolation: {
       escapeValue: false, // React échappe déjà les valeurs

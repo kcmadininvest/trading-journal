@@ -247,13 +247,19 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
           type="button"
           disabled={disabled}
           onClick={toggleDropdown}
-          className="w-full min-w-0 h-10 inline-flex items-center justify-between gap-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+          className={
+            variant === 'compact'
+              ? 'w-full min-w-0 h-6 inline-flex items-center justify-between gap-1.5 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-2 text-[11px] shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed'
+              : 'w-full min-w-0 h-10 inline-flex items-center justify-between gap-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed'
+          }
         >
           <span className="min-w-0 flex-1 truncate text-left text-gray-900 dark:text-gray-100">
             {currentOption?.label || placeholder || ''}
           </span>
           <svg
-            className={`h-4 w-4 text-gray-400 dark:text-gray-500 transition-transform flex-shrink-0 ${open ? 'rotate-180' : ''}`}
+            className={`text-gray-400 dark:text-gray-500 transition-transform flex-shrink-0 ${
+              variant === 'compact' ? 'h-3 w-3' : 'h-4 w-4'
+            } ${open ? 'rotate-180' : ''}`}
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
             viewBox="0 0 24 24"

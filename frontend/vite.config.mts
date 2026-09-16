@@ -18,6 +18,9 @@ export default defineConfig({
     outDir: 'build',
     emptyOutDir: true,
   },
+  optimizeDeps: {
+    include: ['lightweight-charts'],
+  },
   server: {
     port: 3000,
     watch: {

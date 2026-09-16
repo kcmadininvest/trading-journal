@@ -217,12 +217,21 @@ const BacktestJournalPage: React.FC = () => {
     }
     void (async () => {
       try {
-        setCampaign(await backtestJournalService.getCampaign(route.campaignId!));
+        const loaded = await backtestJournalService.getCampaign(route.campaignId!);
+        setCampaign(loaded);
+        // Deep-link avec campaign seul (ex. retour Market Replay) : compléter strategy
+        if (!route.strategyId && loaded.strategy_id) {
+          setHash(
+            isWorkspaceView(route.view) ? route.view : 'grid',
+            loaded.strategy_id,
+            loaded.id,
+          );
+        }
       } catch {
         toast.error(t('error'));
       }
     })();
-  }, [route.campaignId, statsNonce, t]);
+  }, [route.campaignId, route.strategyId, route.view, statsNonce, t]);
 
   const openingWorkspace = useRef(false);
   useEffect(() => {
@@ -983,6 +992,7 @@ function AnalysisView({
             { value: 'hour', label: t('groupHour') },
           ]}
         />
+        {/* Filtres d'analyse — regroupement */}
         <button
           type="button"
           className={`${replaySecondaryButtonClass} w-full`}
