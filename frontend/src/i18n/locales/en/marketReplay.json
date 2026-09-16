@@ -58,5 +58,17 @@
   "autoFit": "Autofit",
   "fitToScreenHint": "Fit the view to all visible candles",
   "logarithmicHint": "Toggle logarithmic price scale (all charts)",
-  "autoFitHint": "Automatically refit on every replay step"
+  "autoFitHint": "Automatically refit on every replay step",
+  "indicators": "Indicators",
+  "indicatorsHint": "Chart indicators",
+  "vwap": "VWAP",
+  "avwap": "AVWAP",
+  "avwapAnchorHint": "Click a candle to anchor AVWAP",
+  "sma": "SMA",
+  "ema": "EMA",
+  "maPeriod": "Period",
+  "addIndicator": "Add",
+  "removeIndicator": "Remove",
+  "invalidPeriod": "Period must be between 2 and 500",
+  "noMovingAverages": "No moving averages"
 }

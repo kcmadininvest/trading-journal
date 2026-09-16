@@ -58,5 +58,17 @@
   "autoFit": "Autofit",
   "fitToScreenHint": "Ajuster la vue à toutes les bougies visibles",
   "logarithmicHint": "Basculer l’échelle de prix logarithmique (tous les graphiques)",
-  "autoFitHint": "Recentrer automatiquement à chaque avancée du replay"
+  "autoFitHint": "Recentrer automatiquement à chaque avancée du replay",
+  "indicators": "Indicateurs",
+  "indicatorsHint": "Indicateurs du graphique",
+  "vwap": "VWAP",
+  "avwap": "AVWAP",
+  "avwapAnchorHint": "Cliquez une bougie pour ancrer l’AVWAP",
+  "sma": "SMA",
+  "ema": "EMA",
+  "maPeriod": "Période",
+  "addIndicator": "Ajouter",
+  "removeIndicator": "Retirer",
+  "invalidPeriod": "Période entre 2 et 500",
+  "noMovingAverages": "Aucune moyenne mobile"
 }

@@ -645,6 +645,7 @@ const MarketReplayPage: React.FC = () => {
           onPriceClick={placePriceOnChart}
           onLevelDrag={dragLevelOnChart}
           onAdjustCommit={commitAdjustLevel}
+          placementArmed={placementMode != null}
           logarithmic={logarithmic}
           autoFit={autoFit}
           onLogarithmicChange={handleLogarithmicChange}

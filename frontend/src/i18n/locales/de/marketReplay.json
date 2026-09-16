@@ -58,5 +58,17 @@
   "autoFit": "Autofit",
   "fitToScreenHint": "Ansicht an alle sichtbaren Kerzen anpassen",
   "logarithmicHint": "Logarithmische Preisskala umschalten (alle Charts)",
-  "autoFitHint": "Bei jedem Replay-Schritt automatisch neu einpassen"
+  "autoFitHint": "Bei jedem Replay-Schritt automatisch neu einpassen",
+  "indicators": "Indikatoren",
+  "indicatorsHint": "Chart-Indikatoren",
+  "vwap": "VWAP",
+  "avwap": "AVWAP",
+  "avwapAnchorHint": "Klicken Sie auf eine Kerze, um den AVWAP zu verankern",
+  "sma": "SMA",
+  "ema": "EMA",
+  "maPeriod": "Periode",
+  "addIndicator": "Hinzufügen",
+  "removeIndicator": "Entfernen",
+  "invalidPeriod": "Periode zwischen 2 und 500",
+  "noMovingAverages": "Keine gleitenden Durchschnitte"
 }

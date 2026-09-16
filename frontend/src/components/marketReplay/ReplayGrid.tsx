@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ReplayChartPane,
@@ -6,10 +6,18 @@ import {
   type TradeLevelKey,
 } from './ReplayChartPane';
 import { TimeframeSelect } from './TimeframeSelect';
+import { IndicatorSelect } from './IndicatorSelect';
 import type { TradeChartLevels } from './ReplayTradePanel';
 import type { AvailableTimeframe } from '../../services/marketReplay';
 import type { VisibleCandle } from '../../utils/replayEngine';
+import {
+  buildReplayOverlays,
+  emptyPaneIndicators,
+  setAvwapAnchor,
+  type PaneIndicators,
+} from '../../utils/replayIndicators';
 import { Tooltip } from '../ui';
+import { ChartHelpTooltip } from '../charts/ChartHelpTooltip';
 
 export interface ReplayPaneState {
   chartId: string;
@@ -27,6 +35,8 @@ interface ReplayGridProps {
   onPriceClick?: (price: number) => void;
   onLevelDrag?: (key: TradeLevelKey, price: number) => void;
   onAdjustCommit?: () => void;
+  /** Un bouton Entry / SL / TP / Sortie est armé : le clic chart ne pose pas d’AVWAP. */
+  placementArmed?: boolean;
   logarithmic?: boolean;
   autoFit?: boolean;
   onLogarithmicChange?: (value: boolean) => void;
@@ -52,6 +62,7 @@ export const ReplayGrid: React.FC<ReplayGridProps> = ({
   onPriceClick,
   onLevelDrag,
   onAdjustCommit,
+  placementArmed = false,
   logarithmic = false,
   autoFit = false,
   onLogarithmicChange,
@@ -61,84 +72,136 @@ export const ReplayGrid: React.FC<ReplayGridProps> = ({
 }) => {
   const { t } = useTranslation('marketReplay');
   const paneRefs = useRef<Record<string, ReplayChartPaneHandle | null>>({});
+  const [indicatorsByPane, setIndicatorsByPane] = useState<Record<string, PaneIndicators>>({});
+
+  const paneIndicators = useCallback(
+    (chartId: string): PaneIndicators => indicatorsByPane[chartId] ?? emptyPaneIndicators(),
+    [indicatorsByPane],
+  );
+
+  const setPaneIndicators = useCallback((chartId: string, next: PaneIndicators) => {
+    setIndicatorsByPane((prev) => ({ ...prev, [chartId]: next }));
+  }, []);
+
+  const overlaysByPane = useMemo(() => {
+    const out: Record<string, ReturnType<typeof buildReplayOverlays>> = {};
+    for (const pane of panes) {
+      out[pane.chartId] = buildReplayOverlays(
+        pane.candles,
+        indicatorsByPane[pane.chartId] ?? emptyPaneIndicators(),
+      );
+    }
+    return out;
+  }, [panes, indicatorsByPane]);
 
   return (
     <div className="grid min-h-[480px] flex-1 grid-cols-1 gap-3 auto-rows-[minmax(240px,1fr)] lg:min-h-[560px] lg:grid-cols-2 lg:grid-rows-2">
-      {panes.map((pane) => (
-        <div
-          key={pane.chartId}
-          className="flex min-h-[240px] h-full flex-col overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900"
-        >
-          <div className="flex shrink-0 items-center justify-between gap-2 border-b border-gray-200 bg-gray-50 px-3 py-2 dark:border-gray-700 dark:bg-gray-800/70">
-            <TimeframeSelect
-              value={pane.timeframeValue}
-              options={availableTimeframes}
-              onChange={(v) => onTimeframeChange(pane.chartId, v)}
-              disabled={loading || availableTimeframes.length === 0}
-            />
-            <div className="flex items-center gap-1">
-              <Tooltip content={t('fitToScreenHint')} position="top">
-                <button
-                  type="button"
-                  className={paneToggleClass(false)}
-                  onClick={() => paneRefs.current[pane.chartId]?.fitToScreen()}
-                  aria-label={t('fitToScreen')}
-                >
-                  {t('fitToScreen')}
-                </button>
-              </Tooltip>
-              <Tooltip content={t('logarithmicHint')} position="top">
-                <button
-                  type="button"
-                  className={paneToggleClass(logarithmic)}
-                  aria-pressed={logarithmic}
-                  onClick={() => onLogarithmicChange?.(!logarithmic)}
-                  aria-label={t('logarithmic')}
-                >
-                  {t('logarithmic')}
-                </button>
-              </Tooltip>
-              <Tooltip content={t('autoFitHint')} position="top">
-                <button
-                  type="button"
-                  className={paneToggleClass(autoFit)}
-                  aria-pressed={autoFit}
-                  onClick={() => onAutoFitChange?.(!autoFit)}
-                  aria-label={t('autoFit')}
-                >
-                  {t('autoFit')}
-                </button>
-              </Tooltip>
+      {panes.map((pane) => {
+        const indicators = paneIndicators(pane.chartId);
+        const waitingAvwap =
+          indicators.avwap &&
+          indicators.avwapAnchor == null &&
+          !placementArmed &&
+          !loading &&
+          !emptySession;
+        return (
+          <div
+            key={pane.chartId}
+            className="flex min-h-[240px] h-full flex-col overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900"
+          >
+            <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-gray-200 bg-gray-50 px-3 py-2 dark:border-gray-700 dark:bg-gray-800/70">
+              <div className="flex min-w-0 items-center gap-2">
+                <TimeframeSelect
+                  value={pane.timeframeValue}
+                  options={availableTimeframes}
+                  onChange={(v) => onTimeframeChange(pane.chartId, v)}
+                  disabled={loading || availableTimeframes.length === 0}
+                />
+                <IndicatorSelect
+                  value={indicators}
+                  onChange={(next) => setPaneIndicators(pane.chartId, next)}
+                  disabled={loading}
+                />
+                <ChartHelpTooltip content={t('chartInteractionHint')} />
+              </div>
+              <div className="flex items-center gap-1">
+                <Tooltip content={t('fitToScreenHint')} position="top">
+                  <button
+                    type="button"
+                    className={paneToggleClass(false)}
+                    onClick={() => paneRefs.current[pane.chartId]?.fitToScreen()}
+                    aria-label={t('fitToScreen')}
+                  >
+                    {t('fitToScreen')}
+                  </button>
+                </Tooltip>
+                <Tooltip content={t('logarithmicHint')} position="top">
+                  <button
+                    type="button"
+                    className={paneToggleClass(logarithmic)}
+                    aria-pressed={logarithmic}
+                    onClick={() => onLogarithmicChange?.(!logarithmic)}
+                    aria-label={t('logarithmic')}
+                  >
+                    {t('logarithmic')}
+                  </button>
+                </Tooltip>
+                <Tooltip content={t('autoFitHint')} position="top">
+                  <button
+                    type="button"
+                    className={paneToggleClass(autoFit)}
+                    aria-pressed={autoFit}
+                    onClick={() => onAutoFitChange?.(!autoFit)}
+                    aria-label={t('autoFit')}
+                  >
+                    {t('autoFit')}
+                  </button>
+                </Tooltip>
+              </div>
+            </div>
+            <div className="relative min-h-[200px] flex-1 p-1">
+              <ReplayChartPane
+                ref={(instance) => {
+                  paneRefs.current[pane.chartId] = instance;
+                }}
+                candles={pane.candles}
+                overlays={overlaysByPane[pane.chartId] ?? []}
+                levels={levels}
+                preferredLevel={preferredLevel}
+                adjustLevel={adjustLevel}
+                onPriceClick={onPriceClick}
+                onCandleClick={
+                  !placementArmed && indicators.avwap
+                    ? (time) => {
+                        if (!pane.candles.some((c) => c.time === time)) return;
+                        setPaneIndicators(pane.chartId, setAvwapAnchor(indicators, time));
+                      }
+                    : undefined
+                }
+                onLevelDrag={onLevelDrag}
+                onAdjustCommit={onAdjustCommit}
+                logarithmic={logarithmic}
+                autoFit={autoFit}
+                className="absolute inset-0 h-full w-full"
+              />
+              {waitingAvwap ? (
+                <div className="pointer-events-none absolute left-2 top-2 z-10 rounded bg-purple-600/90 px-2 py-1 text-[11px] font-medium text-white shadow">
+                  {t('avwapAnchorHint')}
+                </div>
+              ) : null}
+              {loading ? (
+                <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/70 text-sm text-gray-400 dark:bg-gray-900/70 dark:text-gray-500">
+                  {t('loading')}
+                </div>
+              ) : emptySession ? (
+                <div className="absolute inset-0 z-10 flex items-center justify-center px-4 text-center text-sm text-gray-400 dark:text-gray-500">
+                  {t('emptyChart')}
+                </div>
+              ) : null}
             </div>
           </div>
-          <div className="relative min-h-[200px] flex-1 p-1">
-            <ReplayChartPane
-              ref={(instance) => {
-                paneRefs.current[pane.chartId] = instance;
-              }}
-              candles={pane.candles}
-              levels={levels}
-              preferredLevel={preferredLevel}
-              adjustLevel={adjustLevel}
-              onPriceClick={onPriceClick}
-              onLevelDrag={onLevelDrag}
-              onAdjustCommit={onAdjustCommit}
-              logarithmic={logarithmic}
-              autoFit={autoFit}
-              className="absolute inset-0 h-full w-full"
-            />
-            {loading ? (
-              <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/70 text-sm text-gray-400 dark:bg-gray-900/70 dark:text-gray-500">
-                {t('loading')}
-              </div>
-            ) : emptySession ? (
-              <div className="absolute inset-0 z-10 flex items-center justify-center px-4 text-center text-sm text-gray-400 dark:text-gray-500">
-                {t('emptyChart')}
-              </div>
-            ) : null}
-          </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 };

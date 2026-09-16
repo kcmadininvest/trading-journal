@@ -14,9 +14,12 @@ import {
   type IPriceLine,
   type ISeriesApi,
   type CandlestickData,
+  type LineData,
+  type UTCTimestamp,
 } from 'lightweight-charts';
 import { useTranslation } from 'react-i18next';
 import type { VisibleCandle } from '../../utils/replayEngine';
+import type { IndicatorOverlay } from '../../utils/replayIndicators';
 import { useTheme } from '../../hooks/useTheme';
 import { usePreferences } from '../../hooks/usePreferences';
 import {
@@ -41,6 +44,8 @@ interface ReplayChartPaneProps {
   /** Poignée temporaire après premier placement SL / TP / Sortie. */
   adjustLevel?: TradeLevelKey | null;
   onPriceClick?: (price: number) => void;
+  /** Clic sur une bougie (unix open) — AVWAP, etc. */
+  onCandleClick?: (time: number) => void;
   onLevelDrag?: (key: TradeLevelKey, price: number) => void;
   /** Appelé au mouseup après un drag réel en mode poignée. */
   onAdjustCommit?: () => void;
@@ -48,6 +53,7 @@ interface ReplayChartPaneProps {
   logarithmic?: boolean;
   /** Recentrer tout le contenu visible à chaque update des bougies. */
   autoFit?: boolean;
+  overlays?: IndicatorOverlay[];
   className?: string;
 }
 
@@ -225,10 +231,12 @@ export const ReplayChartPane = forwardRef<ReplayChartPaneHandle, ReplayChartPane
     preferredLevel = null,
     adjustLevel = null,
     onPriceClick,
+    onCandleClick,
     onLevelDrag,
     onAdjustCommit,
     logarithmic = false,
     autoFit = false,
+    overlays = [],
     className = '',
   },
   ref,
@@ -250,6 +258,10 @@ export const ReplayChartPane = forwardRef<ReplayChartPaneHandle, ReplayChartPane
   const lastCandleCountRef = useRef(0);
   const onPriceClickRef = useRef(onPriceClick);
   onPriceClickRef.current = onPriceClick;
+  const onCandleClickRef = useRef(onCandleClick);
+  onCandleClickRef.current = onCandleClick;
+  const overlaySeriesRef = useRef<Map<string, ISeriesApi<'Line'>>>(new Map());
+  const [chartReady, setChartReady] = useState(false);
   const onLevelDragRef = useRef(onLevelDrag);
   onLevelDragRef.current = onLevelDrag;
   const onAdjustCommitRef = useRef(onAdjustCommit);
@@ -322,6 +334,7 @@ export const ReplayChartPane = forwardRef<ReplayChartPaneHandle, ReplayChartPane
     const series = chart.addCandlestickSeries({ ...CANDLE_COLORS });
     chartRef.current = chart;
     seriesRef.current = series;
+    setChartReady(true);
 
     const onDblClick = () => {
       if (dragKeyRef.current || handleDraggingRef.current) return;
@@ -441,6 +454,11 @@ export const ReplayChartPane = forwardRef<ReplayChartPaneHandle, ReplayChartPane
         return;
       }
       if (handleDraggingRef.current) return;
+      const rawTime = param.time;
+      if (typeof rawTime === 'number' && onCandleClickRef.current) {
+        onCandleClickRef.current(rawTime);
+        return;
+      }
       if (!param.point || !seriesRef.current) return;
       const price = seriesRef.current.coordinateToPrice(param.point.y);
       if (price == null || !Number.isFinite(price)) return;
@@ -475,6 +493,7 @@ export const ReplayChartPane = forwardRef<ReplayChartPaneHandle, ReplayChartPane
       }
     });
     ro.observe(el);
+    const overlayMap = overlaySeriesRef.current;
 
     return () => {
       el.removeEventListener('dblclick', onDblClick);
@@ -484,11 +503,13 @@ export const ReplayChartPane = forwardRef<ReplayChartPaneHandle, ReplayChartPane
       el.removeEventListener('pointercancel', endDrag, true);
       chart.timeScale().unsubscribeVisibleLogicalRangeChange(onRangeChange);
       ro.disconnect();
+      overlayMap.clear();
       chart.remove();
       chartRef.current = null;
       seriesRef.current = null;
       priceLinesRef.current = {};
       hadLayoutSizeRef.current = false;
+      setChartReady(false);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -547,6 +568,42 @@ export const ReplayChartPane = forwardRef<ReplayChartPaneHandle, ReplayChartPane
     }
     updateHandlePosition();
   }, [candles, autoFit]);
+
+  useEffect(() => {
+    const chart = chartRef.current;
+    if (!chart || !chartReady) return;
+    const map = overlaySeriesRef.current;
+    const nextIds = new Set(overlays.map((overlay) => overlay.id));
+    for (const [id, series] of map) {
+      if (!nextIds.has(id)) {
+        chart.removeSeries(series);
+        map.delete(id);
+      }
+    }
+    for (const overlay of overlays) {
+      let series = map.get(overlay.id);
+      if (!series) {
+        series = chart.addLineSeries({
+          color: overlay.color,
+          lineWidth: 2,
+          lastValueVisible: true,
+          priceLineVisible: false,
+          title: overlay.title,
+        });
+        map.set(overlay.id, series);
+      } else {
+        series.applyOptions({
+          color: overlay.color,
+          title: overlay.title,
+        });
+      }
+      const data: LineData[] = overlay.data.map((point) => ({
+        time: point.time as UTCTimestamp,
+        value: point.value,
+      }));
+      series.setData(data);
+    }
+  }, [chartReady, overlays]);
 
   useEffect(() => {
     const series = seriesRef.current;
@@ -703,7 +760,6 @@ export const ReplayChartPane = forwardRef<ReplayChartPaneHandle, ReplayChartPane
     <div
       ref={wrapperRef}
       className={`relative min-h-[200px] ${className || 'h-full w-full'}`}
-      title={t('chartInteractionHint')}
     >
       <div ref={containerRef} className="absolute inset-0 touch-none" />
       {showHandle && tone ? (
