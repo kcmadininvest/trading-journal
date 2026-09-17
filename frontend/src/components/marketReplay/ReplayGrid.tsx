@@ -7,6 +7,7 @@ import {
 } from './ReplayChartPane';
 import { TimeframeSelect } from './TimeframeSelect';
 import { IndicatorSelect } from './IndicatorSelect';
+import { DrawingToolSelect, type DrawingScope } from './DrawingToolSelect';
 import type { TradeChartLevels } from './ReplayTradePanel';
 import type { AvailableTimeframe } from '../../services/marketReplay';
 import type { VisibleCandle } from '../../utils/replayEngine';
@@ -16,6 +17,12 @@ import {
   setAvwapAnchor,
   type PaneIndicators,
 } from '../../utils/replayIndicators';
+import {
+  DEFAULT_DRAWING_STYLE,
+  type Drawing,
+  type DrawingStyle,
+  type DrawingTool,
+} from '../../utils/replayDrawings';
 import { Tooltip } from '../ui';
 import { ChartHelpTooltip } from '../charts/ChartHelpTooltip';
 
@@ -52,6 +59,10 @@ const paneToggleClass = (active: boolean) =>
       : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
   }`;
 
+function cloneDrawings(list: Drawing[]): Drawing[] {
+  return structuredClone(list);
+}
+
 export const ReplayGrid: React.FC<ReplayGridProps> = ({
   panes,
   availableTimeframes,
@@ -73,6 +84,16 @@ export const ReplayGrid: React.FC<ReplayGridProps> = ({
   const { t } = useTranslation('marketReplay');
   const paneRefs = useRef<Record<string, ReplayChartPaneHandle | null>>({});
   const [indicatorsByPane, setIndicatorsByPane] = useState<Record<string, PaneIndicators>>({});
+  const [drawingScope, setDrawingScope] = useState<DrawingScope>('pane');
+  const [drawingsByPane, setDrawingsByPane] = useState<Record<string, Drawing[]>>({});
+  const [sharedDrawings, setSharedDrawings] = useState<Drawing[]>([]);
+  const [selectedDrawingByPane, setSelectedDrawingByPane] = useState<
+    Record<string, string | null>
+  >({});
+  const [armedToolByPane, setArmedToolByPane] = useState<
+    Record<string, DrawingTool | null>
+  >({});
+  const [drawingStyle, setDrawingStyle] = useState<DrawingStyle>(DEFAULT_DRAWING_STYLE);
 
   const paneIndicators = useCallback(
     (chartId: string): PaneIndicators => indicatorsByPane[chartId] ?? emptyPaneIndicators(),
@@ -82,6 +103,58 @@ export const ReplayGrid: React.FC<ReplayGridProps> = ({
   const setPaneIndicators = useCallback((chartId: string, next: PaneIndicators) => {
     setIndicatorsByPane((prev) => ({ ...prev, [chartId]: next }));
   }, []);
+
+  const getDrawings = useCallback(
+    (chartId: string): Drawing[] => {
+      const list =
+        drawingScope === 'all' ? sharedDrawings : (drawingsByPane[chartId] ?? []);
+      // Path temporairement retiré de l’UI — ne pas afficher d’anciens paths
+      return list.filter((d) => d.type !== 'path');
+    },
+    [drawingScope, sharedDrawings, drawingsByPane],
+  );
+
+  const setDrawings = useCallback(
+    (chartId: string, next: Drawing[]) => {
+      if (drawingScope === 'all') {
+        setSharedDrawings(next);
+        return;
+      }
+      setDrawingsByPane((prev) => ({ ...prev, [chartId]: next }));
+    },
+    [drawingScope],
+  );
+
+  const clearSelectionAndTools = useCallback(() => {
+    setSelectedDrawingByPane({});
+    setArmedToolByPane({});
+  }, []);
+
+  const changeScope = useCallback(
+    (next: DrawingScope, fromChartId: string) => {
+      if (next === drawingScope) return;
+
+      if (next === 'all') {
+        const source = drawingsByPane[fromChartId] ?? [];
+        setSharedDrawings(cloneDrawings(source));
+        setDrawingScope('all');
+        clearSelectionAndTools();
+        return;
+      }
+
+      // all → pane : chaque pane reçoit une copie de la liste partagée
+      const copy = cloneDrawings(sharedDrawings);
+      const nextByPane: Record<string, Drawing[]> = {};
+      for (const pane of panes) {
+        nextByPane[pane.chartId] = cloneDrawings(copy);
+      }
+      setDrawingsByPane(nextByPane);
+      setSharedDrawings([]);
+      setDrawingScope('pane');
+      clearSelectionAndTools();
+    },
+    [drawingScope, drawingsByPane, sharedDrawings, panes, clearSelectionAndTools],
+  );
 
   const overlaysByPane = useMemo(() => {
     const out: Record<string, ReturnType<typeof buildReplayOverlays>> = {};
@@ -98,10 +171,15 @@ export const ReplayGrid: React.FC<ReplayGridProps> = ({
     <div className="grid min-h-[480px] flex-1 grid-cols-1 gap-3 auto-rows-[minmax(240px,1fr)] lg:min-h-[560px] lg:grid-cols-2 lg:grid-rows-2">
       {panes.map((pane) => {
         const indicators = paneIndicators(pane.chartId);
+        const drawings = getDrawings(pane.chartId);
+        const armedTool = armedToolByPane[pane.chartId] ?? null;
+        const selectedDrawingId = selectedDrawingByPane[pane.chartId] ?? null;
+        const drawingArmed = armedTool != null;
         const waitingAvwap =
           indicators.avwap &&
           indicators.avwapAnchor == null &&
           !placementArmed &&
+          !drawingArmed &&
           !loading &&
           !emptySession;
         return (
@@ -121,6 +199,30 @@ export const ReplayGrid: React.FC<ReplayGridProps> = ({
                   value={indicators}
                   onChange={(next) => setPaneIndicators(pane.chartId, next)}
                   disabled={loading}
+                />
+                <DrawingToolSelect
+                  armedTool={armedTool}
+                  drawingCount={drawings.length}
+                  scope={drawingScope}
+                  onScopeChange={(next) => changeScope(next, pane.chartId)}
+                  disabled={loading || emptySession}
+                  onArmTool={(tool) => {
+                    setArmedToolByPane((prev) => ({ ...prev, [pane.chartId]: tool }));
+                    if (tool) {
+                      setSelectedDrawingByPane((prev) => ({
+                        ...prev,
+                        [pane.chartId]: null,
+                      }));
+                    }
+                  }}
+                  onClearAll={() => {
+                    setDrawings(pane.chartId, []);
+                    setSelectedDrawingByPane((prev) => ({
+                      ...prev,
+                      [pane.chartId]: null,
+                    }));
+                    setArmedToolByPane((prev) => ({ ...prev, [pane.chartId]: null }));
+                  }}
                 />
                 <ChartHelpTooltip content={t('chartInteractionHint')} />
               </div>
@@ -169,9 +271,9 @@ export const ReplayGrid: React.FC<ReplayGridProps> = ({
                 levels={levels}
                 preferredLevel={preferredLevel}
                 adjustLevel={adjustLevel}
-                onPriceClick={onPriceClick}
+                onPriceClick={drawingArmed ? undefined : onPriceClick}
                 onCandleClick={
-                  !placementArmed && indicators.avwap
+                  !placementArmed && !drawingArmed && indicators.avwap
                     ? (time) => {
                         if (!pane.candles.some((c) => c.time === time)) return;
                         setPaneIndicators(pane.chartId, setAvwapAnchor(indicators, time));
@@ -182,6 +284,18 @@ export const ReplayGrid: React.FC<ReplayGridProps> = ({
                 onAdjustCommit={onAdjustCommit}
                 logarithmic={logarithmic}
                 autoFit={autoFit}
+                drawings={drawings}
+                selectedDrawingId={selectedDrawingId}
+                armedDrawingTool={armedTool}
+                drawingStyle={drawingStyle}
+                onDrawingsChange={(next) => setDrawings(pane.chartId, next)}
+                onSelectedDrawingIdChange={(id) =>
+                  setSelectedDrawingByPane((prev) => ({ ...prev, [pane.chartId]: id }))
+                }
+                onDrawingStyleChange={setDrawingStyle}
+                onArmedDrawingToolChange={(tool) =>
+                  setArmedToolByPane((prev) => ({ ...prev, [pane.chartId]: tool }))
+                }
                 className="absolute inset-0 h-full w-full"
               />
               {waitingAvwap ? (

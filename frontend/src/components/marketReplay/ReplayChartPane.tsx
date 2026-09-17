@@ -1,5 +1,6 @@
 import React, {
   forwardRef,
+  useCallback,
   useEffect,
   useImperativeHandle,
   useLayoutEffect,
@@ -29,6 +30,14 @@ import {
 import { formatNumber } from '../../utils/numberFormat';
 import { getMarketTapeTheme } from '../replay/replayStyles';
 import type { TradeChartLevels } from './ReplayTradePanel';
+import { DrawingStyleBar } from './DrawingStyleBar';
+import { useChartDrawings } from './useChartDrawings';
+import {
+  DEFAULT_DRAWING_STYLE,
+  type Drawing,
+  type DrawingStyle,
+  type DrawingTool,
+} from '../../utils/replayDrawings';
 
 export type TradeLevelKey = 'entry' | 'exit' | 'stop' | 'target';
 
@@ -54,6 +63,14 @@ interface ReplayChartPaneProps {
   /** Recentrer tout le contenu visible à chaque update des bougies. */
   autoFit?: boolean;
   overlays?: IndicatorOverlay[];
+  drawings?: Drawing[];
+  selectedDrawingId?: string | null;
+  armedDrawingTool?: DrawingTool | null;
+  drawingStyle?: DrawingStyle;
+  onDrawingsChange?: (next: Drawing[]) => void;
+  onSelectedDrawingIdChange?: (id: string | null) => void;
+  onDrawingStyleChange?: (style: DrawingStyle) => void;
+  onArmedDrawingToolChange?: (tool: DrawingTool | null) => void;
   className?: string;
 }
 
@@ -237,6 +254,14 @@ export const ReplayChartPane = forwardRef<ReplayChartPaneHandle, ReplayChartPane
     logarithmic = false,
     autoFit = false,
     overlays = [],
+    drawings = [],
+    selectedDrawingId = null,
+    armedDrawingTool = null,
+    drawingStyle = DEFAULT_DRAWING_STYLE,
+    onDrawingsChange,
+    onSelectedDrawingIdChange,
+    onDrawingStyleChange,
+    onArmedDrawingToolChange,
     className = '',
   },
   ref,
@@ -270,6 +295,7 @@ export const ReplayChartPane = forwardRef<ReplayChartPaneHandle, ReplayChartPane
   const didDragRef = useRef(false);
   const hadLayoutSizeRef = useRef(false);
   const handleDraggingRef = useRef(false);
+  const drawingLockRef = useRef(false);
   const { isDark } = useTheme();
   const { preferences } = usePreferences();
   const fontStack = resolveAppFontStack(preferences.font_family);
@@ -277,6 +303,51 @@ export const ReplayChartPane = forwardRef<ReplayChartPaneHandle, ReplayChartPane
   isDarkRef.current = isDark;
 
   const [handleTop, setHandleTop] = useState<number | null>(null);
+
+  const setChartInteractionLocked = useCallback((locked: boolean) => {
+    drawingLockRef.current = locked;
+    const chart = chartRef.current;
+    const el = containerRef.current;
+    if (!chart) return;
+    chart.applyOptions({
+      handleScroll: locked ? SCROLL_OFF : SCROLL_ON,
+      handleScale: locked ? SCALE_OFF : SCALE_ON,
+    });
+    if (el && !locked && !dragKeyRef.current && !handleDraggingRef.current) {
+      el.style.cursor = armedDrawingTool ? 'crosshair' : '';
+    }
+  }, [armedDrawingTool]);
+
+  const drawingsEnabled = Boolean(onDrawingsChange);
+
+  const {
+    canvasRef,
+    paint: paintDrawings,
+    styleAnchor,
+    selectedDrawing,
+    tryHandlePointerDown,
+    tryHandlePointerMove,
+    tryHandlePointerUp,
+    tryHandleDoubleClick,
+    consumeClickIfDrawing,
+    deleteSelected,
+    applyStyleToSelected,
+  } = useChartDrawings({
+    chartRef,
+    seriesRef,
+    containerRef,
+    candles,
+    drawings,
+    selectedDrawingId,
+    armedTool: armedDrawingTool,
+    drawingStyle,
+    onDrawingsChange: onDrawingsChange ?? (() => undefined),
+    onSelectedDrawingIdChange: onSelectedDrawingIdChange ?? (() => undefined),
+    onDrawingStyleChange: onDrawingStyleChange ?? (() => undefined),
+    onArmToolChange: onArmedDrawingToolChange ?? (() => undefined),
+    setChartInteractionLocked,
+    enabled: drawingsEnabled,
+  });
 
   useImperativeHandle(ref, () => ({
     fitToScreen() {
@@ -288,6 +359,7 @@ export const ReplayChartPane = forwardRef<ReplayChartPaneHandle, ReplayChartPane
       requestAnimationFrame(() => {
         programmaticRangeRef.current = false;
         updateHandlePosition();
+        paintDrawings();
       });
     },
   }));
@@ -306,6 +378,23 @@ export const ReplayChartPane = forwardRef<ReplayChartPaneHandle, ReplayChartPane
     }
     const y = series.priceToCoordinate(price);
     setHandleTop(y == null ? null : y);
+  };
+
+  const drawingHandlersRef = useRef({
+    tryHandlePointerDown,
+    tryHandlePointerMove,
+    tryHandlePointerUp,
+    tryHandleDoubleClick,
+    consumeClickIfDrawing,
+    paintDrawings,
+  });
+  drawingHandlersRef.current = {
+    tryHandlePointerDown,
+    tryHandlePointerMove,
+    tryHandlePointerUp,
+    tryHandleDoubleClick,
+    consumeClickIfDrawing,
+    paintDrawings,
   };
 
   useEffect(() => {
@@ -336,8 +425,9 @@ export const ReplayChartPane = forwardRef<ReplayChartPaneHandle, ReplayChartPane
     seriesRef.current = series;
     setChartReady(true);
 
-    const onDblClick = () => {
-      if (dragKeyRef.current || handleDraggingRef.current) return;
+    const onDblClick = (event: MouseEvent) => {
+      if (drawingHandlersRef.current.tryHandleDoubleClick(event)) return;
+      if (dragKeyRef.current || handleDraggingRef.current || drawingLockRef.current) return;
       const count = lastCandleCountRef.current;
       if (count <= 0) return;
       programmaticRangeRef.current = true;
@@ -346,6 +436,7 @@ export const ReplayChartPane = forwardRef<ReplayChartPaneHandle, ReplayChartPane
       requestAnimationFrame(() => {
         programmaticRangeRef.current = false;
         updateHandlePosition();
+        drawingHandlersRef.current.paintDrawings();
       });
     };
     el.addEventListener('dblclick', onDblClick);
@@ -354,6 +445,7 @@ export const ReplayChartPane = forwardRef<ReplayChartPaneHandle, ReplayChartPane
       if (programmaticRangeRef.current || dragKeyRef.current) return;
       userAdjustedViewRef.current = true;
       updateHandlePosition();
+      drawingHandlersRef.current.paintDrawings();
     };
     chart.timeScale().subscribeVisibleLogicalRangeChange(onRangeChange);
 
@@ -373,6 +465,7 @@ export const ReplayChartPane = forwardRef<ReplayChartPaneHandle, ReplayChartPane
     const onPointerDown = (event: PointerEvent) => {
       if (event.button !== 0 || !seriesRef.current) return;
       if (handleDraggingRef.current) return;
+      if (drawingHandlersRef.current.tryHandlePointerDown(event)) return;
       const rect = el.getBoundingClientRect();
       const y = event.clientY - rect.top;
       const hit = findNearestLevel(
@@ -398,10 +491,12 @@ export const ReplayChartPane = forwardRef<ReplayChartPaneHandle, ReplayChartPane
     const onPointerMove = (event: PointerEvent) => {
       if (!seriesRef.current) return;
       if (handleDraggingRef.current) return;
+      if (drawingHandlersRef.current.tryHandlePointerMove(event)) return;
       const rect = el.getBoundingClientRect();
       const y = event.clientY - rect.top;
 
       if (!dragKeyRef.current) {
+        if (drawingLockRef.current) return;
         const hit = findNearestLevel(
           seriesRef.current,
           levelsRef.current,
@@ -409,7 +504,9 @@ export const ReplayChartPane = forwardRef<ReplayChartPaneHandle, ReplayChartPane
           preferredLevelRef.current,
           exclusiveHit(),
         );
-        el.style.cursor = hit ? 'ns-resize' : '';
+        if (hit) {
+          el.style.cursor = 'ns-resize';
+        }
         return;
       }
 
@@ -426,6 +523,7 @@ export const ReplayChartPane = forwardRef<ReplayChartPaneHandle, ReplayChartPane
     };
 
     const endDrag = (event: PointerEvent) => {
+      if (drawingHandlersRef.current.tryHandlePointerUp(event)) return;
       if (!dragKeyRef.current) return;
       event.preventDefault();
       event.stopPropagation();
@@ -449,6 +547,7 @@ export const ReplayChartPane = forwardRef<ReplayChartPaneHandle, ReplayChartPane
     el.addEventListener('pointercancel', endDrag, { capture: true });
 
     chart.subscribeClick((param) => {
+      if (drawingHandlersRef.current.consumeClickIfDrawing()) return;
       if (didDragRef.current) {
         didDragRef.current = false;
         return;
@@ -486,10 +585,12 @@ export const ReplayChartPane = forwardRef<ReplayChartPaneHandle, ReplayChartPane
         requestAnimationFrame(() => {
           programmaticRangeRef.current = false;
           updateHandlePosition();
+          drawingHandlersRef.current.paintDrawings();
         });
       } else if (width > 0 && height > 0) {
         hadLayoutSizeRef.current = true;
         updateHandlePosition();
+        drawingHandlersRef.current.paintDrawings();
       }
     });
     ro.observe(el);
@@ -762,6 +863,27 @@ export const ReplayChartPane = forwardRef<ReplayChartPaneHandle, ReplayChartPane
       className={`relative min-h-[200px] ${className || 'h-full w-full'}`}
     >
       <div ref={containerRef} className="absolute inset-0 touch-none" />
+      <canvas
+        ref={canvasRef}
+        className="pointer-events-none absolute inset-0 z-[5]"
+        aria-hidden
+      />
+      {drawingsEnabled && selectedDrawing && styleAnchor ? (
+        <DrawingStyleBar
+          style={selectedDrawing.style}
+          anchor={styleAnchor}
+          isDark={isDark}
+          onChange={applyStyleToSelected}
+          onDelete={deleteSelected}
+        />
+      ) : null}
+      {armedDrawingTool ? (
+        <div className="pointer-events-none absolute left-2 top-2 z-10 rounded bg-blue-600/90 px-2 py-1 text-[11px] font-medium text-white shadow">
+          {armedDrawingTool === 'trendLine'
+            ? t('drawingTrendShiftHint')
+            : t('drawingArmedHint')}
+        </div>
+      ) : null}
       {showHandle && tone ? (
         <button
           type="button"
