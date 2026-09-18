@@ -1049,11 +1049,14 @@ const HistoricalDataPage: React.FC = () => {
                     {t('progress')}: {fmtNum(focusJob.progress_pct)}%
                   </p>
                   {batchJobs.length > 1 ? (
-                    <ul className="mt-3 space-y-1 text-xs text-gray-500 dark:text-gray-400">
+                    <ul className="mt-3 flex flex-wrap gap-1.5">
                       {batchJobs.map((j) => (
-                        <li key={j.id} className="flex justify-between gap-2">
-                          <span>{j.timeframe}</span>
-                          <span>{statusLabel(j.status)}</span>
+                        <li key={j.id}>
+                          <JobStatusChip
+                            timeframe={j.timeframe}
+                            status={j.status}
+                            label={statusLabel(j.status)}
+                          />
                         </li>
                       ))}
                     </ul>
@@ -1224,6 +1227,37 @@ const StatCard: React.FC<{ label: string; value: string }> = ({ label, value }) 
     <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{label}</p>
     <p className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">{value}</p>
   </div>
+);
+
+const jobStatusTone = (status: string): string => {
+  switch (status) {
+    case 'running':
+      return 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400';
+    case 'completed':
+      return 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400';
+    case 'failed':
+    case 'cancelled':
+      return 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400';
+    case 'pending':
+    default:
+      return 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300';
+  }
+};
+
+const JobStatusChip: React.FC<{ timeframe: string; status: string; label: string }> = ({
+  timeframe,
+  status,
+  label,
+}) => (
+  <span
+    className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${jobStatusTone(status)}`}
+  >
+    {timeframe}
+    <span className="mx-1 opacity-50" aria-hidden>
+      ·
+    </span>
+    {label}
+  </span>
 );
 
 const StatusBadge: React.FC<{ status: string; label: string }> = ({ status, label }) => {
