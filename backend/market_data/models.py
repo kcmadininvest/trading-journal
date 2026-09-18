@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from django.conf import settings
 from django.db import models
+from django.utils import timezone as django_timezone
 from django.utils.translation import gettext_lazy as _
 
 
@@ -242,6 +243,15 @@ class HistoricalDownloadJob(models.Model):
         return f'Job#{self.pk} {self.instrument} [{self.status}]'
 
 
+class SyncRunStatus(models.TextChoices):
+    """Issue d'une exécution de sync historique."""
+
+    RUNNING = 'running', _('Running')
+    SUCCESS = 'success', _('Success')
+    ERROR = 'error', _('Error')
+    UP_TO_DATE = 'up_to_date', _('Up to date')
+
+
 class HistoricalSyncSettings(models.Model):
     """Profil de synchronisation quotidienne par utilisateur."""
 
@@ -257,7 +267,24 @@ class HistoricalSyncSettings(models.Model):
     )
     minute = models.PositiveSmallIntegerField(default=0)
     last_run_local_date = models.DateField(null=True, blank=True)
-    last_run_at = models.DateTimeField(null=True, blank=True)
+    last_run_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text=_('Déclenchement du dernier run.'),
+    )
+    last_finished_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text=_('Conclusion du dernier run (jobs terminés).'),
+    )
+    last_status = models.CharField(
+        max_length=16,
+        choices=SyncRunStatus.choices,
+        blank=True,
+        default='',
+        help_text=_('Vide = jamais exécuté.'),
+    )
+    last_sync_job_ids = models.JSONField(default=list, blank=True)
     last_error = models.TextField(blank=True, default='')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -305,6 +332,72 @@ class HistoricalSyncTarget(models.Model):
     def __str__(self) -> str:
         cid = self.contract_id or '*'
         return f'{self.instrument} {self.timeframe} {cid}'
+
+
+class HistoricalSyncRun(models.Model):
+    """Exécution d'une sync historique — historique consultable dans l'UI."""
+
+    MAX_RUNS_PER_USER = 50
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='historical_sync_runs',
+    )
+    trigger = models.CharField(
+        max_length=16,
+        choices=HistoricalDownloadJob.Trigger.choices,
+        default=HistoricalDownloadJob.Trigger.SCHEDULED,
+        db_index=True,
+    )
+    status = models.CharField(
+        max_length=16,
+        choices=SyncRunStatus.choices,
+        default=SyncRunStatus.RUNNING,
+        db_index=True,
+    )
+    started_at = models.DateTimeField(default=django_timezone.now)
+    finished_at = models.DateTimeField(null=True, blank=True)
+    job_ids = models.JSONField(default=list, blank=True)
+    bars_fetched_total = models.PositiveIntegerField(default=0)
+    error = models.TextField(blank=True, default='')
+
+    class Meta:
+        db_table = 'market_data_sync_run'
+        verbose_name = _('Run sync historique')
+        verbose_name_plural = _('Runs sync historique')
+        ordering = ['-started_at', '-id']
+        indexes = [
+            models.Index(fields=['user', '-started_at']),
+        ]
+
+    def __str__(self) -> str:
+        return f'SyncRun#{self.pk} user={self.user_id} [{self.status}]'
+
+
+class HistoricalSyncSchedulerState(models.Model):
+    """Heartbeat du tick de planification — détecte un timer système arrêté."""
+
+    SINGLETON_PK = 1
+
+    id = models.PositiveSmallIntegerField(primary_key=True, default=SINGLETON_PK)
+    last_tick_at = models.DateTimeField(null=True, blank=True)
+    last_tick_ran = models.PositiveIntegerField(default=0)
+    last_tick_not_due = models.PositiveIntegerField(default=0)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'market_data_sync_scheduler_state'
+        verbose_name = _('État du planificateur sync')
+        verbose_name_plural = _('État du planificateur sync')
+
+    @classmethod
+    def load(cls) -> HistoricalSyncSchedulerState:
+        state, _created = cls.objects.get_or_create(pk=cls.SINGLETON_PK)
+        return state
+
+    def __str__(self) -> str:
+        return f'SchedulerState last_tick_at={self.last_tick_at}'
 
 
 class BarQualityIssue(models.Model):

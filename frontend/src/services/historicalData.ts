@@ -66,6 +66,8 @@ export interface SyncTarget {
   ordering?: number;
 }
 
+export type SyncRunStatus = 'running' | 'success' | 'error' | 'up_to_date';
+
 export interface SyncSettings {
   enabled: boolean;
   hour: number;
@@ -73,7 +75,28 @@ export interface SyncSettings {
   targets: SyncTarget[];
   last_run_local_date: string | null;
   last_run_at: string | null;
+  last_finished_at: string | null;
+  last_status: SyncRunStatus | '';
   last_error: string;
+}
+
+export interface SyncRun {
+  id: number;
+  trigger: string;
+  status: SyncRunStatus;
+  started_at: string;
+  finished_at: string | null;
+  job_ids: number[];
+  bars_fetched_total: number;
+  error: string;
+}
+
+export interface SyncHealth {
+  scheduler_last_tick_at: string | null;
+  scheduler_ok: boolean;
+  scheduler_stale_after_minutes: number;
+  celery_workers_available: boolean;
+  download_dispatch_mode: 'celery' | 'thread';
 }
 
 export interface QualityIssue {
@@ -248,6 +271,20 @@ class HistoricalDataService {
       throw new Error(body.detail || JSON.stringify(body) || 'Erreur sauvegarde sync');
     }
     return body;
+  }
+
+  async listSyncRuns(limit = 20): Promise<SyncRun[]> {
+    const res = await this.fetchWithAuth(
+      `${this.BASE_URL}/api/market-data/sync-runs/?limit=${limit}`,
+    );
+    if (!res.ok) throw new Error('Erreur chargement historique sync');
+    return res.json();
+  }
+
+  async getSyncHealth(): Promise<SyncHealth> {
+    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/market-data/sync-health/`);
+    if (!res.ok) throw new Error('Erreur chargement santé sync');
+    return res.json();
   }
 
   async runSyncNow(): Promise<{ settings: SyncSettings; jobs: DownloadJob[] }> {

@@ -26,6 +26,9 @@ import historicalDataService, {
   MarketContract,
   MarketInstrument,
   QualityIssue,
+  SyncHealth,
+  SyncRun,
+  SyncRunStatus,
   SyncSettings,
   SyncTarget,
 } from '../services/historicalData';
@@ -33,6 +36,8 @@ import historicalDataService, {
 const TERMINAL = new Set(['completed', 'failed', 'cancelled']);
 /** Fenêtre par défaut : historique TopStepX sim souvent limité au contrat front récent. */
 const DEFAULT_LOOKBACK_DAYS = 7;
+const SYNC_RUNS_LIMIT = 20;
+const SYNC_STATUS_POLL_MS = 4000;
 
 const labelClass = 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2';
 
@@ -69,6 +74,8 @@ const HistoricalDataPage: React.FC = () => {
   );
   const [exporting, setExporting] = useState(false);
   const [syncSettings, setSyncSettings] = useState<SyncSettings | null>(null);
+  const [syncRuns, setSyncRuns] = useState<SyncRun[]>([]);
+  const [syncHealth, setSyncHealth] = useState<SyncHealth | null>(null);
   const [syncEnabled, setSyncEnabled] = useState(false);
   const [syncHour, setSyncHour] = useState(2);
   const [syncMinute, setSyncMinute] = useState(0);
@@ -190,6 +197,32 @@ const HistoricalDataPage: React.FC = () => {
     }
   }, []);
 
+  const loadSyncRuns = useCallback(async () => {
+    try {
+      setSyncRuns(await historicalDataService.listSyncRuns(SYNC_RUNS_LIMIT));
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const loadSyncHealth = useCallback(async () => {
+    try {
+      setSyncHealth(await historicalDataService.getSyncHealth());
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  /** Rafraîchit le statut sans écraser le formulaire en cours d'édition. */
+  const refreshSyncStatus = useCallback(async () => {
+    try {
+      setSyncSettings(await historicalDataService.getSyncSettings());
+    } catch {
+      /* ignore */
+    }
+    await loadSyncRuns();
+  }, [loadSyncRuns]);
+
   const loadCoverage = useCallback(async (instr: string) => {
     if (!instr) {
       setCoverage([]);
@@ -232,7 +265,28 @@ const HistoricalDataPage: React.FC = () => {
   useEffect(() => {
     void loadInstruments();
     void loadSyncSettings();
-  }, [loadInstruments, loadSyncSettings]);
+    void loadSyncRuns();
+    void loadSyncHealth();
+  }, [loadInstruments, loadSyncHealth, loadSyncRuns, loadSyncSettings]);
+
+  const syncStatus = syncSettings?.last_status || '';
+
+  useEffect(() => {
+    if (syncStatus !== 'running') return undefined;
+    const timer = window.setInterval(() => {
+      void refreshSyncStatus();
+    }, SYNC_STATUS_POLL_MS);
+    return () => window.clearInterval(timer);
+  }, [syncStatus, refreshSyncStatus]);
+
+  const syncWasRunningRef = useRef(false);
+  useEffect(() => {
+    const isRunning = syncStatus === 'running';
+    if (syncWasRunningRef.current && !isRunning) {
+      void loadSyncHealth();
+    }
+    syncWasRunningRef.current = isRunning;
+  }, [syncStatus, loadSyncHealth]);
 
   useEffect(() => {
     if (!instrument) return;
@@ -358,6 +412,46 @@ const HistoricalDataPage: React.FC = () => {
     };
     return map[status] || status;
   };
+
+  const syncStatusVisual = useCallback(
+    (status: SyncRunStatus | '' | undefined) => {
+      switch (status) {
+        case 'success':
+          return {
+            label: t('syncStatusSuccess'),
+            className:
+              'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
+          };
+        case 'error':
+          return {
+            label: t('syncStatusError'),
+            className: 'bg-rose-50 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300',
+          };
+        case 'up_to_date':
+          return {
+            label: t('syncStatusUpToDate'),
+            className: 'bg-gray-100 text-gray-700 dark:bg-gray-700/50 dark:text-gray-200',
+          };
+        case 'running':
+          return {
+            label: t('syncStatusRunning'),
+            className: 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+          };
+        default:
+          return {
+            label: t('syncNeverRun'),
+            className: 'bg-gray-100 text-gray-600 dark:bg-gray-700/50 dark:text-gray-300',
+          };
+      }
+    },
+    [t],
+  );
+
+  const fmtDateTime = useCallback(
+    (iso: string | null | undefined) =>
+      iso ? formatDate(iso, dateFormat, true, preferences.timezone) : '',
+    [dateFormat, preferences.timezone],
+  );
 
   const fmtNum = (n: number) => formatNumber(n, 0, numberFormat);
   const fmtDateIso = (iso: string) => {
@@ -521,6 +615,7 @@ const HistoricalDataPage: React.FC = () => {
       });
       const result = await historicalDataService.runSyncNow();
       setSyncSettings(result.settings);
+      void loadSyncRuns();
       if (result.jobs?.length) {
         setBatchJobs(result.jobs);
         toast.success(t('syncRunStarted'));
@@ -685,15 +780,43 @@ const HistoricalDataPage: React.FC = () => {
                 <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">{t('syncSubtitle')}</p>
               </div>
 
-              <label className="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-                <input
-                  type="checkbox"
-                  checked={syncEnabled}
-                  onChange={(e) => setSyncEnabled(e.target.checked)}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                {t('syncEnabled')}
-              </label>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={syncEnabled}
+                onClick={() => setSyncEnabled((prev) => !prev)}
+                className={`flex w-full items-center justify-between gap-3 rounded-lg border p-3 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800 ${
+                  syncEnabled
+                    ? 'border-emerald-300 bg-emerald-50 dark:border-emerald-700 dark:bg-emerald-900/20'
+                    : 'border-gray-300 bg-gray-50 dark:border-gray-600 dark:bg-gray-800/40'
+                }`}
+              >
+                <span className="min-w-0">
+                  <span className="block text-sm font-semibold text-gray-900 dark:text-white">
+                    {t('syncEnabled')}
+                  </span>
+                  <span
+                    className={`mt-0.5 block text-xs font-medium ${
+                      syncEnabled
+                        ? 'text-emerald-700 dark:text-emerald-300'
+                        : 'text-gray-600 dark:text-gray-400'
+                    }`}
+                  >
+                    {syncEnabled ? t('syncToggleOn') : t('syncToggleOff')}
+                  </span>
+                </span>
+                <span
+                  className={`relative inline-flex h-7 w-12 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ${
+                    syncEnabled ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-600'
+                  }`}
+                >
+                  <span
+                    className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow ring-0 transition duration-200 ${
+                      syncEnabled ? 'translate-x-5' : 'translate-x-0'
+                    }`}
+                  />
+                </span>
+              </button>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-md">
                 <div>
@@ -853,17 +976,109 @@ const HistoricalDataPage: React.FC = () => {
                 </button>
               </div>
 
-              {syncSettings?.last_run_at ? (
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {t('syncLastRun')}:{' '}
-                  {formatDate(syncSettings.last_run_at, dateFormat, true, preferences.timezone)}
-                </p>
-              ) : null}
-              {syncSettings?.last_error ? (
-                <p className="text-sm text-amber-700 dark:text-amber-400">
-                  {t('syncLastError')}: {syncSettings.last_error}
-                </p>
-              ) : null}
+              <div className="flex flex-col gap-2 border-t border-gray-200 pt-3 dark:border-gray-700">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    {t('syncLastStatus')}:
+                  </span>
+                  <span
+                    className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${
+                      syncStatusVisual(syncSettings?.last_status).className
+                    }`}
+                  >
+                    {syncStatusVisual(syncSettings?.last_status).label}
+                  </span>
+                  {syncSettings?.last_finished_at ? (
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      {t('syncLastFinished')}: {fmtDateTime(syncSettings.last_finished_at)}
+                    </span>
+                  ) : syncSettings?.last_run_at ? (
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      {t('syncLastRun')}: {fmtDateTime(syncSettings.last_run_at)}
+                    </span>
+                  ) : null}
+                </div>
+                {syncSettings?.last_error ? (
+                  <p className="text-sm text-amber-700 dark:text-amber-400">
+                    {t('syncLastError')}: {syncSettings.last_error}
+                  </p>
+                ) : null}
+
+                {syncHealth ? (
+                  <div className="flex flex-col gap-1 text-xs text-gray-600 dark:text-gray-400">
+                    <p className="font-medium text-gray-700 dark:text-gray-300">
+                      {t('syncHealthTitle')}
+                    </p>
+                    <p>
+                      {t('syncHealthTick')}:{' '}
+                      <span
+                        className={
+                          syncHealth.scheduler_ok
+                            ? 'text-emerald-700 dark:text-emerald-400'
+                            : 'text-rose-700 dark:text-rose-400'
+                        }
+                      >
+                        {syncHealth.scheduler_last_tick_at
+                          ? syncHealth.scheduler_ok
+                            ? t('syncHealthTickOk', {
+                                datetime: fmtDateTime(syncHealth.scheduler_last_tick_at),
+                              })
+                            : t('syncHealthTickStale', {
+                                datetime: fmtDateTime(syncHealth.scheduler_last_tick_at),
+                                minutes: syncHealth.scheduler_stale_after_minutes,
+                              })
+                          : t('syncHealthTickNever')}
+                      </span>
+                    </p>
+                    <p>
+                      {t('syncHealthWorker')}:{' '}
+                      {syncHealth.celery_workers_available
+                        ? t('syncHealthWorkerCelery')
+                        : t('syncHealthWorkerThread')}
+                    </p>
+                  </div>
+                ) : null}
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+                  {t('syncRunsTitle')}
+                </h3>
+                {syncRuns.length === 0 ? (
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t('syncRunsEmpty')}</p>
+                ) : (
+                  <ul className="divide-y divide-gray-200 rounded-md border border-gray-200 dark:divide-gray-700 dark:border-gray-700">
+                    {syncRuns.map((run) => (
+                      <li key={run.id} className="flex flex-col gap-1 px-3 py-2 text-sm">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span
+                            className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${
+                              syncStatusVisual(run.status).className
+                            }`}
+                          >
+                            {syncStatusVisual(run.status).label}
+                          </span>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            {run.trigger === 'manual'
+                              ? t('syncRunsTriggerManual')
+                              : t('syncRunsTriggerScheduled')}
+                          </span>
+                          <span className="text-xs text-gray-600 dark:text-gray-300">
+                            {fmtDateTime(run.started_at)}
+                            {run.finished_at ? ` → ${fmtDateTime(run.finished_at)}` : ''}
+                          </span>
+                          <span className="text-xs text-gray-600 dark:text-gray-300">
+                            {t('syncRunsBars')}: {fmtNum(run.bars_fetched_total)}
+                          </span>
+                        </div>
+                        {run.error ? (
+                          <p className="text-xs text-amber-700 dark:text-amber-400">{run.error}</p>
+                        ) : null}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </div>
           </div>
         )

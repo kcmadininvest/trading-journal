@@ -3,6 +3,7 @@ from rest_framework import serializers
 from market_data.models import (
     BarQualityIssue,
     HistoricalDownloadJob,
+    HistoricalSyncRun,
     HistoricalSyncSettings,
     HistoricalSyncTarget,
 )
@@ -120,6 +121,8 @@ class SyncSettingsSerializer(serializers.Serializer):
     targets = SyncTargetSerializer(many=True, required=False)
     last_run_local_date = serializers.DateField(read_only=True)
     last_run_at = serializers.DateTimeField(read_only=True)
+    last_finished_at = serializers.DateTimeField(read_only=True)
+    last_status = serializers.CharField(read_only=True)
     last_error = serializers.CharField(read_only=True)
 
     def to_representation(self, instance: HistoricalSyncSettings):
@@ -139,6 +142,8 @@ class SyncSettingsSerializer(serializers.Serializer):
             'targets': targets,
             'last_run_local_date': instance.last_run_local_date,
             'last_run_at': instance.last_run_at,
+            'last_finished_at': instance.last_finished_at,
+            'last_status': instance.last_status,
             'last_error': instance.last_error,
         }
 
@@ -159,3 +164,18 @@ class SyncSettingsSerializer(serializers.Serializer):
                     ordering=raw.get('ordering', idx),
                 )
         return instance
+
+
+class SyncRunSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = HistoricalSyncRun
+        fields = (
+            'id',
+            'trigger',
+            'status',
+            'started_at',
+            'finished_at',
+            'job_ids',
+            'bars_fetched_total',
+            'error',
+        )

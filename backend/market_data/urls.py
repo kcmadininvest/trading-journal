@@ -10,6 +10,8 @@ from market_data.views import (
     DownloadJobListCreateView,
     InstrumentListView,
     InstrumentTimeframesView,
+    SyncHealthView,
+    SyncRunListView,
     SyncSettingsRunNowView,
     SyncSettingsView,
 )
@@ -32,4 +34,6 @@ urlpatterns = [
     path('downloads/<int:job_id>/issues/', DownloadJobIssuesView.as_view(), name='download_issues'),
     path('sync-settings/', SyncSettingsView.as_view(), name='sync_settings'),
     path('sync-settings/run-now/', SyncSettingsRunNowView.as_view(), name='sync_settings_run_now'),
+    path('sync-runs/', SyncRunListView.as_view(), name='sync_runs'),
+    path('sync-health/', SyncHealthView.as_view(), name='sync_health'),
 ]

@@ -19,11 +19,18 @@ from integrations.topstepx_auth import (
     get_topstepx_integration,
 )
 from integrations.topstepx_client import TopStepXApiClient, TopStepXApiError
-from market_data.models import BarQualityIssue, HistoricalDownloadJob, HistoricalSyncSettings
+from market_data.models import (
+    BarQualityIssue,
+    HistoricalDownloadJob,
+    HistoricalSyncRun,
+    HistoricalSyncSchedulerState,
+    HistoricalSyncSettings,
+)
 from market_data.serializers import (
     DownloadJobCreateSerializer,
     DownloadJobSerializer,
     QualityIssueSerializer,
+    SyncRunSerializer,
     SyncSettingsSerializer,
 )
 from market_data.services.available_timeframes import (
@@ -37,11 +44,16 @@ from market_data.services.download_dispatch import (
     abandon_stale_pending_jobs,
     abandon_stale_running_jobs,
     cancel_active_jobs_for_user,
+    celery_workers_available,
     dispatch_historical_download,
 )
 from market_data.services.instruments import list_instruments, search_instruments
 from market_data.services.replay_bars import ReplayBarsError, fetch_replay_bars
-from market_data.services.sync_schedule import run_sync_for_settings
+from market_data.services.sync_schedule import (
+    SCHEDULER_STALE_MINUTES,
+    run_sync_for_settings,
+    scheduler_is_healthy,
+)
 from market_data.services.timeframes import UnknownTimeframe, parse_timeframe
 
 logger = logging.getLogger(__name__)
@@ -451,3 +463,39 @@ class SyncSettingsRunNowView(APIView):
             },
             status=status.HTTP_201_CREATED if jobs else status.HTTP_200_OK,
         )
+
+
+class SyncRunListView(APIView):
+    """Historique des runs de sync de l'utilisateur (dernier en premier)."""
+
+    permission_classes = [IsAuthenticated]
+    DEFAULT_LIMIT = 20
+    MAX_LIMIT = 100
+
+    def get(self, request):
+        try:
+            limit = int(request.query_params.get('limit', self.DEFAULT_LIMIT))
+        except (TypeError, ValueError):
+            limit = self.DEFAULT_LIMIT
+        limit = max(1, min(self.MAX_LIMIT, limit))
+        runs = HistoricalSyncRun.objects.filter(user=request.user)[:limit]
+        return Response(SyncRunSerializer(runs, many=True).data)
+
+
+class SyncHealthView(APIView):
+    """Santé du planificateur : le tick tourne-t-il, un worker est-il dispo."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        state = HistoricalSyncSchedulerState.objects.filter(
+            pk=HistoricalSyncSchedulerState.SINGLETON_PK,
+        ).first()
+        celery_ok = celery_workers_available()
+        return Response({
+            'scheduler_last_tick_at': state.last_tick_at if state else None,
+            'scheduler_ok': scheduler_is_healthy(state),
+            'scheduler_stale_after_minutes': SCHEDULER_STALE_MINUTES,
+            'celery_workers_available': celery_ok,
+            'download_dispatch_mode': 'celery' if celery_ok else 'thread',
+        })

@@ -6,6 +6,8 @@ from .models import (
     FuturesContract,
     HistoricalBar,
     HistoricalDownloadJob,
+    HistoricalSyncRun,
+    HistoricalSyncSchedulerState,
     HistoricalSyncSettings,
     HistoricalSyncTarget,
 )
@@ -95,10 +97,34 @@ class HistoricalSyncSettingsAdmin(admin.ModelAdmin):
         'minute',
         'last_run_local_date',
         'last_run_at',
+        'last_finished_at',
+        'last_status',
     )
-    list_filter = ('enabled',)
+    list_filter = ('enabled', 'last_status')
     search_fields = ('user__username', 'user__email')
     inlines = [HistoricalSyncTargetInline]
+
+
+@admin.register(HistoricalSyncRun)
+class HistoricalSyncRunAdmin(admin.ModelAdmin):
+    list_display = (
+        'id',
+        'user',
+        'trigger',
+        'status',
+        'started_at',
+        'finished_at',
+        'bars_fetched_total',
+    )
+    list_filter = ('status', 'trigger')
+    search_fields = ('user__username', 'user__email', 'error')
+    readonly_fields = ('started_at', 'finished_at', 'job_ids')
+
+
+@admin.register(HistoricalSyncSchedulerState)
+class HistoricalSyncSchedulerStateAdmin(admin.ModelAdmin):
+    list_display = ('id', 'last_tick_at', 'last_tick_ran', 'last_tick_not_due', 'updated_at')
+    readonly_fields = ('updated_at',)
 
 
 @admin.register(BarQualityIssue)

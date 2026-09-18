@@ -33,6 +33,19 @@ def celery_workers_available(timeout: float = 0.5) -> bool:
         return False
 
 
+def _finalize_sync_runs(job_ids: list[int]) -> None:
+    """Conclut les runs de sync dont les jobs viennent d'être forcés en terminal."""
+    if not job_ids:
+        return
+    try:
+        from market_data.services.sync_schedule import finalize_sync_status_for_job
+
+        for job in HistoricalDownloadJob.objects.filter(id__in=job_ids):
+            finalize_sync_status_for_job(job)
+    except Exception:
+        logger.exception('Failed to finalize sync runs for jobs %s', job_ids)
+
+
 def abandon_stale_pending_jobs(*, older_than_minutes: int = STALE_PENDING_MINUTES) -> int:
     """Marque en failed les jobs PENDING trop anciens (pas de worker / file morte)."""
     cutoff = timezone.now() - timedelta(minutes=older_than_minutes)
@@ -40,11 +53,14 @@ def abandon_stale_pending_jobs(*, older_than_minutes: int = STALE_PENDING_MINUTE
         status=HistoricalDownloadJob.Status.PENDING,
         created_at__lt=cutoff,
     )
-    return qs.update(
+    job_ids = list(qs.values_list('id', flat=True))
+    updated = qs.update(
         status=HistoricalDownloadJob.Status.FAILED,
         error='Téléchargement abandonné : aucun worker n’a pris en charge le job.',
         finished_at=timezone.now(),
     )
+    _finalize_sync_runs(job_ids)
+    return updated
 
 
 def abandon_stale_running_jobs(*, older_than_minutes: int = STALE_RUNNING_MINUTES) -> int:
@@ -54,11 +70,14 @@ def abandon_stale_running_jobs(*, older_than_minutes: int = STALE_RUNNING_MINUTE
         status=HistoricalDownloadJob.Status.RUNNING,
         updated_at__lt=cutoff,
     )
-    return qs.update(
+    job_ids = list(qs.values_list('id', flat=True))
+    updated = qs.update(
         status=HistoricalDownloadJob.Status.FAILED,
         error='Téléchargement abandonné : job bloqué (plus de progression).',
         finished_at=timezone.now(),
     )
+    _finalize_sync_runs(job_ids)
+    return updated
 
 
 def cancel_active_jobs_for_user(user, *, reason: str = '') -> int:
@@ -71,11 +90,14 @@ def cancel_active_jobs_for_user(user, *, reason: str = '') -> int:
             HistoricalDownloadJob.Status.RUNNING,
         ],
     )
-    return qs.update(
+    job_ids = list(qs.values_list('id', flat=True))
+    updated = qs.update(
         status=HistoricalDownloadJob.Status.CANCELLED,
         error=msg,
         finished_at=timezone.now(),
     )
+    _finalize_sync_runs(job_ids)
+    return updated
 
 
 def _run_download_job_safe(job_id: int) -> None:

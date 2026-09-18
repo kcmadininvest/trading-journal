@@ -419,10 +419,21 @@ def download_contract_range(
     }
 
 
+def _finalize_sync_run(job: HistoricalDownloadJob) -> None:
+    """Remonte l'issue du job vers le run de sync (jamais bloquant)."""
+    try:
+        from market_data.services.sync_schedule import finalize_sync_status_for_job
+
+        finalize_sync_status_for_job(job)
+    except Exception:
+        logger.exception('Failed to finalize sync run for job %s', job.pk)
+
+
 def run_download_job(job_id: int) -> None:
     """Point d'entrée Celery / synchrone pour un HistoricalDownloadJob."""
     job = HistoricalDownloadJob.objects.select_related('user').get(pk=job_id)
     if job.status == HistoricalDownloadJob.Status.CANCELLED:
+        _finalize_sync_run(job)
         return
 
     job.status = HistoricalDownloadJob.Status.RUNNING
@@ -437,6 +448,7 @@ def run_download_job(job_id: int) -> None:
         job.error = 'Intégration TopStepX introuvable pour cet utilisateur.'
         job.finished_at = django_tz.now()
         job.save(update_fields=['status', 'error', 'finished_at', 'updated_at'])
+        _finalize_sync_run(job)
         return
 
     timeout = getattr(settings, 'TOPSTEPX_HISTORY_TIMEOUT_SECONDS', HISTORY_TIMEOUT)
@@ -527,6 +539,7 @@ def run_download_job(job_id: int) -> None:
 
         job.refresh_from_db()
         if job.status == HistoricalDownloadJob.Status.CANCELLED:
+            _finalize_sync_run(job)
             return
 
         if (job.bars_fetched or 0) == 0:
@@ -543,6 +556,7 @@ def run_download_job(job_id: int) -> None:
             job.save(update_fields=[
                 'status', 'progress_pct', 'error', 'finished_at', 'updated_at',
             ])
+            _finalize_sync_run(job)
             return
 
         job.status = HistoricalDownloadJob.Status.COMPLETED
@@ -552,13 +566,16 @@ def run_download_job(job_id: int) -> None:
         job.save(update_fields=[
             'status', 'progress_pct', 'error', 'finished_at', 'updated_at',
         ])
+        _finalize_sync_run(job)
     except Exception as exc:
         job.refresh_from_db(fields=['status'])
         if job.status == HistoricalDownloadJob.Status.CANCELLED:
+            _finalize_sync_run(job)
             return
         logger.exception('Download job %s failed', job_id)
         job.status = HistoricalDownloadJob.Status.FAILED
         job.error = str(exc)[:2000]
         job.finished_at = django_tz.now()
         job.save(update_fields=['status', 'error', 'finished_at', 'updated_at'])
+        _finalize_sync_run(job)
         raise
