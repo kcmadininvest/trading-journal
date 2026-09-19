@@ -10,7 +10,7 @@ WorkingDirectory=/var/www/html/trading_journal/backend
 Environment="PATH=/var/www/html/trading_journal/backend/venv/bin:/usr/local/bin:/usr/bin:/bin"
 Environment="VIRTUAL_ENV=/var/www/html/trading_journal/backend/venv"
 Environment="DJANGO_SETTINGS_MODULE=trading_journal_api.settings"
-ExecStart=/var/www/html/trading_journal/backend/venv/bin/python /var/www/html/trading_journal/backend/manage.py run_historical_sync_tick
+ExecStart=/bin/bash /var/www/html/trading_journal/backend/start-historical-sync.sh
 Nice=10
 StandardOutput=append:/var/log/trading-journal/historical-sync.log
 StandardError=append:/var/log/trading-journal/historical-sync_error.log

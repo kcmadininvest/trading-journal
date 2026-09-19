@@ -820,6 +820,14 @@ fi
 # Sync historique quotidien (timer 15 min, sans Celery Beat)
 HIST_SYNC_SERVICE_UNIT="$PROJECT_ROOT/systemd/trading-journal-historical-sync.service"
 HIST_SYNC_TIMER_UNIT="$PROJECT_ROOT/systemd/trading-journal-historical-sync.timer"
+HIST_SYNC_SCRIPT="$BACKEND_DIR/start-historical-sync.sh"
+if [ -f "$HIST_SYNC_SCRIPT" ]; then
+    sudo chmod +x "$HIST_SYNC_SCRIPT" 2>/dev/null || \
+        warn "Impossible de chmod +x start-historical-sync.sh"
+    sudo chown apache:apache "$HIST_SYNC_SCRIPT" 2>/dev/null || true
+else
+    warn "Script de démarrage manquant: $HIST_SYNC_SCRIPT"
+fi
 if sudo mkdir -p "$LOG_DIR_MARKET" 2>/dev/null; then
     sudo touch "$LOG_DIR_MARKET/historical-sync.log" "$LOG_DIR_MARKET/historical-sync_error.log" 2>/dev/null || true
     sudo chown apache:apache "$LOG_DIR_MARKET/historical-sync.log" "$LOG_DIR_MARKET/historical-sync_error.log" 2>/dev/null || true
