@@ -322,11 +322,14 @@ def run_sync_for_settings(
     force: bool = False,
     trigger: str | None = None,
     now_utc: datetime | None = None,
+    allow_inline: bool = False,
 ) -> dict[str, Any]:
     """
     Enqueue les jobs pour toutes les cibles du profil et ouvre un run traçable.
 
     force=True ignore la fenêtre horaire / last_run (run-now UI).
+    allow_inline=True fait exécuter les téléchargements par l'appelant quand
+    aucun worker Celery n'est disponible (tick systemd, processus éphémère).
     """
     user = settings_obj.user
     job_trigger = trigger or (
@@ -378,7 +381,7 @@ def run_sync_for_settings(
         run.save(update_fields=['job_ids', 'error'])
         _mirror_run_to_settings(settings_obj, run, local_date=local_date)
         for job in jobs:
-            dispatch_historical_download(job.id)
+            dispatch_historical_download(job.id, allow_inline=allow_inline)
     else:
         if errors:
             status = SyncRunStatus.ERROR
@@ -418,8 +421,17 @@ def scheduler_is_healthy(
     return (now - state.last_tick_at) <= timedelta(minutes=SCHEDULER_STALE_MINUTES)
 
 
-def dispatch_due_historical_syncs(*, now_utc: datetime | None = None) -> dict[str, Any]:
-    """Point d'entrée du tick (manage.py / timer systemd)."""
+def dispatch_due_historical_syncs(
+    *,
+    now_utc: datetime | None = None,
+    allow_inline: bool = True,
+) -> dict[str, Any]:
+    """
+    Point d'entrée du tick (manage.py / timer systemd).
+
+    Le tick étant un processus éphémère, les téléchargements y sont exécutés
+    en direct faute de worker Celery — sinon ils mourraient avec le processus.
+    """
     # Un job bloqué maintient user_has_active_download à True et gèlerait la sync.
     abandon_stale_pending_jobs()
     abandon_stale_running_jobs()
@@ -437,7 +449,12 @@ def dispatch_due_historical_syncs(*, now_utc: datetime | None = None) -> dict[st
         if not is_settings_due(settings_obj, now_utc=now_utc):
             skipped += 1
             continue
-        result = run_sync_for_settings(settings_obj, force=False, now_utc=now_utc)
+        result = run_sync_for_settings(
+            settings_obj,
+            force=False,
+            now_utc=now_utc,
+            allow_inline=allow_inline,
+        )
         ran += 1
         details.append({
             'user_id': settings_obj.user_id,

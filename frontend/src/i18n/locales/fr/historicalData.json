@@ -114,5 +114,5 @@
   "syncHealthTickNever": "jamais exécutée",
   "syncHealthWorker": "Exécution des téléchargements",
   "syncHealthWorkerCelery": "worker dédié disponible",
-  "syncHealthWorkerThread": "mode dégradé (processus web)"
+  "syncHealthWorkerThread": "exécutés par la tâche planifiée elle-même"
 }

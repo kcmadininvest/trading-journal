@@ -497,5 +497,7 @@ class SyncHealthView(APIView):
             'scheduler_ok': scheduler_is_healthy(state),
             'scheduler_stale_after_minutes': SCHEDULER_STALE_MINUTES,
             'celery_workers_available': celery_ok,
-            'download_dispatch_mode': 'celery' if celery_ok else 'thread',
+            # Mode d'exécution des téléchargements planifiés : à défaut de
+            # worker, le tick les exécute lui-même.
+            'download_dispatch_mode': 'celery' if celery_ok else 'inline',
         })

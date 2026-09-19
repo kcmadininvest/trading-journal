@@ -114,5 +114,5 @@
   "syncHealthTickNever": "nunca ejecutada",
   "syncHealthWorker": "Ejecución de descargas",
   "syncHealthWorkerCelery": "worker dedicado disponible",
-  "syncHealthWorkerThread": "modo degradado (proceso web)"
+  "syncHealthWorkerThread": "ejecutadas por la propia tarea programada"
 }

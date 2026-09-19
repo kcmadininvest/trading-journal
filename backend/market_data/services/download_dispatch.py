@@ -124,12 +124,16 @@ def run_download_job_in_thread(job_id: int) -> None:
     logger.info('Historical download job %s started in background thread', job_id)
 
 
-def dispatch_historical_download(job_id: int) -> str:
+def dispatch_historical_download(job_id: int, *, allow_inline: bool = False) -> str:
     """
-    Enqueue via Celery si un worker trading_journal est dispo, sinon thread daemon.
+    Enqueue via Celery si un worker trading_journal est dispo, sinon exécute.
+
+    ``allow_inline`` est réservé aux processus éphémères (tick systemd oneshot) :
+    un thread daemon y serait tué dès la fin de la commande, laissant le job
+    bloqué en pending. L'appelant attend donc la fin du téléchargement.
 
     Returns:
-        ``'celery'`` ou ``'thread'`` selon le mode choisi.
+        ``'celery'``, ``'inline'`` ou ``'thread'`` selon le mode choisi.
     """
     if celery_workers_available():
         try:
@@ -140,9 +144,14 @@ def dispatch_historical_download(job_id: int) -> str:
             return 'celery'
         except Exception as exc:
             logger.warning(
-                'Celery enqueue failed for job %s, falling back to thread: %s',
+                'Celery enqueue failed for job %s, falling back to local run: %s',
                 job_id, exc,
             )
+
+    if allow_inline:
+        logger.info('Historical download job %s run inline (no Celery worker)', job_id)
+        _run_download_job_safe(job_id)
+        return 'inline'
 
     run_download_job_in_thread(job_id)
     return 'thread'

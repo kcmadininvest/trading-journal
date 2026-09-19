@@ -96,7 +96,7 @@ export interface SyncHealth {
   scheduler_ok: boolean;
   scheduler_stale_after_minutes: number;
   celery_workers_available: boolean;
-  download_dispatch_mode: 'celery' | 'thread';
+  download_dispatch_mode: 'celery' | 'inline';
 }
 
 export interface QualityIssue {

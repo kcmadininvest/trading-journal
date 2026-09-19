@@ -139,7 +139,7 @@ class SyncEnqueueTests(TestCase):
         self.assertEqual(len(result['jobs']), 1)
         job = result['jobs'][0]
         self.assertEqual(job.trigger, HistoricalDownloadJob.Trigger.MANUAL)
-        mock_dispatch.assert_called_once_with(job.id)
+        mock_dispatch.assert_called_once_with(job.id, allow_inline=False)
 
     @patch('market_data.services.sync_schedule.dispatch_historical_download')
     def test_skip_when_active_job(self, mock_dispatch):
@@ -173,7 +173,7 @@ class SyncEnqueueTests(TestCase):
         self.assertIsNotNone(self.settings.last_run_at)
         self.assertIsNone(self.settings.last_finished_at)
         self.assertEqual(self.settings.last_error, '')
-        mock_dispatch.assert_called_once_with(job.id)
+        mock_dispatch.assert_called_once_with(job.id, allow_inline=False)
 
     @patch('market_data.services.sync_schedule.dispatch_historical_download')
     def test_run_up_to_date_when_nothing_to_fetch(self, mock_dispatch):
@@ -226,6 +226,18 @@ class SyncEnqueueTests(TestCase):
         self.assertEqual(result['ran'], 1)
         self.assertTrue(HistoricalDownloadJob.objects.filter(user=self.user).exists())
         mock_dispatch.assert_called()
+
+    @patch('market_data.services.sync_schedule.dispatch_historical_download')
+    def test_tick_runs_downloads_inline(self, mock_dispatch):
+        # Processus oneshot : un thread daemon serait tué avant la fin du job.
+        now = datetime(2026, 9, 13, 0, 5, tzinfo=dt_tz.utc)
+        dispatch_due_historical_syncs(now_utc=now)
+        self.assertTrue(mock_dispatch.call_args.kwargs['allow_inline'])
+
+    @patch('market_data.services.sync_schedule.dispatch_historical_download')
+    def test_run_now_keeps_background_dispatch(self, mock_dispatch):
+        run_sync_for_settings(self.settings, force=True)
+        self.assertFalse(mock_dispatch.call_args.kwargs['allow_inline'])
 
     @patch('market_data.services.sync_schedule.dispatch_historical_download')
     def test_tick_records_heartbeat(self, mock_dispatch):
@@ -481,7 +493,7 @@ class SyncSettingsApiTests(TestCase):
         self.assertIsNone(body['scheduler_last_tick_at'])
         self.assertFalse(body['scheduler_ok'])
         self.assertFalse(body['celery_workers_available'])
-        self.assertEqual(body['download_dispatch_mode'], 'thread')
+        self.assertEqual(body['download_dispatch_mode'], 'inline')
         self.assertEqual(body['scheduler_stale_after_minutes'], SCHEDULER_STALE_MINUTES)
 
         HistoricalSyncSchedulerState.objects.update_or_create(

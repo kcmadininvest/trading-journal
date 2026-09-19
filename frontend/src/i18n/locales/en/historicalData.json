@@ -114,5 +114,5 @@
   "syncHealthTickNever": "never ran",
   "syncHealthWorker": "Download execution",
   "syncHealthWorkerCelery": "dedicated worker available",
-  "syncHealthWorkerThread": "degraded mode (web process)"
+  "syncHealthWorkerThread": "run by the scheduled task itself"
 }

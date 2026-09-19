@@ -114,5 +114,5 @@
   "syncHealthTickNever": "nie ausgeführt",
   "syncHealthWorker": "Ausführung der Downloads",
   "syncHealthWorkerCelery": "dedizierter Worker verfügbar",
-  "syncHealthWorkerThread": "eingeschränkter Modus (Webprozess)"
+  "syncHealthWorkerThread": "von der geplanten Aufgabe selbst ausgeführt"
 }
