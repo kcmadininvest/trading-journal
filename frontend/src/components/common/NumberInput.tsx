@@ -12,6 +12,8 @@ interface NumberInputProps {
   max?: number;
   step?: string | number;
   digits?: number;
+  /** Zero-pad integer display (e.g. 2 → "01"). Ignores number_format when set. */
+  padLength?: number;
   required?: boolean;
   disabled?: boolean;
 }
@@ -31,6 +33,7 @@ export const NumberInput: React.FC<NumberInputProps> = ({
   max,
   step = '0.01',
   digits = 2,
+  padLength,
   required = false,
   disabled = false,
 }) => {
@@ -44,8 +47,11 @@ export const NumberInput: React.FC<NumberInputProps> = ({
     if (numValue === '' || numValue === null || numValue === undefined) return '';
     const num = typeof numValue === 'string' ? parseFloat(numValue) : numValue;
     if (isNaN(num)) return '';
+    if (padLength !== undefined && padLength > 0) {
+      return String(Math.round(num)).padStart(padLength, '0');
+    }
     return formatNumber(num, digits, preferences.number_format);
-  }, [preferences.number_format, digits]);
+  }, [preferences.number_format, digits, padLength]);
 
   // Convertir format d'affichage vers valeur numérique standard
   const parseToStandard = useCallback((displayVal: string): string => {

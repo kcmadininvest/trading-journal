@@ -37,7 +37,9 @@ const TERMINAL = new Set(['completed', 'failed', 'cancelled']);
 /** Fenêtre par défaut : historique TopStepX sim souvent limité au contrat front récent. */
 const DEFAULT_LOOKBACK_DAYS = 7;
 const SYNC_RUNS_LIMIT = 20;
+/** Poll tant que l’onglet Sync est ouvert (découvrir un run démarré hors page). */
 const SYNC_STATUS_POLL_MS = 4000;
+const SYNC_IDLE_POLL_MS = 15000;
 
 const labelClass = 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2';
 
@@ -273,22 +275,20 @@ const HistoricalDataPage: React.FC = () => {
 
   const syncStatus = syncSettings?.last_status || '';
 
+  // Tant que l’onglet Sync est visible : rafraîchir sans F5 (y compris pour
+  // découvrir un run planifié démarré alors que le statut local était terminal).
   useEffect(() => {
-    if (syncStatus !== 'running') return undefined;
+    if (pageTab !== 'sync') return undefined;
+    void refreshSyncStatus();
+    void loadSyncHealth();
+    const intervalMs =
+      syncStatus === 'running' ? SYNC_STATUS_POLL_MS : SYNC_IDLE_POLL_MS;
     const timer = window.setInterval(() => {
       void refreshSyncStatus();
-    }, SYNC_STATUS_POLL_MS);
-    return () => window.clearInterval(timer);
-  }, [syncStatus, refreshSyncStatus]);
-
-  const syncWasRunningRef = useRef(false);
-  useEffect(() => {
-    const isRunning = syncStatus === 'running';
-    if (syncWasRunningRef.current && !isRunning) {
       void loadSyncHealth();
-    }
-    syncWasRunningRef.current = isRunning;
-  }, [syncStatus, loadSyncHealth]);
+    }, intervalMs);
+    return () => window.clearInterval(timer);
+  }, [pageTab, syncStatus, refreshSyncStatus, loadSyncHealth]);
 
   useEffect(() => {
     if (!instrument) return;
@@ -650,20 +650,24 @@ const HistoricalDataPage: React.FC = () => {
     }
   };
 
-  /** Aligné sur l’agrégation backend : empty ≠ échec dur. */
+  /** Aligné sur l’agrégation backend : empty ≠ échec ; pending/running ≠ échec. */
   const summarizeRun = useCallback((run: SyncRun) => {
     const groups = new Map<string, string[]>();
     let ok = 0;
+    let pending = 0;
+    let failed = 0;
     for (const job of run.jobs || []) {
       const label = `${job.instrument} ${job.timeframe}`;
-      const isOk =
-        job.status === 'completed' && job.bars_fetched > 0;
-      const isEmpty =
-        job.status === 'completed' && job.bars_fetched <= 0;
-      if (isOk || isEmpty) {
+      if (job.status === 'pending' || job.status === 'running') {
+        pending += 1;
+        continue;
+      }
+      if (job.status === 'completed') {
         ok += 1;
         continue;
       }
+      // failed / cancelled — échecs durs uniquement dans le détail
+      failed += 1;
       const message = job.error || job.status;
       const existing = groups.get(message);
       if (existing) existing.push(label);
@@ -673,7 +677,8 @@ const HistoricalDataPage: React.FC = () => {
     return {
       total,
       ok,
-      failed: total - ok,
+      pending,
+      failed,
       groups: Array.from(groups.entries()).map(([message, targets]) => ({ message, targets })),
     };
   }, []);
@@ -713,7 +718,10 @@ const HistoricalDataPage: React.FC = () => {
 
   const latestRun = syncRuns[0] ?? null;
   const latestSummary = useMemo(
-    () => (latestRun ? summarizeRun(latestRun) : { total: 0, ok: 0, failed: 0, groups: [] }),
+    () =>
+      latestRun
+        ? summarizeRun(latestRun)
+        : { total: 0, ok: 0, pending: 0, failed: 0, groups: [] },
     [latestRun, summarizeRun],
   );
   const lastRunStatus = syncSettings?.last_status || latestRun?.status || '';
@@ -921,6 +929,7 @@ const HistoricalDataPage: React.FC = () => {
                     max={23}
                     step={1}
                     digits={0}
+                    padLength={2}
                     value={syncHour}
                     onChange={(v) => {
                       const n = parseInt(v, 10);
@@ -939,6 +948,7 @@ const HistoricalDataPage: React.FC = () => {
                     max={59}
                     step={1}
                     digits={0}
+                    padLength={2}
                     value={syncMinute}
                     onChange={(v) => {
                       const n = parseInt(v, 10);
@@ -1100,11 +1110,17 @@ const HistoricalDataPage: React.FC = () => {
                             label: t('syncRunsTargetsOk'),
                             value: `${fmtNum(latestSummary.ok)} / ${fmtNum(latestSummary.total)}`,
                           },
-                          {
-                            key: 'failed',
-                            label: t('syncRunsTargetsFailed'),
-                            value: fmtNum(latestSummary.failed),
-                          },
+                          latestSummary.pending > 0
+                            ? {
+                                key: 'pending',
+                                label: t('syncRunsTargetsPending'),
+                                value: fmtNum(latestSummary.pending),
+                              }
+                            : {
+                                key: 'failed',
+                                label: t('syncRunsTargetsFailed'),
+                                value: fmtNum(latestSummary.failed),
+                              },
                           {
                             key: 'duration',
                             label: t('syncRunsDuration'),
@@ -1227,6 +1243,11 @@ const HistoricalDataPage: React.FC = () => {
                             <span className="text-xs text-gray-600 dark:text-gray-300">
                               {t('syncRunsBars')}: {fmtNum(run.bars_fetched_total)}
                             </span>
+                            {summary.pending > 0 ? (
+                              <span className="text-xs font-medium text-blue-700 dark:text-blue-400">
+                                {t('syncRunsPendingCount', { count: summary.pending })}
+                              </span>
+                            ) : null}
                             {summary.failed > 0 ? (
                               <span className="text-xs font-medium text-rose-700 dark:text-rose-400">
                                 {t('syncRunsFailedCount', { count: summary.failed })}

@@ -12,6 +12,7 @@ interface NumberInputStepperProps {
   max?: number;
   step?: string | number;
   digits?: number;
+  padLength?: number;
   required?: boolean;
   disabled?: boolean;
 }
@@ -33,6 +34,7 @@ export const NumberInputStepper: React.FC<NumberInputStepperProps> = ({
   max,
   step = 1,
   digits = 2,
+  padLength,
   required = false,
   disabled = false,
 }) => {
@@ -50,7 +52,13 @@ export const NumberInputStepper: React.FC<NumberInputStepperProps> = ({
     if (max !== undefined) next = Math.min(max, next);
 
     const decimals = String(step).includes('.') ? String(step).split('.')[1]?.length ?? digits : 0;
-    onChange(decimals > 0 ? next.toFixed(decimals) : String(Math.round(next)));
+    if (decimals > 0) {
+      onChange(next.toFixed(decimals));
+    } else if (padLength !== undefined && padLength > 0) {
+      onChange(String(Math.round(next)).padStart(padLength, '0'));
+    } else {
+      onChange(String(Math.round(next)));
+    }
   };
 
   const canIncrease = !disabled && (max === undefined || !hasValue || numericValue < max);
@@ -68,6 +76,7 @@ export const NumberInputStepper: React.FC<NumberInputStepperProps> = ({
         max={max}
         step={step}
         digits={digits}
+        padLength={padLength}
         required={required}
         disabled={disabled}
       />
