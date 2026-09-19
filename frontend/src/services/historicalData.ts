@@ -80,6 +80,15 @@ export interface SyncSettings {
   last_error: string;
 }
 
+export interface SyncRunJob {
+  id: number;
+  instrument: string;
+  timeframe: string;
+  status: string;
+  bars_fetched: number;
+  error: string;
+}
+
 export interface SyncRun {
   id: number;
   trigger: string;
@@ -89,6 +98,7 @@ export interface SyncRun {
   job_ids: number[];
   bars_fetched_total: number;
   error: string;
+  jobs: SyncRunJob[];
 }
 
 export interface SyncHealth {

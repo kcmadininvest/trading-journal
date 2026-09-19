@@ -478,8 +478,16 @@ class SyncRunListView(APIView):
         except (TypeError, ValueError):
             limit = self.DEFAULT_LIMIT
         limit = max(1, min(self.MAX_LIMIT, limit))
-        runs = HistoricalSyncRun.objects.filter(user=request.user)[:limit]
-        return Response(SyncRunSerializer(runs, many=True).data)
+        runs = list(HistoricalSyncRun.objects.filter(user=request.user)[:limit])
+        job_ids = {jid for run in runs for jid in (run.job_ids or [])}
+        jobs_by_id = HistoricalDownloadJob.objects.in_bulk(job_ids) if job_ids else {}
+        return Response(
+            SyncRunSerializer(
+                runs,
+                many=True,
+                context={'jobs_by_id': jobs_by_id},
+            ).data,
+        )
 
 
 class SyncHealthView(APIView):

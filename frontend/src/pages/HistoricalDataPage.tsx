@@ -76,6 +76,8 @@ const HistoricalDataPage: React.FC = () => {
   const [syncSettings, setSyncSettings] = useState<SyncSettings | null>(null);
   const [syncRuns, setSyncRuns] = useState<SyncRun[]>([]);
   const [syncHealth, setSyncHealth] = useState<SyncHealth | null>(null);
+  const [expandedRunId, setExpandedRunId] = useState<number | null>(null);
+  const [lastRunDetailOpen, setLastRunDetailOpen] = useState(false);
   const [syncEnabled, setSyncEnabled] = useState(false);
   const [syncHour, setSyncHour] = useState(2);
   const [syncMinute, setSyncMinute] = useState(0);
@@ -453,6 +455,19 @@ const HistoricalDataPage: React.FC = () => {
     [dateFormat, preferences.timezone],
   );
 
+  const fmtDuration = useCallback(
+    (startIso: string, endIso: string | null) => {
+      if (!endIso) return '—';
+      const seconds = Math.max(
+        0,
+        Math.round((new Date(endIso).getTime() - new Date(startIso).getTime()) / 1000),
+      );
+      if (seconds < 60) return `${seconds} s`;
+      return `${Math.floor(seconds / 60)} min ${seconds % 60} s`;
+    },
+    [],
+  );
+
   const fmtNum = (n: number) => formatNumber(n, 0, numberFormat);
   const fmtDateIso = (iso: string) => {
     try {
@@ -628,6 +643,73 @@ const HistoricalDataPage: React.FC = () => {
       setSyncRunning(false);
     }
   };
+
+  /** Un run de 32 cibles produit une erreur concaténée illisible : on regroupe par message. */
+  const summarizeRun = useCallback((run: SyncRun) => {
+    const groups = new Map<string, string[]>();
+    let ok = 0;
+    for (const job of run.jobs || []) {
+      const label = `${job.instrument} ${job.timeframe}`;
+      if (job.status === 'completed' && job.bars_fetched > 0 && !job.error) {
+        ok += 1;
+        continue;
+      }
+      const message = job.error || job.status;
+      const existing = groups.get(message);
+      if (existing) existing.push(label);
+      else groups.set(message, [label]);
+    }
+    const total = (run.jobs || []).length;
+    return {
+      total,
+      ok,
+      failed: total - ok,
+      groups: Array.from(groups.entries()).map(([message, targets]) => ({ message, targets })),
+    };
+  }, []);
+
+  const renderRunDetail = useCallback(
+    (run: SyncRun) => {
+      const { groups } = summarizeRun(run);
+      if (groups.length === 0) {
+        return run.error ? (
+          <p className="text-xs text-amber-700 dark:text-amber-400">{run.error}</p>
+        ) : null;
+      }
+      return (
+        <ul className="flex flex-col gap-2">
+          {groups.map((group) => (
+            <li key={group.message} className="flex flex-col gap-1">
+              <p className="text-xs font-medium text-rose-700 dark:text-rose-400">
+                {group.message}
+              </p>
+              <div className="flex flex-wrap gap-1">
+                {group.targets.map((target) => (
+                  <span
+                    key={target}
+                    className="inline-flex items-center rounded bg-white px-1.5 py-0.5 text-[11px] font-medium text-gray-700 ring-1 ring-gray-200 dark:bg-gray-900/40 dark:text-gray-200 dark:ring-gray-700"
+                  >
+                    {target}
+                  </span>
+                ))}
+              </div>
+            </li>
+          ))}
+        </ul>
+      );
+    },
+    [summarizeRun],
+  );
+
+  const latestRun = syncRuns[0] ?? null;
+  const latestSummary = useMemo(
+    () => (latestRun ? summarizeRun(latestRun) : { total: 0, ok: 0, failed: 0, groups: [] }),
+    [latestRun, summarizeRun],
+  );
+  const lastRunStatus = syncSettings?.last_status || latestRun?.status || '';
+  const lastRunDatetime = fmtDateTime(
+    syncSettings?.last_finished_at || latestRun?.finished_at || syncSettings?.last_run_at,
+  );
 
   const timeframeOrder = useMemo(
     () => new Map(timeframeOptions.map((opt, idx) => [opt.value, idx])),
@@ -976,66 +1058,118 @@ const HistoricalDataPage: React.FC = () => {
                 </button>
               </div>
 
-              <div className="flex flex-col gap-2 border-t border-gray-200 pt-3 dark:border-gray-700">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">
-                    {t('syncLastStatus')}:
-                  </span>
-                  <span
-                    className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${
-                      syncStatusVisual(syncSettings?.last_status).className
-                    }`}
-                  >
-                    {syncStatusVisual(syncSettings?.last_status).label}
-                  </span>
-                  {syncSettings?.last_finished_at ? (
-                    <span className="text-xs text-gray-500 dark:text-gray-400">
-                      {t('syncLastFinished')}: {fmtDateTime(syncSettings.last_finished_at)}
-                    </span>
-                  ) : syncSettings?.last_run_at ? (
-                    <span className="text-xs text-gray-500 dark:text-gray-400">
-                      {t('syncLastRun')}: {fmtDateTime(syncSettings.last_run_at)}
-                    </span>
+              <div className="flex flex-col gap-3 border-t border-gray-200 pt-4 dark:border-gray-700">
+                <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-800/40">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+                        {t('syncLastRunTitle')}
+                      </h3>
+                      <span
+                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                          syncStatusVisual(lastRunStatus).className
+                        }`}
+                      >
+                        {syncStatusVisual(lastRunStatus).label}
+                      </span>
+                    </div>
+                    {lastRunDatetime ? (
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {lastRunDatetime}
+                      </span>
+                    ) : null}
+                  </div>
+
+                  {latestRun ? (
+                    <>
+                      <dl className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                        {[
+                          { key: 'bars', label: t('syncRunsBars'), value: fmtNum(latestRun.bars_fetched_total) },
+                          {
+                            key: 'ok',
+                            label: t('syncRunsTargetsOk'),
+                            value: `${fmtNum(latestSummary.ok)} / ${fmtNum(latestSummary.total)}`,
+                          },
+                          {
+                            key: 'failed',
+                            label: t('syncRunsTargetsFailed'),
+                            value: fmtNum(latestSummary.failed),
+                          },
+                          {
+                            key: 'duration',
+                            label: t('syncRunsDuration'),
+                            value: fmtDuration(latestRun.started_at, latestRun.finished_at),
+                          },
+                        ].map((stat) => (
+                          <div key={stat.key} className="min-w-0">
+                            <dt className="text-xs text-gray-500 dark:text-gray-400">
+                              {stat.label}
+                            </dt>
+                            <dd className="truncate text-sm font-semibold text-gray-900 dark:text-white">
+                              {stat.value}
+                            </dd>
+                          </div>
+                        ))}
+                      </dl>
+
+                      {latestSummary.groups.length > 0 || latestRun.error ? (
+                        <div className="mt-3">
+                          <button
+                            type="button"
+                            onClick={() => setLastRunDetailOpen((prev) => !prev)}
+                            className="text-xs font-medium text-blue-600 hover:underline dark:text-blue-400"
+                          >
+                            {lastRunDetailOpen ? t('syncRunsDetailsHide') : t('syncRunsDetails')}
+                          </button>
+                          {lastRunDetailOpen ? (
+                            <div className="mt-2">{renderRunDetail(latestRun)}</div>
+                          ) : null}
+                        </div>
+                      ) : null}
+                    </>
+                  ) : syncSettings?.last_error ? (
+                    <p className="mt-2 text-sm text-amber-700 dark:text-amber-400">
+                      {syncSettings.last_error}
+                    </p>
                   ) : null}
                 </div>
-                {syncSettings?.last_error ? (
-                  <p className="text-sm text-amber-700 dark:text-amber-400">
-                    {t('syncLastError')}: {syncSettings.last_error}
-                  </p>
-                ) : null}
 
                 {syncHealth ? (
-                  <div className="flex flex-col gap-1 text-xs text-gray-600 dark:text-gray-400">
-                    <p className="font-medium text-gray-700 dark:text-gray-300">
-                      {t('syncHealthTitle')}
-                    </p>
-                    <p>
-                      {t('syncHealthTick')}:{' '}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
+                      {t('syncHealthTitle')}:
+                    </span>
+                    <span
+                      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${
+                        syncHealth.scheduler_ok
+                          ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+                          : 'bg-rose-50 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300'
+                      }`}
+                    >
                       <span
-                        className={
-                          syncHealth.scheduler_ok
-                            ? 'text-emerald-700 dark:text-emerald-400'
-                            : 'text-rose-700 dark:text-rose-400'
-                        }
-                      >
-                        {syncHealth.scheduler_last_tick_at
-                          ? syncHealth.scheduler_ok
-                            ? t('syncHealthTickOk', {
-                                datetime: fmtDateTime(syncHealth.scheduler_last_tick_at),
-                              })
-                            : t('syncHealthTickStale', {
-                                datetime: fmtDateTime(syncHealth.scheduler_last_tick_at),
-                                minutes: syncHealth.scheduler_stale_after_minutes,
-                              })
-                          : t('syncHealthTickNever')}
-                      </span>
-                    </p>
-                    <p>
+                        className={`h-1.5 w-1.5 rounded-full ${
+                          syncHealth.scheduler_ok ? 'bg-emerald-500' : 'bg-rose-500'
+                        }`}
+                        aria-hidden
+                      />
+                      {t('syncHealthTick')}:{' '}
+                      {syncHealth.scheduler_last_tick_at
+                        ? syncHealth.scheduler_ok
+                          ? t('syncHealthTickOk', {
+                              datetime: fmtDateTime(syncHealth.scheduler_last_tick_at),
+                            })
+                          : t('syncHealthTickStale', {
+                              datetime: fmtDateTime(syncHealth.scheduler_last_tick_at),
+                              minutes: syncHealth.scheduler_stale_after_minutes,
+                            })
+                        : t('syncHealthTickNever')}
+                    </span>
+                    <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700 dark:bg-gray-700/50 dark:text-gray-200">
                       {t('syncHealthWorker')}:{' '}
                       {syncHealth.celery_workers_available
                         ? t('syncHealthWorkerCelery')
                         : t('syncHealthWorkerThread')}
-                    </p>
+                    </span>
                   </div>
                 ) : null}
               </div>
@@ -1047,35 +1181,70 @@ const HistoricalDataPage: React.FC = () => {
                 {syncRuns.length === 0 ? (
                   <p className="text-sm text-gray-500 dark:text-gray-400">{t('syncRunsEmpty')}</p>
                 ) : (
-                  <ul className="divide-y divide-gray-200 rounded-md border border-gray-200 dark:divide-gray-700 dark:border-gray-700">
-                    {syncRuns.map((run) => (
-                      <li key={run.id} className="flex flex-col gap-1 px-3 py-2 text-sm">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span
-                            className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${
-                              syncStatusVisual(run.status).className
-                            }`}
+                  <ul className="divide-y divide-gray-200 overflow-hidden rounded-lg border border-gray-200 dark:divide-gray-700 dark:border-gray-700">
+                    {syncRuns.map((run) => {
+                      const summary = summarizeRun(run);
+                      const expanded = expandedRunId === run.id;
+                      const hasDetail = summary.groups.length > 0 || Boolean(run.error);
+                      return (
+                        <li key={run.id} className="text-sm">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setExpandedRunId((prev) => (prev === run.id ? null : run.id))
+                            }
+                            disabled={!hasDetail}
+                            className="flex w-full flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2.5 text-left transition-colors hover:bg-gray-50 disabled:cursor-default disabled:hover:bg-transparent dark:hover:bg-gray-800/40"
                           >
-                            {syncStatusVisual(run.status).label}
-                          </span>
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
-                            {run.trigger === 'manual'
-                              ? t('syncRunsTriggerManual')
-                              : t('syncRunsTriggerScheduled')}
-                          </span>
-                          <span className="text-xs text-gray-600 dark:text-gray-300">
-                            {fmtDateTime(run.started_at)}
-                            {run.finished_at ? ` → ${fmtDateTime(run.finished_at)}` : ''}
-                          </span>
-                          <span className="text-xs text-gray-600 dark:text-gray-300">
-                            {t('syncRunsBars')}: {fmtNum(run.bars_fetched_total)}
-                          </span>
-                        </div>
-                        {run.error ? (
-                          <p className="text-xs text-amber-700 dark:text-amber-400">{run.error}</p>
-                        ) : null}
-                      </li>
-                    ))}
+                            <span
+                              className={`inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                                syncStatusVisual(run.status).className
+                              }`}
+                            >
+                              {syncStatusVisual(run.status).label}
+                            </span>
+                            <span className="text-xs text-gray-700 dark:text-gray-200">
+                              {fmtDateTime(run.started_at)}
+                            </span>
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              {run.trigger === 'manual'
+                                ? t('syncRunsTriggerManual')
+                                : t('syncRunsTriggerScheduled')}
+                            </span>
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              {fmtDuration(run.started_at, run.finished_at)}
+                            </span>
+                            <span className="text-xs text-gray-600 dark:text-gray-300">
+                              {t('syncRunsBars')}: {fmtNum(run.bars_fetched_total)}
+                            </span>
+                            {summary.failed > 0 ? (
+                              <span className="text-xs font-medium text-rose-700 dark:text-rose-400">
+                                {t('syncRunsFailedCount', { count: summary.failed })}
+                              </span>
+                            ) : null}
+                            {hasDetail ? (
+                              <svg
+                                className={`ml-auto h-4 w-4 shrink-0 text-gray-400 transition-transform ${
+                                  expanded ? 'rotate-180' : ''
+                                }`}
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                strokeWidth={2}
+                                aria-hidden
+                              >
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                              </svg>
+                            ) : null}
+                          </button>
+                          {expanded ? (
+                            <div className="border-t border-gray-200 bg-gray-50 px-3 py-2 dark:border-gray-700 dark:bg-gray-800/40">
+                              {renderRunDetail(run)}
+                            </div>
+                          ) : null}
+                        </li>
+                      );
+                    })}
                   </ul>
                 )}
               </div>

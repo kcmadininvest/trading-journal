@@ -167,6 +167,8 @@ class SyncSettingsSerializer(serializers.Serializer):
 
 
 class SyncRunSerializer(serializers.ModelSerializer):
+    jobs = serializers.SerializerMethodField()
+
     class Meta:
         model = HistoricalSyncRun
         fields = (
@@ -178,4 +180,23 @@ class SyncRunSerializer(serializers.ModelSerializer):
             'job_ids',
             'bars_fetched_total',
             'error',
+            'jobs',
         )
+
+    def get_jobs(self, instance: HistoricalSyncRun) -> list[dict]:
+        """Détail par cible — évite d'afficher une erreur concaténée illisible."""
+        jobs_by_id = self.context.get('jobs_by_id') or {}
+        details = []
+        for job_id in instance.job_ids or []:
+            job = jobs_by_id.get(job_id)
+            if job is None:
+                continue
+            details.append({
+                'id': job.id,
+                'instrument': job.instrument,
+                'timeframe': job.timeframe,
+                'status': job.status,
+                'bars_fetched': job.bars_fetched,
+                'error': job.error,
+            })
+        return details

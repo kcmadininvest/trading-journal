@@ -485,6 +485,30 @@ class SyncSettingsApiTests(TestCase):
         limited = self.client.get('/api/market-data/sync-runs/?limit=1').json()
         self.assertEqual(len(limited), 1)
 
+    def test_sync_runs_expose_per_target_detail(self):
+        job = HistoricalDownloadJob.objects.create(
+            user=self.user,
+            instrument='MES',
+            timeframe='1m',
+            start_utc=timezone.now() - timedelta(hours=1),
+            end_utc=timezone.now(),
+            status=HistoricalDownloadJob.Status.FAILED,
+            error='Téléchargement abandonné',
+        )
+        HistoricalSyncRun.objects.create(
+            user=self.user,
+            status=SyncRunStatus.ERROR,
+            job_ids=[job.id, 999999],
+            finished_at=timezone.now(),
+        )
+
+        body = self.client.get('/api/market-data/sync-runs/').json()
+        jobs = body[0]['jobs']
+        self.assertEqual(len(jobs), 1)
+        self.assertEqual(jobs[0]['instrument'], 'MES')
+        self.assertEqual(jobs[0]['status'], 'failed')
+        self.assertEqual(jobs[0]['error'], 'Téléchargement abandonné')
+
     @patch('market_data.views.celery_workers_available', return_value=False)
     def test_sync_health(self, _mock_celery):
         res = self.client.get('/api/market-data/sync-health/')
