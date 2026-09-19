@@ -37,6 +37,15 @@ export interface InstrumentTimeframesResponse {
   latest_session_date?: string | null;
 }
 
+export interface AvailableSessionsResponse {
+  symbol: string;
+  timeframe: string | null;
+  contract: string;
+  sessions: string[];
+  earliest: string | null;
+  latest: string | null;
+}
+
 export interface InstrumentReplayMeta {
   timeframes: AvailableTimeframe[];
   lastBarAt: string | null;
@@ -125,6 +134,24 @@ class MarketReplayService {
   async getAvailableTimeframes(instrument: string): Promise<AvailableTimeframe[]> {
     const meta = await this.getInstrumentReplayMeta(instrument);
     return meta.timeframes;
+  }
+
+  async getAvailableSessions(
+    instrument: string,
+    opts?: { timeframe?: string; contract?: string },
+  ): Promise<AvailableSessionsResponse> {
+    const qs = new URLSearchParams();
+    if (opts?.timeframe) qs.set('timeframe', opts.timeframe);
+    if (opts?.contract) qs.set('contract', opts.contract);
+    const query = qs.toString();
+    const res = await this.fetchWithAuth(
+      `${this.BASE_URL}/api/market-data/instruments/${encodeURIComponent(instrument)}/available-sessions/${query ? `?${query}` : ''}`,
+    );
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.detail || 'Erreur chargement séances disponibles');
+    }
+    return res.json();
   }
 
   async getBars(params: {

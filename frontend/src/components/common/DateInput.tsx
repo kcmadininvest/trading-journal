@@ -32,6 +32,11 @@ interface DateInputProps {
   markedDates?: Iterable<string>;
   /** Infobulle sur les jours marqués. */
   markedDatesTitle?: string;
+  /**
+   * Si défini, seules ces dates ISO sont sélectionnables (calendrier + saisie).
+   * Les autres jours sont grisés / non cliquables (ex. séances avec données Market Replay).
+   */
+  allowedDates?: Iterable<string>;
 }
 
 /**
@@ -50,6 +55,7 @@ export const DateInput: React.FC<DateInputProps> = ({
   size = 'md',
   markedDates,
   markedDatesTitle,
+  allowedDates,
 }) => {
   const { preferences } = usePreferences();
   const { t, i18n } = useTranslation();
@@ -73,6 +79,19 @@ export const DateInput: React.FC<DateInputProps> = ({
     if (!markedDates) return new Set<string>();
     return new Set(Array.from(markedDates));
   }, [markedDates]);
+
+  const allowedDateSet = useMemo(() => {
+    if (!allowedDates) return null;
+    return new Set(Array.from(allowedDates));
+  }, [allowedDates]);
+
+  const isIsoAllowed = useCallback(
+    (isoDate: string) => {
+      if (!allowedDateSet) return true;
+      return allowedDateSet.has(isoDate);
+    },
+    [allowedDateSet],
+  );
 
   // Convertir ISO (YYYY-MM-DD) vers format préféré pour l'affichage
   const formatForDisplay = useCallback((isoDate: string): string => {
@@ -254,6 +273,8 @@ export const DateInput: React.FC<DateInputProps> = ({
         } else if (max && isoDate > max) {
           setDisplayValue(formatForDisplay(max));
           onChange(max);
+        } else if (!isIsoAllowed(isoDate)) {
+          setDisplayValue(formatForDisplay(value));
         } else {
           setDisplayValue(formatForDisplay(isoDate));
           onChange(isoDate);
@@ -278,6 +299,7 @@ export const DateInput: React.FC<DateInputProps> = ({
     if (isoDate) {
       if (min && isoDate < min) return;
       if (max && isoDate > max) return;
+      if (!isIsoAllowed(isoDate)) return;
       onChange(isoDate);
     }
   };
@@ -363,6 +385,7 @@ export const DateInput: React.FC<DateInputProps> = ({
     // Valider les limites min/max si définies
     if (min && isoDate < min) return;
     if (max && isoDate > max) return;
+    if (!isIsoAllowed(isoDate)) return;
     
     onChange(isoDate);
     setDisplayValue(formatForDisplay(isoDate));
@@ -430,7 +453,7 @@ export const DateInput: React.FC<DateInputProps> = ({
     setCalendarMonth(today.getMonth());
     setCalendarYear(today.getFullYear());
     const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-    if ((!min || todayStr >= min) && (!max || todayStr <= max)) {
+    if ((!min || todayStr >= min) && (!max || todayStr <= max) && isIsoAllowed(todayStr)) {
       onChange(todayStr);
       setDisplayValue(formatForDisplay(todayStr));
     }
@@ -461,6 +484,7 @@ export const DateInput: React.FC<DateInputProps> = ({
     const dateStr = `${calendarYear}-${String(calendarMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     if (min && dateStr < min) return true;
     if (max && dateStr > max) return true;
+    if (!isIsoAllowed(dateStr)) return true;
     return false;
   };
 
@@ -659,6 +683,8 @@ export const DateInput: React.FC<DateInputProps> = ({
                       w-full aspect-square ${isCompact ? 'text-sm' : 'text-base'} rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition
                       ${isDateSelected(day)
                         ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 font-semibold shadow-inner'
+                        : isDateDisabled(day)
+                        ? 'text-gray-300 dark:text-gray-600'
                         : isToday(day)
                         ? 'border border-blue-500 text-blue-600 dark:text-blue-400 font-semibold'
                         : isDateMarked(day)

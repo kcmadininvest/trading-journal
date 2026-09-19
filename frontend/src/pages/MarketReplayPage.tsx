@@ -21,8 +21,8 @@ import {
 } from '../services/backtestJournal';
 import userService from '../services/userService';
 import { ConfirmModal } from '../components/ui';
-import { getTodayDateInTimezone } from '../components/replay/replayDateNav';
-import { replayPrimaryButtonClass } from '../components/replay/replayStyles';
+import { getTodayDateInTimezone, canNavigateSessionDate, getAdjacentSessionDate } from '../components/replay/replayDateNav';
+import { replayPrimaryButtonClass, replaySecondaryButtonClass, replayDateInputClass } from '../components/replay/replayStyles';
 import { formatNumber } from '../utils/numberFormat';
 
 function parseHashParams(): { campaign?: number; date?: string } {
@@ -116,8 +116,6 @@ const MarketReplayPage: React.FC = () => {
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   const draftRef = useRef(draft);
   draftRef.current = draft;
-  const allowSessionDateSuggest = useRef(!hash.date);
-  allowSessionDateSuggest.current = !hash.date;
   const adjustDraggedRef = useRef(false);
 
   useEffect(() => {
@@ -167,10 +165,13 @@ const MarketReplayPage: React.FC = () => {
     instrument: instrument.trim() || null,
     sessionDate,
     onSuggestSessionDate: useCallback((nextDate: string) => {
-      if (!allowSessionDateSuggest.current) return;
       setSessionDate(nextDate);
     }, []),
   });
+
+  const availableSessions = replay.availableSessions;
+  const canGoPrevSession = canNavigateSessionDate(sessionDate, availableSessions, -1);
+  const canGoNextSession = canNavigateSessionDate(sessionDate, availableSessions, 1);
 
   useEffect(() => {
     if (!hash.campaign) return;
@@ -342,6 +343,18 @@ const MarketReplayPage: React.FC = () => {
     adjustDraggedRef.current = false;
   }, []);
 
+  const goToPreviousSession = useCallback(() => {
+    if (!canGoPrevSession) return;
+    setSessionDate(getAdjacentSessionDate(sessionDate, availableSessions, -1));
+    clearTrade();
+  }, [canGoPrevSession, sessionDate, availableSessions, clearTrade]);
+
+  const goToNextSession = useCallback(() => {
+    if (!canGoNextSession) return;
+    setSessionDate(getAdjacentSessionDate(sessionDate, availableSessions, 1));
+    clearTrade();
+  }, [canGoNextSession, sessionDate, availableSessions, clearTrade]);
+
   useEffect(() => {
     if (!adjustLevel) return;
     const onKey = (event: KeyboardEvent) => {
@@ -478,15 +491,51 @@ const MarketReplayPage: React.FC = () => {
                   }}
                 />
               </div>
-              <div className="min-w-[11rem]">
+              <div className="min-w-[14rem]">
                 <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">{t('sessionDate')}</label>
-                <DateInput
-                  value={sessionDate}
-                  onChange={(v) => {
-                    setSessionDate(v);
-                    clearTrade();
-                  }}
-                />
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={goToPreviousSession}
+                    disabled={
+                      !canGoPrevSession ||
+                      replay.loading ||
+                      !instrument ||
+                      availableSessions.length === 0
+                    }
+                    title={t('previousSession')}
+                    aria-label={t('previousSession')}
+                    className={`${replaySecondaryButtonClass} !min-w-[2.25rem] !px-2.5 shrink-0 text-lg leading-none`}
+                  >
+                    ‹
+                  </button>
+                  <DateInput
+                    value={sessionDate}
+                    onChange={(v) => {
+                      setSessionDate(v);
+                      clearTrade();
+                    }}
+                    className={`${replayDateInputClass} flex-1 min-w-0`}
+                    markedDates={availableSessions}
+                    markedDatesTitle={t('dateWithData')}
+                    allowedDates={availableSessions.length > 0 ? availableSessions : undefined}
+                  />
+                  <button
+                    type="button"
+                    onClick={goToNextSession}
+                    disabled={
+                      !canGoNextSession ||
+                      replay.loading ||
+                      !instrument ||
+                      availableSessions.length === 0
+                    }
+                    title={t('nextSession')}
+                    aria-label={t('nextSession')}
+                    className={`${replaySecondaryButtonClass} !min-w-[2.25rem] !px-2.5 shrink-0 text-lg leading-none`}
+                  >
+                    ›
+                  </button>
+                </div>
               </div>
             </div>
 

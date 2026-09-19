@@ -8,6 +8,7 @@ from django.utils import timezone as django_tz
 from rest_framework.test import APIClient
 
 from market_data.models import BarCoverage, HistoricalBar
+from market_data.services.available_sessions import list_available_sessions
 from market_data.services.available_timeframes import (
     latest_replay_coverage,
     list_available_timeframes,
@@ -205,5 +206,56 @@ class ReplayApiTests(TestCase):
                 'start': '2025-03-10T14:00:00Z',
                 'end': '2025-03-10T15:00:00Z',
             },
+        )
+        self.assertEqual(res.status_code, 400)
+
+    def test_available_sessions_service_distinct(self):
+        other = datetime(2025, 3, 12, 14, 0, tzinfo=timezone.utc)
+        HistoricalBar.objects.create(
+            instrument='NQ',
+            symbol='NQH5',
+            contract_id='CON.F.US.ENQ.H25',
+            timeframe='1m',
+            timestamp_utc=other,
+            open=Decimal('20100'),
+            high=Decimal('20101'),
+            low=Decimal('20099'),
+            close=Decimal('20100.5'),
+            volume=1,
+            ny_date=other.date(),
+            ny_time=other.time(),
+            session_date=other.date(),
+            is_rth=True,
+            fetched_at=self.now,
+        )
+        payload = list_available_sessions('NQ', timeframe='1m', contract='front')
+        self.assertEqual(payload['sessions'], ['2025-03-10', '2025-03-12'])
+        self.assertEqual(payload['earliest'], '2025-03-10')
+        self.assertEqual(payload['latest'], '2025-03-12')
+
+    def test_available_sessions_empty_instrument(self):
+        self.assertEqual(
+            list_available_sessions('ES'),
+            {'sessions': [], 'earliest': None, 'latest': None},
+        )
+        self.assertEqual(
+            list_available_sessions(''),
+            {'sessions': [], 'earliest': None, 'latest': None},
+        )
+
+    def test_available_sessions_endpoint(self):
+        res = self.client.get('/api/market-data/instruments/NQ/available-sessions/')
+        self.assertEqual(res.status_code, 200)
+        body = res.json()
+        self.assertEqual(body['symbol'], 'NQ')
+        self.assertEqual(body['timeframe'], '1m')
+        self.assertEqual(body['sessions'], ['2025-03-10'])
+        self.assertEqual(body['latest'], '2025-03-10')
+        self.assertEqual(body['earliest'], '2025-03-10')
+
+    def test_available_sessions_rejects_unknown_tf(self):
+        res = self.client.get(
+            '/api/market-data/instruments/NQ/available-sessions/',
+            {'timeframe': '1w'},
         )
         self.assertEqual(res.status_code, 400)

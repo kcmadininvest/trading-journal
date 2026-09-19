@@ -33,6 +33,7 @@ from market_data.serializers import (
     SyncRunSerializer,
     SyncSettingsSerializer,
 )
+from market_data.services.available_sessions import list_available_sessions
 from market_data.services.available_timeframes import (
     latest_replay_coverage,
     list_available_timeframes,
@@ -176,6 +177,35 @@ class InstrumentTimeframesView(APIView):
             'timeframes': timeframes,
             'last_bar_at': coverage['last_bar_at'],
             'latest_session_date': coverage['latest_session_date'],
+        })
+
+
+class InstrumentAvailableSessionsView(APIView):
+    """Dates de séance avec bougies stockées (calendrier Market Replay)."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, instrument: str):
+        symbol = (instrument or '').upper().strip()
+        if not symbol:
+            return Response({'detail': 'Instrument requis.'}, status=400)
+        timeframe = request.query_params.get('timeframe')
+        if timeframe is None:
+            timeframe = '1m'
+        contract = request.query_params.get('contract') or 'front'
+        try:
+            payload = list_available_sessions(
+                symbol,
+                timeframe=timeframe,
+                contract=contract,
+            )
+        except ValueError as exc:
+            return Response({'detail': str(exc)}, status=400)
+        return Response({
+            'symbol': symbol,
+            'timeframe': (timeframe or '').strip() or None,
+            'contract': contract,
+            **payload,
         })
 
 

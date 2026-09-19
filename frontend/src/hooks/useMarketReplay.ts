@@ -66,6 +66,7 @@ export function useMarketReplay({
   const [range, setRange] = useState<{ start: number; end: number } | null>(null);
   const [latestSessionDate, setLatestSessionDate] = useState<string | null>(null);
   const [sessionHasBars, setSessionHasBars] = useState<boolean | null>(null);
+  const [availableSessions, setAvailableSessions] = useState<string[]>([]);
 
   const engineRef = useRef<ReplayEngine | null>(null);
   const seriesByTfRef = useRef(seriesByTf);
@@ -118,7 +119,7 @@ export function useMarketReplay({
     [],
   );
 
-  // Instrument change: stop, clear, load timeframes
+  // Instrument change: stop, clear, load timeframes + available sessions
   useEffect(() => {
     let cancelled = false;
     engineRef.current?.dispose();
@@ -130,6 +131,7 @@ export function useMarketReplay({
     setReplayTimestamp(0);
     setLatestSessionDate(null);
     setSessionHasBars(null);
+    setAvailableSessions([]);
 
     if (!instrument) {
       setAvailableTimeframes([]);
@@ -141,18 +143,47 @@ export function useMarketReplay({
     setError(null);
     marketReplayService
       .getInstrumentReplayMeta(instrument)
-      .then((meta) => {
+      .then(async (meta) => {
         if (cancelled) return;
         setAvailableTimeframes(meta.timeframes);
         setLatestSessionDate(meta.latestSessionDate);
         setPaneTfs(defaultTimeframePicks(meta.timeframes));
+
+        const sorted = [...meta.timeframes].sort(
+          (a, b) => a.durationSeconds - b.durationSeconds,
+        );
+        const sessionsTf = sorted[0]?.value || '1m';
+        let sessions: string[] = [];
+        let latestFromSessions: string | null = meta.latestSessionDate;
+        try {
+          const payload = await marketReplayService.getAvailableSessions(instrument, {
+            timeframe: sessionsTf,
+            contract: 'front',
+          });
+          if (cancelled) return;
+          sessions = payload.sessions || [];
+          setAvailableSessions(sessions);
+          if (payload.latest) {
+            latestFromSessions = payload.latest;
+            setLatestSessionDate(payload.latest);
+          }
+        } catch {
+          if (!cancelled) setAvailableSessions([]);
+        }
+
         const currentSessionDate = sessionDateRef.current;
+        const suggestDate =
+          sessions.length > 0
+            ? latestFromSessions
+            : meta.latestSessionDate;
         if (
-          meta.latestSessionDate &&
+          suggestDate &&
           currentSessionDate &&
-          currentSessionDate > meta.latestSessionDate
+          (sessions.length > 0
+            ? !sessions.includes(currentSessionDate)
+            : currentSessionDate > suggestDate)
         ) {
-          onSuggestSessionDateRef.current?.(meta.latestSessionDate);
+          onSuggestSessionDateRef.current?.(suggestDate);
         }
       })
       .catch((err: Error) => {
@@ -312,6 +343,7 @@ export function useMarketReplay({
     lastPrice,
     latestSessionDate,
     sessionHasBars,
+    availableSessions,
     changePaneTimeframe,
     playPause,
     stepForward,
