@@ -188,7 +188,7 @@ export const ReplayGrid: React.FC<ReplayGridProps> = ({
 
   return (
     <div className="grid min-h-[480px] flex-1 grid-cols-1 gap-3 auto-rows-[minmax(240px,1fr)] lg:min-h-[560px] lg:grid-cols-2 lg:grid-rows-2">
-      {panes.map((pane) => {
+      {panes.map((pane, paneIndex) => {
         const indicators = paneIndicators(pane.chartId);
         const drawings = getDrawings(pane.chartId);
         const armedTool = armedToolByPane[pane.chartId] ?? null;
@@ -351,6 +351,7 @@ export const ReplayGrid: React.FC<ReplayGridProps> = ({
                 onAvwapStyleDismiss={() => {
                   clearAvwapStyleEdit(pane.chartId);
                 }}
+                showAttributionLogo={paneIndex === 2}
                 className="absolute inset-0 h-full w-full"
               />
               {waitingAvwap && !avwapStyleEditingByPane[pane.chartId] ? (

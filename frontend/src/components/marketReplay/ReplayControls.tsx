@@ -162,19 +162,21 @@ export const ReplayControls: React.FC<ReplayControlsProps> = ({
         ))}
       </div>
 
-      <span
-        className={`text-xs sm:text-sm text-gray-500 dark:text-gray-400 tabular-nums whitespace-nowrap px-1 ${
+      <div
+        className={`flex flex-col items-center gap-0.5 px-1 ${
           replayTimestamp > 0 ? '' : 'hidden'
         }`}
       >
-        {clockLabel}
-      </span>
-      <span
-        className="text-[11px] sm:text-xs font-medium text-gray-600 dark:text-gray-300 whitespace-nowrap rounded-md border border-gray-200 dark:border-gray-600 bg-white/80 dark:bg-gray-800/80 px-1.5 py-0.5"
-        title={t('timezoneBadgeTitle')}
-      >
-        {t('timezoneBadge', { label: timezoneLabel })}
-      </span>
+        <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 tabular-nums whitespace-nowrap">
+          {clockLabel}
+        </span>
+        <span
+          className="text-[11px] sm:text-xs font-medium text-gray-600 dark:text-gray-300 whitespace-nowrap rounded-md border border-gray-200 dark:border-gray-600 bg-white/80 dark:bg-gray-800/80 px-1.5 py-0.5"
+          title={t('timezoneBadgeTitle')}
+        >
+          {t('timezoneBadge', { label: timezoneLabel })}
+        </span>
+      </div>
     </div>
   );
 

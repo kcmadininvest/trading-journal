@@ -85,6 +85,8 @@ interface ReplayChartPaneProps {
   onAvwapStyleClear?: () => void;
   /** Ferme uniquement la barre (clic à côté sur le graphique). */
   onAvwapStyleDismiss?: () => void;
+  /** Affiche le logo TradingView (licence lightweight-charts). */
+  showAttributionLogo?: boolean;
   className?: string;
 }
 
@@ -164,7 +166,7 @@ function resolveAvwapStyleBarAnchor(
   };
 }
 
-function themeOptions(isDark: boolean, fontStack: string) {
+function themeOptions(isDark: boolean, fontStack: string, attributionLogo = true) {
   const textColor = isDark ? '#9ca3af' : '#6b7280';
   const gridColor = isDark ? 'rgba(75, 85, 99, 0.35)' : 'rgba(209, 213, 219, 0.55)';
   const crossColor = isDark ? 'rgba(156, 163, 175, 0.4)' : 'rgba(107, 114, 128, 0.35)';
@@ -174,6 +176,7 @@ function themeOptions(isDark: boolean, fontStack: string) {
       background: { color: 'transparent' as const },
       textColor,
       fontFamily: fontStack,
+      attributionLogo,
     },
     grid: {
       vertLines: { visible: false },
@@ -332,6 +335,7 @@ export const ReplayChartPane = forwardRef<ReplayChartPaneHandle, ReplayChartPane
     onAvwapStyleChange,
     onAvwapStyleClear,
     onAvwapStyleDismiss,
+    showAttributionLogo = false,
     className = '',
   },
   ref,
@@ -381,6 +385,8 @@ export const ReplayChartPane = forwardRef<ReplayChartPaneHandle, ReplayChartPane
   chartTimezoneRef.current = chartTimezone;
   const chartLanguageRef = useRef(chartLanguage);
   chartLanguageRef.current = chartLanguage;
+  const showAttributionLogoRef = useRef(showAttributionLogo);
+  showAttributionLogoRef.current = showAttributionLogo;
 
   const [handleTop, setHandleTop] = useState<number | null>(null);
   const [avwapStyleBarAnchor, setAvwapStyleBarAnchor] = useState<{
@@ -490,7 +496,7 @@ export const ReplayChartPane = forwardRef<ReplayChartPaneHandle, ReplayChartPane
       chartLanguageRef.current,
     );
     const chart = createChart(el, {
-      ...themeOptions(isDarkRef.current, fontStack),
+      ...themeOptions(isDarkRef.current, fontStack, showAttributionLogoRef.current),
       localization: timeLocalization.localization,
       rightPriceScale: {
         borderVisible: false,
@@ -712,8 +718,8 @@ export const ReplayChartPane = forwardRef<ReplayChartPaneHandle, ReplayChartPane
 
   useEffect(() => {
     if (!chartRef.current) return;
-    chartRef.current.applyOptions(themeOptions(isDark, fontStack));
-  }, [isDark, fontStack]);
+    chartRef.current.applyOptions(themeOptions(isDark, fontStack, showAttributionLogo));
+  }, [isDark, fontStack, showAttributionLogo]);
 
   useEffect(() => {
     if (!chartRef.current) return;
