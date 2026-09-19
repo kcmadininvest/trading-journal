@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'react-hot-toast/headless';
 import { useTranslation } from 'react-i18next';
+import { ExternalLink } from 'lucide-react';
 import { PageShell } from '../components/layout';
 import { DateInput } from '../components/common/DateInput';
 import { InstrumentPicker } from '../components/backtestJournal/InstrumentPicker';
@@ -25,15 +26,32 @@ import { getTodayDateInTimezone, canNavigateSessionDate, getAdjacentSessionDate 
 import { replayPrimaryButtonClass, replaySecondaryButtonClass, replayDateInputClass } from '../components/replay/replayStyles';
 import { formatNumber } from '../utils/numberFormat';
 
-function parseHashParams(): { campaign?: number; date?: string } {
-  const raw = window.location.hash.replace('#', '');
-  const qIndex = raw.indexOf('?');
-  if (qIndex < 0) return {};
-  const params = new URLSearchParams(raw.slice(qIndex + 1));
+type InitParams = { campaign?: number; date?: string; instrument?: string };
+
+function parseSearchParams(params: URLSearchParams): InitParams {
   const campaign = params.get('campaign');
   return {
     campaign: campaign ? Number(campaign) : undefined,
     date: params.get('date') || undefined,
+    instrument: params.get('instrument') || undefined,
+  };
+}
+
+function parseHashParams(): InitParams {
+  const raw = window.location.hash.replace('#', '');
+  const qIndex = raw.indexOf('?');
+  if (qIndex < 0) return {};
+  return parseSearchParams(new URLSearchParams(raw.slice(qIndex + 1)));
+}
+
+/** Query string (popup) prioritaire, puis paramètres du hash (#market-replay?…). */
+function parseInitParams(): InitParams {
+  const fromSearch = parseSearchParams(new URLSearchParams(window.location.search));
+  const fromHash = parseHashParams();
+  return {
+    campaign: fromSearch.campaign ?? fromHash.campaign,
+    date: fromSearch.date ?? fromHash.date,
+    instrument: fromSearch.instrument ?? fromHash.instrument,
   };
 }
 
@@ -96,14 +114,19 @@ function formatBulkError(err: unknown, fallback: string): string {
   return fallback;
 }
 
-const MarketReplayPage: React.FC = () => {
+export type MarketReplayPageProps = {
+  /** Fenêtre détachée (/market-replay-popup) : pas de bouton Détacher. */
+  detached?: boolean;
+};
+
+const MarketReplayPage: React.FC<MarketReplayPageProps> = ({ detached = false }) => {
   const { t } = useTranslation('marketReplay');
   const { preferences, mergePreferences } = usePreferences();
-  const hash = parseHashParams();
+  const init = parseInitParams();
 
-  const [instrument, setInstrument] = useState('');
+  const [instrument, setInstrument] = useState(init.instrument || '');
   const [sessionDate, setSessionDate] = useState<string>(
-    hash.date || getTodayDateInTimezone(preferences.timezone),
+    init.date || getTodayDateInTimezone(preferences.timezone),
   );
   const [campaign, setCampaign] = useState<BacktestCampaign | null>(null);
   const [draft, setDraft] = useState<DraftTrade>(emptyDraft);
@@ -174,12 +197,12 @@ const MarketReplayPage: React.FC = () => {
   const canGoNextSession = canNavigateSessionDate(sessionDate, availableSessions, 1);
 
   useEffect(() => {
-    if (!hash.campaign) return;
+    if (!init.campaign) return;
     backtestJournalService
-      .getCampaign(hash.campaign)
+      .getCampaign(init.campaign)
       .then((c) => setCampaign(c))
       .catch(() => toast.error(t('errorCampaign')));
-  }, [hash.campaign, t]);
+  }, [init.campaign, t]);
 
   const panes = useMemo(
     () =>
@@ -431,8 +454,13 @@ const MarketReplayPage: React.FC = () => {
       campaign: String(campaign.id),
       strategy: String(campaign.strategy_id),
     });
-    window.location.hash = `backtest-journal?${params.toString()}`;
-  }, [campaign]);
+    const hash = `backtest-journal?${params.toString()}`;
+    if (detached) {
+      window.location.assign(`/#${hash}`);
+      return;
+    }
+    window.location.hash = hash;
+  }, [campaign, detached]);
 
   const requestLeaveToJournal = useCallback(() => {
     if (!campaign) return;
@@ -442,6 +470,26 @@ const MarketReplayPage: React.FC = () => {
     }
     goToJournal();
   }, [campaign, hasReplaySession, goToJournal]);
+
+  const handleDetach = useCallback(() => {
+    const params = new URLSearchParams();
+    if (instrument.trim()) params.set('instrument', instrument.trim());
+    if (sessionDate) params.set('date', sessionDate);
+    if (campaign?.id != null) params.set('campaign', String(campaign.id));
+    const qs = params.toString();
+    const url = qs ? `/market-replay-popup?${qs}` : '/market-replay-popup';
+
+    const width = Math.max(960, Math.round(window.screen.availWidth * 0.9));
+    const height = Math.max(700, Math.round(window.screen.availHeight * 0.9));
+    const left = Math.round(window.screenX + (window.outerWidth - width) / 2);
+    const top = Math.round(window.screenY + (window.outerHeight - height) / 2);
+
+    window.open(
+      url,
+      'market-replay-popup',
+      `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`,
+    );
+  }, [instrument, sessionDate, campaign?.id]);
 
   const preferredLevel: TradeLevelKey | null =
     adjustLevel ??
@@ -456,7 +504,7 @@ const MarketReplayPage: React.FC = () => {
             : null);
 
   return (
-    <PageShell variant="fluid">
+    <PageShell variant="fluid" className={detached ? 'flex-1' : undefined}>
       <div className="flex flex-col gap-4 min-h-0 flex-1">
         <div className="mb-0 flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0 max-w-4xl">
@@ -465,18 +513,31 @@ const MarketReplayPage: React.FC = () => {
               {t('leaveSessionHint')}
             </p>
           </div>
-          {campaign ? (
-            <button
-              type="button"
-              className={`${replayPrimaryButtonClass} min-w-[10.5rem] gap-2 px-5 sm:px-6 shadow-sm`}
-              onClick={requestLeaveToJournal}
-            >
-              <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
-              {t('backToJournal')}
-            </button>
-          ) : null}
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            {!detached ? (
+              <button
+                type="button"
+                onClick={handleDetach}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors shadow-sm"
+                title={t('detachTooltip')}
+              >
+                <ExternalLink className="w-4 h-4" />
+                <span className="text-sm font-medium">{t('detach')}</span>
+              </button>
+            ) : null}
+            {campaign ? (
+              <button
+                type="button"
+                className={`${replayPrimaryButtonClass} min-w-[10.5rem] gap-2 px-5 sm:px-6 shadow-sm`}
+                onClick={requestLeaveToJournal}
+              >
+                <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                {t('backToJournal')}
+              </button>
+            ) : null}
+          </div>
         </div>
         <div className="shrink-0 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2.5 shadow-sm">
           <div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
@@ -664,6 +725,10 @@ const MarketReplayPage: React.FC = () => {
               type="button"
               className="underline"
               onClick={() => {
+                if (detached) {
+                  window.location.assign('/#historical-data');
+                  return;
+                }
                 window.location.hash = 'historical-data';
               }}
             >

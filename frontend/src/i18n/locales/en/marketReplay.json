@@ -1,5 +1,7 @@
 {
   "title": "Market Replay",
+  "detach": "Detach",
+  "detachTooltip": "Detach to floating window",
   "subtitle": "Replay historical multi-timeframe OHLC for manual backtesting.",
   "instrument": "Instrument",
   "selectInstrument": "Select an instrument",

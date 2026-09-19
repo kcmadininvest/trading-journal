@@ -41,9 +41,16 @@ const HistoricalDataPage = lazy(() => import('./pages/HistoricalDataPage'));
 const BacktestJournalPage = lazy(() => import('./pages/BacktestJournalPage'));
 const MarketReplayPage = lazy(() => import('./pages/MarketReplayPage'));
 const CalculatorPopup = lazy(() => import('./pages/CalculatorPopup'));
+const MarketReplayPopup = lazy(() => import('./pages/MarketReplayPopup'));
 const BillingPage = lazy(() => import('./pages/BillingPage'));
 const SubscriptionRequiredPage = lazy(() => import('./pages/SubscriptionRequiredPage'));
 const StrategiesPage = lazy(() => import('./pages/StrategiesPage'));
+
+const DETACHED_POPUP_PATHS = new Set([
+  '/calculator-popup',
+  '/strategy-checklist',
+  '/market-replay-popup',
+]);
 
 const PageLoader = () => (
   <div className="flex min-h-[40vh] items-center justify-center">
@@ -498,7 +505,16 @@ function App() {
       return <LazyPage><CalculatorPopup /></LazyPage>;
     }
 
-    
+    if (pathname === '/market-replay-popup') {
+      if (!currentUser || lockedPremiumPages.has('market-replay')) {
+        return <SubscriptionRequiredPage onBackToDashboard={() => {
+          window.location.hash = 'dashboard';
+          setCurrentPage('dashboard');
+        }} />;
+      }
+      return <LazyPage><MarketReplayPopup /></LazyPage>;
+    }
+
     const activateMatch = pathname.match(/^\/activate-account\/([^/]+)\/?$/);
     if (activateMatch) {
       const token = activateMatch[1];
@@ -715,7 +731,7 @@ function App() {
       <OrganizationSchema />
       
       <ToastViewport />
-      {currentUser ? (
+      {currentUser && !DETACHED_POPUP_PATHS.has(window.location.pathname) ? (
         <Layout
           currentUser={currentUser}
           currentPage={currentPage}
