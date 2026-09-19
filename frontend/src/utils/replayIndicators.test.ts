@@ -141,6 +141,18 @@ describe('buildReplayOverlays', () => {
     expect(overlays).toEqual([]);
   });
 
+  it('applies avwapStyle color and lineWidth to the AVWAP overlay', () => {
+    let state = toggleAvwap(emptyPaneIndicators(), true);
+    state = { ...state, avwapAnchor: 1, avwapStyle: { color: '#EF5350', lineWidth: 4 } };
+    const overlays = buildReplayOverlays([c(1, 1, { volume: 1 })], state);
+    expect(overlays).toHaveLength(1);
+    expect(overlays[0]).toMatchObject({
+      id: 'avwap',
+      color: '#EF5350',
+      lineWidth: 4,
+    });
+  });
+
   it('does not add a duplicate MA of the same kind and period', () => {
     const once = addMovingAverage(emptyPaneIndicators(), 'ema', 9);
     const twice = addMovingAverage(once, 'ema', 9);

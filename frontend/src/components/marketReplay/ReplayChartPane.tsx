@@ -16,6 +16,7 @@ import {
   type ISeriesApi,
   type CandlestickData,
   type LineData,
+  type Logical,
   type UTCTimestamp,
 } from 'lightweight-charts';
 import { useTranslation } from 'react-i18next';
@@ -27,7 +28,13 @@ import {
   getFontStackFromFamily,
   normalizeAppFontFamily,
 } from '../../utils/chartConfig';
+import { buildChartTimeLocalization } from '../../utils/chartTimeFormatters';
 import { formatNumber } from '../../utils/numberFormat';
+import {
+  logicalIndexToX,
+  priceToYExtrapolated,
+  timeToLogicalIndex,
+} from '../../utils/replayDrawings';
 import { getMarketTapeTheme } from '../replay/replayStyles';
 import type { TradeChartLevels } from './ReplayTradePanel';
 import { DrawingStyleBar } from './DrawingStyleBar';
@@ -71,6 +78,13 @@ interface ReplayChartPaneProps {
   onSelectedDrawingIdChange?: (id: string | null) => void;
   onDrawingStyleChange?: (style: DrawingStyle) => void;
   onArmedDrawingToolChange?: (tool: DrawingTool | null) => void;
+  /** Édition style AVWAP (barre flottante près de l’ancre) ; null = pas d’édition. */
+  avwapStyleEdit?: { style: DrawingStyle; anchorTime: number } | null;
+  onAvwapStyleChange?: (style: DrawingStyle) => void;
+  /** Désactive l’AVWAP (croix, comme supprimer un dessin). */
+  onAvwapStyleClear?: () => void;
+  /** Ferme uniquement la barre (clic à côté sur le graphique). */
+  onAvwapStyleDismiss?: () => void;
   className?: string;
 }
 
@@ -96,6 +110,58 @@ const ADJUSTABLE_LEVELS: TradeLevelKey[] = ['stop', 'target', 'exit'];
 
 function resolveAppFontStack(fontFamily: string | undefined): string {
   return getFontStackFromFamily(normalizeAppFontFamily(fontFamily));
+}
+
+function resolveAvwapStyleBarAnchor(
+  chart: IChartApi,
+  series: ISeriesApi<'Candlestick'>,
+  candles: VisibleCandle[],
+  overlays: IndicatorOverlay[],
+  anchorTime: number,
+  containerWidth: number,
+  containerHeight: number,
+): { left: number; top: number } {
+  const avwap = overlays.find((o) => o.id === 'avwap');
+  const firstPoint = avwap?.data[0];
+  const pointTime = firstPoint?.time ?? anchorTime;
+  const pointPrice =
+    firstPoint?.value ??
+    candles.find((c) => c.time === anchorTime)?.close ??
+    candles.find((c) => c.time >= anchorTime)?.close ??
+    null;
+
+  let x: number | null = chart.timeScale().timeToCoordinate(pointTime as UTCTimestamp);
+  if (x == null) {
+    const times = candles.map((c) => c.time);
+    const logical = timeToLogicalIndex(times, pointTime);
+    if (logical != null) {
+      const timeScale = chart.timeScale();
+      x = logicalIndexToX(
+        logical,
+        (l) => timeScale.logicalToCoordinate(l as Logical),
+        timeScale.getVisibleLogicalRange(),
+      );
+    }
+  }
+
+  let y: number | null = null;
+  if (pointPrice != null) {
+    y = priceToYExtrapolated(
+      pointPrice,
+      containerHeight,
+      (p) => series.priceToCoordinate(p),
+      (py) => series.coordinateToPrice(py),
+    );
+  }
+
+  if (x == null || y == null) {
+    return { left: 8, top: 8 };
+  }
+
+  return {
+    left: Math.min(containerWidth - 220, Math.max(4, x + 10)),
+    top: Math.min(containerHeight - 44, Math.max(4, y - 40)),
+  };
 }
 
 function themeOptions(isDark: boolean, fontStack: string) {
@@ -262,11 +328,15 @@ export const ReplayChartPane = forwardRef<ReplayChartPaneHandle, ReplayChartPane
     onSelectedDrawingIdChange,
     onDrawingStyleChange,
     onArmedDrawingToolChange,
+    avwapStyleEdit = null,
+    onAvwapStyleChange,
+    onAvwapStyleClear,
+    onAvwapStyleDismiss,
     className = '',
   },
   ref,
 ) {
-  const { t } = useTranslation('marketReplay');
+  const { t, i18n } = useTranslation('marketReplay');
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<IChartApi | null>(null);
@@ -285,6 +355,10 @@ export const ReplayChartPane = forwardRef<ReplayChartPaneHandle, ReplayChartPane
   onPriceClickRef.current = onPriceClick;
   const onCandleClickRef = useRef(onCandleClick);
   onCandleClickRef.current = onCandleClick;
+  const avwapStyleEditRef = useRef(avwapStyleEdit);
+  avwapStyleEditRef.current = avwapStyleEdit;
+  const onAvwapStyleDismissRef = useRef(onAvwapStyleDismiss);
+  onAvwapStyleDismissRef.current = onAvwapStyleDismiss;
   const overlaySeriesRef = useRef<Map<string, ISeriesApi<'Line'>>>(new Map());
   const [chartReady, setChartReady] = useState(false);
   const onLevelDragRef = useRef(onLevelDrag);
@@ -299,10 +373,20 @@ export const ReplayChartPane = forwardRef<ReplayChartPaneHandle, ReplayChartPane
   const { isDark } = useTheme();
   const { preferences } = usePreferences();
   const fontStack = resolveAppFontStack(preferences.font_family);
+  const chartTimezone = preferences.timezone?.trim() || 'Europe/Paris';
+  const chartLanguage = i18n.language;
   const isDarkRef = useRef(isDark);
   isDarkRef.current = isDark;
+  const chartTimezoneRef = useRef(chartTimezone);
+  chartTimezoneRef.current = chartTimezone;
+  const chartLanguageRef = useRef(chartLanguage);
+  chartLanguageRef.current = chartLanguage;
 
   const [handleTop, setHandleTop] = useState<number | null>(null);
+  const [avwapStyleBarAnchor, setAvwapStyleBarAnchor] = useState<{
+    left: number;
+    top: number;
+  } | null>(null);
 
   const setChartInteractionLocked = useCallback((locked: boolean) => {
     drawingLockRef.current = locked;
@@ -401,8 +485,13 @@ export const ReplayChartPane = forwardRef<ReplayChartPaneHandle, ReplayChartPane
     const el = containerRef.current;
     if (!el) return;
 
+    const timeLocalization = buildChartTimeLocalization(
+      chartTimezoneRef.current,
+      chartLanguageRef.current,
+    );
     const chart = createChart(el, {
       ...themeOptions(isDarkRef.current, fontStack),
+      localization: timeLocalization.localization,
       rightPriceScale: {
         borderVisible: false,
         scaleMargins: { top: 0.1, bottom: 0.1 },
@@ -414,6 +503,7 @@ export const ReplayChartPane = forwardRef<ReplayChartPaneHandle, ReplayChartPane
         rightOffset: RIGHT_PAD_BARS,
         barSpacing: DEFAULT_BAR_SPACING,
         minBarSpacing: 2,
+        tickMarkFormatter: timeLocalization.timeScale.tickMarkFormatter,
       },
       handleScroll: SCROLL_ON,
       handleScale: SCALE_ON,
@@ -554,9 +644,14 @@ export const ReplayChartPane = forwardRef<ReplayChartPaneHandle, ReplayChartPane
       }
       if (handleDraggingRef.current) return;
       const rawTime = param.time;
+      // Premier ancrage AVWAP : le clic pose l’ancre et ouvre la barre.
       if (typeof rawTime === 'number' && onCandleClickRef.current) {
         onCandleClickRef.current(rawTime);
         return;
+      }
+      // Clic à côté : fermer la barre de style AVWAP (comme désélectionner une trend line).
+      if (avwapStyleEditRef.current) {
+        onAvwapStyleDismissRef.current?.();
       }
       if (!param.point || !seriesRef.current) return;
       const price = seriesRef.current.coordinateToPrice(param.point.y);
@@ -622,6 +717,44 @@ export const ReplayChartPane = forwardRef<ReplayChartPaneHandle, ReplayChartPane
 
   useEffect(() => {
     if (!chartRef.current) return;
+    chartRef.current.applyOptions(buildChartTimeLocalization(chartTimezone, chartLanguage));
+  }, [chartTimezone, chartLanguage]);
+
+  useEffect(() => {
+    const chart = chartRef.current;
+    const series = seriesRef.current;
+    const el = containerRef.current;
+    if (!chart || !series || !el || !chartReady || !avwapStyleEdit) {
+      setAvwapStyleBarAnchor(null);
+      return undefined;
+    }
+
+    const updateAnchor = () => {
+      setAvwapStyleBarAnchor(
+        resolveAvwapStyleBarAnchor(
+          chart,
+          series,
+          candles,
+          overlays,
+          avwapStyleEdit.anchorTime,
+          el.clientWidth || 400,
+          el.clientHeight || 220,
+        ),
+      );
+    };
+
+    updateAnchor();
+    // Recalcul après layout / données (coords parfois null au premier frame)
+    const raf = requestAnimationFrame(updateAnchor);
+    chart.timeScale().subscribeVisibleLogicalRangeChange(updateAnchor);
+    return () => {
+      cancelAnimationFrame(raf);
+      chart.timeScale().unsubscribeVisibleLogicalRangeChange(updateAnchor);
+    };
+  }, [avwapStyleEdit, candles, overlays, chartReady]);
+
+  useEffect(() => {
+    if (!chartRef.current) return;
     applyPriceScaleMode(chartRef.current, logarithmic, candles);
   }, [logarithmic, candles]);
 
@@ -682,11 +815,12 @@ export const ReplayChartPane = forwardRef<ReplayChartPaneHandle, ReplayChartPane
       }
     }
     for (const overlay of overlays) {
+      const lineWidth = Math.min(4, Math.max(1, Math.round(overlay.lineWidth ?? 2))) as 1 | 2 | 3 | 4;
       let series = map.get(overlay.id);
       if (!series) {
         series = chart.addLineSeries({
           color: overlay.color,
-          lineWidth: 2,
+          lineWidth,
           lastValueVisible: true,
           priceLineVisible: false,
           title: overlay.title,
@@ -695,6 +829,7 @@ export const ReplayChartPane = forwardRef<ReplayChartPaneHandle, ReplayChartPane
       } else {
         series.applyOptions({
           color: overlay.color,
+          lineWidth,
           title: overlay.title,
         });
       }
@@ -875,6 +1010,15 @@ export const ReplayChartPane = forwardRef<ReplayChartPaneHandle, ReplayChartPane
           isDark={isDark}
           onChange={applyStyleToSelected}
           onDelete={deleteSelected}
+        />
+      ) : null}
+      {avwapStyleEdit && avwapStyleBarAnchor && onAvwapStyleChange && onAvwapStyleClear ? (
+        <DrawingStyleBar
+          style={avwapStyleEdit.style}
+          anchor={avwapStyleBarAnchor}
+          isDark={isDark}
+          onChange={onAvwapStyleChange}
+          onDelete={onAvwapStyleClear}
         />
       ) : null}
       {armedDrawingTool ? (

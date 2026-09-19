@@ -3,7 +3,6 @@ import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import {
   addMovingAverage,
-  AVWAP_COLOR,
   colorForMa,
   countActiveIndicators,
   isValidMaPeriod,
@@ -22,12 +21,15 @@ interface IndicatorSelectProps {
   value: PaneIndicators;
   onChange: (next: PaneIndicators) => void;
   disabled?: boolean;
+  /** Ouvre la barre de style AVWAP sur le panneau (comme une trend line). */
+  onSelectAvwapStyle?: () => void;
 }
 
 export const IndicatorSelect: React.FC<IndicatorSelectProps> = ({
   value,
   onChange,
   disabled = false,
+  onSelectAvwapStyle,
 }) => {
   const { t } = useTranslation('marketReplay');
   const [open, setOpen] = useState(false);
@@ -149,27 +151,46 @@ export const IndicatorSelect: React.FC<IndicatorSelectProps> = ({
         />
         <span className="text-gray-900 dark:text-gray-100">{t('vwap')}</span>
       </label>
-      <label className="flex cursor-pointer items-center gap-2 rounded px-1.5 py-1 hover:bg-gray-50 dark:hover:bg-gray-700">
-        <span
-          className="h-2 w-2 shrink-0 rounded-full"
-          style={{ backgroundColor: AVWAP_COLOR }}
-          aria-hidden
-        />
-        <input
-          type="checkbox"
-          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
-          checked={value.avwap}
-          onChange={(e) => {
-            const enabled = e.target.checked;
-            onChange(toggleAvwap(value, enabled));
-            if (enabled) setOpen(false);
+      <div className="flex items-center gap-2 rounded px-1.5 py-1 hover:bg-gray-50 dark:hover:bg-gray-700">
+        <button
+          type="button"
+          className={`h-2.5 w-2.5 shrink-0 rounded-full border border-gray-300 dark:border-gray-500 ${
+            value.avwap ? 'cursor-pointer ring-offset-1 hover:ring-1 hover:ring-blue-500' : 'cursor-default'
+          }`}
+          style={{ backgroundColor: value.avwapStyle.color }}
+          title={t('avwapStyleHint')}
+          aria-label={t('avwapStyle')}
+          disabled={disabled || !value.avwap}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (!value.avwap || !onSelectAvwapStyle) return;
+            onSelectAvwapStyle();
+            setOpen(false);
           }}
         />
-        <span className="text-gray-900 dark:text-gray-100">{t('avwap')}</span>
-      </label>
+        <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-2">
+          <input
+            type="checkbox"
+            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+            checked={value.avwap}
+            onChange={(e) => {
+              const enabled = e.target.checked;
+              onChange(toggleAvwap(value, enabled));
+              if (enabled) setOpen(false);
+            }}
+          />
+          <span className="text-gray-900 dark:text-gray-100">{t('avwap')}</span>
+        </label>
+      </div>
       {value.avwap && value.avwapAnchor == null ? (
         <p className="px-1.5 pb-1 text-[10px] leading-snug text-purple-700 dark:text-purple-300">
           {t('avwapAnchorHint')}
+        </p>
+      ) : null}
+      {value.avwap && value.avwapAnchor != null ? (
+        <p className="px-1.5 pb-1 text-[10px] leading-snug text-gray-500 dark:text-gray-400">
+          {t('avwapStyleHint')}
         </p>
       ) : null}
 

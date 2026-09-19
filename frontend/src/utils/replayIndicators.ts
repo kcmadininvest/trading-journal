@@ -1,4 +1,5 @@
 import type { VisibleCandle } from './replayEngine';
+import type { DrawingStyle } from './replayDrawings';
 
 export const MIN_MA_PERIOD = 2;
 export const MAX_MA_PERIOD = 500;
@@ -15,6 +16,7 @@ export interface PaneIndicators {
   vwap: boolean;
   avwap: boolean;
   avwapAnchor: number | null;
+  avwapStyle: DrawingStyle;
   mas: ReplayMaIndicator[];
 }
 
@@ -27,11 +29,17 @@ export interface IndicatorOverlay {
   id: string;
   title: string;
   color: string;
+  lineWidth?: number;
   data: IndicatorPoint[];
 }
 
 export const VWAP_COLOR = '#f59e0b';
 export const AVWAP_COLOR = '#a855f7';
+
+export const DEFAULT_AVWAP_STYLE: DrawingStyle = {
+  color: AVWAP_COLOR,
+  lineWidth: 2,
+};
 
 export const MA_COLORS = [
   '#3b82f6',
@@ -45,7 +53,13 @@ export const MA_COLORS = [
 ] as const;
 
 export function emptyPaneIndicators(): PaneIndicators {
-  return { vwap: false, avwap: false, avwapAnchor: null, mas: [] };
+  return {
+    vwap: false,
+    avwap: false,
+    avwapAnchor: null,
+    avwapStyle: { ...DEFAULT_AVWAP_STYLE },
+    mas: [],
+  };
 }
 
 export function countActiveIndicators(state: PaneIndicators): number {
@@ -153,7 +167,8 @@ export function buildReplayOverlays(
     overlays.push({
       id: 'avwap',
       title: 'AVWAP',
-      color: AVWAP_COLOR,
+      color: state.avwapStyle.color,
+      lineWidth: state.avwapStyle.lineWidth,
       data: computeAnchoredVwap(candles, state.avwapAnchor),
     });
   }
@@ -195,4 +210,14 @@ export function toggleAvwap(state: PaneIndicators, enabled: boolean): PaneIndica
 export function setAvwapAnchor(state: PaneIndicators, time: number): PaneIndicators {
   if (!state.avwap) return state;
   return { ...state, avwapAnchor: time };
+}
+
+export function setAvwapStyle(state: PaneIndicators, style: DrawingStyle): PaneIndicators {
+  return {
+    ...state,
+    avwapStyle: {
+      color: style.color,
+      lineWidth: style.lineWidth,
+    },
+  };
 }

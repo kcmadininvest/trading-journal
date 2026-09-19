@@ -16,6 +16,7 @@ import {
   replaySecondaryButtonClass,
 } from '../replay/replayStyles';
 import { formatDateTimeShort, type DateFormatType } from '../../utils/dateFormat';
+import { formatTimezoneDisplayLabel } from '../../utils/chartTimeFormatters';
 import { usePreferences } from '../../hooks/usePreferences';
 
 const SPEEDS = [1, 2, 5, 10, 20] as const;
@@ -56,18 +57,21 @@ export const ReplayControls: React.FC<ReplayControlsProps> = ({
   onSpeedChange,
   onSeek,
 }) => {
-  const { t } = useTranslation('marketReplay');
+  const { t, i18n } = useTranslation('marketReplay');
   const { preferences } = usePreferences();
   const iconButtonClass = compact
     ? '!h-9 !w-9 !min-w-[2.25rem] !px-0'
     : '!w-10 !min-w-[2.5rem] !px-0';
+
+  const chartTimezone = preferences.timezone?.trim() || 'Europe/Paris';
+  const timezoneLabel = formatTimezoneDisplayLabel(chartTimezone, i18n.language);
 
   const clockLabel =
     replayTimestamp > 0
       ? formatDateTimeShort(
           new Date(replayTimestamp * 1000).toISOString(),
           preferences.date_format as DateFormatType,
-          preferences.timezone,
+          chartTimezone,
         )
       : '—';
 
@@ -164,6 +168,12 @@ export const ReplayControls: React.FC<ReplayControlsProps> = ({
         }`}
       >
         {clockLabel}
+      </span>
+      <span
+        className="text-[11px] sm:text-xs font-medium text-gray-600 dark:text-gray-300 whitespace-nowrap rounded-md border border-gray-200 dark:border-gray-600 bg-white/80 dark:bg-gray-800/80 px-1.5 py-0.5"
+        title={t('timezoneBadgeTitle')}
+      >
+        {t('timezoneBadge', { label: timezoneLabel })}
       </span>
     </div>
   );
