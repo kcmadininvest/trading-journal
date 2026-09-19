@@ -255,11 +255,29 @@ def _conclude_run(
     return True
 
 
+def _classify_sync_job(job: HistoricalDownloadJob) -> str:
+    """
+    Classe un job terminé pour l'agrégation du run.
+
+    - ok: données récupérées
+    - empty: terminé sans bougie (réponse vide du fournisseur — pas une panne)
+    - failed: échec technique / annulation
+    """
+    if job.status == HistoricalDownloadJob.Status.COMPLETED:
+        if (job.bars_fetched or 0) > 0:
+            return 'ok'
+        return 'empty'
+    return 'failed'
+
+
 def finalize_sync_status_for_job(job: HistoricalDownloadJob) -> HistoricalSyncRun | None:
     """
     Conclut le run de sync auquel appartient ``job``, si tous ses jobs sont terminés.
 
-    Succès = chaque job terminé avec des bougies récupérées et sans erreur.
+    Agrégation multi-cibles (style ETL / CI matrix) :
+    - success : aucun échec dur (ok et/ou empty)
+    - partial : mix succès/empty et échecs durs
+    - error : uniquement des échecs durs
     """
     candidates = HistoricalSyncRun.objects.filter(
         user_id=job.user_id,
@@ -273,26 +291,39 @@ def finalize_sync_status_for_job(job: HistoricalDownloadJob) -> HistoricalSyncRu
     if any(j.status in ACTIVE_JOB_STATUSES for j in jobs):
         return None
 
-    messages = [run.error] if run.error else []
     total_bars = sum(j.bars_fetched or 0 for j in jobs)
+    n_ok = 0
+    n_empty = 0
+    n_failed = 0
+    hard_messages: list[str] = []
+
+    enqueue_error = (run.error or '').strip()
+    if enqueue_error:
+        hard_messages.append(enqueue_error)
+        n_failed += 1
+
     for j in jobs:
         label = f'{j.instrument}/{j.timeframe}'
-        if j.status == HistoricalDownloadJob.Status.COMPLETED:
-            if (j.bars_fetched or 0) == 0:
-                messages.append(
-                    f'{label}: aucune bougie récupérée '
-                    f'({j.error or "réponse vide du fournisseur"}).',
-                )
-            elif j.error:
-                messages.append(f'{label}: {j.error}')
+        kind = _classify_sync_job(j)
+        if kind == 'ok':
+            n_ok += 1
+        elif kind == 'empty':
+            n_empty += 1
         else:
-            messages.append(f'{label}: {j.error or j.get_status_display()}')
+            n_failed += 1
+            hard_messages.append(f'{label}: {j.error or j.get_status_display()}')
 
-    status = SyncRunStatus.ERROR if messages else SyncRunStatus.SUCCESS
+    if n_failed and (n_ok or n_empty):
+        status = SyncRunStatus.PARTIAL
+    elif n_failed:
+        status = SyncRunStatus.ERROR
+    else:
+        status = SyncRunStatus.SUCCESS
+
     if not _conclude_run(
         run,
         status=status,
-        error='; '.join(messages),
+        error='; '.join(hard_messages),
         bars_fetched_total=total_bars,
     ):
         return None
@@ -301,8 +332,8 @@ def finalize_sync_status_for_job(job: HistoricalDownloadJob) -> HistoricalSyncRu
     if settings_obj is not None and _is_latest_run(run):
         _mirror_run_to_settings(settings_obj, run)
     logger.info(
-        'Historical sync run %s concluded status=%s bars=%s',
-        run.pk, run.status, run.bars_fetched_total,
+        'Historical sync run %s concluded status=%s bars=%s ok=%s empty=%s failed=%s',
+        run.pk, run.status, run.bars_fetched_total, n_ok, n_empty, n_failed,
     )
     return run
 

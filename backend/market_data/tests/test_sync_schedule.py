@@ -305,15 +305,16 @@ class SyncRunFinalizeTests(TestCase):
         self.assertEqual(self.settings.last_error, '')
         self.assertIsNotNone(self.settings.last_finished_at)
 
-    def test_error_when_completed_without_bars(self):
+    def test_success_when_completed_without_bars(self):
+        """Réponse vide du fournisseur = empty, pas une panne → success."""
         job = self._complete(self._open_run(), bars=0, error='Aucune bougie reçue.')
         run = finalize_sync_status_for_job(job)
 
-        self.assertEqual(run.status, SyncRunStatus.ERROR)
-        self.assertIn('aucune bougie récupérée', run.error)
+        self.assertEqual(run.status, SyncRunStatus.SUCCESS)
+        self.assertEqual(run.error, '')
         self.settings.refresh_from_db()
-        self.assertEqual(self.settings.last_status, SyncRunStatus.ERROR)
-        self.assertIn('MES/1m', self.settings.last_error)
+        self.assertEqual(self.settings.last_status, SyncRunStatus.SUCCESS)
+        self.assertEqual(self.settings.last_error, '')
 
     def test_error_when_job_failed(self):
         job = self._open_run()
@@ -325,6 +326,62 @@ class SyncRunFinalizeTests(TestCase):
         run = finalize_sync_status_for_job(job)
         self.assertEqual(run.status, SyncRunStatus.ERROR)
         self.assertIn('Token expiré', run.error)
+
+    def test_partial_when_mix_ok_and_failed(self):
+        ok_job = self._complete(self._open_run(), bars=50)
+        run = HistoricalSyncRun.objects.get(user=self.user)
+        failed = HistoricalDownloadJob.objects.create(
+            user=self.user,
+            instrument='GC',
+            timeframe='1m',
+            start_utc=timezone.now() - timedelta(hours=1),
+            end_utc=timezone.now(),
+            status=HistoricalDownloadJob.Status.FAILED,
+            error='Compte TopStepX introuvable (ID invalide).',
+            finished_at=timezone.now(),
+        )
+        empty = HistoricalDownloadJob.objects.create(
+            user=self.user,
+            instrument='MNQ',
+            timeframe='15m',
+            start_utc=timezone.now() - timedelta(hours=1),
+            end_utc=timezone.now(),
+            status=HistoricalDownloadJob.Status.COMPLETED,
+            bars_fetched=0,
+            error='Aucune bougie reçue.',
+            finished_at=timezone.now(),
+        )
+        run.job_ids = [ok_job.id, failed.id, empty.id]
+        run.save(update_fields=['job_ids'])
+
+        concluded = finalize_sync_status_for_job(failed)
+        self.assertEqual(concluded.status, SyncRunStatus.PARTIAL)
+        self.assertEqual(concluded.bars_fetched_total, 50)
+        self.assertIn('GC/1m', concluded.error)
+        self.assertIn('ID invalide', concluded.error)
+        self.assertNotIn('MNQ', concluded.error)
+        self.settings.refresh_from_db()
+        self.assertEqual(self.settings.last_status, SyncRunStatus.PARTIAL)
+
+    def test_all_empty_is_success(self):
+        job = self._complete(self._open_run(), bars=0)
+        run = HistoricalSyncRun.objects.get(user=self.user)
+        other = HistoricalDownloadJob.objects.create(
+            user=self.user,
+            instrument='MNQ',
+            timeframe='1m',
+            start_utc=timezone.now() - timedelta(hours=1),
+            end_utc=timezone.now(),
+            status=HistoricalDownloadJob.Status.COMPLETED,
+            bars_fetched=0,
+            finished_at=timezone.now(),
+        )
+        run.job_ids = [job.id, other.id]
+        run.save(update_fields=['job_ids'])
+
+        concluded = finalize_sync_status_for_job(other)
+        self.assertEqual(concluded.status, SyncRunStatus.SUCCESS)
+        self.assertEqual(concluded.error, '')
 
     def test_no_conclusion_while_another_job_runs(self):
         job = self._complete(self._open_run(), bars=50)

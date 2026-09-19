@@ -248,6 +248,7 @@ class SyncRunStatus(models.TextChoices):
 
     RUNNING = 'running', _('Running')
     SUCCESS = 'success', _('Success')
+    PARTIAL = 'partial', _('Partial')
     ERROR = 'error', _('Error')
     UP_TO_DATE = 'up_to_date', _('Up to date')
 

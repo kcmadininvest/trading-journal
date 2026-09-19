@@ -66,7 +66,7 @@ export interface SyncTarget {
   ordering?: number;
 }
 
-export type SyncRunStatus = 'running' | 'success' | 'error' | 'up_to_date';
+export type SyncRunStatus = 'running' | 'success' | 'partial' | 'error' | 'up_to_date';
 
 export interface SyncSettings {
   enabled: boolean;

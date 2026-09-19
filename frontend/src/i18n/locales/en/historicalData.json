@@ -98,6 +98,7 @@
   "syncLastStatus": "Last status",
   "syncLastError": "Last message",
   "syncStatusSuccess": "Success",
+  "syncStatusPartial": "Partial",
   "syncStatusError": "Error",
   "syncStatusUpToDate": "Already up to date",
   "syncStatusRunning": "Running",

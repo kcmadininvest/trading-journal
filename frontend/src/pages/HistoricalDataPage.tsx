@@ -424,6 +424,12 @@ const HistoricalDataPage: React.FC = () => {
             className:
               'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
           };
+        case 'partial':
+          return {
+            label: t('syncStatusPartial'),
+            className:
+              'bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
+          };
         case 'error':
           return {
             label: t('syncStatusError'),
@@ -644,13 +650,17 @@ const HistoricalDataPage: React.FC = () => {
     }
   };
 
-  /** Un run de 32 cibles produit une erreur concaténée illisible : on regroupe par message. */
+  /** Aligné sur l’agrégation backend : empty ≠ échec dur. */
   const summarizeRun = useCallback((run: SyncRun) => {
     const groups = new Map<string, string[]>();
     let ok = 0;
     for (const job of run.jobs || []) {
       const label = `${job.instrument} ${job.timeframe}`;
-      if (job.status === 'completed' && job.bars_fetched > 0 && !job.error) {
+      const isOk =
+        job.status === 'completed' && job.bars_fetched > 0;
+      const isEmpty =
+        job.status === 'completed' && job.bars_fetched <= 0;
+      if (isOk || isEmpty) {
         ok += 1;
         continue;
       }
