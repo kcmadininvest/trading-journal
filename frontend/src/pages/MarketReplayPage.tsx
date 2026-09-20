@@ -8,6 +8,7 @@ import { InstrumentPicker } from '../components/backtestJournal/InstrumentPicker
 import { ReplayControls } from '../components/marketReplay/ReplayControls';
 import { ReplayGrid } from '../components/marketReplay/ReplayGrid';
 import type { TradeLevelKey } from '../components/marketReplay/ReplayChartPane';
+import type { ReplayChartPaneHandle } from '../components/marketReplay/ReplayChartPane';
 import {
   ReplayTradePanel,
   type DraftTrade,
@@ -25,6 +26,14 @@ import { ConfirmModal } from '../components/ui';
 import { getTodayDateInTimezone, canNavigateSessionDate, getAdjacentSessionDate } from '../components/replay/replayDateNav';
 import { replayPrimaryButtonClass, replaySecondaryButtonClass, replayDateInputClass } from '../components/replay/replayStyles';
 import { formatNumber } from '../utils/numberFormat';
+import {
+  buildPlacedPosition,
+  emptyPositionUi,
+  positionOverlayFromDraft,
+  type PositionUiState,
+} from '../utils/positionToolState';
+import type { PositionOverlayChange } from '../components/marketReplay/usePositionOverlay';
+import { visiblePriceRangeFromBars } from '../utils/positionToolSizing';
 
 type InitParams = { campaign?: number; date?: string; instrument?: string };
 
@@ -133,6 +142,8 @@ const MarketReplayPage: React.FC<MarketReplayPageProps> = ({ detached = false })
   const [placementMode, setPlacementMode] = useState<TradePlacementMode>(null);
   /** Poignée temporaire après premier placement SL / TP / Sortie. */
   const [adjustLevel, setAdjustLevel] = useState<TradeLevelKey | null>(null);
+  const [positionUi, setPositionUi] = useState<PositionUiState>(emptyPositionUi);
+  const primaryPaneRef = useRef<ReplayChartPaneHandle | null>(null);
   const [saving, setSaving] = useState(false);
   const [logarithmic, setLogarithmic] = useState(!!preferences.market_replay_logarithmic);
   const [autoFit, setAutoFit] = useState(!!preferences.market_replay_autofit);
@@ -225,11 +236,59 @@ const MarketReplayPage: React.FC<MarketReplayPageProps> = ({ detached = false })
     [draft],
   );
 
+  const primaryCandles = useMemo(
+    () => panes[0]?.candles ?? [],
+    [panes],
+  );
+
+  const positionModel = useMemo(
+    () => positionOverlayFromDraft(draft, positionUi, instrument),
+    [draft, positionUi, instrument],
+  );
+
+  const applyPlacedPosition = useCallback(
+    (
+      side: 'long' | 'short',
+      entryPrice: number,
+      entryTime: number,
+      chartId: string,
+      candles: typeof primaryCandles,
+      visibleRangeHint?: number,
+    ) => {
+      const isPrimary = chartId === panes[0]?.chartId;
+      const visibleRange =
+        visibleRangeHint ??
+        (isPrimary
+          ? primaryPaneRef.current?.getVisiblePriceRange()
+          : undefined) ??
+        visiblePriceRangeFromBars(
+          candles.map((c) => ({ high: c.high, low: c.low, close: c.close })),
+        );
+      const placed = buildPlacedPosition({
+        side,
+        entryPrice,
+        entryTime,
+        candles,
+        visiblePriceRange: visibleRange,
+      });
+      setDraft((d) => ({ ...d, ...placed.draftPatch }));
+      setPositionUi((ui) => ({
+        ...ui,
+        ...placed.uiPatch,
+        chartId,
+        qty: ui.qty || 1,
+      }));
+      setPlacementMode(null);
+      setAdjustLevel(null);
+    },
+    [panes],
+  );
+
   const markEntry = useCallback(
     (direction: 'LONG' | 'SHORT') => {
       setAdjustLevel(null);
       setPlacementMode(direction === 'LONG' ? 'entry_long' : 'entry_short');
-      if (replay.lastPrice == null) {
+      if (replay.lastPrice == null || replay.replayTimestamp == null) {
         setDraft((d) => ({
           ...d,
           direction,
@@ -238,16 +297,22 @@ const MarketReplayPage: React.FC<MarketReplayPageProps> = ({ detached = false })
         }));
         return;
       }
-      setDraft((d) => ({
-        ...d,
-        direction,
-        entryTimestamp: replay.replayTimestamp,
-        entryPrice: replay.lastPrice,
-        exitTimestamp: null,
-        exitPrice: null,
-      }));
+      const hostId = panes[0]?.chartId;
+      if (!hostId) return;
+      applyPlacedPosition(
+        direction === 'SHORT' ? 'short' : 'long',
+        replay.lastPrice,
+        replay.replayTimestamp,
+        hostId,
+        panes[0]?.candles ?? [],
+      );
     },
-    [replay.lastPrice, replay.replayTimestamp],
+    [
+      replay.lastPrice,
+      replay.replayTimestamp,
+      applyPlacedPosition,
+      panes,
+    ],
   );
 
   const markExit = useCallback(() => {
@@ -265,42 +330,50 @@ const MarketReplayPage: React.FC<MarketReplayPageProps> = ({ detached = false })
     setPlacementMode('stop');
     if (replay.lastPrice == null) return;
     setDraft((d) => ({ ...d, stopPrice: replay.lastPrice }));
-    setAdjustLevel('stop');
-  }, [replay.lastPrice]);
+    setAdjustLevel(positionUi.active ? null : 'stop');
+    if (positionUi.active) {
+      setPositionUi((ui) => ({ ...ui, selected: true }));
+    }
+  }, [replay.lastPrice, positionUi.active]);
 
   const setTarget = useCallback(() => {
     setPlacementMode('target');
     if (replay.lastPrice == null) return;
     setDraft((d) => ({ ...d, targetPrice: replay.lastPrice }));
-    setAdjustLevel('target');
-  }, [replay.lastPrice]);
+    setAdjustLevel(positionUi.active ? null : 'target');
+    if (positionUi.active) {
+      setPositionUi((ui) => ({ ...ui, selected: true }));
+    }
+  }, [replay.lastPrice, positionUi.active]);
 
   const placePriceOnChart = useCallback(
-    (price: number) => {
-      if (!placementMode || !replay.replayTimestamp) {
-        // Clic ailleurs : quitter le mode poignée
+    (price: number, time?: number, chartId?: string) => {
+      if (!placementMode) {
         if (adjustLevel) setAdjustLevel(null);
         return;
       }
+      const entryTime = time ?? replay.replayTimestamp;
+      const hostId = chartId ?? panes[0]?.chartId ?? null;
       if (placementMode === 'entry_long' || placementMode === 'entry_short') {
-        setDraft((d) => ({
-          ...d,
-          direction: placementMode === 'entry_long' ? 'LONG' : 'SHORT',
-          entryTimestamp: replay.replayTimestamp,
-          entryPrice: price,
-          exitTimestamp: null,
-          exitPrice: null,
-        }));
-        setPlacementMode(null);
-        setAdjustLevel(null);
+        if (entryTime == null || !hostId) return;
+        const candles =
+          panes.find((p) => p.chartId === hostId)?.candles ?? primaryCandles;
+        applyPlacedPosition(
+          placementMode === 'entry_short' ? 'short' : 'long',
+          price,
+          entryTime,
+          hostId,
+          candles,
+        );
         return;
       }
+      if (!replay.replayTimestamp) return;
       if (placementMode === 'exit') {
         setDraft((d) => {
           if (d.entryTimestamp == null) return d;
           return {
             ...d,
-            exitTimestamp: replay.replayTimestamp,
+            exitTimestamp: time ?? replay.replayTimestamp,
             exitPrice: price,
           };
         });
@@ -311,16 +384,60 @@ const MarketReplayPage: React.FC<MarketReplayPageProps> = ({ detached = false })
       if (placementMode === 'stop') {
         setDraft((d) => ({ ...d, stopPrice: price }));
         setPlacementMode(null);
-        setAdjustLevel('stop');
+        if (positionUi.active) {
+          setPositionUi((ui) => ({ ...ui, selected: true }));
+        } else if (
+          draft.entryPrice != null &&
+          draft.targetPrice != null &&
+          draft.entryTimestamp != null
+        ) {
+          setPositionUi((ui) => ({
+            ...ui,
+            active: true,
+            selected: true,
+            chartId: ui.chartId ?? hostId,
+            endTime: ui.endTime ?? draft.entryTimestamp,
+          }));
+        } else {
+          setAdjustLevel('stop');
+        }
         return;
       }
       if (placementMode === 'target') {
         setDraft((d) => ({ ...d, targetPrice: price }));
         setPlacementMode(null);
-        setAdjustLevel('target');
+        if (positionUi.active) {
+          setPositionUi((ui) => ({ ...ui, selected: true }));
+        } else if (
+          draft.entryPrice != null &&
+          draft.stopPrice != null &&
+          draft.entryTimestamp != null
+        ) {
+          setPositionUi((ui) => ({
+            ...ui,
+            active: true,
+            selected: true,
+            chartId: ui.chartId ?? hostId,
+            endTime: ui.endTime ?? draft.entryTimestamp,
+          }));
+        } else {
+          setAdjustLevel('target');
+        }
       }
     },
-    [placementMode, replay.replayTimestamp, adjustLevel],
+    [
+      placementMode,
+      replay.replayTimestamp,
+      adjustLevel,
+      applyPlacedPosition,
+      positionUi.active,
+      draft.entryPrice,
+      draft.targetPrice,
+      draft.stopPrice,
+      draft.entryTimestamp,
+      panes,
+      primaryCandles,
+    ],
   );
 
   const dragLevelOnChart = useCallback(
@@ -363,7 +480,38 @@ const MarketReplayPage: React.FC<MarketReplayPageProps> = ({ detached = false })
     setDraft(emptyDraft());
     setPlacementMode(null);
     setAdjustLevel(null);
+    setPositionUi(emptyPositionUi());
     adjustDraggedRef.current = false;
+  }, []);
+
+  const handlePositionChange = useCallback((patch: PositionOverlayChange) => {
+    setDraft((d) => ({
+      ...d,
+      entryTimestamp: patch.entryTime ?? d.entryTimestamp,
+      entryPrice: patch.entryPrice ?? d.entryPrice,
+      stopPrice: patch.stopPrice ?? d.stopPrice,
+      targetPrice: patch.targetPrice ?? d.targetPrice,
+    }));
+    if (patch.endTime != null || patch.widthBars != null) {
+      setPositionUi((ui) => ({
+        ...ui,
+        endTime: patch.endTime ?? ui.endTime,
+        widthBars: patch.widthBars ?? ui.widthBars,
+      }));
+    }
+  }, []);
+
+  const handlePositionSelect = useCallback((selected: boolean) => {
+    setPositionUi((ui) => ({ ...ui, selected }));
+  }, []);
+
+  const handleArmPositionSide = useCallback((side: 'LONG' | 'SHORT' | null) => {
+    if (side == null) {
+      setPlacementMode(null);
+      return;
+    }
+    setAdjustLevel(null);
+    setPlacementMode(side === 'LONG' ? 'entry_long' : 'entry_short');
   }, []);
 
   const goToPreviousSession = useCallback(() => {
@@ -422,6 +570,7 @@ const MarketReplayPage: React.FC<MarketReplayPageProps> = ({ detached = false })
       setDraft(emptyDraft());
       setPlacementMode(null);
       setAdjustLevel(null);
+      setPositionUi(emptyPositionUi());
     } catch (err) {
       toast.error(formatBulkError(err, t('errorSend')));
     } finally {
@@ -762,10 +911,28 @@ const MarketReplayPage: React.FC<MarketReplayPageProps> = ({ detached = false })
           placementArmed={placementMode != null}
           logarithmic={logarithmic}
           autoFit={autoFit}
+          playing={replay.playing}
           onLogarithmicChange={handleLogarithmicChange}
           onAutoFitChange={handleAutoFitChange}
           loading={replay.loading}
           emptySession={replay.sessionHasBars === false}
+          positionModel={positionModel}
+          positionChartId={positionUi.chartId}
+          positionSelected={positionUi.selected}
+          onPositionChange={handlePositionChange}
+          onPositionSelect={handlePositionSelect}
+          onPositionClear={clearTrade}
+          armedPositionSide={
+            placementMode === 'entry_long'
+              ? 'LONG'
+              : placementMode === 'entry_short'
+                ? 'SHORT'
+                : null
+          }
+          onArmPositionSide={handleArmPositionSide}
+          onPrimaryPaneRef={(handle) => {
+            primaryPaneRef.current = handle;
+          }}
         />
       </div>
 

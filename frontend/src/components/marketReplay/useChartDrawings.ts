@@ -35,6 +35,11 @@ type DragMode =
       snapshot: Drawing;
     };
 
+export type ChartDrawingsAfterPaint = (
+  ctx: CanvasRenderingContext2D,
+  mapper: CoordMapper,
+) => void;
+
 export interface UseChartDrawingsParams {
   chartRef: MutableRefObject<IChartApi | null>;
   seriesRef: MutableRefObject<ISeriesApi<'Candlestick'> | null>;
@@ -51,6 +56,8 @@ export interface UseChartDrawingsParams {
   /** Désactive le scroll/zoom du chart pendant un drag dessin. */
   setChartInteractionLocked: (locked: boolean) => void;
   enabled?: boolean;
+  /** Appelé après clear + paint des dessins (ex. overlay Position). */
+  onAfterPaint?: ChartDrawingsAfterPaint;
 }
 
 export function useChartDrawings({
@@ -68,6 +75,7 @@ export function useChartDrawings({
   onArmToolChange,
   setChartInteractionLocked,
   enabled = true,
+  onAfterPaint,
 }: UseChartDrawingsParams) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const draftRef = useRef<DrawingDraft | null>(null);
@@ -97,6 +105,8 @@ export function useChartDrawings({
   onArmChangeRef.current = onArmToolChange;
   const setLockedRef = useRef(setChartInteractionLocked);
   setLockedRef.current = setChartInteractionLocked;
+  const onAfterPaintRef = useRef(onAfterPaint);
+  onAfterPaintRef.current = onAfterPaint;
 
   const [styleAnchor, setStyleAnchor] = useState<{ left: number; top: number } | null>(
     null,
@@ -183,6 +193,20 @@ export function useChartDrawings({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, mapper.width, mapper.height);
+    // Les dessins et l’overlay Position restent dans la zone des bougies :
+    // jamais par-dessus l’axe des prix ni l’axe du temps.
+    const chart = chartRef.current;
+    const plotWidth = chart
+      ? Math.max(0, mapper.width - chart.priceScale('right').width())
+      : mapper.width;
+    const plotHeight = chart
+      ? Math.max(0, mapper.height - chart.timeScale().height())
+      : mapper.height;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, plotWidth, plotHeight);
+    ctx.clip();
     paintAllDrawings(
       ctx,
       drawingsRef.current,
@@ -190,6 +214,8 @@ export function useChartDrawings({
       draftRef.current,
       mapper,
     );
+    onAfterPaintRef.current?.(ctx, mapper);
+    ctx.restore();
 
     const sel = selectedRef.current
       ? drawingsRef.current.find((d) => d.id === selectedRef.current)
@@ -207,11 +233,11 @@ export function useChartDrawings({
     } else {
       setStyleAnchor(null);
     }
-  }, [buildMapper]);
+  }, [buildMapper, chartRef]);
 
   useEffect(() => {
     paint();
-  }, [paint, drawings, selectedDrawingId, draftVersion, candles]);
+  }, [paint, drawings, selectedDrawingId, draftVersion, candles, onAfterPaint]);
 
   useEffect(() => {
     clearDraft();

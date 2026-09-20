@@ -27,6 +27,8 @@ import {
 } from '../../utils/replayDrawings';
 import { Tooltip } from '../ui';
 import { ChartHelpTooltip } from '../charts/ChartHelpTooltip';
+import type { PositionOverlayModel } from '../../utils/positionToolPaint';
+import type { PositionOverlayChange } from './usePositionOverlay';
 
 export interface ReplayPaneState {
   chartId: string;
@@ -41,17 +43,30 @@ interface ReplayGridProps {
   levels?: TradeChartLevels;
   preferredLevel?: TradeLevelKey | null;
   adjustLevel?: TradeLevelKey | null;
-  onPriceClick?: (price: number) => void;
+  onPriceClick?: (price: number, time?: number, chartId?: string) => void;
   onLevelDrag?: (key: TradeLevelKey, price: number) => void;
   onAdjustCommit?: () => void;
   /** Un bouton Entry / SL / TP / Sortie est armé : le clic chart ne pose pas d’AVWAP. */
   placementArmed?: boolean;
   logarithmic?: boolean;
   autoFit?: boolean;
+  /** Replay en cours : forcer le suivi des nouvelles bougies même après interaction. */
+  playing?: boolean;
   onLogarithmicChange?: (value: boolean) => void;
   onAutoFitChange?: (value: boolean) => void;
   loading?: boolean;
   emptySession?: boolean;
+  positionModel?: PositionOverlayModel | null;
+  /** Pane hôte de l’overlay Position ; ailleurs l’outil n’est pas rendu. */
+  positionChartId?: string | null;
+  positionSelected?: boolean;
+  onPositionChange?: (patch: PositionOverlayChange) => void;
+  onPositionSelect?: (selected: boolean) => void;
+  onPositionClear?: () => void;
+  armedPositionSide?: 'LONG' | 'SHORT' | null;
+  onArmPositionSide?: (side: 'LONG' | 'SHORT' | null) => void;
+  /** Accès au premier pane pour plage prix visible au placement. */
+  onPrimaryPaneRef?: (handle: ReplayChartPaneHandle | null) => void;
 }
 
 const paneToggleClass = (active: boolean) =>
@@ -78,10 +93,20 @@ export const ReplayGrid: React.FC<ReplayGridProps> = ({
   placementArmed = false,
   logarithmic = false,
   autoFit = false,
+  playing = false,
   onLogarithmicChange,
   onAutoFitChange,
   loading = false,
   emptySession = false,
+  positionModel = null,
+  positionChartId = null,
+  positionSelected = false,
+  onPositionChange,
+  onPositionSelect,
+  onPositionClear,
+  armedPositionSide = null,
+  onArmPositionSide,
+  onPrimaryPaneRef,
 }) => {
   const { t } = useTranslation('marketReplay');
   const paneRefs = useRef<Record<string, ReplayChartPaneHandle | null>>({});
@@ -194,11 +219,13 @@ export const ReplayGrid: React.FC<ReplayGridProps> = ({
         const armedTool = armedToolByPane[pane.chartId] ?? null;
         const selectedDrawingId = selectedDrawingByPane[pane.chartId] ?? null;
         const drawingArmed = armedTool != null;
+        const positionArmed = armedPositionSide != null;
         const waitingAvwap =
           indicators.avwap &&
           indicators.avwapAnchor == null &&
           !placementArmed &&
           !drawingArmed &&
+          !positionArmed &&
           !loading &&
           !emptySession;
         return (
@@ -226,9 +253,12 @@ export const ReplayGrid: React.FC<ReplayGridProps> = ({
                   scope={drawingScope}
                   onScopeChange={(next) => changeScope(next, pane.chartId)}
                   disabled={loading || emptySession}
+                  armedPositionSide={armedPositionSide}
+                  onArmPositionSide={onArmPositionSide}
                   onArmTool={(tool) => {
                     setArmedToolByPane((prev) => ({ ...prev, [pane.chartId]: tool }));
                     if (tool) {
+                      onArmPositionSide?.(null);
                       setSelectedDrawingByPane((prev) => ({
                         ...prev,
                         [pane.chartId]: null,
@@ -285,16 +315,22 @@ export const ReplayGrid: React.FC<ReplayGridProps> = ({
               <ReplayChartPane
                 ref={(instance) => {
                   paneRefs.current[pane.chartId] = instance;
+                  if (paneIndex === 0) onPrimaryPaneRef?.(instance);
                 }}
                 candles={pane.candles}
                 overlays={overlaysByPane[pane.chartId] ?? []}
                 levels={levels}
                 preferredLevel={preferredLevel}
                 adjustLevel={adjustLevel}
-                onPriceClick={drawingArmed ? undefined : onPriceClick}
+                onPriceClick={
+                  drawingArmed
+                    ? undefined
+                    : (price, time) => onPriceClick?.(price, time, pane.chartId)
+                }
                 onCandleClick={
                   !placementArmed &&
                   !drawingArmed &&
+                  !positionArmed &&
                   indicators.avwap &&
                   indicators.avwapAnchor == null
                     ? (time) => {
@@ -308,6 +344,7 @@ export const ReplayGrid: React.FC<ReplayGridProps> = ({
                 onAdjustCommit={onAdjustCommit}
                 logarithmic={logarithmic}
                 autoFit={autoFit}
+                playing={playing}
                 drawings={drawings}
                 selectedDrawingId={selectedDrawingId}
                 armedDrawingTool={armedTool}
@@ -315,8 +352,32 @@ export const ReplayGrid: React.FC<ReplayGridProps> = ({
                 onDrawingsChange={(next) => setDrawings(pane.chartId, next)}
                 onSelectedDrawingIdChange={(id) => {
                   setSelectedDrawingByPane((prev) => ({ ...prev, [pane.chartId]: id }));
-                  if (id) clearAvwapStyleEdit(pane.chartId);
+                  if (id) {
+                    clearAvwapStyleEdit(pane.chartId);
+                    onPositionSelect?.(false);
+                  }
                 }}
+                positionModel={
+                  positionChartId != null && positionChartId === pane.chartId
+                    ? positionModel
+                    : null
+                }
+                positionSelected={
+                  positionChartId != null && positionChartId === pane.chartId
+                    ? positionSelected
+                    : false
+                }
+                onPositionChange={onPositionChange}
+                onPositionSelect={(selected) => {
+                  onPositionSelect?.(selected);
+                  if (selected) {
+                    setSelectedDrawingByPane((prev) => ({
+                      ...prev,
+                      [pane.chartId]: null,
+                    }));
+                  }
+                }}
+                onPositionClear={onPositionClear}
                 onDrawingStyleChange={setDrawingStyle}
                 onArmedDrawingToolChange={(tool) => {
                   setArmedToolByPane((prev) => ({ ...prev, [pane.chartId]: tool }));

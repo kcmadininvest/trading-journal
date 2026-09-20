@@ -6,6 +6,7 @@ import {
   pointsNeeded,
   snapTrendPointWithShift,
   timeToLogicalIndex,
+  logicalIndexToTime,
   logicalIndexToX,
   priceToYExtrapolated,
   translateDrawing,
@@ -137,11 +138,29 @@ describe('replayDrawings', () => {
 
   it('timeToLogicalIndex interpolates across candle times', () => {
     const times = [100, 200, 300];
-    expect(timeToLogicalIndex(times, 50)).toBe(0);
-    expect(timeToLogicalIndex(times, 400)).toBe(2);
     expect(timeToLogicalIndex(times, 150)).toBeCloseTo(0.5);
     expect(timeToLogicalIndex(times, 200)).toBe(1);
+    expect(timeToLogicalIndex(times, 100)).toBe(0);
+    expect(timeToLogicalIndex(times, 300)).toBe(2);
     expect(timeToLogicalIndex([], 100)).toBeNull();
+  });
+
+  it('timeToLogicalIndex extrapolates before first and after last candle', () => {
+    const times = [100, 200, 300];
+    expect(timeToLogicalIndex(times, 50)).toBeCloseTo(-0.5);
+    expect(timeToLogicalIndex(times, 400)).toBeCloseTo(3);
+    expect(timeToLogicalIndex(times, 500)).toBeCloseTo(4);
+    expect(timeToLogicalIndex([100], 200)).toBe(0);
+  });
+
+  it('logicalIndexToTime is inverse of timeToLogicalIndex including extrapolation', () => {
+    const times = [100, 200, 300];
+    expect(logicalIndexToTime(times, 0)).toBe(100);
+    expect(logicalIndexToTime(times, 1)).toBe(200);
+    expect(logicalIndexToTime(times, 0.5)).toBeCloseTo(150);
+    expect(logicalIndexToTime(times, 3)).toBeCloseTo(400);
+    expect(logicalIndexToTime(times, -0.5)).toBeCloseTo(50);
+    expect(logicalIndexToTime([], 1)).toBeNull();
   });
 
   it('logicalIndexToX extrapolates outside visible range', () => {

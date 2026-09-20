@@ -106,14 +106,26 @@ export function snapTimeToCandles(
 
 /**
  * Index logique (éventuellement fractionnaire) pour un timestamp unix.
- * Permet de projeter un point dessiné sur un autre timeframe / hors plage visible
- * quand timeToCoordinate renvoie null.
+ * Extrapolé hors des bornes (avant la 1ʳᵉ / après la dernière bougie) pour que
+ * les dessins et l’outil Position gardent une largeur stable quand le replay
+ * n’a pas encore livré les barres futures.
  */
 export function timeToLogicalIndex(times: number[], time: number): number | null {
   if (times.length === 0) return null;
-  if (time <= times[0]) return 0;
+  if (times.length === 1) return 0;
   const last = times.length - 1;
-  if (time >= times[last]) return last;
+  if (time < times[0]) {
+    const step = times[1] - times[0];
+    if (!(step > 0)) return 0;
+    return (time - times[0]) / step;
+  }
+  if (time > times[last]) {
+    const step = times[last] - times[last - 1];
+    if (!(step > 0)) return last;
+    return last + (time - times[last]) / step;
+  }
+  if (time === times[0]) return 0;
+  if (time === times[last]) return last;
   let lo = 0;
   let hi = last;
   while (lo < hi - 1) {
@@ -125,6 +137,30 @@ export function timeToLogicalIndex(times: number[], time: number): number | null
   const t1 = times[hi];
   if (t1 === t0) return lo;
   return lo + (time - t0) / (t1 - t0);
+}
+
+/**
+ * Inverse de timeToLogicalIndex : timestamp depuis un index logique
+ * (extrapolé avant/après les bougies — utile pour élargir un dessin dans le futur).
+ */
+export function logicalIndexToTime(times: number[], logical: number): number | null {
+  if (times.length === 0 || !Number.isFinite(logical)) return null;
+  if (times.length === 1) return times[0];
+  const last = times.length - 1;
+  if (logical <= 0) {
+    const step = times[1] - times[0];
+    if (!(step > 0)) return times[0];
+    return times[0] + logical * step;
+  }
+  if (logical >= last) {
+    const step = times[last] - times[last - 1];
+    if (!(step > 0)) return times[last];
+    return times[last] + (logical - last) * step;
+  }
+  const i0 = Math.floor(logical);
+  const i1 = i0 + 1;
+  const frac = logical - i0;
+  return times[i0] + frac * (times[i1] - times[i0]);
 }
 
 /**

@@ -17,6 +17,9 @@ interface DrawingToolSelectProps {
   onArmTool: (tool: DrawingTool | null) => void;
   onClearAll: () => void;
   disabled?: boolean;
+  /** Outil Position Long/Short (hors DrawingTool — branché DraftTrade). */
+  armedPositionSide?: 'LONG' | 'SHORT' | null;
+  onArmPositionSide?: (side: 'LONG' | 'SHORT' | null) => void;
 }
 
 export const DrawingToolSelect: React.FC<DrawingToolSelectProps> = ({
@@ -27,6 +30,8 @@ export const DrawingToolSelect: React.FC<DrawingToolSelectProps> = ({
   onArmTool,
   onClearAll,
   disabled = false,
+  armedPositionSide = null,
+  onArmPositionSide,
 }) => {
   const { t } = useTranslation('marketReplay');
   const [open, setOpen] = useState(false);
@@ -108,6 +113,7 @@ export const DrawingToolSelect: React.FC<DrawingToolSelectProps> = ({
         }`}
         onClick={() => {
           onArmTool(active ? null : tool);
+          onArmPositionSide?.(null);
           setOpen(false);
         }}
       >
@@ -161,18 +167,53 @@ export const DrawingToolSelect: React.FC<DrawingToolSelectProps> = ({
         <button
           type="button"
           className={`mb-1 flex w-full items-center rounded px-1.5 py-1.5 text-left font-medium ${
-            armedTool == null
+            armedTool == null && armedPositionSide == null
               ? 'bg-blue-600 text-white'
               : 'text-gray-900 hover:bg-gray-50 dark:text-gray-100 dark:hover:bg-gray-700'
           }`}
           onClick={() => {
-            onArmTool(null);
-            setOpen(false);
-          }}
-        >
-          {t('drawingSelect')}
-        </button>
+          onArmTool(null);
+          onArmPositionSide?.(null);
+          setOpen(false);
+        }}
+      >
+        {t('drawingSelect')}
+      </button>
       </div>
+
+      {onArmPositionSide ? (
+        <>
+          <p className="px-1.5 pt-1 text-[10px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+            {t('drawingSectionPosition')}
+          </p>
+          <div className="pb-1">
+            {(['LONG', 'SHORT'] as const).map((side) => {
+              const active = armedPositionSide === side;
+              return (
+                <button
+                  key={side}
+                  type="button"
+                  className={`flex w-full items-center rounded px-1.5 py-1.5 text-left font-medium ${
+                    active
+                      ? 'bg-blue-600 text-white'
+                      : 'text-gray-900 hover:bg-gray-50 dark:text-gray-100 dark:hover:bg-gray-700'
+                  }`}
+                  onClick={() => {
+                    onArmTool(null);
+                    onArmPositionSide(active ? null : side);
+                    setOpen(false);
+                  }}
+                >
+                  {side === 'LONG'
+                    ? t('drawingTool_longPosition')
+                    : t('drawingTool_shortPosition')}
+                </button>
+              );
+            })}
+          </div>
+          <div className="border-t border-gray-200 dark:border-gray-700" />
+        </>
+      ) : null}
 
       <p className="px-1.5 pt-1 text-[10px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
         {t('drawingSectionLines')}
@@ -215,7 +256,7 @@ export const DrawingToolSelect: React.FC<DrawingToolSelectProps> = ({
           aria-expanded={open}
           aria-label={t('drawingsHint')}
           className={`inline-flex h-6 min-w-[5.5rem] items-center justify-between gap-1.5 rounded border px-2 text-[11px] shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50 ${
-            armedTool
+            armedTool || armedPositionSide
               ? 'border-blue-500 bg-blue-50 text-blue-800 dark:border-blue-400 dark:bg-blue-950/50 dark:text-blue-200'
               : 'border-gray-300 bg-white dark:border-gray-600 dark:bg-gray-700'
           }`}
