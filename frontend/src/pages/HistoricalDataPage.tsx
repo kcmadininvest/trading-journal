@@ -643,7 +643,33 @@ const HistoricalDataPage: React.FC = () => {
     }
   };
 
+  const syncProfileDirty = useMemo(() => {
+    if (!syncSettings) return false;
+    if (syncEnabled !== syncSettings.enabled) return true;
+    if (syncHour !== syncSettings.hour) return true;
+    if (syncMinute !== syncSettings.minute) return true;
+    const saved = syncSettings.targets || [];
+    if (syncTargets.length !== saved.length) return true;
+    return syncTargets.some((tg, i) => {
+      const s = saved[i];
+      return (
+        tg.instrument !== s.instrument ||
+        tg.timeframe !== s.timeframe ||
+        (tg.contract_id || '') !== (s.contract_id || '')
+      );
+    });
+  }, [syncSettings, syncEnabled, syncHour, syncMinute, syncTargets]);
+
+  const applySyncSettingsToForm = useCallback((data: SyncSettings) => {
+    setSyncSettings(data);
+    setSyncEnabled(data.enabled);
+    setSyncHour(data.hour);
+    setSyncMinute(data.minute);
+    setSyncTargets(data.targets || []);
+  }, []);
+
   const handleSaveSync = async () => {
+    if (!syncProfileDirty) return;
     setSyncSaving(true);
     try {
       const updated = await historicalDataService.updateSyncSettings({
@@ -657,8 +683,7 @@ const HistoricalDataPage: React.FC = () => {
           ordering: idx,
         })),
       });
-      setSyncSettings(updated);
-      setSyncTargets(updated.targets || []);
+      applySyncSettingsToForm(updated);
       toast.success(t('syncSaved'));
     } catch (e) {
       toast.error(e instanceof Error ? e.message : t('syncSaveError'));
@@ -682,7 +707,7 @@ const HistoricalDataPage: React.FC = () => {
         })),
       });
       const result = await historicalDataService.runSyncNow();
-      setSyncSettings(result.settings);
+      applySyncSettingsToForm(result.settings);
       await loadSyncRuns();
       goToSyncRunsPage(1);
       if (result.jobs?.length) {
@@ -1111,7 +1136,7 @@ const HistoricalDataPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => void handleSaveSync()}
-                  disabled={syncSaving || bootLoading}
+                  disabled={syncSaving || bootLoading || !syncProfileDirty}
                   className={replayPrimaryButtonClass}
                 >
                   {syncSaving ? t('loading') : t('syncSave')}
