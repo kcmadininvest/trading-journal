@@ -36,7 +36,9 @@ import historicalDataService, {
 const TERMINAL = new Set(['completed', 'failed', 'cancelled']);
 /** Fenêtre par défaut : historique TopStepX sim souvent limité au contrat front récent. */
 const DEFAULT_LOOKBACK_DAYS = 7;
-const SYNC_RUNS_LIMIT = 20;
+const SYNC_RUNS_LIMIT = 50;
+const SYNC_RUNS_PAGE_SIZE_DEFAULT = 5;
+const SYNC_RUNS_PAGE_SIZE_OPTIONS = [5, 10, 25, 50];
 /** Poll tant que l’onglet Sync est ouvert (découvrir un run démarré hors page). */
 const SYNC_STATUS_POLL_MS = 4000;
 const SYNC_IDLE_POLL_MS = 15000;
@@ -77,6 +79,7 @@ const HistoricalDataPage: React.FC = () => {
   const [exporting, setExporting] = useState(false);
   const [syncSettings, setSyncSettings] = useState<SyncSettings | null>(null);
   const [syncRuns, setSyncRuns] = useState<SyncRun[]>([]);
+  const [syncRunsPageSize, setSyncRunsPageSize] = useState(SYNC_RUNS_PAGE_SIZE_DEFAULT);
   const [syncHealth, setSyncHealth] = useState<SyncHealth | null>(null);
   const [expandedRunId, setExpandedRunId] = useState<number | null>(null);
   const [lastRunDetailOpen, setLastRunDetailOpen] = useState(false);
@@ -537,6 +540,50 @@ const HistoricalDataPage: React.FC = () => {
     }
   }, [coveragePage, coverageTotalPages]);
 
+  const {
+    currentPage: syncRunsPage,
+    totalPages: syncRunsTotalPages,
+    paginatedItems: paginatedSyncRuns,
+    totalItems: syncRunsTotalItems,
+    goToPage: goToSyncRunsPage,
+    startIndex: syncRunsStartIndex,
+    endIndex: syncRunsEndIndex,
+  } = usePagination(syncRuns, {
+    itemsPerPage: syncRunsPageSize,
+    initialPage: 1,
+  });
+
+  const goToSyncRunsPageRef = useRef(goToSyncRunsPage);
+  useEffect(() => {
+    goToSyncRunsPageRef.current = goToSyncRunsPage;
+  }, [goToSyncRunsPage]);
+
+  const prevFirstSyncRunIdRef = useRef<number | null>(null);
+  useEffect(() => {
+    const firstId = syncRuns[0]?.id ?? null;
+    if (
+      firstId !== null &&
+      prevFirstSyncRunIdRef.current !== null &&
+      firstId !== prevFirstSyncRunIdRef.current
+    ) {
+      goToSyncRunsPageRef.current(1);
+    }
+    prevFirstSyncRunIdRef.current = firstId;
+  }, [syncRuns]);
+
+  useEffect(() => {
+    if (syncRunsTotalPages > 0 && syncRunsPage > syncRunsTotalPages) {
+      goToSyncRunsPageRef.current(syncRunsTotalPages);
+    }
+  }, [syncRunsPage, syncRunsTotalPages]);
+
+  const handleSyncRunsPageSizeChange = (size: number) => {
+    const sanitized =
+      Number.isFinite(size) && size > 0 ? size : SYNC_RUNS_PAGE_SIZE_DEFAULT;
+    setSyncRunsPageSize(sanitized);
+    goToSyncRunsPage(1);
+  };
+
   const handleCoveragePageSizeChange = async (size: number) => {
     const sanitized = Number.isFinite(size) && size > 0 ? size : DEFAULT_ITEMS_PER_PAGE;
     setCoveragePageSize(sanitized);
@@ -636,7 +683,8 @@ const HistoricalDataPage: React.FC = () => {
       });
       const result = await historicalDataService.runSyncNow();
       setSyncSettings(result.settings);
-      void loadSyncRuns();
+      await loadSyncRuns();
+      goToSyncRunsPage(1);
       if (result.jobs?.length) {
         setBatchJobs(result.jobs);
         toast.success(t('syncRunStarted'));
@@ -1207,76 +1255,94 @@ const HistoricalDataPage: React.FC = () => {
                 {syncRuns.length === 0 ? (
                   <p className="text-sm text-gray-500 dark:text-gray-400">{t('syncRunsEmpty')}</p>
                 ) : (
-                  <ul className="divide-y divide-gray-200 overflow-hidden rounded-lg border border-gray-200 dark:divide-gray-700 dark:border-gray-700">
-                    {syncRuns.map((run) => {
-                      const summary = summarizeRun(run);
-                      const expanded = expandedRunId === run.id;
-                      const hasDetail = summary.groups.length > 0 || Boolean(run.error);
-                      return (
-                        <li key={run.id} className="text-sm">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setExpandedRunId((prev) => (prev === run.id ? null : run.id))
-                            }
-                            disabled={!hasDetail}
-                            className="flex w-full flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2.5 text-left transition-colors hover:bg-gray-50 disabled:cursor-default disabled:hover:bg-transparent dark:hover:bg-gray-800/40"
-                          >
-                            <span
-                              className={`inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                                syncStatusVisual(run.status).className
-                              }`}
+                  <>
+                    <ul className="divide-y divide-gray-200 overflow-hidden rounded-lg border border-gray-200 dark:divide-gray-700 dark:border-gray-700">
+                      {paginatedSyncRuns.map((run) => {
+                        const summary = summarizeRun(run);
+                        const expanded = expandedRunId === run.id;
+                        const hasDetail = summary.groups.length > 0 || Boolean(run.error);
+                        return (
+                          <li key={run.id} className="text-sm">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setExpandedRunId((prev) => (prev === run.id ? null : run.id))
+                              }
+                              disabled={!hasDetail}
+                              className="flex w-full flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2.5 text-left transition-colors hover:bg-gray-50 disabled:cursor-default disabled:hover:bg-transparent dark:hover:bg-gray-800/40"
                             >
-                              {syncStatusVisual(run.status).label}
-                            </span>
-                            <span className="text-xs text-gray-700 dark:text-gray-200">
-                              {fmtDateTime(run.started_at)}
-                            </span>
-                            <span className="text-xs text-gray-500 dark:text-gray-400">
-                              {run.trigger === 'manual'
-                                ? t('syncRunsTriggerManual')
-                                : t('syncRunsTriggerScheduled')}
-                            </span>
-                            <span className="text-xs text-gray-500 dark:text-gray-400">
-                              {fmtDuration(run.started_at, run.finished_at)}
-                            </span>
-                            <span className="text-xs text-gray-600 dark:text-gray-300">
-                              {t('syncRunsBars')}: {fmtNum(run.bars_fetched_total)}
-                            </span>
-                            {summary.pending > 0 ? (
-                              <span className="text-xs font-medium text-blue-700 dark:text-blue-400">
-                                {t('syncRunsPendingCount', { count: summary.pending })}
-                              </span>
-                            ) : null}
-                            {summary.failed > 0 ? (
-                              <span className="text-xs font-medium text-rose-700 dark:text-rose-400">
-                                {t('syncRunsFailedCount', { count: summary.failed })}
-                              </span>
-                            ) : null}
-                            {hasDetail ? (
-                              <svg
-                                className={`ml-auto h-4 w-4 shrink-0 text-gray-400 transition-transform ${
-                                  expanded ? 'rotate-180' : ''
+                              <span
+                                className={`inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                                  syncStatusVisual(run.status).className
                                 }`}
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                                strokeWidth={2}
-                                aria-hidden
                               >
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                              </svg>
+                                {syncStatusVisual(run.status).label}
+                              </span>
+                              <span className="text-xs text-gray-700 dark:text-gray-200">
+                                {fmtDateTime(run.started_at)}
+                              </span>
+                              <span className="text-xs text-gray-500 dark:text-gray-400">
+                                {run.trigger === 'manual'
+                                  ? t('syncRunsTriggerManual')
+                                  : t('syncRunsTriggerScheduled')}
+                              </span>
+                              <span className="text-xs text-gray-500 dark:text-gray-400">
+                                {fmtDuration(run.started_at, run.finished_at)}
+                              </span>
+                              <span className="text-xs text-gray-600 dark:text-gray-300">
+                                {t('syncRunsBars')}: {fmtNum(run.bars_fetched_total)}
+                              </span>
+                              {summary.pending > 0 ? (
+                                <span className="text-xs font-medium text-blue-700 dark:text-blue-400">
+                                  {t('syncRunsPendingCount', { count: summary.pending })}
+                                </span>
+                              ) : null}
+                              {summary.failed > 0 ? (
+                                <span className="text-xs font-medium text-rose-700 dark:text-rose-400">
+                                  {t('syncRunsFailedCount', { count: summary.failed })}
+                                </span>
+                              ) : null}
+                              {hasDetail ? (
+                                <svg
+                                  className={`ml-auto h-4 w-4 shrink-0 text-gray-400 transition-transform ${
+                                    expanded ? 'rotate-180' : ''
+                                  }`}
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                  strokeWidth={2}
+                                  aria-hidden
+                                >
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                                </svg>
+                              ) : null}
+                            </button>
+                            {expanded ? (
+                              <div className="border-t border-gray-200 bg-gray-50 px-3 py-2 dark:border-gray-700 dark:bg-gray-800/40">
+                                {renderRunDetail(run)}
+                              </div>
                             ) : null}
-                          </button>
-                          {expanded ? (
-                            <div className="border-t border-gray-200 bg-gray-50 px-3 py-2 dark:border-gray-700 dark:bg-gray-800/40">
-                              {renderRunDetail(run)}
-                            </div>
-                          ) : null}
-                        </li>
-                      );
-                    })}
-                  </ul>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                    {syncRunsTotalItems > SYNC_RUNS_PAGE_SIZE_DEFAULT ? (
+                      <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow dark:border-gray-700 dark:bg-gray-800">
+                        <PaginationControls
+                          currentPage={syncRunsPage}
+                          totalPages={syncRunsTotalPages}
+                          totalItems={syncRunsTotalItems}
+                          itemsPerPage={syncRunsPageSize}
+                          startIndex={syncRunsStartIndex}
+                          endIndex={syncRunsEndIndex}
+                          onPageChange={goToSyncRunsPage}
+                          onPageSizeChange={handleSyncRunsPageSizeChange}
+                          pageSizeOptions={SYNC_RUNS_PAGE_SIZE_OPTIONS}
+                          className="border-t-0"
+                        />
+                      </div>
+                    ) : null}
+                  </>
                 )}
               </div>
             </div>
