@@ -20,7 +20,7 @@ import {
   type UTCTimestamp,
 } from 'lightweight-charts';
 import { useTranslation } from 'react-i18next';
-import type { VisibleCandle } from '../../utils/replayEngine';
+import { followAppendedBarsRange, type VisibleCandle } from '../../utils/replayEngine';
 import type { IndicatorOverlay } from '../../utils/replayIndicators';
 import { useTheme } from '../../hooks/useTheme';
 import { usePreferences } from '../../hooks/usePreferences';
@@ -640,16 +640,14 @@ export const ReplayChartPane = forwardRef<ReplayChartPaneHandle, ReplayChartPane
     el.addEventListener('dblclick', onDblClick);
 
     const onRangeChange = () => {
-      if (programmaticRangeRef.current || dragKeyRef.current) return;
-      // Play / lock interaction : ne pas figer le suivi des nouvelles bougies.
-      if (playingRef.current || drawingLockRef.current) {
-        updateHandlePosition();
-        drawingHandlersRef.current.paintDrawings();
-        return;
-      }
-      userAdjustedViewRef.current = true;
+      // Toujours repeindre : le canvas overlay (dessins, Position) doit suivre
+      // le chart même lors d’un décalage programmatique (nouvelle bougie).
       updateHandlePosition();
       drawingHandlersRef.current.paintDrawings();
+      if (programmaticRangeRef.current || dragKeyRef.current) return;
+      // Play / lock interaction : ne pas figer le suivi des nouvelles bougies.
+      if (playingRef.current || drawingLockRef.current) return;
+      userAdjustedViewRef.current = true;
     };
     chart.timeScale().subscribeVisibleLogicalRangeChange(onRangeChange);
 
@@ -854,21 +852,9 @@ export const ReplayChartPane = forwardRef<ReplayChartPaneHandle, ReplayChartPane
     chartRef.current.applyOptions(buildChartTimeLocalization(chartTimezone, chartLanguage));
   }, [chartTimezone, chartLanguage]);
 
-  /** Au Play : libérer le lock chart et recentrer sur la fin. */
   useEffect(() => {
-    if (!playing) return;
-    if (drawingLockRef.current) {
-      setChartInteractionLocked(false);
-    }
-    userAdjustedViewRef.current = false;
-    const chart = chartRef.current;
-    if (!chart || lastCandleCountRef.current <= 0) return;
-    const width = containerRef.current?.clientWidth || 400;
-    programmaticRangeRef.current = true;
-    applyDefaultVisibleRange(chart, lastCandleCountRef.current, width);
-    requestAnimationFrame(() => {
-      programmaticRangeRef.current = false;
-    });
+    if (!playing || !drawingLockRef.current) return;
+    setChartInteractionLocked(false);
   }, [playing, setChartInteractionLocked]);
 
   useEffect(() => {
@@ -919,53 +905,63 @@ export const ReplayChartPane = forwardRef<ReplayChartPaneHandle, ReplayChartPane
       close: c.close,
     }));
     const prevCount = lastCandleCountRef.current;
+    const chart = chartRef.current;
+    // Plage lue AVANT setData : LWC peut la déplacer lui-même à l’ajout d’une barre.
+    const rangeBefore = chart.timeScale().getVisibleLogicalRange();
     seriesRef.current.setData(data);
     lastCandleCountRef.current = data.length;
 
-    if (data.length === 0) {
+    const repaint = () => {
       updateHandlePosition();
+      drawingHandlersRef.current.paintDrawings();
+    };
+    const finishProgrammatic = () => {
+      requestAnimationFrame(() => {
+        programmaticRangeRef.current = false;
+        repaint();
+      });
+    };
+
+    if (data.length === 0) {
+      repaint();
       return;
     }
 
     if (autoFit) {
       programmaticRangeRef.current = true;
-      chartRef.current.timeScale().fitContent();
-      requestAnimationFrame(() => {
-        programmaticRangeRef.current = false;
-        updateHandlePosition();
-      });
+      chart.timeScale().fitContent();
+      finishProgrammatic();
       return;
     }
 
     if (prevCount === 0) {
       const width = containerRef.current?.clientWidth || 400;
       programmaticRangeRef.current = true;
-      applyDefaultVisibleRange(chartRef.current, data.length, width);
+      applyDefaultVisibleRange(chart, data.length, width);
       userAdjustedViewRef.current = false;
-      requestAnimationFrame(() => {
-        programmaticRangeRef.current = false;
-        updateHandlePosition();
-      });
+      finishProgrammatic();
       return;
     }
-    const shouldFollow =
-      data.length > prevCount && (playing || !userAdjustedViewRef.current);
-    if (shouldFollow) {
-      // Forcer la fenêtre sur la fin : scrollToRealTime est parfois no-op
-      // après un lock d’interaction / un pan lié à l’outil Position.
+
+    // Nouvelle(s) bougie(s) : translater la vue courante (zoom et position
+    // relative conservés) au lieu de réappliquer la plage par défaut, afin que
+    // l’outil Position et les dessins restent alignés sur les mêmes bougies.
+    const followRange = followAppendedBarsRange(
+      rangeBefore ? { from: rangeBefore.from, to: rangeBefore.to } : null,
+      prevCount,
+      data.length,
+    );
+    if (followRange) {
       if (drawingLockRef.current) {
         setChartInteractionLocked(false);
       }
-      const width = containerRef.current?.clientWidth || 400;
       programmaticRangeRef.current = true;
-      applyDefaultVisibleRange(chartRef.current, data.length, width);
-      userAdjustedViewRef.current = false;
-      requestAnimationFrame(() => {
-        programmaticRangeRef.current = false;
-      });
+      chart.timeScale().setVisibleLogicalRange(followRange);
+      finishProgrammatic();
+      return;
     }
-    updateHandlePosition();
-  }, [candles, autoFit, playing, updateHandlePosition, setChartInteractionLocked]);
+    repaint();
+  }, [candles, autoFit, updateHandlePosition, setChartInteractionLocked]);
 
   useEffect(() => {
     const chart = chartRef.current;

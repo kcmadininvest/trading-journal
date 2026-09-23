@@ -4,6 +4,7 @@ import {
   bucketOpenUnix,
   getVisibleCandles,
   pickReplayBaseTimeframe,
+  followAppendedBarsRange,
   type ReplayChartConfiguration,
 } from './replayEngine';
 import type { AvailableTimeframe, ReplayCandle } from '../services/marketReplay';
@@ -17,6 +18,23 @@ const tf = (value: string, durationSeconds: number): AvailableTimeframe => ({
 function candle(iso: string, o: number, h: number, l: number, c: number, v = 1): ReplayCandle {
   return { t: iso, o, h, l, c, v };
 }
+
+describe('followAppendedBarsRange', () => {
+  it('does not move the viewport when no candle was appended', () => {
+    expect(followAppendedBarsRange({ from: 10, to: 60 }, 50, 50)).toBeNull();
+  });
+
+  it('shifts the range by the appended count and keeps its width (zoom)', () => {
+    expect(followAppendedBarsRange({ from: 10.5, to: 53.5 }, 50, 51)).toEqual({
+      from: 11.5,
+      to: 54.5,
+    });
+  });
+
+  it('does not follow when the last candle was scrolled out of view', () => {
+    expect(followAppendedBarsRange({ from: 0, to: 20 }, 50, 51)).toBeNull();
+  });
+});
 
 describe('pickReplayBaseTimeframe', () => {
   it('picks the finest duration among charts', () => {

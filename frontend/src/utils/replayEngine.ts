@@ -21,6 +21,25 @@ export interface VisibleCandle {
   volume: number;
 }
 
+export type LogicalRange = { from: number; to: number };
+
+/**
+ * Plage visible à appliquer quand `appended` bougies sont ajoutées : translation
+ * de la plage courante (zoom conservé), uniquement si la dernière bougie était
+ * visible avant l’ajout. Retourne null s’il ne faut pas bouger la vue.
+ */
+export function followAppendedBarsRange(
+  current: LogicalRange | null,
+  previousCount: number,
+  nextCount: number,
+): LogicalRange | null {
+  const appended = nextCount - previousCount;
+  if (!current || appended <= 0 || previousCount <= 0) return null;
+  const lastVisible = previousCount - 1 <= current.to + 0.5;
+  if (!lastVisible) return null;
+  return { from: current.from + appended, to: current.to + appended };
+}
+
 export function pickReplayBaseTimeframe(
   charts: ReplayChartConfiguration[],
 ): AvailableTimeframe | null {

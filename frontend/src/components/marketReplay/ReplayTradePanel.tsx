@@ -2,6 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatNumber } from '../../utils/numberFormat';
 import { usePreferences } from '../../hooks/usePreferences';
+import { computePositionMetrics, resolveContractSpecs } from '../../utils/positionToolMetrics';
 import {
   replayGroupInnerButtonClass,
   replayGroupOuterHeightClass,
@@ -38,6 +39,8 @@ interface ReplayTradePanelProps {
   saving?: boolean;
   placementMode: TradePlacementMode;
   canPlace?: boolean;
+  instrument?: string;
+  quantity?: number;
   /** Boutons compacts pour la barre d’outils (à côté des filtres). */
   compact?: boolean;
   onMarkEntry: (direction: 'LONG' | 'SHORT') => void;
@@ -100,6 +103,8 @@ export const ReplayTradePanel: React.FC<ReplayTradePanelProps> = ({
   saving = false,
   placementMode,
   canPlace = false,
+  instrument,
+  quantity = 1,
   compact = false,
   onMarkEntry,
   onMarkExit,
@@ -112,6 +117,30 @@ export const ReplayTradePanel: React.FC<ReplayTradePanelProps> = ({
   const { preferences } = usePreferences();
   const fmt = (n: number | null) =>
     n == null ? '—' : formatNumber(n, 4, preferences.number_format);
+  const metrics =
+    draft.entryPrice != null && draft.stopPrice != null && draft.targetPrice != null
+      ? computePositionMetrics(
+          {
+            entryPrice: draft.entryPrice,
+            stopPrice: draft.stopPrice,
+            targetPrice: draft.targetPrice,
+            side: draft.direction === 'LONG' ? 'long' : 'short',
+          },
+          quantity,
+          resolveContractSpecs(instrument),
+        )
+      : null;
+  const realizedR =
+    draft.entryPrice != null && draft.stopPrice != null && draft.exitPrice != null && draft.stopPrice !== draft.entryPrice
+      ? ((draft.direction === 'LONG' ? draft.exitPrice - draft.entryPrice : draft.entryPrice - draft.exitPrice) /
+          Math.abs(draft.entryPrice - draft.stopPrice))
+      : null;
+  const hasDraft = draft.entryTimestamp != null || draft.stopPrice != null || draft.targetPrice != null;
+  const sendDisabledReason = !campaignId
+    ? t('sendDisabledCampaign')
+    : draft.entryTimestamp == null
+      ? t('sendDisabledEntry')
+      : undefined;
 
   const legacyBtn =
     'px-2.5 py-1.5 text-xs sm:text-sm rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 transition-colors';
@@ -172,6 +201,7 @@ export const ReplayTradePanel: React.FC<ReplayTradePanelProps> = ({
           type="button"
           className={`${replaySecondaryButtonClass} ${replayGroupInnerButtonClass} !bg-transparent text-gray-600 dark:text-gray-400 hover:!bg-white/90 dark:hover:!bg-gray-700/80 hover:!text-gray-900 dark:hover:!text-gray-100`}
           onClick={onClear}
+          disabled={!hasDraft}
         >
           {t('clearTrade')}
         </button>
@@ -182,9 +212,17 @@ export const ReplayTradePanel: React.FC<ReplayTradePanelProps> = ({
         className={`${replayPrimaryButtonClass} ${replayGroupOuterHeightClass} !px-4 !text-xs !shadow-none`}
         onClick={onSendToJournal}
         disabled={!campaignId || draft.entryTimestamp == null || saving}
+        title={sendDisabledReason}
       >
         {saving ? t('sending') : t('sendToJournal')}
       </button>
+      {metrics ? (
+        <div className="flex items-center gap-2 text-[11px] tabular-nums text-gray-600 dark:text-gray-300">
+          <span>{t('risk')}: {formatNumber(metrics.stopDistance, 2, preferences.number_format)}</span>
+          <span>R:R {metrics.riskReward == null ? '—' : `1:${formatNumber(metrics.riskReward, 2, preferences.number_format)}`}</span>
+          {realizedR != null ? <span>{t('realizedR')}: {formatNumber(realizedR, 2, preferences.number_format)}R</span> : null}
+        </div>
+      ) : null}
     </div>
   );
 
@@ -231,7 +269,7 @@ export const ReplayTradePanel: React.FC<ReplayTradePanelProps> = ({
       >
         {t('setTarget')}
       </button>
-      <button type="button" className={legacyBtn} onClick={onClear}>
+      <button type="button" className={legacyBtn} onClick={onClear} disabled={!hasDraft}>
         {t('clearTrade')}
       </button>
       <button
@@ -239,6 +277,7 @@ export const ReplayTradePanel: React.FC<ReplayTradePanelProps> = ({
         className={`${legacyBtn} !bg-blue-600 dark:!bg-blue-500 !text-white !border-blue-600 dark:!border-blue-500 hover:!bg-blue-700 dark:hover:!bg-blue-600`}
         onClick={onSendToJournal}
         disabled={!campaignId || draft.entryTimestamp == null || saving}
+        title={sendDisabledReason}
       >
         {saving ? t('sending') : t('sendToJournal')}
       </button>

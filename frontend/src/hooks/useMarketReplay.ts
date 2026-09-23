@@ -18,6 +18,9 @@ const CHART_IDS = ['a', 'b', 'c', 'd'] as const;
 export interface UseMarketReplayParams {
   instrument: string | null;
   sessionDate: string | null;
+  disciplined?: boolean;
+  restoredTimestamp?: number;
+  restoredPaneTfs?: (string | null)[];
   /** Aligne la date de séance sur la dernière disponible (ex. pas de bougies « aujourd’hui »). */
   onSuggestSessionDate?: (sessionDate: string) => void;
 }
@@ -52,6 +55,9 @@ async function ensureSeries(
 export function useMarketReplay({
   instrument,
   sessionDate,
+  disciplined = false,
+  restoredTimestamp,
+  restoredPaneTfs,
   onSuggestSessionDate,
 }: UseMarketReplayParams) {
   const [availableTimeframes, setAvailableTimeframes] = useState<AvailableTimeframe[]>([]);
@@ -61,6 +67,7 @@ export function useMarketReplay({
   const [loadingBars, setLoadingBars] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [replayTimestamp, setReplayTimestamp] = useState(0);
+  const [furthestTimestamp, setFurthestTimestamp] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
   const [range, setRange] = useState<{ start: number; end: number } | null>(null);
@@ -111,7 +118,10 @@ export function useMarketReplay({
         endTimestamp: endTs,
         charts,
       });
-      engine.subscribe((ts) => setReplayTimestamp(ts));
+      engine.subscribe((ts) => {
+        setReplayTimestamp(ts);
+        setFurthestTimestamp((current) => Math.max(current, ts));
+      });
       if (keepTs != null) engine.setTimestamp(keepTs);
       engineRef.current = engine;
       setReplayTimestamp(engine.replayTimestamp);
@@ -129,6 +139,7 @@ export function useMarketReplay({
     loadedWindowRef.current = null;
     setRange(null);
     setReplayTimestamp(0);
+    setFurthestTimestamp(0);
     setLatestSessionDate(null);
     setSessionHasBars(null);
     setAvailableSessions([]);
@@ -147,7 +158,9 @@ export function useMarketReplay({
         if (cancelled) return;
         setAvailableTimeframes(meta.timeframes);
         setLatestSessionDate(meta.latestSessionDate);
-        setPaneTfs(defaultTimeframePicks(meta.timeframes));
+        const valid = new Set(meta.timeframes.map((tf) => tf.value));
+        const restored = restoredPaneTfs?.slice(0, 4).map((tf) => (tf && valid.has(tf) ? tf : null));
+        setPaneTfs(restored?.some(Boolean) ? restored : defaultTimeframePicks(meta.timeframes));
 
         const sorted = [...meta.timeframes].sort(
           (a, b) => a.durationSeconds - b.durationSeconds,
@@ -196,7 +209,7 @@ export function useMarketReplay({
     return () => {
       cancelled = true;
     };
-  }, [instrument]);
+  }, [instrument, restoredPaneTfs]);
 
   const chartConfigKey = paneTfs.join('|');
 
@@ -232,7 +245,11 @@ export function useMarketReplay({
         setRange({ start: startTs, end: endTs });
         // Ne conserver le curseur que si on reste sur la même séance (ex. changement de TF).
         // Sinon repartir du début — sinon un ancien timestamp clampé à endTs révèle toute la journée.
-        const keep = sameWindow ? engineRef.current?.replayTimestamp : undefined;
+        const restored =
+          !sameWindow && restoredTimestamp != null && restoredTimestamp >= startTs && restoredTimestamp <= endTs
+            ? restoredTimestamp
+            : undefined;
+        const keep = sameWindow ? engineRef.current?.replayTimestamp : restored;
         rebuildEngine(instrument, startTs, endTs, chartsSnapshot, keep);
         setPlaying(false);
       })
@@ -305,14 +322,25 @@ export function useMarketReplay({
   }, [speed]);
 
   const stepForward = useCallback(() => engineRef.current?.stepForward(), []);
-  const stepBackward = useCallback(() => engineRef.current?.stepBackward(), []);
-  const goStart = useCallback(() => engineRef.current?.goToStart(), []);
-  const goEnd = useCallback(() => engineRef.current?.goToEnd(), []);
+  const stepBackward = useCallback(() => {
+    if (!disciplined) engineRef.current?.stepBackward();
+  }, [disciplined]);
+  const goStart = useCallback(() => {
+    if (!disciplined) engineRef.current?.goToStart();
+  }, [disciplined]);
+  const goEnd = useCallback(() => {
+    if (!disciplined) engineRef.current?.goToEnd();
+  }, [disciplined]);
   const reset = useCallback(() => {
+    if (disciplined) return;
     engineRef.current?.reset();
     setPlaying(false);
-  }, []);
-  const seek = useCallback((ts: number) => engineRef.current?.setTimestamp(ts), []);
+  }, [disciplined]);
+  const seek = useCallback((ts: number) => {
+    if (disciplined && ts < replayTimestamp) return;
+    if (disciplined && furthestTimestamp > 0 && ts > furthestTimestamp) return;
+    engineRef.current?.setTimestamp(ts);
+  }, [disciplined, replayTimestamp, furthestTimestamp]);
   const changeSpeed = useCallback((s: number) => {
     setSpeed(s);
     engineRef.current?.setSpeed(s);
@@ -336,6 +364,7 @@ export function useMarketReplay({
     loading: loadingTfs || loadingBars,
     error,
     replayTimestamp,
+    furthestTimestamp,
     playing,
     speed,
     range,

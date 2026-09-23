@@ -34,6 +34,14 @@ import {
 } from '../utils/positionToolState';
 import type { PositionOverlayChange } from '../components/marketReplay/usePositionOverlay';
 import { visiblePriceRangeFromBars } from '../utils/positionToolSizing';
+import { useMarketReplayKeyboard } from '../hooks/useMarketReplayKeyboard';
+import {
+  loadMarketReplayWorkspace,
+  saveMarketReplayWorkspace,
+  type ReplayGridWorkspace,
+  type ReplayLayout,
+  type ReplayMode,
+} from '../utils/marketReplayWorkspace';
 
 type InitParams = { campaign?: number; date?: string; instrument?: string };
 
@@ -131,23 +139,35 @@ export type MarketReplayPageProps = {
 const MarketReplayPage: React.FC<MarketReplayPageProps> = ({ detached = false }) => {
   const { t } = useTranslation('marketReplay');
   const { preferences, mergePreferences } = usePreferences();
-  const init = parseInitParams();
+  const init = useMemo(() => parseInitParams(), []);
+  const restoredWorkspace = useMemo(() => loadMarketReplayWorkspace(), []);
+  const canRestore = Boolean(
+    restoredWorkspace &&
+    (!init.instrument || init.instrument === restoredWorkspace.instrument) &&
+    (!init.date || init.date === restoredWorkspace.sessionDate),
+  );
+  const restored = canRestore ? restoredWorkspace : null;
 
-  const [instrument, setInstrument] = useState(init.instrument || '');
+  const [instrument, setInstrument] = useState(init.instrument || restored?.instrument || '');
   const [sessionDate, setSessionDate] = useState<string>(
-    init.date || getTodayDateInTimezone(preferences.timezone),
+    init.date || restored?.sessionDate || getTodayDateInTimezone(preferences.timezone),
   );
   const [campaign, setCampaign] = useState<BacktestCampaign | null>(null);
-  const [draft, setDraft] = useState<DraftTrade>(emptyDraft);
+  const [draft, setDraft] = useState<DraftTrade>(restored?.draft || emptyDraft);
   const [placementMode, setPlacementMode] = useState<TradePlacementMode>(null);
   /** Poignée temporaire après premier placement SL / TP / Sortie. */
   const [adjustLevel, setAdjustLevel] = useState<TradeLevelKey | null>(null);
-  const [positionUi, setPositionUi] = useState<PositionUiState>(emptyPositionUi);
+  const [positionUi, setPositionUi] = useState<PositionUiState>(restored?.positionUi || emptyPositionUi());
+  const [replayMode, setReplayMode] = useState<ReplayMode>(restored?.mode || 'disciplined');
+  const [layout, setLayout] = useState<ReplayLayout>(restored?.layout || 4);
+  const [gridWorkspace, setGridWorkspace] = useState<ReplayGridWorkspace | undefined>(restored?.grid);
   const primaryPaneRef = useRef<ReplayChartPaneHandle | null>(null);
   const [saving, setSaving] = useState(false);
   const [logarithmic, setLogarithmic] = useState(!!preferences.market_replay_logarithmic);
   const [autoFit, setAutoFit] = useState(!!preferences.market_replay_autofit);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [showSendConfirm, setShowSendConfirm] = useState(false);
   const draftRef = useRef(draft);
   draftRef.current = draft;
   const adjustDraggedRef = useRef(false);
@@ -198,22 +218,27 @@ const MarketReplayPage: React.FC<MarketReplayPageProps> = ({ detached = false })
   const replay = useMarketReplay({
     instrument: instrument.trim() || null,
     sessionDate,
+    disciplined: replayMode === 'disciplined',
+    restoredTimestamp: restored?.replayTimestamp,
+    restoredPaneTfs: restored?.paneTfs,
     onSuggestSessionDate: useCallback((nextDate: string) => {
       setSessionDate(nextDate);
     }, []),
   });
 
+  const changeReplaySpeed = replay.changeSpeed;
   const availableSessions = replay.availableSessions;
   const canGoPrevSession = canNavigateSessionDate(sessionDate, availableSessions, -1);
   const canGoNextSession = canNavigateSessionDate(sessionDate, availableSessions, 1);
 
   useEffect(() => {
-    if (!init.campaign) return;
+    const campaignId = init.campaign ?? restored?.campaignId;
+    if (!campaignId) return;
     backtestJournalService
-      .getCampaign(init.campaign)
+      .getCampaign(campaignId)
       .then((c) => setCampaign(c))
       .catch(() => toast.error(t('errorCampaign')));
-  }, [init.campaign, t]);
+  }, [init.campaign, restored?.campaignId, t]);
 
   const panes = useMemo(
     () =>
@@ -224,6 +249,32 @@ const MarketReplayPage: React.FC<MarketReplayPageProps> = ({ detached = false })
       })),
     [replay.chartIds, replay.paneTfs, replay.visibleByChart],
   );
+
+  useEffect(() => {
+    if (!restored?.speed) return;
+    changeReplaySpeed(restored.speed);
+  }, [restored?.speed, changeReplaySpeed]);
+
+  useEffect(() => {
+    if (!instrument.trim() || !sessionDate) return;
+    const timer = window.setTimeout(() => {
+      saveMarketReplayWorkspace({
+        version: 1,
+        instrument: instrument.trim(),
+        sessionDate,
+        campaignId: campaign?.id ?? restored?.campaignId ?? null,
+        replayTimestamp: replay.replayTimestamp,
+        speed: replay.speed,
+        paneTfs: replay.paneTfs,
+        mode: replayMode,
+        layout,
+        draft,
+        positionUi,
+        grid: gridWorkspace,
+      });
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, [instrument, sessionDate, campaign?.id, restored?.campaignId, replay.replayTimestamp, replay.speed, replay.paneTfs, replayMode, layout, draft, positionUi, gridWorkspace]);
 
   const chartLevels = useMemo(
     () => ({
@@ -484,6 +535,14 @@ const MarketReplayPage: React.FC<MarketReplayPageProps> = ({ detached = false })
     adjustDraggedRef.current = false;
   }, []);
 
+  const requestClearTrade = useCallback(() => {
+    if (draftRef.current.entryTimestamp == null) {
+      clearTrade();
+      return;
+    }
+    setShowClearConfirm(true);
+  }, [clearTrade]);
+
   const handlePositionChange = useCallback((patch: PositionOverlayChange) => {
     setDraft((d) => ({
       ...d,
@@ -578,24 +637,17 @@ const MarketReplayPage: React.FC<MarketReplayPageProps> = ({ detached = false })
     }
   }, [campaign, draft, t]);
 
+  const requestSendToJournal = useCallback(() => {
+    if (!campaign || draft.entryTimestamp == null) return;
+    setShowSendConfirm(true);
+  }, [campaign, draft.entryTimestamp]);
+
   const canPlace = Boolean(replay.replayTimestamp);
   const noTimeframes =
     Boolean(instrument.trim()) &&
     !replay.loading &&
     replay.availableTimeframes.length === 0 &&
     !replay.error;
-  const hasReplaySession = Boolean(instrument.trim() && replay.range);
-
-  useEffect(() => {
-    if (!hasReplaySession) return undefined;
-    const onBeforeUnload = (event: BeforeUnloadEvent) => {
-      event.preventDefault();
-      event.returnValue = '';
-    };
-    window.addEventListener('beforeunload', onBeforeUnload);
-    return () => window.removeEventListener('beforeunload', onBeforeUnload);
-  }, [hasReplaySession]);
-
   const goToJournal = useCallback(() => {
     if (!campaign) return;
     const params = new URLSearchParams({
@@ -613,12 +665,8 @@ const MarketReplayPage: React.FC<MarketReplayPageProps> = ({ detached = false })
 
   const requestLeaveToJournal = useCallback(() => {
     if (!campaign) return;
-    if (hasReplaySession) {
-      setShowLeaveConfirm(true);
-      return;
-    }
     goToJournal();
-  }, [campaign, hasReplaySession, goToJournal]);
+  }, [campaign, goToJournal]);
 
   const handleDetach = useCallback(() => {
     const params = new URLSearchParams();
@@ -640,6 +688,43 @@ const MarketReplayPage: React.FC<MarketReplayPageProps> = ({ detached = false })
     );
   }, [instrument, sessionDate, campaign?.id]);
 
+  useMarketReplayKeyboard({
+    enabled: Boolean(replay.range) && !showLeaveConfirm && !showClearConfirm && !showSendConfirm,
+    allowBackward: replayMode === 'exploration',
+    onPlayPause: replay.playPause,
+    onStepBack: replay.stepBackward,
+    onStepForward: replay.stepForward,
+    onSpeedChange: replay.changeSpeed,
+    onLong: () => markEntry('LONG'),
+    onShort: () => markEntry('SHORT'),
+    onCancel: () => {
+      setPlacementMode(null);
+      setAdjustLevel(null);
+    },
+  });
+
+  const onboardingStep = !instrument.trim()
+    ? 'chooseInstrument'
+    : !replay.range
+      ? 'chooseSession'
+      : draft.entryTimestamp == null
+        ? 'startReplay'
+        : draft.exitTimestamp == null
+          ? 'managePosition'
+          : 'saveObservation';
+
+  const sessionStatus = replay.loading
+    ? 'loading'
+    : draft.exitTimestamp != null
+      ? 'review'
+      : draft.entryTimestamp != null
+        ? 'position'
+        : replay.playing
+          ? 'playing'
+          : replay.replayTimestamp > 0
+            ? 'paused'
+            : 'preparing';
+
   const preferredLevel: TradeLevelKey | null =
     adjustLevel ??
     (placementMode === 'entry_long' || placementMode === 'entry_short'
@@ -658,9 +743,27 @@ const MarketReplayPage: React.FC<MarketReplayPageProps> = ({ detached = false })
         <div className="mb-0 flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0 max-w-4xl">
             <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{t('title')}</h1>
-            <p className="mt-2 text-xs text-amber-800 dark:text-amber-200/90 rounded-md border border-amber-200/80 bg-amber-50/90 px-2.5 py-1.5 dark:border-amber-800/60 dark:bg-amber-950/40">
-              {t('leaveSessionHint')}
-            </p>
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+              <span className="rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 font-medium text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200">
+                {t(`status_${sessionStatus}`)}
+              </span>
+              <span className="text-blue-700 dark:text-blue-300">{t(`onboarding_${onboardingStep}`)}</span>
+              <span className="text-green-700 dark:text-green-300">{t('sessionAutosaved')}</span>
+              <div className="inline-flex rounded-lg border border-gray-200 bg-white p-0.5 dark:border-gray-700 dark:bg-gray-900" role="group" aria-label={t('replayMode')}>
+                {(['disciplined', 'exploration'] as ReplayMode[]).map((mode) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => setReplayMode(mode)}
+                    className={`rounded-md px-2.5 py-1 font-medium ${replayMode === mode ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'}`}
+                    aria-pressed={replayMode === mode}
+                    title={t(`${mode}ModeHint`)}
+                  >
+                    {t(`${mode}Mode`)}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
           <div className="flex flex-wrap items-center gap-2 shrink-0">
             {!detached ? (
@@ -758,6 +861,7 @@ const MarketReplayPage: React.FC<MarketReplayPageProps> = ({ detached = false })
                 startTimestamp={replay.range?.start ?? 0}
                 endTimestamp={replay.range?.end ?? 0}
                 disabled={!replay.range || replay.loading}
+                disciplined={replayMode === 'disciplined'}
                 onPlayPause={replay.playPause}
                 onStepBack={replay.stepBackward}
                 onStepForward={replay.stepForward}
@@ -780,12 +884,14 @@ const MarketReplayPage: React.FC<MarketReplayPageProps> = ({ detached = false })
                 saving={saving}
                 placementMode={placementMode}
                 canPlace={canPlace}
+                instrument={instrument}
+                quantity={positionUi.qty}
                 onMarkEntry={markEntry}
                 onMarkExit={markExit}
                 onSetStop={setStop}
                 onSetTarget={setTarget}
-                onClear={clearTrade}
-                onSendToJournal={sendToJournal}
+                onClear={requestClearTrade}
+                onSendToJournal={requestSendToJournal}
               />
             </div>
           </div>
@@ -846,7 +952,8 @@ const MarketReplayPage: React.FC<MarketReplayPageProps> = ({ detached = false })
             </div>
           </div>
 
-          <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-800">
+          <div className="mt-2 flex items-center justify-between gap-3 border-t border-gray-100 pt-2 dark:border-gray-800">
+            <span className="hidden text-[11px] text-gray-500 dark:text-gray-400 xl:block">{t('shortcutsHint')}</span>
             <input
               type="range"
               min={replay.range?.start ?? 0}
@@ -856,9 +963,9 @@ const MarketReplayPage: React.FC<MarketReplayPageProps> = ({ detached = false })
                 Math.max(replay.replayTimestamp, replay.range?.start ?? 0),
                 replay.range?.end || replay.range?.start || 0,
               )}
-              disabled={!replay.range || replay.loading || (replay.range?.end ?? 0) <= (replay.range?.start ?? 0)}
+              disabled={replayMode === 'disciplined' || !replay.range || replay.loading || (replay.range?.end ?? 0) <= (replay.range?.start ?? 0)}
               onChange={(e) => replay.seek(Number(e.target.value))}
-              className="w-full h-1.5 accent-blue-600 dark:accent-blue-500 cursor-pointer disabled:opacity-40"
+              className="h-1.5 min-w-0 flex-1 accent-blue-600 dark:accent-blue-500 cursor-pointer disabled:opacity-40"
               aria-label={t('timeline')}
             />
           </div>
@@ -901,6 +1008,10 @@ const MarketReplayPage: React.FC<MarketReplayPageProps> = ({ detached = false })
         <ReplayGrid
           panes={panes}
           availableTimeframes={replay.availableTimeframes}
+          layout={layout}
+          onLayoutChange={setLayout}
+          initialWorkspace={restored?.grid}
+          onWorkspaceChange={setGridWorkspace}
           onTimeframeChange={replay.changePaneTimeframe}
           levels={chartLevels}
           preferredLevel={preferredLevel}
@@ -921,7 +1032,7 @@ const MarketReplayPage: React.FC<MarketReplayPageProps> = ({ detached = false })
           positionSelected={positionUi.selected}
           onPositionChange={handlePositionChange}
           onPositionSelect={handlePositionSelect}
-          onPositionClear={clearTrade}
+          onPositionClear={requestClearTrade}
           armedPositionSide={
             placementMode === 'entry_long'
               ? 'LONG'
@@ -948,6 +1059,34 @@ const MarketReplayPage: React.FC<MarketReplayPageProps> = ({ detached = false })
         message={t('leaveSessionConfirm')}
         confirmButtonText={t('leaveSessionConfirmBtn')}
         cancelButtonText={t('leaveSessionStay')}
+      />
+      <ConfirmModal
+        isOpen={showClearConfirm}
+        variant="warning"
+        onClose={() => setShowClearConfirm(false)}
+        onConfirm={() => {
+          setShowClearConfirm(false);
+          clearTrade();
+        }}
+        title={t('clearTradeTitle')}
+        message={t('clearTradeConfirm')}
+        confirmButtonText={t('clearTrade')}
+      />
+      <ConfirmModal
+        isOpen={showSendConfirm}
+        onClose={() => setShowSendConfirm(false)}
+        onConfirm={async () => {
+          setShowSendConfirm(false);
+          await sendToJournal();
+        }}
+        title={t('sendReviewTitle')}
+        message={t('sendReviewMessage', {
+          campaign: campaign?.name || `#${campaign?.id}`,
+          direction: draft.direction,
+          entry: draft.entryPrice == null ? '—' : formatNumber(draft.entryPrice, 4, preferences.number_format),
+          exit: draft.exitPrice == null ? '—' : formatNumber(draft.exitPrice, 4, preferences.number_format),
+        })}
+        confirmButtonText={t('sendToJournal')}
       />
     </PageShell>
   );

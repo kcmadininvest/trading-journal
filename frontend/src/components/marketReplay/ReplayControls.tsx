@@ -28,6 +28,7 @@ interface ReplayControlsProps {
   startTimestamp: number;
   endTimestamp: number;
   disabled?: boolean;
+  disciplined?: boolean;
   /** Barre compacte à côté des filtres (boutons + horloge + timeline). */
   compact?: boolean;
   onPlayPause: () => void;
@@ -47,6 +48,7 @@ export const ReplayControls: React.FC<ReplayControlsProps> = ({
   startTimestamp,
   endTimestamp,
   disabled = false,
+  disciplined = false,
   compact = false,
   onPlayPause,
   onStepBack,
@@ -85,7 +87,7 @@ export const ReplayControls: React.FC<ReplayControlsProps> = ({
         <button
           type="button"
           className={`${replaySecondaryButtonClass} ${iconButtonClass} !h-9 !shadow-none`}
-          disabled={disabled}
+          disabled={disabled || disciplined}
           onClick={onGoStart}
           title={t('goStart')}
           aria-label={t('goStart')}
@@ -95,7 +97,7 @@ export const ReplayControls: React.FC<ReplayControlsProps> = ({
         <button
           type="button"
           className={`${replaySecondaryButtonClass} ${iconButtonClass} !h-9 !shadow-none`}
-          disabled={disabled}
+          disabled={disabled || disciplined}
           onClick={onStepBack}
           title={t('stepBack')}
           aria-label={t('stepBack')}
@@ -125,7 +127,7 @@ export const ReplayControls: React.FC<ReplayControlsProps> = ({
         <button
           type="button"
           className={`${replaySecondaryButtonClass} ${iconButtonClass} !h-9 !shadow-none`}
-          disabled={disabled}
+          disabled={disabled || disciplined}
           onClick={onGoEnd}
           title={t('goEnd')}
           aria-label={t('goEnd')}
@@ -135,7 +137,7 @@ export const ReplayControls: React.FC<ReplayControlsProps> = ({
         <button
           type="button"
           className={`${replaySecondaryButtonClass} ${iconButtonClass} !h-9 !shadow-none`}
-          disabled={disabled}
+          disabled={disabled || disciplined}
           onClick={onReset}
           title={t('reset')}
           aria-label={t('reset')}
@@ -187,7 +189,7 @@ export const ReplayControls: React.FC<ReplayControlsProps> = ({
       max={Math.max(endTimestamp, startTimestamp)}
       step={1}
       value={Math.min(Math.max(replayTimestamp, startTimestamp), endTimestamp || startTimestamp)}
-      disabled={disabled || endTimestamp <= startTimestamp}
+      disabled={disabled || disciplined || endTimestamp <= startTimestamp}
       onChange={(e) => onSeek(Number(e.target.value))}
       className="w-full h-1.5 accent-blue-600 dark:accent-blue-500 cursor-pointer disabled:opacity-40"
       aria-label={t('timeline')}

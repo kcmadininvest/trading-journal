@@ -394,8 +394,8 @@ export function ObservationGrid({ campaign, onStatsInvalidate }: Props) {
         const aDt = a.row.market_datetime.trim();
         const bDt = b.row.market_datetime.trim();
         if (!aDt && !bDt) return a.index - b.index;
-        if (!aDt) return -1;
-        if (!bDt) return 1;
+        if (!aDt) return 1;
+        if (!bDt) return -1;
         const byDate = bDt.localeCompare(aDt);
         if (byDate !== 0) return byDate;
         // Même horodatage : id décroissant (plus récent en base en premier)

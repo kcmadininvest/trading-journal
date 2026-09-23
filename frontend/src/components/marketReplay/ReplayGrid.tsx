@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ReplayChartPane,
@@ -29,6 +29,7 @@ import { Tooltip } from '../ui';
 import { ChartHelpTooltip } from '../charts/ChartHelpTooltip';
 import type { PositionOverlayModel } from '../../utils/positionToolPaint';
 import type { PositionOverlayChange } from './usePositionOverlay';
+import type { ReplayGridWorkspace, ReplayLayout } from '../../utils/marketReplayWorkspace';
 
 export interface ReplayPaneState {
   chartId: string;
@@ -39,6 +40,10 @@ export interface ReplayPaneState {
 interface ReplayGridProps {
   panes: ReplayPaneState[];
   availableTimeframes: AvailableTimeframe[];
+  layout?: ReplayLayout;
+  onLayoutChange?: (layout: ReplayLayout) => void;
+  initialWorkspace?: ReplayGridWorkspace;
+  onWorkspaceChange?: (workspace: ReplayGridWorkspace) => void;
   onTimeframeChange: (chartId: string, timeframeValue: string) => void;
   levels?: TradeChartLevels;
   preferredLevel?: TradeLevelKey | null;
@@ -83,6 +88,10 @@ function cloneDrawings(list: Drawing[]): Drawing[] {
 export const ReplayGrid: React.FC<ReplayGridProps> = ({
   panes,
   availableTimeframes,
+  layout = 4,
+  onLayoutChange,
+  initialWorkspace,
+  onWorkspaceChange,
   onTimeframeChange,
   levels,
   preferredLevel = null,
@@ -110,20 +119,40 @@ export const ReplayGrid: React.FC<ReplayGridProps> = ({
 }) => {
   const { t } = useTranslation('marketReplay');
   const paneRefs = useRef<Record<string, ReplayChartPaneHandle | null>>({});
-  const [indicatorsByPane, setIndicatorsByPane] = useState<Record<string, PaneIndicators>>({});
-  const [drawingScope, setDrawingScope] = useState<DrawingScope>('pane');
-  const [drawingsByPane, setDrawingsByPane] = useState<Record<string, Drawing[]>>({});
-  const [sharedDrawings, setSharedDrawings] = useState<Drawing[]>([]);
+  const [indicatorsByPane, setIndicatorsByPane] = useState<Record<string, PaneIndicators>>(
+    initialWorkspace?.indicatorsByPane ?? {},
+  );
+  const [drawingScope, setDrawingScope] = useState<DrawingScope>(initialWorkspace?.drawingScope ?? 'pane');
+  const [drawingsByPane, setDrawingsByPane] = useState<Record<string, Drawing[]>>(
+    initialWorkspace?.drawingsByPane ?? {},
+  );
+  const [sharedDrawings, setSharedDrawings] = useState<Drawing[]>(initialWorkspace?.sharedDrawings ?? []);
   const [selectedDrawingByPane, setSelectedDrawingByPane] = useState<
     Record<string, string | null>
   >({});
   const [armedToolByPane, setArmedToolByPane] = useState<
     Record<string, DrawingTool | null>
   >({});
-  const [drawingStyle, setDrawingStyle] = useState<DrawingStyle>(DEFAULT_DRAWING_STYLE);
+  const [drawingStyle, setDrawingStyle] = useState<DrawingStyle>(
+    initialWorkspace?.drawingStyle ?? DEFAULT_DRAWING_STYLE,
+  );
   const [avwapStyleEditingByPane, setAvwapStyleEditingByPane] = useState<
     Record<string, boolean>
   >({});
+  const [maximizedChartId, setMaximizedChartId] = useState<string | null>(null);
+  const visiblePanes = maximizedChartId
+    ? panes.filter((pane) => pane.chartId === maximizedChartId)
+    : panes.slice(0, layout);
+
+  useEffect(() => {
+    onWorkspaceChange?.({
+      indicatorsByPane,
+      drawingScope,
+      drawingsByPane,
+      sharedDrawings,
+      drawingStyle,
+    });
+  }, [indicatorsByPane, drawingScope, drawingsByPane, sharedDrawings, drawingStyle, onWorkspaceChange]);
 
   const paneIndicators = useCallback(
     (chartId: string): PaneIndicators => indicatorsByPane[chartId] ?? emptyPaneIndicators(),
@@ -212,8 +241,28 @@ export const ReplayGrid: React.FC<ReplayGridProps> = ({
   }, [panes, indicatorsByPane]);
 
   return (
-    <div className="grid min-h-[480px] flex-1 grid-cols-1 gap-3 auto-rows-[minmax(240px,1fr)] lg:min-h-[560px] lg:grid-cols-2 lg:grid-rows-2">
-      {panes.map((pane, paneIndex) => {
+    <div className="flex min-h-[480px] flex-1 flex-col gap-2 lg:min-h-[560px]">
+      <div className="flex shrink-0 items-center justify-end gap-1" role="group" aria-label={t('layoutLabel')}>
+        {([1, 2, 4] as ReplayLayout[]).map((count) => (
+          <button
+            key={count}
+            type="button"
+            className={paneToggleClass(layout === count && !maximizedChartId)}
+            onClick={() => {
+              setMaximizedChartId(null);
+              onLayoutChange?.(count);
+            }}
+            aria-pressed={layout === count && !maximizedChartId}
+          >
+            {t('layoutCharts', { count })}
+          </button>
+        ))}
+      </div>
+      <div className={`grid min-h-0 flex-1 grid-cols-1 gap-3 auto-rows-[minmax(240px,1fr)] ${
+        visiblePanes.length > 1 ? 'lg:grid-cols-2' : ''
+      } ${visiblePanes.length > 2 ? 'lg:grid-rows-2' : ''}`}>
+      {visiblePanes.map((pane) => {
+        const paneIndex = panes.findIndex((candidate) => candidate.chartId === pane.chartId);
         const indicators = paneIndicators(pane.chartId);
         const drawings = getDrawings(pane.chartId);
         const armedTool = armedToolByPane[pane.chartId] ?? null;
@@ -277,6 +326,16 @@ export const ReplayGrid: React.FC<ReplayGridProps> = ({
                 <ChartHelpTooltip content={t('chartInteractionHint')} />
               </div>
               <div className="flex items-center gap-1">
+                <Tooltip content={maximizedChartId ? t('restoreLayout') : t('maximizeChart')} position="top">
+                  <button
+                    type="button"
+                    className={paneToggleClass(maximizedChartId === pane.chartId)}
+                    onClick={() => setMaximizedChartId((current) => current === pane.chartId ? null : pane.chartId)}
+                    aria-label={maximizedChartId === pane.chartId ? t('restoreLayout') : t('maximizeChart')}
+                  >
+                    {maximizedChartId === pane.chartId ? '↙' : '↗'}
+                  </button>
+                </Tooltip>
                 <Tooltip content={t('fitToScreenHint')} position="top">
                   <button
                     type="button"
@@ -433,6 +492,7 @@ export const ReplayGrid: React.FC<ReplayGridProps> = ({
           </div>
         );
       })}
+      </div>
     </div>
   );
 };
