@@ -14,6 +14,7 @@ import { PageShell } from '../components/layout';
 import { DeleteConfirmModal } from '../components/ui';
 import { ImportTradesModal } from '../components/trades/ImportTradesModal';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
+import { calculateInitialRisk } from '../utils/tradeInitialRisk';
 import { useTradingAccount } from '../contexts/useTradingAccount';
 import { usePreferences } from '../hooks/usePreferences';
 import userService from '../services/userService';
@@ -448,31 +449,40 @@ const TradesPage: React.FC = () => {
         'P&L',
         'P&L Net',
         'P&L %',
+        'SL prévu',
+        'Risque initial (points)',
+        'Risque initial ($)',
         'Rentable',
         'Durée',
         'Jour de trade',
       ];
 
-      const rows = allTrades.map(trade => [
-        trade.id.toString(),
-        trade.external_trade_id || '',
-        trade.trading_account_name || '',
-        trade.contract_name || '',
-        trade.trade_type || '',
-        trade.entered_at || '',
-        trade.exited_at || '',
-        trade.entry_price || '',
-        trade.exit_price || '',
-        trade.size || '',
-        trade.fees || '',
-        trade.commissions || '',
-        trade.pnl || '',
-        trade.net_pnl || '',
-        trade.pnl_percentage || '',
-        trade.is_profitable !== null ? (trade.is_profitable ? 'Oui' : 'Non') : '',
-        trade.duration_str || trade.trade_duration || '',
-        trade.trade_day || '',
-      ]);
+      const rows = allTrades.map(trade => {
+        const risk = calculateInitialRisk(trade);
+        return [
+          trade.id.toString(),
+          trade.external_trade_id || '',
+          trade.trading_account_name || '',
+          trade.contract_name || '',
+          trade.trade_type || '',
+          trade.entered_at || '',
+          trade.exited_at || '',
+          trade.entry_price || '',
+          trade.exit_price || '',
+          trade.size || '',
+          trade.fees || '',
+          trade.commissions || '',
+          trade.pnl || '',
+          trade.net_pnl || '',
+          trade.pnl_percentage || '',
+          trade.planned_stop_loss || '',
+          risk.riskPoints !== null ? String(risk.riskPoints) : '',
+          risk.riskAmount !== null ? String(risk.riskAmount) : '',
+          trade.is_profitable !== null ? (trade.is_profitable ? 'Oui' : 'Non') : '',
+          trade.duration_str || trade.trade_duration || '',
+          trade.trade_day || '',
+        ];
+      });
 
       // Créer le contenu CSV avec BOM pour Excel
       const csvContent = [
