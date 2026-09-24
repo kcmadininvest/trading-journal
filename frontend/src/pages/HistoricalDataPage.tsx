@@ -1035,102 +1035,128 @@ const HistoricalDataPage: React.FC = () => {
                 {t('syncTimezoneHint', { timezone: preferences.timezone || 'Europe/Paris' })}
               </p>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
-                <div className="min-w-0">
-                  <label className={labelClass}>{t('instrument')}</label>
-                  <CustomSelect
-                    className="w-full"
-                    value={syncTargetInstrument || null}
-                    onChange={(value) => setSyncTargetInstrument(value ? String(value) : '')}
-                    options={instrumentOptions}
-                    searchable
-                    placeholder={t('instrumentPlaceholder')}
-                  />
+              <section
+                aria-labelledby="sync-add-target-title"
+                className="rounded-lg border border-blue-200 bg-blue-50/60 p-3 dark:border-blue-800 dark:bg-blue-900/15 sm:p-4"
+              >
+                <h3
+                  id="sync-add-target-title"
+                  className="mb-3 text-sm font-semibold text-blue-900 dark:text-blue-200"
+                >
+                  {t('syncAddTargetTitle')}
+                </h3>
+                <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-3">
+                  <div className="min-w-0">
+                    <label className={labelClass}>{t('instrument')}</label>
+                    <CustomSelect
+                      className="w-full"
+                      value={syncTargetInstrument || null}
+                      onChange={(value) => setSyncTargetInstrument(value ? String(value) : '')}
+                      options={instrumentOptions}
+                      searchable
+                      placeholder={t('instrumentPlaceholder')}
+                    />
+                  </div>
+                  <div className="min-w-0">
+                    <label className={labelClass}>{t('timeframesLabel')}</label>
+                    <CustomMultiSelect
+                      className="w-full"
+                      value={syncTargetTimeframes}
+                      onChange={setSyncTargetTimeframes}
+                      options={timeframeOptions}
+                      placeholder={t('syncTimeframesPlaceholder')}
+                      clearLabel={t('syncTimeframesClear')}
+                      selectedCountLabel={(count) => t('syncTimeframesCount', { count })}
+                    />
+                  </div>
+                  <button type="button" onClick={addSyncTarget} className={replaySecondaryButtonClass}>
+                    {t('syncAddTarget')}
+                  </button>
                 </div>
-                <div className="min-w-0">
-                  <label className={labelClass}>{t('timeframesLabel')}</label>
-                  <CustomMultiSelect
-                    className="w-full"
-                    value={syncTargetTimeframes}
-                    onChange={setSyncTargetTimeframes}
-                    options={timeframeOptions}
-                    placeholder={t('syncTimeframesPlaceholder')}
-                    clearLabel={t('syncTimeframesClear')}
-                    selectedCountLabel={(count) => t('syncTimeframesCount', { count })}
-                  />
-                </div>
-                <button type="button" onClick={addSyncTarget} className={replaySecondaryButtonClass}>
-                  {t('syncAddTarget')}
-                </button>
-              </div>
+              </section>
 
-              {syncTargetGroups.length === 0 ? (
-                <p className="text-sm text-gray-500 dark:text-gray-400">{t('syncNoTargets')}</p>
-              ) : (
-                <ul className="divide-y divide-gray-200 dark:divide-gray-700 rounded-md border border-gray-200 dark:border-gray-700">
-                  {syncTargetGroups.map((group) => (
-                    <li
-                      key={`${group.instrument}-${group.contract_id}`}
-                      className="flex flex-wrap items-center gap-2 px-3 py-2 text-sm sm:flex-nowrap"
-                    >
-                      <span className="min-w-0 flex-1 font-semibold text-gray-900 dark:text-gray-100">
-                        {instrumentLabelByCode.get(group.instrument) || group.instrument}
-                        <span className="mt-0.5 block font-normal text-gray-600 dark:text-gray-400">
-                          {group.contract_id || t('allContracts')}
-                        </span>
-                      </span>
-                      <div
-                        className="min-w-0 w-full sm:w-56 sm:flex-none"
-                        title={t('syncEditTarget')}
+              <section
+                aria-labelledby="sync-configured-targets-title"
+                className="rounded-lg border border-gray-200 bg-gray-50/60 p-3 dark:border-gray-700 dark:bg-gray-900/20 sm:p-4"
+              >
+                <div className="mb-3 flex min-w-0 flex-wrap items-center gap-2">
+                  <h3
+                    id="sync-configured-targets-title"
+                    className="text-sm font-semibold text-gray-900 dark:text-gray-100"
+                  >
+                    {t('syncConfiguredTargetsTitle')}
+                  </h3>
+                  <span className="inline-flex shrink-0 items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-semibold text-blue-700 dark:bg-blue-900/40 dark:text-blue-200">
+                    {fmtNum(syncTargetGroups.length)}
+                  </span>
+                </div>
+                {syncTargetGroups.length === 0 ? (
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t('syncNoTargets')}</p>
+                ) : (
+                  <ul className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+                    {syncTargetGroups.map((group) => (
+                      <li
+                        key={`${group.instrument}-${group.contract_id}`}
+                        className="flex min-w-0 flex-col gap-3 rounded-lg border border-gray-200 bg-white p-3 text-sm dark:border-gray-700 dark:bg-gray-800"
                       >
-                        <span className="sr-only">
-                          {t('syncEditTarget')} —{' '}
-                          {instrumentLabelByCode.get(group.instrument) || group.instrument}
-                        </span>
-                        <CustomMultiSelect
-                          className="w-full"
-                          value={group.timeframes}
-                          onChange={(next) =>
-                            updateSyncTargetGroupTimeframes(
-                              group.instrument,
-                              group.contract_id,
-                              next,
-                            )
-                          }
-                          options={timeframeOptions}
-                          placeholder={t('syncTimeframesPlaceholder')}
-                          clearLabel={t('syncTimeframesClear')}
-                          selectedCountLabel={(count) => t('syncTimeframesCount', { count })}
-                        />
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          removeSyncTargetGroup(group.instrument, group.contract_id)
-                        }
-                        className="ml-auto p-1.5 rounded-lg text-rose-600 transition-colors hover:bg-rose-50 hover:text-rose-800 focus:outline-none focus:ring-2 focus:ring-rose-500 dark:text-rose-400 dark:hover:bg-rose-900/30 dark:hover:text-rose-300 sm:ml-0"
-                        title={t('syncRemoveTarget')}
-                        aria-label={t('syncRemoveTarget')}
-                      >
-                        <svg
-                          className="h-4 w-4"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth={2}
-                          aria-hidden
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                        <div className="flex min-w-0 items-start gap-2">
+                          <div className="min-w-0 flex-1 font-semibold text-gray-900 dark:text-gray-100">
+                            {instrumentLabelByCode.get(group.instrument) || group.instrument}
+                            <span className="mt-0.5 block font-normal text-gray-600 dark:text-gray-400">
+                              {group.contract_id || t('allContracts')}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              removeSyncTargetGroup(group.instrument, group.contract_id)
+                            }
+                            className="shrink-0 rounded-lg p-1.5 text-rose-600 transition-colors hover:bg-rose-50 hover:text-rose-800 focus:outline-none focus:ring-2 focus:ring-rose-500 dark:text-rose-400 dark:hover:bg-rose-900/30 dark:hover:text-rose-300"
+                            title={t('syncRemoveTarget')}
+                            aria-label={t('syncRemoveTarget')}
+                          >
+                            <svg
+                              className="h-4 w-4"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                              strokeWidth={2}
+                              aria-hidden
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                              />
+                            </svg>
+                          </button>
+                        </div>
+                        <div className="min-w-0 w-full" title={t('syncEditTarget')}>
+                          <span className="sr-only">
+                            {t('syncEditTarget')} —{' '}
+                            {instrumentLabelByCode.get(group.instrument) || group.instrument}
+                          </span>
+                          <CustomMultiSelect
+                            className="w-full"
+                            value={group.timeframes}
+                            onChange={(next) =>
+                              updateSyncTargetGroupTimeframes(
+                                group.instrument,
+                                group.contract_id,
+                                next,
+                              )
+                            }
+                            options={timeframeOptions}
+                            placeholder={t('syncTimeframesPlaceholder')}
+                            clearLabel={t('syncTimeframesClear')}
+                            selectedCountLabel={(count) => t('syncTimeframesCount', { count })}
                           />
-                        </svg>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
 
               <div className="flex flex-wrap gap-2">
                 <button

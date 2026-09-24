@@ -77,6 +77,8 @@
   "syncMinute": "Minute",
   "syncTimezoneHint": "Ortszeit ({{timezone}})",
   "syncAddTarget": "Ziele hinzufügen",
+  "syncAddTargetTitle": "Ziel hinzufügen",
+  "syncConfiguredTargetsTitle": "Konfigurierte Ziele",
   "syncEditTarget": "Zeitrahmen ändern",
   "syncRemoveTarget": "Entfernen",
   "syncNoTargets": "Keine Ziele — fügen Sie mindestens ein Instrument / einen Zeitrahmen hinzu.",
