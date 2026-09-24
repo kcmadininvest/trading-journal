@@ -71,7 +71,7 @@ const HistoricalDataPage: React.FC = () => {
   const [bootLoading, setBootLoading] = useState(true);
   const [starting, setStarting] = useState(false);
   const [bottomTab, setBottomTab] = useState<'coverage' | 'issues'>('coverage');
-  const [pageTab, setPageTab] = useState<'download' | 'sync'>('download');
+  const [pageTab, setPageTab] = useState<'download' | 'sync'>('sync');
   const [coverageFilter, setCoverageFilter] = useState<'all' | 'with_data' | 'empty'>('with_data');
   const [coveragePageSize, setCoveragePageSize] = useState(
     () => preferences.items_per_page ?? DEFAULT_ITEMS_PER_PAGE,
@@ -912,8 +912,8 @@ const HistoricalDataPage: React.FC = () => {
           <nav className="-mb-px flex gap-6 overflow-x-auto" aria-label={t('pageTabsAria')}>
             {(
               [
-                { id: 'download' as const, label: t('downloadTab') },
                 { id: 'sync' as const, label: t('syncTab') },
+                { id: 'download' as const, label: t('downloadTab') },
               ] as const
             ).map((tab) => (
               <button
