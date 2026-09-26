@@ -3792,20 +3792,17 @@ class PositionStrategyViewSet(viewsets.ModelViewSet):
                 version_notes=serializer.validated_data.get('version_notes', '')
             )
             
-            # Mettre à jour explicitement les champs example_screenshot sur la nouvelle version
-            # car create_new_version() copie depuis self qui n'a pas été sauvegardé
-            if 'example_screenshot' in serializer.validated_data:
-                new_strategy.example_screenshot = serializer.validated_data['example_screenshot']
-            if 'example_screenshot_thumbnail' in serializer.validated_data:
-                new_strategy.example_screenshot_thumbnail = serializer.validated_data['example_screenshot_thumbnail']
+            # Mettre à jour explicitement les champs modifiés sur la nouvelle version
+            # car create_new_version() copie depuis self qui a été refresh_from_db(), écrasant
+            # les modifications en mémoire (description, titre...) faites avant la création de version.
+            update_fields = []
+            for field, value in serializer.validated_data.items():
+                if field not in ['strategy_content', 'version_notes', 'is_current', 'create_new_version']:
+                    if getattr(new_strategy, field) != value:
+                        setattr(new_strategy, field, value)
+                        update_fields.append(field)
             
-            # Sauvegarder les champs mis à jour
-            if 'example_screenshot' in serializer.validated_data or 'example_screenshot_thumbnail' in serializer.validated_data:
-                update_fields = []
-                if 'example_screenshot' in serializer.validated_data:
-                    update_fields.append('example_screenshot')
-                if 'example_screenshot_thumbnail' in serializer.validated_data:
-                    update_fields.append('example_screenshot_thumbnail')
+            if update_fields:
                 new_strategy.save(update_fields=update_fields)
             
             # Retourner la nouvelle stratégie au lieu de l'ancienne
