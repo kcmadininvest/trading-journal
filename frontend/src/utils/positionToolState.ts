@@ -7,6 +7,7 @@ import {
   computeBoxEndTime,
   computeBoxWidthBars,
   computeInitialLevels,
+  findEntryLogicalIndex,
   visiblePriceRangeFromBars,
   type PositionSide,
 } from './positionToolSizing';
@@ -74,6 +75,22 @@ export type PlacePositionResult = {
 };
 
 /**
+ * Largeur + endTime par défaut pour une entrée (outil Position ou activation SL/TP).
+ */
+export function computeDefaultPositionSpan(params: {
+  entryTime: number;
+  candles: VisibleCandle[];
+  visibleBarCount?: number | null;
+}): { widthBars: number; endTime: number; entryLogical: number } {
+  const { entryTime, candles, visibleBarCount } = params;
+  const times = candles.map((c) => c.time);
+  const widthBars = computeBoxWidthBars(times, visibleBarCount);
+  const entryLogical = findEntryLogicalIndex(times, entryTime);
+  const endTime = computeBoxEndTime(times, entryTime, widthBars);
+  return { widthBars, endTime, entryLogical };
+}
+
+/**
  * Calcule entry/SL/TP + endTime pour un clic (ou lastPrice) sur le chart.
  */
 export function buildPlacedPosition(params: {
@@ -82,16 +99,27 @@ export function buildPlacedPosition(params: {
   entryTime: number;
   candles: VisibleCandle[];
   visiblePriceRange: number;
+  /** Nombre de barres dans le viewport (sinon fallback = candles.length). */
+  visibleBarCount?: number | null;
 }): PlacePositionResult {
-  const { side, entryPrice, entryTime, candles, visiblePriceRange } = params;
+  const {
+    side,
+    entryPrice,
+    entryTime,
+    candles,
+    visiblePriceRange,
+    visibleBarCount,
+  } = params;
   const bars = candles.map((c) => ({ high: c.high, low: c.low, close: c.close }));
   const atr = computeAtr(bars, 14);
   const range =
     visiblePriceRange > 0 ? visiblePriceRange : visiblePriceRangeFromBars(bars);
   const levels = computeInitialLevels(entryPrice, side, atr, range, {}, bars);
-  const times = candles.map((c) => c.time);
-  const widthBars = computeBoxWidthBars(times);
-  const endTime = computeBoxEndTime(times, entryTime);
+  const { widthBars, endTime } = computeDefaultPositionSpan({
+    entryTime,
+    candles,
+    visibleBarCount,
+  });
   return {
     draftPatch: {
       direction: side === 'short' ? 'SHORT' : 'LONG',

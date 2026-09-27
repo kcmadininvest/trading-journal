@@ -439,8 +439,11 @@ export function usePositionOverlay({
     return false;
   };
 
-  /** true si (x,y) est dans la boîte Position (pour restreindre le drag des niveaux). */
-  const isInsidePositionBox = (x: number, y: number): boolean => {
+  /**
+   * true si (x,y) est dans la boîte Position (pour restreindre le drag des niveaux).
+   * `extraYPad` élargit la tolérance verticale (ligne TP/SL au bord de la boîte).
+   */
+  const isInsidePositionBox = (x: number, y: number, extraYPad = 0): boolean => {
     if (!enabled) return false;
     const m = modelRef.current;
     if (!positionIsComplete(m)) return false;
@@ -453,11 +456,12 @@ export function usePositionOverlay({
       chromeRef.current?.fontSizePref ?? 'medium',
     );
     const pad = positionBodyHitPad(uiScale);
+    const yPad = Math.max(pad, extraYPad);
     return (
       x >= bbox.left - pad &&
       x <= bbox.right + pad &&
-      y >= bbox.top - pad &&
-      y <= bbox.bottom + pad
+      y >= bbox.top - yPad &&
+      y <= bbox.bottom + yPad
     );
   };
 

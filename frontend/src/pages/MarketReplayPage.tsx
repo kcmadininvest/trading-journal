@@ -29,12 +29,13 @@ import { replayPrimaryButtonClass, replaySecondaryButtonClass, replayDateInputCl
 import { formatNumber } from '../utils/numberFormat';
 import {
   buildPlacedPosition,
+  computeDefaultPositionSpan,
   emptyPositionUi,
   positionOverlayFromDraft,
   type PositionUiState,
 } from '../utils/positionToolState';
 import type { PositionOverlayChange } from '../components/marketReplay/usePositionOverlay';
-import { visiblePriceRangeFromBars } from '../utils/positionToolSizing';
+import { findEntryLogicalIndex, visiblePriceRangeFromBars } from '../utils/positionToolSizing';
 import { useMarketReplayKeyboard } from '../hooks/useMarketReplayKeyboard';
 import {
   loadMarketReplayWorkspace,
@@ -172,6 +173,7 @@ const MarketReplayPage: React.FC<MarketReplayPageProps> = ({ detached = false })
   const [layout, setLayout] = useState<ReplayLayout>(restored?.layout || 4);
   const [gridWorkspace, setGridWorkspace] = useState<ReplayGridWorkspace | undefined>(restored?.grid);
   const primaryPaneRef = useRef<ReplayChartPaneHandle | null>(null);
+  const paneHandlesRef = useRef<Record<string, ReplayChartPaneHandle | null>>({});
   const [saving, setSaving] = useState(false);
   const [logarithmic, setLogarithmic] = useState(!!preferences.market_replay_logarithmic);
   const [autoFit, setAutoFit] = useState(!!preferences.market_replay_autofit);
@@ -319,21 +321,25 @@ const MarketReplayPage: React.FC<MarketReplayPageProps> = ({ detached = false })
       candles: typeof primaryCandles,
       visibleRangeHint?: number,
     ) => {
-      const isPrimary = chartId === panes[0]?.chartId;
+      const paneHandle =
+        paneHandlesRef.current[chartId] ??
+        (chartId === panes[0]?.chartId ? primaryPaneRef.current : null);
       const visibleRange =
         visibleRangeHint ??
-        (isPrimary
-          ? primaryPaneRef.current?.getVisiblePriceRange()
-          : undefined) ??
+        paneHandle?.getVisiblePriceRange() ??
         visiblePriceRangeFromBars(
           candles.map((c) => ({ high: c.high, low: c.low, close: c.close })),
         );
+      const visLogical = paneHandle?.getVisibleLogicalRange() ?? null;
+      const visibleBarCount =
+        visLogical != null ? Math.max(1, visLogical.to - visLogical.from) : null;
       const placed = buildPlacedPosition({
         side,
         entryPrice,
         entryTime,
         candles,
         visiblePriceRange: visibleRange,
+        visibleBarCount,
       });
       setDraft((d) => ({ ...d, ...placed.draftPatch }));
       setPositionUi((ui) => ({
@@ -344,6 +350,15 @@ const MarketReplayPage: React.FC<MarketReplayPageProps> = ({ detached = false })
       }));
       setPlacementMode(null);
       setAdjustLevel(null);
+
+      const widthBars = placed.uiPatch.widthBars;
+      if (widthBars != null && widthBars > 0) {
+        const entryLogical = findEntryLogicalIndex(
+          candles.map((c) => c.time),
+          entryTime,
+        );
+        paneHandle?.revealPositionRightEdge(entryLogical + widthBars);
+      }
     },
     [panes],
   );
@@ -455,13 +470,33 @@ const MarketReplayPage: React.FC<MarketReplayPageProps> = ({ detached = false })
           draft.targetPrice != null &&
           draft.entryTimestamp != null
         ) {
+          const spanHost = hostId ?? panes[0]?.chartId ?? null;
+          const candles =
+            panes.find((p) => p.chartId === spanHost)?.candles ?? primaryCandles;
+          const paneHandle =
+            (spanHost ? paneHandlesRef.current[spanHost] : null) ??
+            primaryPaneRef.current;
+          const visLogical = paneHandle?.getVisibleLogicalRange() ?? null;
+          const visibleBarCount =
+            visLogical != null
+              ? Math.max(1, visLogical.to - visLogical.from)
+              : null;
+          const span = computeDefaultPositionSpan({
+            entryTime: draft.entryTimestamp,
+            candles,
+            visibleBarCount,
+          });
           setPositionUi((ui) => ({
             ...ui,
             active: true,
             selected: true,
             chartId: ui.chartId ?? hostId,
-            endTime: ui.endTime ?? draft.entryTimestamp,
+            endTime: ui.endTime ?? span.endTime,
+            widthBars: ui.widthBars ?? span.widthBars,
           }));
+          paneHandle?.revealPositionRightEdge(
+            span.entryLogical + span.widthBars,
+          );
         } else {
           setAdjustLevel('stop');
         }
@@ -477,13 +512,33 @@ const MarketReplayPage: React.FC<MarketReplayPageProps> = ({ detached = false })
           draft.stopPrice != null &&
           draft.entryTimestamp != null
         ) {
+          const spanHost = hostId ?? panes[0]?.chartId ?? null;
+          const candles =
+            panes.find((p) => p.chartId === spanHost)?.candles ?? primaryCandles;
+          const paneHandle =
+            (spanHost ? paneHandlesRef.current[spanHost] : null) ??
+            primaryPaneRef.current;
+          const visLogical = paneHandle?.getVisibleLogicalRange() ?? null;
+          const visibleBarCount =
+            visLogical != null
+              ? Math.max(1, visLogical.to - visLogical.from)
+              : null;
+          const span = computeDefaultPositionSpan({
+            entryTime: draft.entryTimestamp,
+            candles,
+            visibleBarCount,
+          });
           setPositionUi((ui) => ({
             ...ui,
             active: true,
             selected: true,
             chartId: ui.chartId ?? hostId,
-            endTime: ui.endTime ?? draft.entryTimestamp,
+            endTime: ui.endTime ?? span.endTime,
+            widthBars: ui.widthBars ?? span.widthBars,
           }));
+          paneHandle?.revealPositionRightEdge(
+            span.entryLogical + span.widthBars,
+          );
         } else {
           setAdjustLevel('target');
         }
@@ -1083,6 +1138,9 @@ const MarketReplayPage: React.FC<MarketReplayPageProps> = ({ detached = false })
           onArmPositionSide={handleArmPositionSide}
           onPrimaryPaneRef={(handle) => {
             primaryPaneRef.current = handle;
+          }}
+          onPaneRef={(chartId, handle) => {
+            paneHandlesRef.current[chartId] = handle;
           }}
         />
       </div>

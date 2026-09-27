@@ -49,11 +49,13 @@ export type PositionChromeOptions = {
   fontFamily?: string;
 };
 
-const PROFIT_FILL = 'rgba(38, 166, 154, 0.22)';
-const LOSS_FILL = 'rgba(239, 83, 80, 0.22)';
+const PROFIT_FILL = 'rgba(38, 166, 154, 0.12)';
+const LOSS_FILL = 'rgba(239, 83, 80, 0.12)';
 const PROFIT_STROKE = '#26A69A';
 const LOSS_STROKE = '#EF5350';
 const ENTRY_STROKE = '#787B86';
+/** Fond des étiquettes Entrée / SL / TP : laisse voir les bougies, texte blanc lisible. */
+const LABEL_BG_ALPHA = 0.55;
 
 /** Aire de référence (pane ~640×360) pour le scale chrome. */
 export const POSITION_UI_REF_AREA = 640 * 360;
@@ -647,7 +649,7 @@ export function paintPositionOverlay(
     right,
     yEntry,
     ENTRY_STROKE,
-    (selected ? 2.25 : 1.5) * uiScale,
+    (selected ? 1.25 : 1) * uiScale,
   );
   drawHLine(
     ctx,
@@ -655,7 +657,7 @@ export function paintPositionOverlay(
     right,
     yTarget,
     PROFIT_STROKE,
-    (selected ? 2 : 1.25) * uiScale,
+    (selected ? 1.25 : 1) * uiScale,
   );
   drawHLine(
     ctx,
@@ -663,7 +665,7 @@ export function paintPositionOverlay(
     right,
     yStop,
     LOSS_STROKE,
-    (selected ? 2 : 1.25) * uiScale,
+    (selected ? 1.25 : 1) * uiScale,
   );
 
   // Bord vertical droit
@@ -702,9 +704,12 @@ export function paintPositionOverlay(
     const targetText = pickFittingLabelText(measure, targetCands, maxContent);
 
     const labelX = left + inset;
-    drawLabel(ctx, entryText, labelX, yEntry, ENTRY_STROKE, uiScale, fontFamily, left, right);
-    drawLabel(ctx, stopText, labelX, yStop, LOSS_STROKE, uiScale, fontFamily, left, right);
-    drawLabel(ctx, targetText, labelX, yTarget, PROFIT_STROKE, uiScale, fontFamily, left, right);
+    const entryBg = colorWithAlpha(ENTRY_STROKE, LABEL_BG_ALPHA);
+    const stopBg = colorWithAlpha(LOSS_STROKE, LABEL_BG_ALPHA);
+    const targetBg = colorWithAlpha(PROFIT_STROKE, LABEL_BG_ALPHA);
+    drawLabel(ctx, entryText, labelX, yEntry, entryBg, uiScale, fontFamily, left, right);
+    drawLabel(ctx, stopText, labelX, yStop, stopBg, uiScale, fontFamily, left, right);
+    drawLabel(ctx, targetText, labelX, yTarget, targetBg, uiScale, fontFamily, left, right);
   }
 
   if (selected) {

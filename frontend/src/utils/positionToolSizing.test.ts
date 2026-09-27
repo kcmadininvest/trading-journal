@@ -4,8 +4,11 @@ import {
   clamp,
   computeAtr,
   computeBoxEndTime,
+  computeBoxWidthBars,
   computeInitialLevels,
   DEFAULT_POSITION_SIZING,
+  POSITION_BOX_MAX_BARS,
+  POSITION_BOX_MIN_BARS,
   resolveVolatilityDistance,
   visiblePriceRangeFromBars,
   type OhlcBar,
@@ -87,11 +90,23 @@ describe('positionToolSizing', () => {
     expect(fromPrice).toBeCloseTo(500 * 0.005, 6);
   });
 
-  it('computeBoxEndTime spans ~18% of candles', () => {
+  it('computeBoxWidthBars uses visible bar count at 12%', () => {
+    const times = Array.from({ length: 500 }, (_, i) => 1_000_000 + i * 60);
+    // 100 visible → 12 bars
+    expect(computeBoxWidthBars(times, 100)).toBe(12);
+  });
+
+  it('computeBoxWidthBars clamps to min/max', () => {
+    const times = Array.from({ length: 500 }, (_, i) => 1_000_000 + i * 60);
+    expect(computeBoxWidthBars(times, 20)).toBe(POSITION_BOX_MIN_BARS);
+    expect(computeBoxWidthBars(times, 1000)).toBe(POSITION_BOX_MAX_BARS);
+  });
+
+  it('computeBoxEndTime derives from widthBars (may extrapolate)', () => {
     const times = Array.from({ length: 100 }, (_, i) => 1_000_000 + i * 60);
-    const end = computeBoxEndTime(times, times[10]);
-    const endIdx = times.indexOf(end);
-    expect(endIdx).toBe(10 + 18);
+    const widthBars = 12;
+    const end = computeBoxEndTime(times, times[10], widthBars);
+    expect(end).toBe(times[10] + widthBars * 60);
   });
 
   it('visiblePriceRangeFromBars', () => {

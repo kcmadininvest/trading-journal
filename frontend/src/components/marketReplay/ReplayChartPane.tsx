@@ -61,6 +61,12 @@ export type TradeLevelKey = 'entry' | 'exit' | 'stop' | 'target';
 export interface ReplayChartPaneHandle {
   fitToScreen: () => void;
   getVisiblePriceRange: () => number;
+  getVisibleLogicalRange: () => { from: number; to: number } | null;
+  /**
+   * Assure que le bord droit de la Position (index logique) est visible.
+   * autoFit : ajuste rightOffset ; sinon décale la plage visible si besoin.
+   */
+  revealPositionRightEdge: (rightLogical: number) => void;
 }
 
 interface ReplayChartPaneProps {
@@ -397,6 +403,10 @@ export const ReplayChartPane = forwardRef<ReplayChartPaneHandle, ReplayChartPane
   const lastCandleCountRef = useRef(0);
   const playingRef = useRef(playing);
   playingRef.current = playing;
+  const autoFitRef = useRef(autoFit);
+  autoFitRef.current = autoFit;
+  /** rightOffset élargi en autoFit tant qu’une Position est active ; null = défaut. */
+  const positionRightOffsetRef = useRef<number | null>(null);
   const onPriceClickRef = useRef(onPriceClick);
   onPriceClickRef.current = onPriceClick;
   const onCandleClickRef = useRef(onCandleClick);
@@ -419,6 +429,8 @@ export const ReplayChartPane = forwardRef<ReplayChartPaneHandle, ReplayChartPane
   onLevelDragRef.current = onLevelDrag;
   const onAdjustCommitRef = useRef(onAdjustCommit);
   onAdjustCommitRef.current = onAdjustCommit;
+  const onPositionSelectRef = useRef(onPositionSelect);
+  onPositionSelectRef.current = onPositionSelect;
   const dragKeyRef = useRef<TradeLevelKey | null>(null);
   const didDragRef = useRef(false);
   const hadLayoutSizeRef = useRef(false);
@@ -555,6 +567,51 @@ export const ReplayChartPane = forwardRef<ReplayChartPaneHandle, ReplayChartPane
         candles,
       );
     },
+    getVisibleLogicalRange() {
+      const chart = chartRef.current;
+      if (!chart) return null;
+      const range = chart.timeScale().getVisibleLogicalRange();
+      if (!range) return null;
+      return { from: range.from, to: range.to };
+    },
+    revealPositionRightEdge(rightLogical: number) {
+      const chart = chartRef.current;
+      if (!chart || !Number.isFinite(rightLogical)) return;
+      const lastIndex = Math.max(0, lastCandleCountRef.current - 1);
+      const margin = 2;
+
+      if (autoFitRef.current) {
+        const needed = Math.max(RIGHT_PAD_BARS, rightLogical - lastIndex + margin);
+        positionRightOffsetRef.current = needed;
+        chart.timeScale().applyOptions({ rightOffset: needed });
+        programmaticRangeRef.current = true;
+        chart.timeScale().fitContent();
+        requestAnimationFrame(() => {
+          programmaticRangeRef.current = false;
+          updateHandlePosition();
+          paintDrawings();
+        });
+        return;
+      }
+
+      const vis = chart.timeScale().getVisibleLogicalRange();
+      if (!vis) return;
+      const targetTo = rightLogical + margin;
+      if (targetTo <= vis.to) return;
+      const span = vis.to - vis.from;
+      if (!(span > 0)) return;
+      const delta = targetTo - vis.to;
+      programmaticRangeRef.current = true;
+      chart.timeScale().setVisibleLogicalRange({
+        from: vis.from + delta,
+        to: vis.to + delta,
+      });
+      requestAnimationFrame(() => {
+        programmaticRangeRef.current = false;
+        updateHandlePosition();
+        paintDrawings();
+      });
+    },
   }));
 
   const updateHandlePosition = useCallback(() => {
@@ -577,6 +634,25 @@ export const ReplayChartPane = forwardRef<ReplayChartPaneHandle, ReplayChartPane
     const y = series.priceToCoordinate(price);
     setHandleTop(y == null ? null : y);
   }, []);
+
+  // Reset rightOffset élargi quand la Position disparaît (clear / pane change).
+  useEffect(() => {
+    if (positionModel != null) return;
+    if (positionRightOffsetRef.current == null) return;
+    positionRightOffsetRef.current = null;
+    const chart = chartRef.current;
+    if (!chart) return;
+    chart.timeScale().applyOptions({ rightOffset: RIGHT_PAD_BARS });
+    if (autoFitRef.current && lastCandleCountRef.current > 0) {
+      programmaticRangeRef.current = true;
+      chart.timeScale().fitContent();
+      requestAnimationFrame(() => {
+        programmaticRangeRef.current = false;
+        updateHandlePosition();
+        paintDrawings();
+      });
+    }
+  }, [positionModel, paintDrawings, updateHandlePosition]);
 
   const drawingHandlersRef = useRef({
     tryHandlePointerDown,
@@ -700,12 +776,11 @@ export const ReplayChartPane = forwardRef<ReplayChartPaneHandle, ReplayChartPane
       if (!hit) return;
       // Overlay Position : entry/SL/TP uniquement dans la boîte (pas hors outil).
       // La sortie reste saisissable sur toute la largeur.
-      if (
-        hideTradeLinesRef.current &&
-        hit !== 'exit' &&
-        !drawingHandlersRef.current.isInsidePositionBox(x, y)
-      ) {
-        return;
+      if (hideTradeLinesRef.current && hit !== 'exit') {
+        if (!drawingHandlersRef.current.isInsidePositionBox(x, y, LINE_HIT_PX)) {
+          return;
+        }
+        onPositionSelectRef.current?.(true);
       }
       event.preventDefault();
       event.stopPropagation();
@@ -722,16 +797,33 @@ export const ReplayChartPane = forwardRef<ReplayChartPaneHandle, ReplayChartPane
     const onPointerMove = (event: PointerEvent) => {
       if (!seriesRef.current) return;
       if (handleDraggingRef.current) return;
-      if (drawingHandlersRef.current.tryPositionPointerMove(event)) return;
-      if (drawingHandlersRef.current.tryHandlePointerMove(event)) return;
+      // Drag de niveau en cours : ne pas laisser le survol de la boîte Position
+      // (curseur) avaler le mouvement, sinon on ne peut pas rapprocher TP/SL de l’entrée.
+      if (!dragKeyRef.current) {
+        if (drawingHandlersRef.current.tryPositionPointerMove(event)) return;
+        if (drawingHandlersRef.current.tryHandlePointerMove(event)) return;
+      }
       const rect = el.getBoundingClientRect();
+      const x = event.clientX - rect.left;
       const y = event.clientY - rect.top;
 
       if (!dragKeyRef.current) {
         if (drawingLockRef.current) return;
-        // Overlay Position actif : le curseur est géré par l’outil (dans la boîte).
-        // Ne pas réappliquer ns-resize sur toute la largeur du chart (même Y que SL/TP).
+        // Overlay Position actif : ns-resize seulement près d’un niveau dans
+        // l’emprise horizontale de la boîte (pas sur toute la largeur du chart).
         if (hideTradeLinesRef.current) {
+          const near = findNearestLevel(
+            seriesRef.current,
+            levelsRef.current,
+            y,
+            preferredLevelRef.current,
+            exclusiveHit(),
+          );
+          const onLevel =
+            near != null &&
+            near !== 'exit' &&
+            drawingHandlersRef.current.isInsidePositionBox(x, y, LINE_HIT_PX);
+          el.style.cursor = onLevel ? 'ns-resize' : '';
           return;
         }
         const hit = findNearestLevel(

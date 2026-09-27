@@ -30,13 +30,17 @@ describe('positionToolState', () => {
       entryTime: candles[20].time,
       candles,
       visiblePriceRange: 20,
+      visibleBarCount: 80,
     });
     expect(placed.draftPatch.direction).toBe('LONG');
     expect(placed.draftPatch.entryPrice).toBe(105);
     expect(placed.draftPatch.stopPrice).toBeLessThan(105);
     expect(placed.draftPatch.targetPrice).toBeGreaterThan(105);
     expect(placed.uiPatch.active).toBe(true);
-    expect(placed.uiPatch.endTime).toBeGreaterThan(candles[20].time);
+    expect(placed.uiPatch.widthBars).toBe(10); // round(80 * 0.12)
+    expect(placed.uiPatch.endTime).toBe(
+      candles[20].time + (placed.uiPatch.widthBars as number) * 60,
+    );
   });
 
   it('positionOverlayFromDraft requires active ui + full levels', () => {

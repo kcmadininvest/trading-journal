@@ -75,6 +75,8 @@ interface ReplayGridProps {
   onArmPositionSide?: (side: 'LONG' | 'SHORT' | null) => void;
   /** Accès au premier pane pour plage prix visible au placement. */
   onPrimaryPaneRef?: (handle: ReplayChartPaneHandle | null) => void;
+  /** Accès à chaque pane (viewport / reveal Position). */
+  onPaneRef?: (chartId: string, handle: ReplayChartPaneHandle | null) => void;
 }
 
 const paneToggleClass = (active: boolean) =>
@@ -120,6 +122,7 @@ export const ReplayGrid: React.FC<ReplayGridProps> = ({
   armedPositionSide = null,
   onArmPositionSide,
   onPrimaryPaneRef,
+  onPaneRef,
 }) => {
   const { t } = useTranslation('marketReplay');
   const paneRefs = useRef<Record<string, ReplayChartPaneHandle | null>>({});
@@ -414,6 +417,7 @@ export const ReplayGrid: React.FC<ReplayGridProps> = ({
                 ref={(instance) => {
                   paneRefs.current[pane.chartId] = instance;
                   if (paneIndex === 0) onPrimaryPaneRef?.(instance);
+                  onPaneRef?.(pane.chartId, instance);
                 }}
                 candles={pane.candles}
                 overlays={overlaysByPane[pane.chartId] ?? []}

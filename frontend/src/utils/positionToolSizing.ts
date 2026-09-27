@@ -34,7 +34,10 @@ export const DEFAULT_POSITION_SIZING: Required<InitialLevelsParams> = {
 };
 
 /** Fraction de bougies visibles pour la largeur horizontale de la boîte. */
-export const POSITION_BOX_WIDTH_FRACTION = 0.18;
+export const POSITION_BOX_WIDTH_FRACTION = 0.12;
+/** Bornes absolues (barres) pour la largeur initiale. */
+export const POSITION_BOX_MIN_BARS = 8;
+export const POSITION_BOX_MAX_BARS = 40;
 
 export function clamp(value: number, min: number, max: number): number {
   if (max < min) return value;
@@ -151,25 +154,36 @@ export function computeInitialLevels(
 }
 
 /**
- * Largeur horizontale de la boîte en nombre de barres (fraction du visible).
+ * Largeur horizontale de la boîte en nombre de barres.
+ * `visibleBarCount` = barres dans le viewport (fallback = candleTimes.length).
  */
 export function computeBoxWidthBars(
   candleTimes: number[],
+  visibleBarCount?: number | null,
   widthFraction = POSITION_BOX_WIDTH_FRACTION,
 ): number {
-  if (candleTimes.length === 0) return 2;
-  return Math.max(2, Math.round(candleTimes.length * widthFraction));
+  const base =
+    visibleBarCount != null &&
+    Number.isFinite(visibleBarCount) &&
+    visibleBarCount > 0
+      ? visibleBarCount
+      : candleTimes.length;
+  if (!(base > 0)) return POSITION_BOX_MIN_BARS;
+  return clamp(
+    Math.round(base * widthFraction),
+    POSITION_BOX_MIN_BARS,
+    POSITION_BOX_MAX_BARS,
+  );
 }
 
 /**
- * Calcule endTime (bord droit) à partir de l’index d’entrée et des timestamps bougies.
+ * Index logique le plus proche de entryTime dans candleTimes.
  */
-export function computeBoxEndTime(
+export function findEntryLogicalIndex(
   candleTimes: number[],
   entryTime: number,
-  widthFraction = POSITION_BOX_WIDTH_FRACTION,
 ): number {
-  if (candleTimes.length === 0) return entryTime;
+  if (candleTimes.length === 0) return 0;
   let entryIdx = 0;
   let bestDist = Math.abs(candleTimes[0] - entryTime);
   for (let i = 1; i < candleTimes.length; i += 1) {
@@ -179,15 +193,35 @@ export function computeBoxEndTime(
       entryIdx = i;
     }
   }
-  const widthBars = computeBoxWidthBars(candleTimes, widthFraction);
-  const endIdx = Math.min(candleTimes.length - 1, entryIdx + widthBars);
-  if (endIdx > entryIdx) return candleTimes[endIdx];
-  // Extrapolation si pas assez de bougies à droite
-  if (candleTimes.length >= 2) {
-    const step = candleTimes[candleTimes.length - 1] - candleTimes[candleTimes.length - 2];
-    return entryTime + Math.max(step, 1) * widthBars;
+  return entryIdx;
+}
+
+/**
+ * Calcule endTime (bord droit) à partir de widthBars (peut extrapoler au-delà
+ * de la dernière bougie — cohérent avec resolveModel / logicalIndexToTime).
+ */
+export function computeBoxEndTime(
+  candleTimes: number[],
+  entryTime: number,
+  widthBars: number,
+): number {
+  if (candleTimes.length === 0) return entryTime;
+  const entryIdx = findEntryLogicalIndex(candleTimes, entryTime);
+  const safeWidth = Math.max(1, widthBars);
+  const endLogical = entryIdx + safeWidth;
+  const last = candleTimes.length - 1;
+  if (endLogical <= last) {
+    const i0 = Math.floor(endLogical);
+    const frac = endLogical - i0;
+    if (frac < 1e-9 || i0 >= last) return candleTimes[i0];
+    return candleTimes[i0] + frac * (candleTimes[i0 + 1] - candleTimes[i0]);
   }
-  return entryTime + widthBars;
+  // Extrapolation au-delà de la dernière bougie
+  if (candleTimes.length >= 2) {
+    const step = candleTimes[last] - candleTimes[last - 1];
+    return candleTimes[last] + Math.max(step, 1) * (endLogical - last);
+  }
+  return entryTime + safeWidth;
 }
 
 /** Plage prix visible à partir des bougies (fallback si l’échelle Y LWC est absente). */
