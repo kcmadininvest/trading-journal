@@ -88,6 +88,7 @@
   "colNumber": "#",
   "datetime": "開始",
   "exitDatetime": "決済",
+  "duration": "保有時間",
   "direction": "Side",
   "setupValid": "Valid setup",
   "tradeTaken": "Taken",

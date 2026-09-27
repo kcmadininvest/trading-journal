@@ -88,6 +88,7 @@
   "colNumber": "#",
   "datetime": "开仓",
   "exitDatetime": "平仓",
+  "duration": "持仓时长",
   "direction": "Side",
   "setupValid": "Valid setup",
   "tradeTaken": "Taken",

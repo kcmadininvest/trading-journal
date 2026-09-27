@@ -90,6 +90,7 @@
   "colNumber": "#",
   "datetime": "Ouverture",
   "exitDatetime": "Clôture",
+  "duration": "Durée",
   "direction": "Sens",
   "setupValid": "Setup valide",
   "tradeTaken": "Pris",

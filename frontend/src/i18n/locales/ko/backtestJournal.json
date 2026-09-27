@@ -88,6 +88,7 @@
   "colNumber": "#",
   "datetime": "진입",
   "exitDatetime": "청산",
+  "duration": "보유 시간",
   "direction": "Side",
   "setupValid": "Valid setup",
   "tradeTaken": "Taken",

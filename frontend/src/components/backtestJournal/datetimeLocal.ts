@@ -80,3 +80,32 @@ export function statusFromPoints(
   if (Math.abs(points) < 1e-9) return 'BREAKEVEN';
   return points > 0 ? 'WIN' : 'LOSS';
 }
+
+/** Parse une valeur datetime-local (YYYY-MM-DDTHH:mm) en ms (epoch arbitraire, pour diffs). */
+function datetimeLocalToMs(local: string): number | null {
+  if (!local) return null;
+  const [datePart, timePart = '00:00'] = local.split('T');
+  const [year, month, day] = datePart.split('-').map(Number);
+  const [hour = 0, minute = 0, second = 0] = timePart.split(':').map(Number);
+  if (!year || !month || !day) return null;
+  return Date.UTC(year, month - 1, day, hour, minute, second || 0);
+}
+
+/**
+ * Durée de position au format HH:MM:SS (comme duration_str des trades).
+ * Les deux valeurs sont en datetime-local du même fuseau.
+ */
+export function formatPositionDuration(
+  openLocal: string,
+  exitLocal: string,
+): string | null {
+  const openMs = datetimeLocalToMs(openLocal);
+  const exitMs = datetimeLocalToMs(exitLocal);
+  if (openMs == null || exitMs == null) return null;
+  const totalSeconds = Math.floor((exitMs - openMs) / 1000);
+  if (totalSeconds < 0) return null;
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+}

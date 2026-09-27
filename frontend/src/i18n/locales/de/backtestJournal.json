@@ -89,6 +89,7 @@
   "colNumber": "#",
   "datetime": "Eröffnung",
   "exitDatetime": "Schluss",
+  "duration": "Dauer",
   "direction": "Richtung",
   "setupValid": "Gültiges Setup",
   "tradeTaken": "Genommen",

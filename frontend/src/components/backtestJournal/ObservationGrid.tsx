@@ -16,6 +16,7 @@ import {
 import { userService } from '../../services/userService';
 import {
   datetimeLocalToIso,
+  formatPositionDuration,
   isoToDatetimeLocal,
   previewResultPoints,
   previewResultR,
@@ -36,6 +37,7 @@ const GRID_COLUMNS = [
   'colNumber',
   'datetime',
   'exitDatetime',
+  'duration',
   'direction',
   'tradeTaken',
   'entry',
@@ -634,6 +636,7 @@ export function ObservationGrid({ campaign, onStatsInvalidate }: Props) {
               const exitNum = parseLocalizedNumber(row.exit_price, numberFormat);
               const preview = previewResultR(row.direction, entryNum, stopNum, exitNum);
               const pointsPreview = previewResultPoints(row.direction, entryNum, exitNum);
+              const durationLabel = formatPositionDuration(row.market_datetime, row.exit_datetime);
               const rowNumber = pageStart + rowIndex + 1;
               return (
                 <tr
@@ -701,6 +704,12 @@ export function ObservationGrid({ campaign, onStatsInvalidate }: Props) {
                     {row.errors.exit_datetime && (
                       <div className="text-[11px] text-red-600 dark:text-red-400">{row.errors.exit_datetime}</div>
                     )}
+                  </td>
+                  <td
+                    className={`${cellClass} min-w-[5rem] whitespace-nowrap tabular-nums text-gray-700 dark:text-gray-300`}
+                    aria-label={t('duration')}
+                  >
+                    {durationLabel ?? '—'}
                   </td>
                   <td className={`${cellClass} min-w-[5.5rem]`}>
                     <div className="relative">

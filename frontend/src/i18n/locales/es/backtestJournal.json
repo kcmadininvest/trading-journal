@@ -89,6 +89,7 @@
   "colNumber": "#",
   "datetime": "Apertura",
   "exitDatetime": "Cierre",
+  "duration": "Duración",
   "direction": "Dirección",
   "setupValid": "Setup válido",
   "tradeTaken": "Tomado",
