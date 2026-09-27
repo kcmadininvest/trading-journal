@@ -10,6 +10,7 @@ from market_data.models import BarCoverage, HistoricalBar, HistoricalDownloadJob
 from market_data.services.downloader import (
     _subtract_ranges,
     download_contract_range,
+    run_download_job,
 )
 from market_data.services.ingester import bulk_insert_bars
 from market_data.services.normalizer import normalize_bars
@@ -205,3 +206,67 @@ class DownloadContractRangeTests(TestCase):
         lives = [c.kwargs.get('live') for c in client.retrieve_bars.call_args_list]
         self.assertIn(False, lives)
         self.assertIn(True, lives)
+
+    def test_download_job_fetches_m1_once_and_derives_requested_timeframe(self):
+        job = HistoricalDownloadJob.objects.create(
+            user=self.user,
+            instrument='MES',
+            contract_id='CON.F.US.MES.U26',
+            timeframe='1m',
+            requested_timeframes=['5m'],
+            start_utc=self.start,
+            end_utc=self.end,
+        )
+        client = MagicMock()
+        client.retrieve_bars.return_value = make_m1_bars(self.start, 5)
+
+        with (
+            patch('market_data.services.downloader.get_topstepx_integration', return_value=MagicMock()),
+            patch('market_data.services.downloader.get_valid_session_token', return_value='token'),
+            patch('market_data.services.downloader.TopStepXApiClient', return_value=client),
+            patch('market_data.services.downloader.list_contracts_for_instrument', return_value=[]),
+            patch('market_data.services.downloader.time.sleep'),
+        ):
+            run_download_job(job.id)
+
+        job.refresh_from_db()
+        self.assertEqual(job.status, HistoricalDownloadJob.Status.COMPLETED)
+        self.assertEqual(job.requested_timeframes, ['5m'])
+        self.assertEqual(client.retrieve_bars.call_count, 1)
+        self.assertEqual(client.retrieve_bars.call_args.kwargs['unit_number'], 1)
+        self.assertEqual(
+            HistoricalBar.objects.filter(
+                contract_id=job.contract_id,
+                timeframe='5m',
+            ).count(),
+            1,
+        )
+
+    def test_derived_job_retry_rebuilds_from_original_window(self):
+        job = HistoricalDownloadJob.objects.create(
+            user=self.user,
+            instrument='MES',
+            contract_id='CON.F.US.MES.U26',
+            timeframe='1m',
+            requested_timeframes=['5m'],
+            start_utc=self.start,
+            end_utc=self.end,
+            last_chunk_end=self.start + timedelta(minutes=2),
+        )
+        client = MagicMock()
+        client.retrieve_bars.return_value = make_m1_bars(self.start, 5)
+
+        with (
+            patch('market_data.services.downloader.get_topstepx_integration', return_value=MagicMock()),
+            patch('market_data.services.downloader.get_valid_session_token', return_value='token'),
+            patch('market_data.services.downloader.TopStepXApiClient', return_value=client),
+            patch('market_data.services.downloader.list_contracts_for_instrument', return_value=[]),
+            patch('market_data.services.downloader.time.sleep'),
+        ):
+            run_download_job(job.id)
+
+        self.assertEqual(client.retrieve_bars.call_args.kwargs['start_time'], self.start)
+        self.assertEqual(HistoricalBar.objects.filter(
+            contract_id=job.contract_id,
+            timeframe='5m',
+        ).count(), 1)

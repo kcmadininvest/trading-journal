@@ -45,6 +45,7 @@ export interface DownloadJob {
   instrument: string;
   contract_id: string;
   timeframe: string;
+  requested_timeframes?: string[];
   trigger?: string;
   start_utc: string;
   end_utc: string;
@@ -84,6 +85,7 @@ export interface SyncRunJob {
   id: number;
   instrument: string;
   timeframe: string;
+  requested_timeframes?: string[];
   status: string;
   bars_fetched: number;
   error: string;
@@ -197,6 +199,7 @@ class HistoricalDataService {
     timeframes: string[];
     start: string;
     end: string;
+    session_dates?: boolean;
   }): Promise<{ jobs: DownloadJob[] }> {
     const res = await this.fetchWithAuth(`${this.BASE_URL}/api/market-data/downloads/`, {
       method: 'POST',
@@ -241,6 +244,7 @@ class HistoricalDataService {
     start: string;
     end: string;
     contract_id?: string;
+    session_dates?: boolean;
   }): Promise<Blob> {
     const qs = new URLSearchParams({
       instrument: params.instrument,
@@ -249,6 +253,7 @@ class HistoricalDataService {
       end: params.end,
     });
     if (params.contract_id) qs.set('contract_id', params.contract_id);
+    if (params.session_dates) qs.set('session_dates', '1');
     const res = await this.fetchWithAuth(`${this.BASE_URL}/api/market-data/bars/export/?${qs}`);
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));

@@ -4,6 +4,7 @@ import {
   bucketOpenUnix,
   getVisibleCandles,
   pickReplayBaseTimeframe,
+  ReplayEngine,
   followAppendedBarsRange,
   type ReplayChartConfiguration,
 } from './replayEngine';
@@ -47,6 +48,38 @@ describe('pickReplayBaseTimeframe', () => {
   });
 });
 
+describe('ReplayEngine session alignment', () => {
+  const startTimestamp = Math.floor(Date.parse('2026-09-07T22:00:00Z') / 1000);
+  const endTimestamp = Math.floor(Date.parse('2026-09-08T21:00:00Z') / 1000);
+
+  it('steps a four-hour base timeframe from the session open and reaches the partial final bucket', () => {
+    const engine = new ReplayEngine({
+      symbol: 'MES',
+      startTimestamp,
+      endTimestamp,
+      charts: [{ chartId: 'a', timeframe: tf('4h', 14400) }],
+    });
+
+    engine.stepForward();
+    expect(new Date(engine.replayTimestamp * 1000).toISOString()).toBe('2026-09-08T02:00:00.000Z');
+    engine.setTimestamp(Math.floor(Date.parse('2026-09-08T18:00:00Z') / 1000));
+    engine.stepForward();
+    expect(engine.replayTimestamp).toBe(endTimestamp);
+  });
+
+  it('reaches the session close with a daily base timeframe', () => {
+    const engine = new ReplayEngine({
+      symbol: 'MES',
+      startTimestamp,
+      endTimestamp,
+      charts: [{ chartId: 'a', timeframe: tf('1d', 86400) }],
+    });
+
+    engine.stepForward();
+    expect(engine.replayTimestamp).toBe(endTimestamp);
+  });
+});
+
 describe('bucketOpenUnix', () => {
   it('aligns to duration grid', () => {
     // 2025-03-10 14:07:00 UTC
@@ -86,6 +119,47 @@ describe('getVisibleCandles', () => {
     expect(visible[0].open).toBe(100);
     expect(visible[0].high).toBe(103);
     expect(visible[0].low).toBe(99);
+    expect(visible[0].close).toBe(102);
+  });
+
+  it('forms session-aligned four-hour bars from their native open', () => {
+    const open = Math.floor(Date.parse('2026-09-07T22:00:00Z') / 1000);
+    const higher = [
+      candle('2026-09-07T22:00:00Z', 100, 110, 99, 105),
+      candle('2026-09-08T02:00:00Z', 105, 112, 104, 108),
+    ];
+    const lower = [
+      candle('2026-09-07T22:00:00Z', 100, 102, 99, 101),
+      candle('2026-09-07T22:02:00Z', 101, 103, 100, 102),
+    ];
+    const visible = getVisibleCandles(higher, tf('4h', 14400), open + 120, lower, tf('2m', 120));
+
+    expect(visible).toHaveLength(1);
+    expect(visible[0].time).toBe(open);
+    expect(visible[0].close).toBe(102);
+  });
+
+  it('shows a session-aligned native bar when it is the base timeframe', () => {
+    const open = Math.floor(Date.parse('2026-09-07T22:00:00Z') / 1000);
+    const native = [candle('2026-09-07T22:00:00Z', 100, 110, 99, 105)];
+    const visible = getVisibleCandles(native, tf('4h', 14400), open, native, tf('4h', 14400));
+
+    expect(visible).toHaveLength(1);
+    expect(visible[0].time).toBe(open);
+  });
+
+  it('keeps the daily forming bar anchored to the session open', () => {
+    const open = Math.floor(Date.parse('2026-09-07T22:00:00Z') / 1000);
+    const replay = Math.floor(Date.parse('2026-09-08T20:59:00Z') / 1000);
+    const daily = [candle('2026-09-07T22:00:00Z', 100, 120, 95, 110)];
+    const lower = [
+      candle('2026-09-07T22:00:00Z', 100, 102, 99, 101),
+      candle('2026-09-08T20:59:00Z', 101, 103, 100, 102),
+    ];
+    const visible = getVisibleCandles(daily, tf('1d', 86400), replay, lower, tf('1m', 60));
+
+    expect(visible).toHaveLength(1);
+    expect(visible[0].time).toBe(open);
     expect(visible[0].close).toBe(102);
   });
 

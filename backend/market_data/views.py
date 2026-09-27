@@ -4,7 +4,7 @@ from __future__ import annotations
 import csv
 import io
 import logging
-from datetime import date as date_cls
+from datetime import date as date_cls, timezone
 
 from django.http import HttpResponse
 from django.utils.dateparse import parse_datetime
@@ -33,7 +33,10 @@ from market_data.serializers import (
     SyncRunSerializer,
     SyncSettingsSerializer,
 )
-from market_data.services.available_sessions import list_available_sessions
+from market_data.services.available_sessions import (
+    list_available_sessions,
+    list_session_timeframes,
+)
 from market_data.services.available_timeframes import (
     latest_replay_coverage,
     list_available_timeframes,
@@ -50,6 +53,7 @@ from market_data.services.download_dispatch import (
 )
 from market_data.services.instruments import list_instruments, search_instruments
 from market_data.services.replay_bars import ReplayBarsError, fetch_replay_bars
+from market_data.services.sessions import get_session_profile, resolve_session_range_utc, session_bounds_utc
 from market_data.services.sync_schedule import (
     SCHEDULER_STALE_MINUTES,
     run_sync_for_settings,
@@ -209,6 +213,42 @@ class InstrumentAvailableSessionsView(APIView):
         })
 
 
+class InstrumentSessionTimeframesView(APIView):
+    """Timeframes stockés pour une séance donnée + bornes UTC (Market Replay)."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, instrument: str):
+        symbol = (instrument or '').upper().strip()
+        if not symbol:
+            return Response({'detail': 'Instrument requis.'}, status=400)
+        session_date = request.query_params.get('session_date')
+        if not session_date:
+            return Response({'detail': 'Paramètre session_date requis.'}, status=400)
+        contract = request.query_params.get('contract') or 'front'
+        try:
+            from django.utils.dateparse import parse_date
+            parsed = parse_date(session_date)
+            if parsed is None:
+                raise ValueError(f'Date de séance invalide: {session_date!r}')
+            timeframes = list_session_timeframes(
+                symbol,
+                parsed,
+                contract=contract,
+            )
+            start_utc, end_utc = resolve_session_range_utc(parsed, symbol)
+        except ValueError as exc:
+            return Response({'detail': str(exc)}, status=400)
+        return Response({
+            'symbol': symbol,
+            'session_date': session_date,
+            'contract': contract,
+            'timeframes': timeframes,
+            'start_utc': start_utc.isoformat().replace('+00:00', 'Z'),
+            'end_utc': end_utc.isoformat().replace('+00:00', 'Z'),
+        })
+
+
 class BarsJsonView(APIView):
     """Séries OHLCV JSON multi-timeframe pour Market Replay."""
 
@@ -302,6 +342,14 @@ class BarsCsvExportView(APIView):
         end = (request.query_params.get('end') or '').strip()
         if not start or not end:
             return Response({'detail': 'Paramètres start et end requis.'}, status=400)
+        start_label, end_label = start[:10], end[:10]
+        if request.query_params.get('session_dates') in ('1', 'true') and get_session_profile(instrument):
+            start_date = _parse_query_date(start)
+            end_date = _parse_query_date(end)
+            if not start_date or not end_date:
+                return Response({'detail': 'Dates de séance invalides.'}, status=400)
+            start = session_bounds_utc(start_date, instrument)[0].isoformat()
+            end = session_bounds_utc(end_date, instrument)[1].isoformat()
 
         raw_tf = (request.query_params.get('timeframe') or '1m').strip()
         try:
@@ -351,7 +399,7 @@ class BarsCsvExportView(APIView):
 
         filename = (
             f"{instrument}_{timeframe}_"
-            f"{start[:10]}_{end[:10]}.csv"
+            f"{start_label}_{end_label}.csv"
         ).replace(' ', '_')
         response = HttpResponse(
             buffer.getvalue(),
@@ -382,6 +430,12 @@ class DownloadJobListCreateView(APIView):
         ser = DownloadJobCreateSerializer(data=request.data)
         ser.is_valid(raise_exception=True)
         data = ser.validated_data
+        profile_known = get_session_profile(data['instrument']) is not None
+        start = data['start']
+        end = data['end']
+        if profile_known and data['session_dates']:
+            start = session_bounds_utc(start.astimezone(timezone.utc).date(), data['instrument'])[0]
+            end = session_bounds_utc(end.astimezone(timezone.utc).date(), data['instrument'])[1]
 
         # Libère les jobs orphelins / bloqués, puis annule tout job actif
         # de cet utilisateur pour permettre une relance immédiate.
@@ -393,20 +447,38 @@ class DownloadJobListCreateView(APIView):
         )
 
         jobs = []
-        for tf in data['timeframes']:
+        requested_timeframes = data['timeframes']
+        if profile_known:
             job = HistoricalDownloadJob.objects.create(
                 user=request.user,
                 instrument=data['instrument'],
                 contract_id=data.get('contract_id') or '',
-                timeframe=tf,
+                timeframe='1m',
+                requested_timeframes=requested_timeframes,
                 trigger=HistoricalDownloadJob.Trigger.MANUAL,
-                start_utc=data['start'],
-                end_utc=data['end'],
+                start_utc=start,
+                end_utc=end,
                 status=HistoricalDownloadJob.Status.PENDING,
             )
             dispatch_historical_download(job.id)
             job.refresh_from_db()
             jobs.append(job)
+        else:
+            for tf in requested_timeframes:
+                job = HistoricalDownloadJob.objects.create(
+                    user=request.user,
+                    instrument=data['instrument'],
+                    contract_id=data.get('contract_id') or '',
+                    timeframe=tf,
+                    requested_timeframes=[tf],
+                    trigger=HistoricalDownloadJob.Trigger.MANUAL,
+                    start_utc=start,
+                    end_utc=end,
+                    status=HistoricalDownloadJob.Status.PENDING,
+                )
+                dispatch_historical_download(job.id)
+                job.refresh_from_db()
+                jobs.append(job)
 
         return Response(
             {'jobs': DownloadJobSerializer(jobs, many=True).data},

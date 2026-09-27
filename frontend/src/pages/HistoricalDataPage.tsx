@@ -39,6 +39,9 @@ const DEFAULT_LOOKBACK_DAYS = 7;
 const SYNC_RUNS_LIMIT = 50;
 const SYNC_RUNS_PAGE_SIZE_DEFAULT = 5;
 const SYNC_RUNS_PAGE_SIZE_OPTIONS = [5, 10, 25, 50];
+const jobTimeframes = (job: DownloadJob) =>
+  job.requested_timeframes?.length ? job.requested_timeframes : [job.timeframe];
+
 /** Poll tant que l’onglet Sync est ouvert (découvrir un run démarré hors page). */
 const SYNC_STATUS_POLL_MS = 4000;
 const SYNC_IDLE_POLL_MS = 15000;
@@ -65,13 +68,13 @@ const HistoricalDataPage: React.FC = () => {
   );
   const [end, setEnd] = useState(() => getTodayDateInTimezone('Europe/Paris'));
   const [timeframes, setTimeframes] = useState<string[]>(['1m']);
+  const [exportTimeframes, setExportTimeframes] = useState<string[]>(['1m']);
   const [batchJobs, setBatchJobs] = useState<DownloadJob[]>([]);
   const [coverage, setCoverage] = useState<CoverageEntry[]>([]);
   const [issues, setIssues] = useState<QualityIssue[]>([]);
   const [bootLoading, setBootLoading] = useState(true);
   const [starting, setStarting] = useState(false);
   const [bottomTab, setBottomTab] = useState<'coverage' | 'issues'>('coverage');
-  const [pageTab, setPageTab] = useState<'download' | 'sync'>('sync');
   const [coverageFilter, setCoverageFilter] = useState<'all' | 'with_data' | 'empty'>('with_data');
   const [coveragePageSize, setCoveragePageSize] = useState(
     () => preferences.items_per_page ?? DEFAULT_ITEMS_PER_PAGE,
@@ -106,7 +109,15 @@ const HistoricalDataPage: React.FC = () => {
       batchJobs[batchJobs.length - 1]
     );
   }, [batchJobs]);
-  const batchDoneCount = batchJobs.filter((j) => TERMINAL.has(j.status)).length;
+  const batchTimeframeTotal = batchJobs.reduce((total, job) => total + jobTimeframes(job).length, 0);
+  const batchTimeframeDone = batchJobs.reduce(
+    (total, job) => total + (job.status === 'completed' ? jobTimeframes(job).length : 0),
+    0,
+  );
+  const batchTimeframeFailed = batchJobs.reduce(
+    (total, job) => total + (job.status === 'failed' || job.status === 'cancelled' ? jobTimeframes(job).length : 0),
+    0,
+  );
 
   useEffect(() => {
     setEnd((prev) => (prev > todayIso ? todayIso : prev));
@@ -281,7 +292,6 @@ const HistoricalDataPage: React.FC = () => {
   // Tant que l’onglet Sync est visible : rafraîchir sans F5 (y compris pour
   // découvrir un run planifié démarré alors que le statut local était terminal).
   useEffect(() => {
-    if (pageTab !== 'sync') return undefined;
     void refreshSyncStatus();
     void loadSyncHealth();
     const intervalMs =
@@ -291,7 +301,7 @@ const HistoricalDataPage: React.FC = () => {
       void loadSyncHealth();
     }, intervalMs);
     return () => window.clearInterval(timer);
-  }, [pageTab, syncStatus, refreshSyncStatus, loadSyncHealth]);
+  }, [syncStatus, refreshSyncStatus, loadSyncHealth]);
 
   useEffect(() => {
     if (!instrument) return;
@@ -354,27 +364,26 @@ const HistoricalDataPage: React.FC = () => {
         if (instr) void loadCoverage(instr);
       })();
 
-      const failed = batchJobs.filter((j) => j.status === 'failed');
-      const completed = batchJobs.filter((j) => j.status === 'completed');
-      const total = batchJobs.length;
-      if (failed.length === 0) {
-        toast.success(t('batchCompleted', { done: completed.length, total }));
-      } else if (completed.length === 0) {
+      const failedJob = batchJobs.find((j) => j.status === 'failed' || j.status === 'cancelled');
+      const total = batchTimeframeTotal;
+      if (batchTimeframeFailed === 0) {
+        toast.success(t('batchCompleted', { done: batchTimeframeDone, total }));
+      } else if (batchTimeframeDone === 0) {
         toast.error(
-          failed[0]?.error || t('batchFailed', { failed: failed.length, total }),
+          failedJob?.error || t('batchFailed', { failed: batchTimeframeFailed, total }),
         );
       } else {
         toast(
           t('batchPartial', {
-            done: completed.length,
-            failed: failed.length,
+            done: batchTimeframeDone,
+            failed: batchTimeframeFailed,
             total,
           }),
         );
       }
     }
     batchBusyRef.current = isBusy;
-  }, [batchJobs, loadCoverage, t]);
+  }, [batchJobs, batchTimeframeDone, batchTimeframeFailed, batchTimeframeTotal, loadCoverage, t]);
 
   const handleStart = async () => {
     if (!instrument || !start || !end || timeframes.length === 0) return;
@@ -389,6 +398,7 @@ const HistoricalDataPage: React.FC = () => {
         timeframes,
         start: `${start}T00:00:00Z`,
         end: `${endClamped}T23:59:59Z`,
+        session_dates: true,
       });
       setBatchJobs(created.jobs);
       setBottomTab('coverage');
@@ -611,16 +621,17 @@ const HistoricalDataPage: React.FC = () => {
   }, [filteredCoverage]);
 
   const handleExportCsv = async () => {
-    if (!instrument || !start || !end || timeframes.length === 0) return;
+    if (!instrument || !start || !end || exportTimeframes.length === 0) return;
     setExporting(true);
     try {
-      for (const tf of timeframes) {
+      for (const tf of exportTimeframes) {
         const blob = await historicalDataService.exportBarsCsv({
           instrument,
           timeframe: tf,
           start: `${start}T00:00:00Z`,
           end: `${end}T23:59:59Z`,
           contract_id: contractId || undefined,
+          session_dates: true,
         });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -632,9 +643,9 @@ const HistoricalDataPage: React.FC = () => {
         URL.revokeObjectURL(url);
       }
       toast.success(
-        timeframes.length === 1
+        exportTimeframes.length === 1
           ? t('exportSuccess')
-          : t('exportSuccessMulti', { count: timeframes.length }),
+          : t('exportSuccessMulti', { count: exportTimeframes.length }),
       );
     } catch (e) {
       toast.error(e instanceof Error ? e.message : t('exportError'));
@@ -730,23 +741,27 @@ const HistoricalDataPage: React.FC = () => {
     let pending = 0;
     let failed = 0;
     for (const job of run.jobs || []) {
-      const label = `${job.instrument} ${job.timeframe}`;
+      const timeframes = job.requested_timeframes?.length ? job.requested_timeframes : [job.timeframe];
+      const label = `${job.instrument} ${timeframes.join(', ')}`;
       if (job.status === 'pending' || job.status === 'running') {
-        pending += 1;
+        pending += timeframes.length;
         continue;
       }
       if (job.status === 'completed') {
-        ok += 1;
+        ok += timeframes.length;
         continue;
       }
       // failed / cancelled — échecs durs uniquement dans le détail
-      failed += 1;
+      failed += timeframes.length;
       const message = job.error || job.status;
       const existing = groups.get(message);
       if (existing) existing.push(label);
       else groups.set(message, [label]);
     }
-    const total = (run.jobs || []).length;
+    const total = (run.jobs || []).reduce(
+      (count, job) => count + (job.requested_timeframes?.length || 1),
+      0,
+    );
     return {
       total,
       ok,
@@ -907,43 +922,15 @@ const HistoricalDataPage: React.FC = () => {
 
   return (
     <PageShell>
-      <div className="mb-4 sm:mb-6">
-        <div className="border-b border-gray-200 dark:border-gray-700">
-          <nav className="-mb-px flex gap-6 overflow-x-auto" aria-label={t('pageTabsAria')}>
-            {(
-              [
-                { id: 'sync' as const, label: t('syncTab') },
-                { id: 'download' as const, label: t('downloadTab') },
-              ] as const
-            ).map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setPageTab(tab.id)}
-                className={`whitespace-nowrap border-b-2 px-1 py-3 text-sm font-medium transition-colors ${
-                  pageTab === tab.id
-                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
-                }`}
-                aria-current={pageTab === tab.id ? 'page' : undefined}
-              >
-                {tab.label}
-                {tab.id === 'sync' && syncEnabled ? ` · ${t('syncOn')}` : ''}
-              </button>
-            ))}
-          </nav>
-        </div>
-      </div>
-
-      {pageTab === 'sync' ? (
-        bootLoading ? (
-          <div className="flex items-center justify-center py-12">
+      {bootLoading ? (
+        <div className="flex items-center justify-center py-12">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-500 mx-auto mb-4" />
               <p className="text-gray-600 dark:text-gray-400">{t('loading')}</p>
             </div>
           </div>
         ) : (
+          <>
           <div className={`${replayCardClass} p-4 sm:p-5`}>
             <div className="flex min-w-0 flex-col gap-4">
               <div>
@@ -1398,9 +1385,15 @@ const HistoricalDataPage: React.FC = () => {
               </div>
             </div>
           </div>
-        )
-      ) : (
-        <>
+          <details className={`${replayCardClass} p-4 sm:p-5`}>
+            <summary className="cursor-pointer list-none text-base font-semibold text-gray-900 dark:text-white">
+              {t('backfillSectionTitle')}
+              <span className="mt-1 block text-sm font-normal text-gray-600 dark:text-gray-400">
+                {t('backfillSectionSubtitle')}
+              </span>
+            </summary>
+            <div className="mt-4 space-y-4">
+          <>
           <div className={`${replayCardClass} p-3 sm:p-4 mb-4 sm:mb-6`}>
             <div className="flex min-w-0 flex-col gap-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
@@ -1458,6 +1451,9 @@ const HistoricalDataPage: React.FC = () => {
                     clearLabel={t('syncTimeframesClear')}
                     selectedCountLabel={(count) => t('syncTimeframesCount', { count })}
                   />
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    {t('sourceTimeframeHint')}
+                  </p>
                 </div>
 
                 <div className="min-w-0">
@@ -1488,6 +1484,19 @@ const HistoricalDataPage: React.FC = () => {
                 </div>
               </div>
 
+              <div className="max-w-xs">
+                <label className={labelClass}>{t('exportTimeframesLabel')}</label>
+                <CustomMultiSelect
+                  className="w-full"
+                  value={exportTimeframes}
+                  onChange={setExportTimeframes}
+                  options={timeframeOptions}
+                  placeholder={t('syncTimeframesPlaceholder')}
+                  clearLabel={t('syncTimeframesClear')}
+                  selectedCountLabel={(count) => t('syncTimeframesCount', { count })}
+                />
+              </div>
+
               <div className="flex w-full flex-wrap items-end gap-2">
                 <button
                   type="button"
@@ -1512,7 +1521,7 @@ const HistoricalDataPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => void handleExportCsv()}
-                  disabled={!instrument || bootLoading || exporting || timeframes.length === 0}
+                  disabled={!instrument || bootLoading || exporting || exportTimeframes.length === 0}
                   className={replaySecondaryButtonClass}
                 >
                   {exporting ? t('exporting') : t('exportCsv')}
@@ -1544,16 +1553,15 @@ const HistoricalDataPage: React.FC = () => {
                     <div>
                       <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                         {t('status')}
-                        {batchJobs.length > 1
+                        {batchTimeframeTotal > 1
                           ? ` · ${t('batchProgress', {
-                              done: batchDoneCount,
-                              total: batchJobs.length,
+                              done: batchTimeframeDone,
+                              total: batchTimeframeTotal,
                             })}`
                           : ''}
                       </p>
                       <p className="text-lg font-bold text-gray-900 dark:text-white">
-                        {statusLabel(focusJob.status)}
-                        {focusJob.timeframe ? ` · ${focusJob.timeframe}` : ''}
+                        {statusLabel(focusJob.status)} · {jobTimeframes(focusJob).join(', ')}
                       </p>
                     </div>
                     <div className="text-right text-sm text-gray-600 dark:text-gray-400">
@@ -1580,17 +1588,19 @@ const HistoricalDataPage: React.FC = () => {
                   <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
                     {t('progress')}: {fmtNum(focusJob.progress_pct)}%
                   </p>
-                  {batchJobs.length > 1 ? (
+                  {batchTimeframeTotal > 1 ? (
                     <ul className="mt-3 flex flex-wrap gap-1.5">
-                      {batchJobs.map((j) => (
-                        <li key={j.id}>
-                          <JobStatusChip
-                            timeframe={j.timeframe}
-                            status={j.status}
-                            label={statusLabel(j.status)}
-                          />
-                        </li>
-                      ))}
+                      {batchJobs.flatMap((job) =>
+                        jobTimeframes(job).map((timeframe) => (
+                          <li key={`${job.id}-${timeframe}`}>
+                            <JobStatusChip
+                              timeframe={timeframe}
+                              status={job.status}
+                              label={statusLabel(job.status)}
+                            />
+                          </li>
+                        )),
+                      )}
                     </ul>
                   ) : null}
                   {focusJob.error && (
@@ -1716,7 +1726,7 @@ const HistoricalDataPage: React.FC = () => {
                         <span className="text-gray-500 dark:text-gray-400"> · {iss.severity}</span>
                         {iss.timestamp_utc ? (
                           <span className="block sm:inline sm:before:content-['·_'] text-gray-500 dark:text-gray-400">
-                            {iss.timestamp_utc}
+                            {fmtDateTime(iss.timestamp_utc)}
                           </span>
                         ) : null}
                         {iss.contract_id ? (
@@ -1749,7 +1759,10 @@ const HistoricalDataPage: React.FC = () => {
             </div>
           )}
         </>
-      )}
+            </div>
+          </details>
+          </>
+        )}
     </PageShell>
   );
 };

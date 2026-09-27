@@ -119,6 +119,36 @@ _REGISTRY: dict[str, RollMethod] = {
 }
 
 
+def front_contract_id_on_date(
+    instrument: str,
+    on_date: date,
+    contracts: list[ResolvedContract],
+) -> str | None:
+    """
+    Contrat front calendaire pour ``on_date``, ou None si aucune échéance
+    résolue (le caller ne doit alors pas filtrer — comportement « tous contrats »).
+    """
+    usable = [c for c in contracts if c.expiry_date is not None]
+    usable.sort(key=lambda c: c.expiry_date or date.max)
+    if not usable:
+        return None
+
+    for i, contract in enumerate(usable):
+        assert contract.expiry_date is not None
+        roll_at = calendar_roll_date(contract.expiry_date, contract.instrument)
+        if i == 0:
+            seg_start = date.min
+        else:
+            prev = usable[i - 1]
+            assert prev.expiry_date is not None
+            seg_start = calendar_roll_date(prev.expiry_date, prev.instrument)
+        if seg_start <= on_date < roll_at:
+            return contract.contract_id
+
+    # Après le dernier roll : dernier contrat (même logique que CalendarRollMethod)
+    return usable[-1].contract_id
+
+
 def register_roll_method(method: RollMethod) -> None:
     _REGISTRY[method.name] = method
 

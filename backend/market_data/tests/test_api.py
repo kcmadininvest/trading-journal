@@ -91,7 +91,9 @@ class MarketDataApiTests(TestCase):
                 format='json',
             )
         self.assertEqual(res.status_code, 201)
-        self.assertEqual(res.json()['jobs'][0]['timeframe'], '5m')
+        job = res.json()['jobs'][0]
+        self.assertEqual(job['timeframe'], '1m')
+        self.assertEqual(job['requested_timeframes'], ['5m'])
         mock_dispatch.assert_called_once()
 
     def test_create_download_multiple_timeframes(self):
@@ -108,9 +110,52 @@ class MarketDataApiTests(TestCase):
             )
         self.assertEqual(res.status_code, 201)
         jobs = res.json()['jobs']
-        self.assertEqual([j['timeframe'] for j in jobs], ['1m', '5m', '1h'])
-        self.assertEqual(HistoricalDownloadJob.objects.filter(user=self.user).count(), 3)
-        self.assertEqual(mock_dispatch.call_count, 3)
+        self.assertEqual(len(jobs), 1)
+        self.assertEqual(jobs[0]['timeframe'], '1m')
+        self.assertEqual(jobs[0]['requested_timeframes'], ['1m', '5m', '1h'])
+        self.assertEqual(HistoricalDownloadJob.objects.filter(user=self.user).count(), 1)
+        self.assertEqual(mock_dispatch.call_count, 1)
+
+    def test_unknown_profile_keeps_native_timeframe_downloads(self):
+        with patch('market_data.views.dispatch_historical_download') as mock_dispatch:
+            res = self.client.post(
+                '/api/market-data/downloads/',
+                {
+                    'instrument': '6A',
+                    'start': '2026-09-08T00:00:00Z',
+                    'end': '2026-09-08T23:59:59Z',
+                    'timeframes': ['5m', '15m'],
+                    'session_dates': True,
+                },
+                format='json',
+            )
+
+        self.assertEqual(res.status_code, 201)
+        jobs = res.json()['jobs']
+        self.assertEqual([job['timeframe'] for job in jobs], ['5m', '15m'])
+        self.assertEqual(mock_dispatch.call_count, 2)
+
+    def test_create_download_uses_session_dates_for_profiled_instrument(self):
+        with patch('market_data.views.dispatch_historical_download') as mock_dispatch:
+            res = self.client.post(
+                '/api/market-data/downloads/',
+                {
+                    'instrument': 'MES',
+                    'start': '2026-09-08T00:00:00Z',
+                    'end': '2026-09-08T23:59:59Z',
+                    'timeframes': ['5m', '15m'],
+                    'session_dates': True,
+                },
+                format='json',
+            )
+
+        self.assertEqual(res.status_code, 201)
+        self.assertEqual(len(res.json()['jobs']), 1)
+        job = HistoricalDownloadJob.objects.get(user=self.user)
+        self.assertEqual(job.start_utc, datetime(2026, 9, 7, 22, 0, tzinfo=dt_tz.utc))
+        self.assertEqual(job.end_utc, datetime(2026, 9, 8, 21, 0, tzinfo=dt_tz.utc))
+        self.assertEqual(job.requested_timeframes, ['5m', '15m'])
+        mock_dispatch.assert_called_once_with(job.id)
 
     def test_create_download_rejects_empty_timeframes(self):
         res = self.client.post(
@@ -236,6 +281,39 @@ class MarketDataApiTests(TestCase):
         self.assertEqual(lines[0], 'timestamp,open,high,low,close,volume,contract_id')
         self.assertEqual(len(lines), 4)  # header + 3 bars
         self.assertIn('CON.F.US.MES.H25', lines[1])
+
+    def test_bars_csv_export_session_dates_includes_previous_evening(self):
+        start = datetime(2026, 9, 7, 22, 0, tzinfo=dt_tz.utc)
+        bars, _ = normalize_bars(
+            make_m1_bars(start, 1) + make_m1_bars(start.replace(day=8, hour=0), 1),
+            instrument='MES',
+        )
+        bulk_insert_bars(
+            bars,
+            instrument='MES',
+            symbol='MESU6',
+            contract_id='CON.F.US.MES.U26',
+            timeframe='1m',
+            source='test',
+        )
+
+        res = self.client.get(
+            '/api/market-data/bars/export/',
+            {
+                'instrument': 'MES',
+                'timeframe': '1m',
+                'start': '2026-09-08T00:00:00Z',
+                'end': '2026-09-08T23:59:59Z',
+                'session_dates': '1',
+                'contract_id': 'CON.F.US.MES.U26',
+            },
+        )
+
+        self.assertEqual(res.status_code, 200)
+        lines = res.content.decode('utf-8').strip().splitlines()
+        self.assertEqual(len(lines), 3)
+        self.assertIn('2026-09-07T22:00:00Z', lines[1])
+        self.assertIn('2026-09-08T00:00:00Z', lines[2])
 
     def test_bars_csv_export_requires_instrument(self):
         res = self.client.get('/api/market-data/bars/export/', {'start': '2025-01-01', 'end': '2025-01-02'})

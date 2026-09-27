@@ -17,6 +17,7 @@ from market_data.models import (
     BarQualityIssue,
     HistoricalDownloadJob,
 )
+from market_data.services.aggregate_storage import aggregate_contract_range
 from market_data.services.contracts import (
     list_contracts_for_instrument,
     upsert_futures_contract,
@@ -24,6 +25,7 @@ from market_data.services.contracts import (
 from market_data.services.ingester import bulk_insert_bars
 from market_data.services.normalizer import normalize_bars
 from market_data.services.roll import get_roll_method
+from market_data.services.sessions import get_session_profile
 from market_data.services.timeframes import parse_timeframe
 from market_data.services.validator import ValidationReport, validate_bars
 
@@ -277,7 +279,8 @@ def download_contract_range(
                     'cancelled': True,
                 }
 
-            # Skip si déjà complete (re-check)
+            # Skip / découpe si déjà complete (tous les gaps restants, pas seulement le 1er)
+            ranges_to_fetch = [(sub_start, sub_end)]
             if _complete_coverages_overlapping(contract_id, timeframe, sub_start, sub_end):
                 still = _subtract_ranges(
                     sub_start, sub_end,
@@ -285,61 +288,115 @@ def download_contract_range(
                 )
                 if not still:
                     continue
-                sub_start, sub_end = still[0]
+                ranges_to_fetch = still
 
-            raw_bars: list[dict] = []
-            source_used = 'topstepx_sim'
-            last_err: Exception | None = None
-            had_http_success = False
-            for live in list(live_modes):
-                try:
-                    def _do_retrieve(token: str, _live=live, _s=sub_start, _e=sub_end):
-                        return retrieve_bars_with_retry(
-                            client, token,
-                            contract_id=contract_id,
-                            start=_s,
-                            end=_e,
-                            live=_live,
-                            timeframe=timeframe,
-                        )
+            for fetch_start, fetch_end in ranges_to_fetch:
+                if _job_cancelled():
+                    return {
+                        'bars_fetched': total_bars,
+                        'chunks_done': chunks_done,
+                        'source': source_used,
+                        'cancelled': True,
+                    }
 
-                    token = get_token()
-                    candidate = _do_retrieve(token)
-                    had_http_success = True
-                    source_used = 'topstepx_live' if live else 'topstepx_sim'
-                    if candidate:
-                        raw_bars = candidate
-                        break
-                    logger.debug(
-                        'retrieveBars empty contract=%s live=%s range=%s→%s',
-                        contract_id, live, sub_start, sub_end,
-                    )
-                except TopStepXApiError as exc:
-                    last_err = exc
-                    logger.warning(
-                        'retrieveBars failed contract=%s live=%s: %s',
-                        contract_id, live, exc,
-                    )
-                    if live and _is_non_retryable_topstep_error(exc) and True in live_modes:
-                        live_modes[:] = [m for m in live_modes if m is not True]
-                        logger.info(
-                            'Live history indisponible pour ce compte — suite en sim uniquement.',
+                raw_bars: list[dict] = []
+                source_used = 'topstepx_sim'
+                last_err: Exception | None = None
+                had_http_success = False
+                for live in list(live_modes):
+                    try:
+                        def _do_retrieve(token: str, _live=live, _s=fetch_start, _e=fetch_end):
+                            return retrieve_bars_with_retry(
+                                client, token,
+                                contract_id=contract_id,
+                                start=_s,
+                                end=_e,
+                                live=_live,
+                                timeframe=timeframe,
+                            )
+
+                        token = get_token()
+                        candidate = _do_retrieve(token)
+                        had_http_success = True
+                        source_used = 'topstepx_live' if live else 'topstepx_sim'
+                        if candidate:
+                            raw_bars = candidate
+                            break
+                        logger.debug(
+                            'retrieveBars empty contract=%s live=%s range=%s→%s',
+                            contract_id, live, fetch_start, fetch_end,
                         )
-            # Échec dur seulement si aucun mode n'a répondu avec succès HTTP
-            if not raw_bars and not had_http_success and last_err:
+                    except TopStepXApiError as exc:
+                        last_err = exc
+                        logger.warning(
+                            'retrieveBars failed contract=%s live=%s: %s',
+                            contract_id, live, exc,
+                        )
+                        if live and _is_non_retryable_topstep_error(exc) and True in live_modes:
+                            live_modes[:] = [m for m in live_modes if m is not True]
+                            logger.info(
+                                'Live history indisponible pour ce compte — suite en sim uniquement.',
+                            )
+                # Échec dur seulement si aucun mode n'a répondu avec succès HTTP
+                if not raw_bars and not had_http_success and last_err:
+                    report = validate_bars(
+                        [],
+                        instrument=instrument,
+                        start_utc=fetch_start,
+                        end_utc=fetch_end,
+                        timeframe=timeframe,
+                    )
+                    _persist_coverage(
+                        instrument=instrument,
+                        contract_id=contract_id,
+                        timeframe=timeframe,
+                        start=fetch_start,
+                        end=fetch_end,
+                        report=report,
+                        source=source_used,
+                    )
+                    _persist_issues(
+                        job,
+                        instrument=instrument,
+                        contract_id=contract_id,
+                        timeframe=timeframe,
+                        report=report,
+                    )
+                    if job:
+                        job.chunks_done += 1
+                        job.last_chunk_end = fetch_end
+                        job.error = str(last_err)[:2000]
+                        job.save(update_fields=[
+                            'chunks_done', 'last_chunk_end', 'error', 'updated_at',
+                        ])
+                    raise last_err
+
+                bars, _failed = normalize_bars(raw_bars, instrument=instrument)
                 report = validate_bars(
-                    [],
+                    bars,
                     instrument=instrument,
-                    start_utc=sub_start,
-                    end_utc=sub_end,
+                    start_utc=fetch_start,
+                    end_utc=fetch_end,
                     timeframe=timeframe,
                 )
+                inserted = bulk_insert_bars(
+                    bars,
+                    instrument=instrument,
+                    symbol=symbol,
+                    contract_id=contract_id,
+                    timeframe=timeframe,
+                    source=source_used,
+                )
+                # Le statut vient du validator (comparaison aux timestamps attendus).
+                # bars_stored = barres soumises à l'insert (idempotent via ignore_conflicts).
+                report.bars_stored = max(report.bars_stored, inserted)
+
                 _persist_coverage(
                     instrument=instrument,
                     contract_id=contract_id,
                     timeframe=timeframe,
-                    start=sub_start,
-                    end=sub_end,
+                    start=fetch_start,
+                    end=fetch_end,
                     report=report,
                     source=source_used,
                 )
@@ -350,62 +407,17 @@ def download_contract_range(
                     timeframe=timeframe,
                     report=report,
                 )
+
+                total_bars += inserted
+                chunks_done += 1
                 if job:
-                    job.chunks_done += 1
-                    job.last_chunk_end = sub_end
-                    job.error = str(last_err)[:2000]
-                    job.save(update_fields=[
-                        'chunks_done', 'last_chunk_end', 'error', 'updated_at',
-                    ])
-                raise last_err
+                    job.bars_fetched = (job.bars_fetched or 0) + inserted
+                    job.chunks_done = (job.chunks_done or 0) + 1
+                    job.last_chunk_end = fetch_end
+                    _update_job_progress(fetch_end)
 
-            bars, _failed = normalize_bars(raw_bars, instrument=instrument)
-            report = validate_bars(
-                bars,
-                instrument=instrument,
-                start_utc=sub_start,
-                end_utc=sub_end,
-                timeframe=timeframe,
-            )
-            inserted = bulk_insert_bars(
-                bars,
-                instrument=instrument,
-                symbol=symbol,
-                contract_id=contract_id,
-                timeframe=timeframe,
-                source=source_used,
-            )
-            # Le statut vient du validator (comparaison aux timestamps attendus).
-            # bars_stored = barres soumises à l'insert (idempotent via ignore_conflicts).
-            report.bars_stored = max(report.bars_stored, inserted)
-
-            _persist_coverage(
-                instrument=instrument,
-                contract_id=contract_id,
-                timeframe=timeframe,
-                start=sub_start,
-                end=sub_end,
-                report=report,
-                source=source_used,
-            )
-            _persist_issues(
-                job,
-                instrument=instrument,
-                contract_id=contract_id,
-                timeframe=timeframe,
-                report=report,
-            )
-
-            total_bars += inserted
-            chunks_done += 1
-            if job:
-                job.bars_fetched = (job.bars_fetched or 0) + inserted
-                job.chunks_done = (job.chunks_done or 0) + 1
-                job.last_chunk_end = sub_end
-                _update_job_progress(sub_end)
-
-            # Rate limit: ~50 / 30s → pause légère entre chunks
-            time.sleep(0.7)
+                # Rate limit: ~50 / 30s → pause légère entre chunks
+                time.sleep(0.7)
 
     # Fin de ce contrat : ancrer la progression au plafond de sa tranche
     if job and not _job_cancelled():
@@ -464,8 +476,47 @@ def run_download_job(job_id: int) -> None:
 
     start = job.start_utc
     end = job.end_utc
-    if job.last_chunk_end and job.last_chunk_end > start:
+    requested_timeframes = [
+        parse_timeframe(code).code
+        for code in (job.requested_timeframes or [job.timeframe])
+    ]
+    profile_known = get_session_profile(job.instrument) is not None
+    source_timeframe = '1m' if profile_known else job.timeframe
+    derived_timeframes = [tf for tf in requested_timeframes if tf != '1m']
+    if job.last_chunk_end and job.last_chunk_end > start and not (profile_known and derived_timeframes):
         start = job.last_chunk_end
+
+    def download_segment(contract_id: str, symbol: str, segment_start: datetime, segment_end: datetime, **progress):
+        if _cancelled():
+            return
+        download_contract_range(
+            client,
+            get_token,
+            instrument=job.instrument,
+            contract_id=contract_id,
+            symbol=symbol,
+            start=segment_start,
+            end=segment_end,
+            timeframe=source_timeframe,
+            job=job,
+            live_modes=live_modes,
+            **progress,
+        )
+        if profile_known and derived_timeframes and not _cancelled():
+            job.progress_pct = max(job.progress_pct or 0, 99)
+            job.save(update_fields=['progress_pct', 'updated_at'])
+            counts = aggregate_contract_range(
+                instrument=job.instrument,
+                contract_id=contract_id,
+                start=segment_start,
+                end=segment_end,
+                timeframes=derived_timeframes,
+                symbol=symbol,
+                should_cancel=_cancelled,
+            )
+            job.refresh_from_db(fields=['bars_fetched', 'status'])
+            job.bars_fetched = (job.bars_fetched or 0) + sum(counts.values())
+            job.save(update_fields=['bars_fetched', 'updated_at'])
 
     try:
         if job.contract_id:
@@ -483,17 +534,7 @@ def run_download_job(job_id: int) -> None:
             else:
                 symbol = job.contract_id
             if not _cancelled():
-                download_contract_range(
-                    client, get_token,
-                    instrument=job.instrument,
-                    contract_id=job.contract_id,
-                    symbol=symbol,
-                    start=start,
-                    end=end,
-                    timeframe=job.timeframe,
-                    job=job,
-                    live_modes=live_modes,
-                )
+                download_segment(job.contract_id, symbol, start, end)
         else:
             contracts = list_contracts_for_instrument(
                 job.instrument,
@@ -523,16 +564,11 @@ def run_download_job(job_id: int) -> None:
                     return
                 resolved = by_id.get(seg.contract_id)
                 symbol = resolved.symbol if resolved else seg.contract_id
-                download_contract_range(
-                    client, get_token,
-                    instrument=job.instrument,
-                    contract_id=seg.contract_id,
-                    symbol=symbol,
-                    start=seg.start,
-                    end=seg.end,
-                    timeframe=job.timeframe,
-                    job=job,
-                    live_modes=live_modes,
+                download_segment(
+                    seg.contract_id,
+                    symbol,
+                    seg.start,
+                    seg.end,
                     progress_offset=i / n,
                     progress_weight=1 / n,
                 )

@@ -46,6 +46,15 @@ export interface AvailableSessionsResponse {
   latest: string | null;
 }
 
+export interface SessionTimeframesResponse {
+  symbol: string;
+  session_date: string;
+  contract: string;
+  timeframes: string[];
+  start_utc?: string;
+  end_utc?: string;
+}
+
 export interface InstrumentReplayMeta {
   timeframes: AvailableTimeframe[];
   lastBarAt: string | null;
@@ -141,7 +150,7 @@ class MarketReplayService {
     opts?: { timeframe?: string; contract?: string },
   ): Promise<AvailableSessionsResponse> {
     const qs = new URLSearchParams();
-    if (opts?.timeframe) qs.set('timeframe', opts.timeframe);
+    if (opts && 'timeframe' in opts) qs.set('timeframe', opts.timeframe ?? '');
     if (opts?.contract) qs.set('contract', opts.contract);
     const query = qs.toString();
     const res = await this.fetchWithAuth(
@@ -150,6 +159,24 @@ class MarketReplayService {
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
       throw new Error(body.detail || 'Erreur chargement séances disponibles');
+    }
+    return res.json();
+  }
+
+  async getSessionTimeframes(
+    instrument: string,
+    sessionDate: string,
+    opts?: { contract?: string },
+  ): Promise<SessionTimeframesResponse> {
+    const qs = new URLSearchParams();
+    qs.set('session_date', sessionDate);
+    if (opts?.contract) qs.set('contract', opts.contract);
+    const res = await this.fetchWithAuth(
+      `${this.BASE_URL}/api/market-data/instruments/${encodeURIComponent(instrument)}/session-timeframes/?${qs}`,
+    );
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.detail || 'Erreur chargement timeframes de séance');
     }
     return res.json();
   }

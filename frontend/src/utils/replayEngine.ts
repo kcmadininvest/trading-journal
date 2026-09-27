@@ -123,9 +123,12 @@ export function getVisibleCandles(
 ): VisibleCandle[] {
   const duration = timeframe.durationSeconds;
   const closed: VisibleCandle[] = [];
+  let latestNative: ReplayCandle | null = null;
 
   for (const candle of series) {
     const t = parseCandleUnix(candle);
+    if (t > replayTimestamp) break;
+    latestNative = candle;
     // Convention : timestamp = ouverture. Visible seulement si clôturée
     // (open + duration - 1 <= replay) OU si on formera la bougie courante via base.
     const closeUnix = t + duration - 1;
@@ -138,8 +141,6 @@ export function getVisibleCandles(
         close: candle.c,
         volume: candle.v,
       });
-    } else if (t > replayTimestamp) {
-      break;
     }
   }
 
@@ -149,7 +150,10 @@ export function getVisibleCandles(
     durationsCompatible(baseTimeframe.durationSeconds, duration);
 
   if (canForm) {
-    const bucketStart = bucketOpenUnix(replayTimestamp, duration);
+    const nativeOpen = latestNative ? parseCandleUnix(latestNative) : null;
+    const bucketStart = nativeOpen !== null && nativeOpen + duration > replayTimestamp
+      ? nativeOpen
+      : bucketOpenUnix(replayTimestamp, duration);
     // Ne pas former si la bougie native est déjà clôturée et présente
     const lastClosed = closed.length ? closed[closed.length - 1] : null;
     if (!lastClosed || lastClosed.time < bucketStart) {
@@ -166,10 +170,9 @@ export function getVisibleCandles(
     if (baseTimeframe && baseTimeframe.durationSeconds === duration) {
       // Même granularité : afficher aussi la bougie dont open <= replay
       // même si non clôturée (c'est la bougie "courante" native).
-      const last = series.find((c) => {
-        const t = parseCandleUnix(c);
-        return t === bucketOpenUnix(replayTimestamp, duration) && t <= replayTimestamp;
-      });
+      const last = latestNative && parseCandleUnix(latestNative) + duration > replayTimestamp
+        ? latestNative
+        : null;
       if (last) {
         const t = parseCandleUnix(last);
         if (!closed.some((c) => c.time === t)) {
@@ -241,11 +244,9 @@ export class ReplayEngine {
     );
     // Aligner sur la grille du TF de base
     const step = this.stepSeconds;
-    const aligned = bucketOpenUnix(clamped, step);
-    this._timestamp = Math.min(
-      Math.max(aligned, this.config.startTimestamp),
-      this.config.endTimestamp,
-    );
+    const anchor = this.config.startTimestamp;
+    const aligned = anchor + Math.floor((clamped - anchor) / step) * step;
+    this._timestamp = clamped === this.config.endTimestamp ? clamped : aligned;
     this.emit();
   }
 

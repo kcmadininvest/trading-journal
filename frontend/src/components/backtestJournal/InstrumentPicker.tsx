@@ -1,30 +1,39 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import historicalDataService, { type MarketInstrument } from '../../services/historicalData';
+import { marketReplayService } from '../../services/marketReplay';
 
 const FIELD_CLASS =
   'mt-1 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100';
 
-let cachedInstruments: MarketInstrument[] | null = null;
-let inflight: Promise<MarketInstrument[]> | null = null;
+const catalogCache: { all: MarketInstrument[] | null; withBars: MarketInstrument[] | null } = {
+  all: null,
+  withBars: null,
+};
+const inflightByMode: {
+  all: Promise<MarketInstrument[]> | null;
+  withBars: Promise<MarketInstrument[]> | null;
+} = { all: null, withBars: null };
 
-function loadInstruments(): Promise<MarketInstrument[]> {
-  if (cachedInstruments) {
-    return Promise.resolve(cachedInstruments);
-  }
-  if (!inflight) {
-    inflight = historicalDataService
-      .listInstruments()
+function loadInstruments(withBarsOnly: boolean): Promise<MarketInstrument[]> {
+  const mode = withBarsOnly ? 'withBars' : 'all';
+  const cached = catalogCache[mode];
+  if (cached) return Promise.resolve(cached);
+  if (!inflightByMode[mode]) {
+    const loader = withBarsOnly
+      ? marketReplayService.listInstrumentsWithBars()
+      : historicalDataService.listInstruments();
+    inflightByMode[mode] = loader
       .then((list) => {
-        cachedInstruments = list;
+        catalogCache[mode] = list;
         return list;
       })
       .catch((err) => {
-        inflight = null;
+        inflightByMode[mode] = null;
         throw err;
       });
   }
-  return inflight;
+  return inflightByMode[mode]!;
 }
 
 function normalize(text: string): string {
@@ -39,19 +48,28 @@ interface InstrumentPickerProps {
   onChange: (value: string) => void;
   disabled?: boolean;
   id?: string;
+  /** Limite le catalogue aux instruments ayant déjà des bougies stockées. */
+  withBarsOnly?: boolean;
 }
 
-export function InstrumentPicker({ value, onChange, disabled, id }: InstrumentPickerProps) {
+export function InstrumentPicker({
+  value,
+  onChange,
+  disabled,
+  id,
+  withBarsOnly = false,
+}: InstrumentPickerProps) {
   const { t } = useTranslation('backtestJournal');
-  const [instruments, setInstruments] = useState<MarketInstrument[]>(cachedInstruments || []);
+  const cacheKey = withBarsOnly ? 'withBars' : 'all';
+  const [instruments, setInstruments] = useState<MarketInstrument[]>(catalogCache[cacheKey] || []);
   const [apiFailed, setApiFailed] = useState(false);
-  const [loaded, setLoaded] = useState(Boolean(cachedInstruments));
+  const [loaded, setLoaded] = useState(Boolean(catalogCache[cacheKey]));
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    void loadInstruments()
+    void loadInstruments(withBarsOnly)
       .then((list) => {
         if (!cancelled) {
           setInstruments(list);
@@ -69,7 +87,7 @@ export function InstrumentPicker({ value, onChange, disabled, id }: InstrumentPi
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [withBarsOnly]);
 
   useEffect(() => {
     const onDocClick = (event: MouseEvent) => {
@@ -95,7 +113,7 @@ export function InstrumentPicker({ value, onChange, disabled, id }: InstrumentPi
     (item) => item.instrument.toUpperCase() === query.toUpperCase()
   );
   const listUnavailable = loaded && (apiFailed || instruments.length === 0);
-  const showCustom = query.length > 0 && !exactMatch;
+  const showCustom = query.length > 0 && !exactMatch && !withBarsOnly;
 
   const pick = (code: string) => {
     onChange(code);

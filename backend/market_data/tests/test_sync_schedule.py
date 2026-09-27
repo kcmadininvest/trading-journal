@@ -142,6 +142,75 @@ class SyncEnqueueTests(TestCase):
         mock_dispatch.assert_called_once_with(job.id, allow_inline=False)
 
     @patch('market_data.services.sync_schedule.dispatch_historical_download')
+    def test_profiled_timeframe_targets_share_one_m1_job(self, mock_dispatch):
+        HistoricalSyncTarget.objects.create(
+            settings=self.settings,
+            instrument='MES',
+            timeframe='5m',
+            contract_id='',
+        )
+
+        result = run_sync_for_settings(
+            self.settings,
+            force=True,
+            now_utc=datetime(2026, 9, 13, 12, 0, tzinfo=dt_tz.utc),
+        )
+
+        self.assertEqual(len(result['jobs']), 1)
+        job = result['jobs'][0]
+        self.assertEqual(job.timeframe, '1m')
+        self.assertEqual(job.requested_timeframes, ['1m', '5m'])
+        mock_dispatch.assert_called_once_with(job.id, allow_inline=False)
+
+    def test_profiled_sync_window_backfills_missing_derived_from_m1(self):
+        from market_data.services.sync_schedule import compute_profiled_sync_window
+        from decimal import Decimal
+
+        now = datetime(2026, 9, 13, 12, 0, tzinfo=dt_tz.utc)
+        HistoricalBar.objects.create(
+            instrument='MES',
+            symbol='MESU6',
+            contract_id='CON.F.US.MES.U26',
+            timeframe='1m',
+            timestamp_utc=now - timedelta(days=20),
+            open=Decimal('100'),
+            high=Decimal('101'),
+            low=Decimal('99'),
+            close=Decimal('100.5'),
+            volume=1,
+            ny_date=(now - timedelta(days=20)).date(),
+            ny_time=(now - timedelta(days=20)).time(),
+            session_date=(now - timedelta(days=20)).date(),
+            fetched_at=timezone.now(),
+        )
+        HistoricalBar.objects.create(
+            instrument='MES',
+            symbol='MESU6',
+            contract_id='CON.F.US.MES.U26',
+            timeframe='1m',
+            timestamp_utc=now - timedelta(minutes=5),
+            open=Decimal('100'),
+            high=Decimal('101'),
+            low=Decimal('99'),
+            close=Decimal('100.5'),
+            volume=1,
+            ny_date=(now - timedelta(minutes=5)).date(),
+            ny_time=(now - timedelta(minutes=5)).time(),
+            session_date=(now - timedelta(minutes=5)).date(),
+            fetched_at=timezone.now(),
+        )
+
+        window = compute_profiled_sync_window(
+            instrument='MES',
+            requested_timeframes=['5m'],
+            now_utc=now,
+        )
+        self.assertIsNotNone(window)
+        start, end = window
+        self.assertEqual(start, now - timedelta(days=20))
+        self.assertEqual(end, now)
+
+    @patch('market_data.services.sync_schedule.dispatch_historical_download')
     def test_skip_when_active_job(self, mock_dispatch):
         HistoricalDownloadJob.objects.create(
             user=self.user,

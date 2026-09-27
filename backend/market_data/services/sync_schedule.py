@@ -6,7 +6,7 @@ from datetime import date, datetime, timedelta
 from typing import Any
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from django.db.models import Max
+from django.db.models import Max, Min
 from django.utils import timezone
 
 from market_data.models import (
@@ -23,7 +23,8 @@ from market_data.services.download_dispatch import (
     abandon_stale_running_jobs,
     dispatch_historical_download,
 )
-from market_data.services.timeframes import UnknownTimeframe, parse_timeframe
+from market_data.services.sessions import get_session_profile
+from market_data.services.timeframes import ALLOWED_TIMEFRAMES, UnknownTimeframe, parse_timeframe
 
 logger = logging.getLogger(__name__)
 
@@ -138,6 +139,70 @@ def compute_sync_window(
     return start, end
 
 
+def compute_profiled_sync_window(
+    *,
+    instrument: str,
+    contract_id: str = '',
+    requested_timeframes: list[str] | tuple[str, ...] = (),
+    now_utc: datetime | None = None,
+    bootstrap_days: int = BOOTSTRAP_LOOKBACK_DAYS,
+) -> tuple[datetime, datetime] | None:
+    """
+    Fenêtre de sync pour instruments agrégés localement depuis le 1m.
+
+    Union de :
+    - fenêtre gap-fill du 1m (source) ;
+    - fenêtres de chaque TF demandé ;
+    - si un TF dérivé n'a encore aucune barre alors que du 1m existe :
+      backfill depuis la première barre 1m jusqu'à maintenant.
+    """
+    end = now_utc or timezone.now()
+    if timezone.is_naive(end):
+        end = timezone.make_aware(end, timezone.utc)
+
+    tfs = set(requested_timeframes) | {'1m'}
+    starts: list[datetime] = []
+    ends: list[datetime] = []
+    for tf in tfs:
+        window = compute_sync_window(
+            instrument=instrument,
+            timeframe=tf,
+            contract_id=contract_id,
+            now_utc=end,
+            bootstrap_days=bootstrap_days,
+        )
+        if window is not None:
+            starts.append(window[0])
+            ends.append(window[1])
+
+    m1_qs = HistoricalBar.objects.filter(
+        instrument=instrument.upper().strip(),
+        timeframe='1m',
+    )
+    cid = (contract_id or '').strip()
+    if cid:
+        m1_qs = m1_qs.filter(contract_id=cid)
+    m1_bounds = m1_qs.aggregate(first=Min('timestamp_utc'), last=Max('timestamp_utc'))
+    m1_first = m1_bounds['first']
+    for tf in requested_timeframes:
+        if tf == '1m':
+            continue
+        if last_stored_timestamp(
+            instrument=instrument,
+            timeframe=tf,
+            contract_id=contract_id,
+        ) is None and m1_first is not None:
+            first = m1_first
+            if timezone.is_naive(first):
+                first = timezone.make_aware(first, timezone.utc)
+            starts.append(first)
+            ends.append(end)
+
+    if not starts:
+        return None
+    return min(starts), max(ends)
+
+
 def enqueue_target_job(
     user,
     target: HistoricalSyncTarget,
@@ -167,6 +232,7 @@ def enqueue_target_job(
         instrument=target.instrument.upper().strip(),
         contract_id=(target.contract_id or '').strip(),
         timeframe=tf,
+        requested_timeframes=[tf],
         trigger=trigger,
         start_utc=start,
         end_utc=end,
@@ -303,7 +369,7 @@ def finalize_sync_status_for_job(job: HistoricalDownloadJob) -> HistoricalSyncRu
         n_failed += 1
 
     for j in jobs:
-        label = f'{j.instrument}/{j.timeframe}'
+        label = f"{j.instrument}/{'/'.join(j.requested_timeframes or [j.timeframe])}"
         kind = _classify_sync_job(j)
         if kind == 'ok':
             n_ok += 1
@@ -387,20 +453,54 @@ def run_sync_for_settings(
     jobs: list[HistoricalDownloadJob] = []
     errors: list[str] = []
 
+    grouped_targets: dict[tuple[str, str], list[tuple[HistoricalSyncTarget, str]]] = {}
     for target in targets:
         try:
-            job = enqueue_target_job(
-                user,
-                target,
-                trigger=job_trigger,
-                now_utc=now_utc,
-                dispatch=False,
-            )
-            if job is not None:
-                jobs.append(job)
+            timeframe = parse_timeframe(target.timeframe).code
+            if get_session_profile(target.instrument) is None:
+                job = enqueue_target_job(
+                    user,
+                    target,
+                    trigger=job_trigger,
+                    now_utc=now_utc,
+                    dispatch=False,
+                )
+                if job is not None:
+                    jobs.append(job)
+                continue
+            key = (target.instrument.upper().strip(), (target.contract_id or '').strip())
+            grouped_targets.setdefault(key, []).append((target, timeframe))
         except Exception as exc:
             logger.exception('Failed enqueue sync target id=%s', target.pk)
             errors.append(f'{target.instrument}/{target.timeframe}: {exc}')
+
+    for (instrument, contract_id), group in grouped_targets.items():
+        try:
+            requested = {timeframe for _target, timeframe in group}
+            requested_timeframes = [code for code in ALLOWED_TIMEFRAMES if code in requested]
+            window = compute_profiled_sync_window(
+                instrument=instrument,
+                contract_id=contract_id,
+                requested_timeframes=requested_timeframes,
+                now_utc=now_utc,
+            )
+            if window is None:
+                continue
+            job = HistoricalDownloadJob.objects.create(
+                user=user,
+                instrument=instrument,
+                contract_id=contract_id,
+                timeframe='1m',
+                requested_timeframes=requested_timeframes,
+                trigger=job_trigger,
+                start_utc=window[0],
+                end_utc=window[1],
+                status=HistoricalDownloadJob.Status.PENDING,
+            )
+            jobs.append(job)
+        except Exception as exc:
+            logger.exception('Failed enqueue sync target group instrument=%s', instrument)
+            errors.append(f'{instrument}: {exc}')
 
     local_date = local_now_for_user(user, now_utc=now_utc).date()
     error_text = '; '.join(errors)

@@ -8,7 +8,10 @@ from django.utils import timezone as django_tz
 from rest_framework.test import APIClient
 
 from market_data.models import BarCoverage, HistoricalBar
-from market_data.services.available_sessions import list_available_sessions
+from market_data.services.available_sessions import (
+    list_available_sessions,
+    list_session_timeframes,
+)
 from market_data.services.available_timeframes import (
     latest_replay_coverage,
     list_available_timeframes,
@@ -257,5 +260,66 @@ class ReplayApiTests(TestCase):
         res = self.client.get(
             '/api/market-data/instruments/NQ/available-sessions/',
             {'timeframe': '1w'},
+        )
+        self.assertEqual(res.status_code, 400)
+
+    def test_session_timeframes_service_multiple(self):
+        # setUp crée 1m et 5m pour 2025-03-10
+        self.assertEqual(
+            list_session_timeframes('NQ', '2025-03-10'),
+            ['1m', '5m'],
+        )
+
+    def test_session_timeframes_service_only_1m(self):
+        only_1m = datetime(2025, 3, 11, 14, 0, tzinfo=timezone.utc)
+        HistoricalBar.objects.create(
+            instrument='NQ',
+            symbol='NQH5',
+            contract_id='CON.F.US.ENQ.H25',
+            timeframe='1m',
+            timestamp_utc=only_1m,
+            open=Decimal('20100'),
+            high=Decimal('20101'),
+            low=Decimal('20099'),
+            close=Decimal('20100.5'),
+            volume=1,
+            ny_date=only_1m.date(),
+            ny_time=only_1m.time(),
+            session_date=only_1m.date(),
+            is_rth=True,
+            fetched_at=self.now,
+        )
+        self.assertEqual(
+            list_session_timeframes('NQ', '2025-03-11'),
+            ['1m'],
+        )
+
+    def test_session_timeframes_service_empty(self):
+        self.assertEqual(list_session_timeframes('', '2025-03-10'), [])
+        self.assertEqual(list_session_timeframes('NQ', '2025-03-01'), [])
+
+    def test_session_timeframes_endpoint(self):
+        res = self.client.get(
+            '/api/market-data/instruments/NQ/session-timeframes/',
+            {'session_date': '2025-03-10'},
+        )
+        self.assertEqual(res.status_code, 200)
+        body = res.json()
+        self.assertEqual(body['symbol'], 'NQ')
+        self.assertEqual(body['session_date'], '2025-03-10')
+        self.assertEqual(body['contract'], 'front')
+        self.assertEqual(body['timeframes'], ['1m', '5m'])
+        self.assertIn('start_utc', body)
+        self.assertIn('end_utc', body)
+        self.assertTrue(body['start_utc'].endswith('Z') or '+' in body['start_utc'])
+
+    def test_session_timeframes_endpoint_requires_date(self):
+        res = self.client.get('/api/market-data/instruments/NQ/session-timeframes/')
+        self.assertEqual(res.status_code, 400)
+
+    def test_session_timeframes_endpoint_invalid_date(self):
+        res = self.client.get(
+            '/api/market-data/instruments/NQ/session-timeframes/',
+            {'session_date': 'not-a-date'},
         )
         self.assertEqual(res.status_code, 400)

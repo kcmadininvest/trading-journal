@@ -35,13 +35,13 @@ function defaultTimeframePicks(available: AvailableTimeframe[]): string[] {
 
 async function ensureSeries(
   instrument: string,
-  sessionDate: string,
   timeframes: string[],
   existing: Record<string, ReplayCandle[]>,
+  start: string,
+  end: string,
 ): Promise<Record<string, ReplayCandle[]>> {
   const missing = timeframes.filter((tf) => !(tf in existing));
   if (missing.length === 0) return existing;
-  const { start, end } = sessionDateToUtcRange(sessionDate);
   const res = await marketReplayService.getBars({
     instrument,
     timeframes: missing,
@@ -61,7 +61,10 @@ export function useMarketReplay({
   onSuggestSessionDate,
 }: UseMarketReplayParams) {
   const [availableTimeframes, setAvailableTimeframes] = useState<AvailableTimeframe[]>([]);
+  const [currentSessionTfs, setCurrentSessionTfs] = useState<string[] | null>(null);
+  const [requestedPaneTfs, setRequestedPaneTfs] = useState<(string | null)[]>([null, null, null, null]);
   const [paneTfs, setPaneTfs] = useState<(string | null)[]>([null, null, null, null]);
+  const [switchedTimeframes, setSwitchedTimeframes] = useState<Record<string, { requested: string; fallback: string } | null>>({});
   const [seriesByTf, setSeriesByTf] = useState<Record<string, ReplayCandle[]>>({});
   const [loadingTfs, setLoadingTfs] = useState(false);
   const [loadingBars, setLoadingBars] = useState(false);
@@ -74,15 +77,21 @@ export function useMarketReplay({
   const [latestSessionDate, setLatestSessionDate] = useState<string | null>(null);
   const [sessionHasBars, setSessionHasBars] = useState<boolean | null>(null);
   const [availableSessions, setAvailableSessions] = useState<string[]>([]);
+  const [sessionRange, setSessionRange] = useState<{ start: string; end: string } | null>(null);
 
   const engineRef = useRef<ReplayEngine | null>(null);
   const seriesByTfRef = useRef(seriesByTf);
   seriesByTfRef.current = seriesByTf;
   const loadedWindowRef = useRef<string | null>(null);
+  const restoreCursorConsumedRef = useRef(false);
   const sessionDateRef = useRef(sessionDate);
   sessionDateRef.current = sessionDate;
   const onSuggestSessionDateRef = useRef(onSuggestSessionDate);
   onSuggestSessionDateRef.current = onSuggestSessionDate;
+  const currentSessionTfsRef = useRef(currentSessionTfs);
+  currentSessionTfsRef.current = currentSessionTfs;
+  const sessionTfRequestIdRef = useRef(0);
+  const barsRequestIdRef = useRef(0);
 
   const tfByValue = useMemo(() => {
     const map = new Map<string, AvailableTimeframe>();
@@ -143,9 +152,14 @@ export function useMarketReplay({
     setLatestSessionDate(null);
     setSessionHasBars(null);
     setAvailableSessions([]);
+    setCurrentSessionTfs(null);
+    setSessionRange(null);
+    setSwitchedTimeframes({});
+    restoreCursorConsumedRef.current = false;
 
     if (!instrument) {
       setAvailableTimeframes([]);
+      setRequestedPaneTfs([null, null, null, null]);
       setPaneTfs([null, null, null, null]);
       return;
     }
@@ -160,17 +174,17 @@ export function useMarketReplay({
         setLatestSessionDate(meta.latestSessionDate);
         const valid = new Set(meta.timeframes.map((tf) => tf.value));
         const restored = restoredPaneTfs?.slice(0, 4).map((tf) => (tf && valid.has(tf) ? tf : null));
-        setPaneTfs(restored?.some(Boolean) ? restored : defaultTimeframePicks(meta.timeframes));
+        const initialPaneTfs = restored?.some(Boolean)
+          ? restored
+          : defaultTimeframePicks(meta.timeframes);
+        setRequestedPaneTfs(initialPaneTfs);
+        setPaneTfs(initialPaneTfs);
 
-        const sorted = [...meta.timeframes].sort(
-          (a, b) => a.durationSeconds - b.durationSeconds,
-        );
-        const sessionsTf = sorted[0]?.value || '1m';
         let sessions: string[] = [];
         let latestFromSessions: string | null = meta.latestSessionDate;
         try {
           const payload = await marketReplayService.getAvailableSessions(instrument, {
-            timeframe: sessionsTf,
+            timeframe: '',
             contract: 'front',
           });
           if (cancelled) return;
@@ -213,17 +227,77 @@ export function useMarketReplay({
 
   const chartConfigKey = paneTfs.join('|');
 
-  // Load / refresh bars when date or selected TFs change
+  // Fetch available timeframes + UTC bounds for the current session
   useEffect(() => {
-    let cancelled = false;
-    if (!instrument || !sessionDate || chartConfigs.length === 0 || !baseTimeframe) {
+    if (!instrument || !sessionDate) {
+      setCurrentSessionTfs(null);
+      setSessionRange(null);
       return;
     }
+    const requestId = ++sessionTfRequestIdRef.current;
+    setCurrentSessionTfs(null);
+    setSessionRange(null);
+    setFurthestTimestamp(0);
+    marketReplayService
+      .getSessionTimeframes(instrument, sessionDate, { contract: 'front' })
+      .then((payload) => {
+        if (requestId !== sessionTfRequestIdRef.current) return;
+        setCurrentSessionTfs(payload.timeframes);
+        if (payload.start_utc && payload.end_utc) {
+          setSessionRange({ start: payload.start_utc, end: payload.end_utc });
+        } else {
+          const fallback = sessionDateToUtcRange(sessionDate);
+          setSessionRange(fallback);
+        }
+        if (payload.timeframes.length === 0) {
+          setSessionHasBars(false);
+        }
+      })
+      .catch((err: Error) => {
+        if (requestId !== sessionTfRequestIdRef.current) return;
+        setError(err.message || 'Erreur timeframes de séance');
+        setCurrentSessionTfs(null);
+        setSessionRange(null);
+      });
+  }, [instrument, sessionDate]);
+
+  // Validate requested pane timeframes against what is actually stored for the session
+  useEffect(() => {
+    if (!currentSessionTfs) {
+      setSwitchedTimeframes({});
+      return;
+    }
+    const validSet = new Set(currentSessionTfs);
+    const fallback = currentSessionTfs[0];
+    if (!fallback) {
+      setPaneTfs([null, null, null, null]);
+      setSwitchedTimeframes({});
+      return;
+    }
+    const switched: Record<string, { requested: string; fallback: string } | null> = {};
+    const next = requestedPaneTfs.map((tf, i) => {
+      if (tf && validSet.has(tf)) return tf;
+      const chartId = CHART_IDS[i];
+      if (tf && chartId) {
+        switched[chartId] = { requested: tf, fallback };
+      }
+      return fallback;
+    });
+    setPaneTfs(next);
+    setSwitchedTimeframes(switched);
+  }, [currentSessionTfs, requestedPaneTfs]);
+
+  // Load / refresh bars when date or selected TFs change (bornes backend).
+  useEffect(() => {
+    if (!instrument || !sessionDate || chartConfigs.length === 0 || !baseTimeframe || !sessionRange) {
+      return;
+    }
+    const requestId = ++barsRequestIdRef.current;
 
     const needed = [
       ...new Set([...chartConfigs.map((c) => c.timeframe.value), baseTimeframe.value]),
     ];
-    const { start, end } = sessionDateToUtcRange(sessionDate);
+    const { start, end } = sessionRange;
     const startTs = candleTimeToUnix(start);
     const endTs = candleTimeToUnix(end);
     const chartsSnapshot = chartConfigs;
@@ -234,48 +308,100 @@ export function useMarketReplay({
     setLoadingBars(true);
     setError(null);
 
-    ensureSeries(instrument, sessionDate, needed, cache)
+    ensureSeries(instrument, needed, cache, start, end)
       .then((merged) => {
-        if (cancelled) return;
+        if (requestId !== barsRequestIdRef.current) return;
         const sameWindow = loadedWindowRef.current === windowKey;
         loadedWindowRef.current = windowKey;
         setSeriesByTf(merged);
         const hasBars = needed.some((tf) => (merged[tf]?.length ?? 0) > 0);
-        setSessionHasBars(hasBars);
+        if (currentSessionTfsRef.current) {
+          setSessionHasBars(hasBars);
+        }
         setRange({ start: startTs, end: endTs });
-        // Ne conserver le curseur que si on reste sur la même séance (ex. changement de TF).
-        // Sinon repartir du début — sinon un ancien timestamp clampé à endTs révèle toute la journée.
-        const restored =
-          !sameWindow && restoredTimestamp != null && restoredTimestamp >= startTs && restoredTimestamp <= endTs
-            ? restoredTimestamp
-            : undefined;
-        const keep = sameWindow ? engineRef.current?.replayTimestamp : restored;
+        // Restaurer le curseur une seule fois au bootstrap, jamais après un
+        // changement d'instrument/séance (évite de révéler une autre journée).
+        let restored: number | undefined;
+        if (
+          !sameWindow &&
+          !restoreCursorConsumedRef.current &&
+          restoredTimestamp != null &&
+          restoredTimestamp >= startTs &&
+          restoredTimestamp <= endTs
+        ) {
+          restored = restoredTimestamp;
+        }
+        if (!sameWindow) {
+          restoreCursorConsumedRef.current = true;
+        }
+        const baseSeries = merged[baseTimeframe.value];
+        const firstBaseBarTs = baseSeries && baseSeries.length > 0 ? candleTimeToUnix(baseSeries[0].t) : startTs;
+        const startCursorTs = firstBaseBarTs;
+        const keep = sameWindow ? engineRef.current?.replayTimestamp : (restored ?? startCursorTs);
         rebuildEngine(instrument, startTs, endTs, chartsSnapshot, keep);
         setPlaying(false);
       })
       .catch((err: Error) => {
-        if (!cancelled) setError(err.message || 'Erreur chargement bars');
+        if (requestId !== barsRequestIdRef.current) return;
+        setError(err.message || 'Erreur chargement bars');
       })
       .finally(() => {
-        if (!cancelled) setLoadingBars(false);
+        if (requestId === barsRequestIdRef.current) {
+          setLoadingBars(false);
+        }
       });
-
-    return () => {
-      cancelled = true;
-    };
-    // chartConfigKey stabilise les 4 TF sélectionnés
+    // chartConfigKey stabilise les 4 TF sélectionnés.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [instrument, sessionDate, chartConfigKey, baseTimeframe?.value, rebuildEngine]);
+  }, [instrument, sessionDate, sessionRange, chartConfigKey, baseTimeframe?.value, rebuildEngine]);
 
   const changePaneTimeframe = useCallback((chartId: string, timeframeValue: string) => {
     const idx = CHART_IDS.indexOf(chartId as (typeof CHART_IDS)[number]);
     if (idx < 0) return;
+    setRequestedPaneTfs((prev) => {
+      const next = [...prev];
+      next[idx] = timeframeValue;
+      return next;
+    });
     setPaneTfs((prev) => {
       const next = [...prev];
       next[idx] = timeframeValue;
       return next;
     });
+    setSwitchedTimeframes((prev) => {
+      if (!prev[chartId]) return prev;
+      const next = { ...prev };
+      delete next[chartId];
+      return next;
+    });
   }, []);
+
+  const sessionAvailableTimeframes = useMemo(() => {
+    if (!currentSessionTfs) return availableTimeframes;
+    const valid = new Set(currentSessionTfs);
+    return availableTimeframes.filter((tf) => valid.has(tf.value));
+  }, [availableTimeframes, currentSessionTfs]);
+
+  // Met à jour sessionHasBars une fois les TF connus, sans flash « vide »
+  // pendant le chargement des barres.
+  useEffect(() => {
+    if (!currentSessionTfs) return;
+    if (currentSessionTfs.length === 0) {
+      setSessionHasBars(false);
+      return;
+    }
+    const needed = chartConfigs.map((c) => c.timeframe.value);
+    if (needed.length === 0) return;
+    const hasBars = needed.some((tf) => (seriesByTf[tf]?.length ?? 0) > 0);
+    if (hasBars) {
+      setSessionHasBars(true);
+      return;
+    }
+    // Pas encore de séries pour ces TF, ou load en cours → ne pas afficher « vide ».
+    if (loadingBars) return;
+    const seriesReady = needed.every((tf) => tf in seriesByTf);
+    if (!seriesReady) return;
+    setSessionHasBars(false);
+  }, [currentSessionTfs, chartConfigs, seriesByTf, loadingBars]);
 
   const visibleByChart = useMemo(() => {
     const out: Record<string, VisibleCandle[]> = {};
@@ -358,7 +484,10 @@ export function useMarketReplay({
 
   return {
     availableTimeframes,
+    sessionAvailableTimeframes,
+    switchedTimeframes,
     paneTfs,
+    requestedPaneTfs,
     chartIds: CHART_IDS,
     visibleByChart,
     loading: loadingTfs || loadingBars,

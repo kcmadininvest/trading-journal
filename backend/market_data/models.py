@@ -206,6 +206,7 @@ class HistoricalDownloadJob(models.Model):
         help_text=_('Vide = tous les contrats de la période.'),
     )
     timeframe = models.CharField(max_length=8, default='1m')
+    requested_timeframes = models.JSONField(default=list, blank=True)
     trigger = models.CharField(
         max_length=16,
         choices=Trigger.choices,

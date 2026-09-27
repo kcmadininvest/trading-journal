@@ -40,6 +40,7 @@ export interface ReplayPaneState {
 interface ReplayGridProps {
   panes: ReplayPaneState[];
   availableTimeframes: AvailableTimeframe[];
+  switchedTimeframes?: Record<string, { requested: string; fallback: string } | null>;
   layout?: ReplayLayout;
   onLayoutChange?: (layout: ReplayLayout) => void;
   initialWorkspace?: ReplayGridWorkspace;
@@ -88,6 +89,7 @@ function cloneDrawings(list: Drawing[]): Drawing[] {
 export const ReplayGrid: React.FC<ReplayGridProps> = ({
   panes,
   availableTimeframes,
+  switchedTimeframes = {},
   layout = 4,
   onLayoutChange,
   initialWorkspace,
@@ -290,6 +292,18 @@ export const ReplayGrid: React.FC<ReplayGridProps> = ({
                   onChange={(v) => onTimeframeChange(pane.chartId, v)}
                   disabled={loading || availableTimeframes.length === 0}
                 />
+                {(() => {
+                  const switched = switchedTimeframes[pane.chartId];
+                  if (!switched) return null;
+                  return (
+                    <span
+                      className="shrink-0 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
+                      title={t('timeframeSwitchedTooltip', switched)}
+                    >
+                      {t('timeframeSwitchedBadge', switched)}
+                    </span>
+                  );
+                })()}
                 <IndicatorSelect
                   value={indicators}
                   onChange={(next) => setPaneIndicators(pane.chartId, next)}

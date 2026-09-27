@@ -43,6 +43,16 @@ describe('marketReplayWorkspace', () => {
     expect(loadMarketReplayWorkspace()).toEqual(workspace);
   });
 
+  it('isolates popup storage from main', () => {
+    saveMarketReplayWorkspace(workspace, 'main');
+    saveMarketReplayWorkspace({ ...workspace, instrument: 'ES' }, 'popup');
+    expect(loadMarketReplayWorkspace('main')?.instrument).toBe('NQ');
+    expect(loadMarketReplayWorkspace('popup')?.instrument).toBe('ES');
+    clearMarketReplayWorkspace('popup');
+    expect(loadMarketReplayWorkspace('popup')).toBeNull();
+    expect(loadMarketReplayWorkspace('main')?.instrument).toBe('NQ');
+  });
+
   it('ignores malformed and unsupported data', () => {
     localStorage.setItem('trading-journal:market-replay-workspace:v1', '{broken');
     expect(loadMarketReplayWorkspace()).toBeNull();

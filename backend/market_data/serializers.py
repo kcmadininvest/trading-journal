@@ -21,6 +21,7 @@ class DownloadJobCreateSerializer(serializers.Serializer):
     )
     start = serializers.DateTimeField()
     end = serializers.DateTimeField()
+    session_dates = serializers.BooleanField(required=False, default=False)
 
     def validate(self, attrs):
         if attrs['start'] >= attrs['end']:
@@ -67,6 +68,7 @@ class DownloadJobSerializer(serializers.ModelSerializer):
             'instrument',
             'contract_id',
             'timeframe',
+            'requested_timeframes',
             'trigger',
             'start_utc',
             'end_utc',
@@ -195,6 +197,7 @@ class SyncRunSerializer(serializers.ModelSerializer):
                 'id': job.id,
                 'instrument': job.instrument,
                 'timeframe': job.timeframe,
+                'requested_timeframes': job.requested_timeframes or [job.timeframe],
                 'status': job.status,
                 'bars_fetched': job.bars_fetched,
                 'error': job.error,

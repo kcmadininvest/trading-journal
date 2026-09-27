@@ -15,6 +15,8 @@ interface ConfirmModalProps {
   showCancelButton?: boolean;
   /** default = en-tête bleu (confirmation) ; warning = ambre (ex. archivage) */
   variant?: ConfirmModalVariant;
+  /** Largeur du panneau (défaut lg). */
+  size?: 'lg' | 'xl';
 }
 
 const VARIANT_STYLES: Record<
@@ -59,9 +61,11 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
   cancelButtonText,
   showCancelButton = true,
   variant = 'default',
+  size = 'lg',
 }) => {
   const { t } = useI18nTranslation();
   const vs = VARIANT_STYLES[variant];
+  const widthClass = size === 'xl' ? 'max-w-xl' : 'max-w-lg';
 
   if (!isOpen) return null;
 
@@ -94,7 +98,7 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
       onClick={handleBackdropClick}
     >
       <div
-        className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg transform transition-all duration-300 animate-in zoom-in-95 slide-in-from-bottom-4 border border-gray-100 dark:border-gray-700 overflow-hidden"
+        className={`bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full ${widthClass} transform transition-all duration-300 animate-in zoom-in-95 slide-in-from-bottom-4 border border-gray-100 dark:border-gray-700 overflow-hidden`}
         onClick={(e) => e.stopPropagation()}
       >
         <div

@@ -6,6 +6,7 @@ import type { DrawingScope } from '../components/marketReplay/DrawingToolSelect'
 
 export type ReplayMode = 'disciplined' | 'exploration';
 export type ReplayLayout = 1 | 2 | 4;
+export type MarketReplayWorkspaceScope = 'main' | 'popup';
 
 export type ReplayGridWorkspace = {
   indicatorsByPane: Record<string, PaneIndicators>;
@@ -30,11 +31,20 @@ export type MarketReplayWorkspace = {
   grid?: ReplayGridWorkspace;
 };
 
-const STORAGE_KEY = 'trading-journal:market-replay-workspace:v1';
+const STORAGE_KEYS: Record<MarketReplayWorkspaceScope, string> = {
+  main: 'trading-journal:market-replay-workspace:v1',
+  popup: 'trading-journal:market-replay-workspace:v1:popup',
+};
 
-export function loadMarketReplayWorkspace(): MarketReplayWorkspace | null {
+function storageKey(scope: MarketReplayWorkspaceScope = 'main'): string {
+  return STORAGE_KEYS[scope];
+}
+
+export function loadMarketReplayWorkspace(
+  scope: MarketReplayWorkspaceScope = 'main',
+): MarketReplayWorkspace | null {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(storageKey(scope));
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<MarketReplayWorkspace>;
     if (parsed.version !== 1 || typeof parsed.instrument !== 'string' || typeof parsed.sessionDate !== 'string') {
@@ -46,17 +56,22 @@ export function loadMarketReplayWorkspace(): MarketReplayWorkspace | null {
   }
 }
 
-export function saveMarketReplayWorkspace(workspace: MarketReplayWorkspace): void {
+export function saveMarketReplayWorkspace(
+  workspace: MarketReplayWorkspace,
+  scope: MarketReplayWorkspaceScope = 'main',
+): void {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(workspace));
+    localStorage.setItem(storageKey(scope), JSON.stringify(workspace));
   } catch {
     return;
   }
 }
 
-export function clearMarketReplayWorkspace(): void {
+export function clearMarketReplayWorkspace(
+  scope: MarketReplayWorkspaceScope = 'main',
+): void {
   try {
-    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(storageKey(scope));
   } catch {
     return;
   }

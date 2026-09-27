@@ -161,7 +161,17 @@ def get_bars(
             part = _queryset_to_dataframe(qs)
             if not part.empty:
                 frames.append(part)
-        if not frames:
+        if not frames and not segments:
+            # Aucune échéance résolue : retomber sur tous les contrats de la fenêtre
+            # (évite calendrier non vide + /bars front vide).
+            qs = HistoricalBar.objects.filter(
+                instrument=instrument,
+                timeframe=timeframe,
+                timestamp_utc__gte=start_dt,
+                timestamp_utc__lt=end_dt,
+            ).order_by('timestamp_utc')
+            df = _queryset_to_dataframe(qs)
+        elif not frames:
             df = _queryset_to_dataframe(HistoricalBar.objects.none())
         else:
             df = pd.concat(frames, ignore_index=True)

@@ -59,6 +59,30 @@ def get_session_profile(instrument: str) -> SessionProfile | None:
     return None
 
 
+def session_bounds_utc(session_d: date, instrument: str) -> tuple[datetime, datetime]:
+    profile = get_session_profile(instrument)
+    if profile is None:
+        raise ValueError(f'Profil de séance inconnu pour {instrument!r}.')
+    open_day = session_d - timedelta(days=1)
+    start = datetime.combine(open_day, profile.eth_open, tzinfo=NY_TZ).astimezone(UTC)
+    end = datetime.combine(session_d, profile.eth_close, tzinfo=NY_TZ).astimezone(UTC)
+    return start, end
+
+
+def resolve_session_range_utc(session_d: date, instrument: str) -> tuple[datetime, datetime]:
+    """
+    Bornes UTC pour charger une séance en replay.
+
+    - Instrument profilé (equity CME) : Globex 18:00 ET J-1 → 17:00 ET J.
+    - Sinon : journée civile NY (``session_date`` = date NY) [00:00, J+1 00:00).
+    """
+    if get_session_profile(instrument) is not None:
+        return session_bounds_utc(session_d, instrument)
+    start = datetime.combine(session_d, time(0, 0), tzinfo=NY_TZ).astimezone(UTC)
+    end = datetime.combine(session_d + timedelta(days=1), time(0, 0), tzinfo=NY_TZ).astimezone(UTC)
+    return start, end
+
+
 def to_ny(dt: datetime) -> datetime:
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=UTC)

@@ -38,6 +38,7 @@ import { useMarketReplayKeyboard } from '../hooks/useMarketReplayKeyboard';
 import {
   loadMarketReplayWorkspace,
   saveMarketReplayWorkspace,
+  type MarketReplayWorkspaceScope,
   type ReplayGridWorkspace,
   type ReplayLayout,
   type ReplayMode,
@@ -140,7 +141,8 @@ const MarketReplayPage: React.FC<MarketReplayPageProps> = ({ detached = false })
   const { t } = useTranslation('marketReplay');
   const { preferences, mergePreferences } = usePreferences();
   const init = useMemo(() => parseInitParams(), []);
-  const restoredWorkspace = useMemo(() => loadMarketReplayWorkspace(), []);
+  const workspaceScope: MarketReplayWorkspaceScope = detached ? 'popup' : 'main';
+  const restoredWorkspace = useMemo(() => loadMarketReplayWorkspace(workspaceScope), [workspaceScope]);
   const canRestore = Boolean(
     restoredWorkspace &&
     (!init.instrument || init.instrument === restoredWorkspace.instrument) &&
@@ -265,16 +267,16 @@ const MarketReplayPage: React.FC<MarketReplayPageProps> = ({ detached = false })
         campaignId: campaign?.id ?? restored?.campaignId ?? null,
         replayTimestamp: replay.replayTimestamp,
         speed: replay.speed,
-        paneTfs: replay.paneTfs,
+        paneTfs: replay.requestedPaneTfs,
         mode: replayMode,
         layout,
         draft,
         positionUi,
         grid: gridWorkspace,
-      });
+      }, workspaceScope);
     }, 250);
     return () => window.clearTimeout(timer);
-  }, [instrument, sessionDate, campaign?.id, restored?.campaignId, replay.replayTimestamp, replay.speed, replay.paneTfs, replayMode, layout, draft, positionUi, gridWorkspace]);
+  }, [instrument, sessionDate, campaign?.id, restored?.campaignId, replay.replayTimestamp, replay.speed, replay.requestedPaneTfs, replayMode, layout, draft, positionUi, gridWorkspace, workspaceScope]);
 
   const chartLevels = useMemo(
     () => ({
@@ -665,8 +667,13 @@ const MarketReplayPage: React.FC<MarketReplayPageProps> = ({ detached = false })
 
   const requestLeaveToJournal = useCallback(() => {
     if (!campaign) return;
+    // Confirmation seulement s'il reste un trade non envoyé au journal.
+    if (draft.entryTimestamp != null) {
+      setShowLeaveConfirm(true);
+      return;
+    }
     goToJournal();
-  }, [campaign, goToJournal]);
+  }, [campaign, draft.entryTimestamp, goToJournal]);
 
   const handleDetach = useCallback(() => {
     const params = new URLSearchParams();
@@ -802,6 +809,7 @@ const MarketReplayPage: React.FC<MarketReplayPageProps> = ({ detached = false })
                     setInstrument(v);
                     clearTrade();
                   }}
+                  withBarsOnly
                 />
               </div>
               <div className="min-w-[14rem]">
@@ -1007,7 +1015,8 @@ const MarketReplayPage: React.FC<MarketReplayPageProps> = ({ detached = false })
 
         <ReplayGrid
           panes={panes}
-          availableTimeframes={replay.availableTimeframes}
+          availableTimeframes={replay.sessionAvailableTimeframes}
+          switchedTimeframes={replay.switchedTimeframes}
           layout={layout}
           onLayoutChange={setLayout}
           initialWorkspace={restored?.grid}
@@ -1050,6 +1059,7 @@ const MarketReplayPage: React.FC<MarketReplayPageProps> = ({ detached = false })
       <ConfirmModal
         isOpen={showLeaveConfirm}
         variant="warning"
+        size="xl"
         onClose={() => setShowLeaveConfirm(false)}
         onConfirm={() => {
           setShowLeaveConfirm(false);
