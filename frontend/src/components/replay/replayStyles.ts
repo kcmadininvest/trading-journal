@@ -17,8 +17,14 @@ export const replaySecondaryButtonClass =
 export const replayGroupShellClass =
   'inline-flex items-center gap-0.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-800/60 p-1 shadow-sm';
 
+/** Même shell, colonnes égales à la largeur du bouton le plus large. */
+export const replayGroupEqualShellClass =
+  'inline-grid grid-flow-col auto-cols-[1fr] items-center gap-0.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-800/60 p-1 shadow-sm';
+
 export const replayGroupInnerButtonClass =
   '!h-9 !min-h-9 !px-3 !text-xs font-medium !border-0 !shadow-none rounded-md transition-colors';
+
+export const replayGroupEqualInnerButtonClass = `${replayGroupInnerButtonClass} !w-full`;
 
 /** Hauteur externe d’un bloc groupé (shell p-1 + bouton interne h-9), alignée sur le transport. */
 export const replayGroupOuterHeightClass = '!h-[2.75rem] !min-h-[2.75rem]';

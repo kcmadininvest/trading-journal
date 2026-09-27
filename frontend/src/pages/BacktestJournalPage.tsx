@@ -671,29 +671,37 @@ function CampaignSection({
 
   return (
     <section className="space-y-3">
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="font-medium text-gray-900 dark:text-gray-100">{t('campaigns')}</h2>
-        <button type="button" className={replayPrimaryButtonClass} onClick={startCreate} disabled={!version}>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <p className="min-w-0 flex-1 text-sm text-gray-500 dark:text-gray-400">{t('campaignsHint')}</p>
+        <button
+          type="button"
+          className={`${replayPrimaryButtonClass} shrink-0 self-end sm:self-start`}
+          onClick={startCreate}
+          disabled={!version}
+        >
           {t('newCampaign')}
         </button>
       </div>
-      <p className="text-sm text-gray-500 dark:text-gray-400">{t('campaignsHint')}</p>
       {campaigns.length === 0 && (
         <p className="text-sm text-gray-500 dark:text-gray-400">{t('emptyCampaigns')}</p>
       )}
-      <div className="grid gap-3 md:grid-cols-2">
+      <div className="space-y-2">
         {campaigns.map((item) => (
-          <div key={item.id} className={`${replayCardClass} p-4`}>
-            <button type="button" className="w-full text-left" onClick={() => onOpen(item.id)}>
+          <div
+            key={item.id}
+            className={`${replayCardClass} flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4`}
+          >
+            <button type="button" className="min-w-0 flex-1 text-left" onClick={() => onOpen(item.id)}>
               <h3 className="font-medium text-gray-900 dark:text-gray-100">{item.name}</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">{item.instrument || '—'}</p>
-              <p className="text-xs text-gray-400 dark:text-gray-500">
+              <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
+                <span className="font-medium text-gray-700 dark:text-gray-300">{item.instrument || '—'}</span>
+                <span className="mx-1.5 text-gray-300 dark:text-gray-600">·</span>
                 {formatDate(item.period_start, preferences.date_format, false, preferences.timezone)}
                 {' → '}
                 {formatDate(item.period_end, preferences.date_format, false, preferences.timezone)}
               </p>
             </button>
-            <div className="mt-3 flex items-center gap-2 border-t border-gray-200 pt-2 dark:border-gray-700">
+            <div className="flex shrink-0 items-center gap-1 border-t border-gray-200 pt-2 sm:border-t-0 sm:pt-0 dark:border-gray-700">
               <Tooltip content={t('edit')} position="top">
                 <button
                   type="button"

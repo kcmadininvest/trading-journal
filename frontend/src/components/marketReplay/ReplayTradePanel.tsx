@@ -4,6 +4,8 @@ import { formatNumber } from '../../utils/numberFormat';
 import { usePreferences } from '../../hooks/usePreferences';
 import { computePositionMetrics, resolveContractSpecs } from '../../utils/positionToolMetrics';
 import {
+  replayGroupEqualInnerButtonClass,
+  replayGroupEqualShellClass,
   replayGroupInnerButtonClass,
   replayGroupOuterHeightClass,
   replayGroupShellClass,
@@ -86,11 +88,11 @@ const GROUP_BTN_VARIANT: Record<TradeBtnVariant, { idle: string; active: string 
   },
 };
 
-function groupTradeBtn(variant: TradeBtnVariant, active: boolean): string {
+function groupTradeBtn(variant: TradeBtnVariant, active: boolean, equalWidth = false): string {
   const tone = GROUP_BTN_VARIANT[variant];
   return [
     replaySecondaryButtonClass,
-    replayGroupInnerButtonClass,
+    equalWidth ? replayGroupEqualInnerButtonClass : replayGroupInnerButtonClass,
     active ? tone.active : tone.idle,
   ].join(' ');
 }
@@ -169,10 +171,10 @@ export const ReplayTradePanel: React.FC<ReplayTradePanelProps> = ({
         </button>
       </div>
 
-      <div className={replayGroupShellClass} role="group">
+      <div className={replayGroupEqualShellClass} role="group">
         <button
           type="button"
-          className={groupTradeBtn('exit', placementMode === 'exit')}
+          className={groupTradeBtn('exit', placementMode === 'exit', true)}
           onClick={onMarkExit}
           disabled={!canPlace || draft.entryTimestamp == null}
         >
@@ -180,7 +182,7 @@ export const ReplayTradePanel: React.FC<ReplayTradePanelProps> = ({
         </button>
         <button
           type="button"
-          className={groupTradeBtn('stop', placementMode === 'stop')}
+          className={groupTradeBtn('stop', placementMode === 'stop', true)}
           onClick={onSetStop}
           disabled={!canPlace}
         >
@@ -188,7 +190,7 @@ export const ReplayTradePanel: React.FC<ReplayTradePanelProps> = ({
         </button>
         <button
           type="button"
-          className={groupTradeBtn('target', placementMode === 'target')}
+          className={groupTradeBtn('target', placementMode === 'target', true)}
           onClick={onSetTarget}
           disabled={!canPlace}
         >
