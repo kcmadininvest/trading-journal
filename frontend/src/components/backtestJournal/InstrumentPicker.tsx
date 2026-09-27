@@ -4,7 +4,7 @@ import historicalDataService, { type MarketInstrument } from '../../services/his
 import { marketReplayService } from '../../services/marketReplay';
 
 const FIELD_CLASS =
-  'mt-1 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100';
+  'mt-1 h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100';
 
 const catalogCache: { all: MarketInstrument[] | null; withBars: MarketInstrument[] | null } = {
   all: null,

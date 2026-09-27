@@ -798,11 +798,11 @@ const MarketReplayPage: React.FC<MarketReplayPageProps> = ({ detached = false })
             ) : null}
           </div>
         </div>
-        <div className="shrink-0 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2.5 shadow-sm">
-          <div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
-            <div className="flex flex-wrap items-end gap-3 min-w-0 shrink-0">
-              <div className="w-72 min-w-[16rem] max-w-full">
-                <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">{t('instrument')}</label>
+        <div className="shrink-0 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2.5 shadow-sm space-y-3">
+          <div className="flex flex-col gap-3 2xl:flex-row 2xl:items-start 2xl:justify-between">
+            <div className="grid grid-cols-1 sm:grid-cols-[minmax(16rem,18rem)_minmax(14rem,16rem)] gap-x-4 gap-y-2 min-w-0 items-start">
+              <div className="min-w-0">
+                <label className="block text-xs text-gray-500 dark:text-gray-400">{t('instrument')}</label>
                 <InstrumentPicker
                   value={instrument}
                   onChange={(v) => {
@@ -812,9 +812,9 @@ const MarketReplayPage: React.FC<MarketReplayPageProps> = ({ detached = false })
                   withBarsOnly
                 />
               </div>
-              <div className="min-w-[14rem]">
-                <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">{t('sessionDate')}</label>
-                <div className="flex items-center gap-1.5">
+              <div className="min-w-0">
+                <label className="block text-xs text-gray-500 dark:text-gray-400">{t('sessionDate')}</label>
+                <div className="mt-1 flex items-center gap-1.5">
                   <button
                     type="button"
                     onClick={goToPreviousSession}
@@ -860,7 +860,7 @@ const MarketReplayPage: React.FC<MarketReplayPageProps> = ({ detached = false })
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center justify-end gap-2 min-w-0">
+            <div className="flex flex-wrap items-center gap-2 min-w-0 2xl:justify-end 2xl:pt-5">
               <ReplayControls
                 compact
                 playing={replay.playing}
@@ -904,8 +904,8 @@ const MarketReplayPage: React.FC<MarketReplayPageProps> = ({ detached = false })
             </div>
           </div>
 
-          <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[11px] text-gray-600 dark:text-gray-300 tabular-nums">
-            <span className="text-gray-500 dark:text-gray-400 truncate">
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-[11px] text-gray-600 dark:text-gray-300 tabular-nums border-t border-gray-100 pt-2 dark:border-gray-800">
+            <span className="text-gray-500 dark:text-gray-400 truncate min-w-0">
               {campaign
                 ? t('linkedCampaign', { name: campaign.name || `#${campaign.id}` })
                 : t('noCampaign')}
@@ -960,8 +960,8 @@ const MarketReplayPage: React.FC<MarketReplayPageProps> = ({ detached = false })
             </div>
           </div>
 
-          <div className="mt-2 flex items-center justify-between gap-3 border-t border-gray-100 pt-2 dark:border-gray-800">
-            <span className="hidden text-[11px] text-gray-500 dark:text-gray-400 xl:block">{t('shortcutsHint')}</span>
+          <div className="space-y-1.5 border-t border-gray-100 pt-2 dark:border-gray-800">
+            <p className="text-[11px] text-gray-500 dark:text-gray-400">{t('shortcutsHint')}</p>
             <input
               type="range"
               min={replay.range?.start ?? 0}
@@ -973,7 +973,7 @@ const MarketReplayPage: React.FC<MarketReplayPageProps> = ({ detached = false })
               )}
               disabled={replayMode === 'disciplined' || !replay.range || replay.loading || (replay.range?.end ?? 0) <= (replay.range?.start ?? 0)}
               onChange={(e) => replay.seek(Number(e.target.value))}
-              className="h-1.5 min-w-0 flex-1 accent-blue-600 dark:accent-blue-500 cursor-pointer disabled:opacity-40"
+              className="block w-full h-1.5 accent-blue-600 dark:accent-blue-500 cursor-pointer disabled:opacity-40"
               aria-label={t('timeline')}
             />
           </div>
