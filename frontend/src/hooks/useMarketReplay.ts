@@ -6,6 +6,7 @@ import {
 } from '../services/marketReplay';
 import {
   getVisibleCandles,
+  ONE_MINUTE_TIMEFRAME,
   pickReplayBaseTimeframe,
   ReplayEngine,
   type ReplayChartConfiguration,
@@ -127,6 +128,18 @@ export function useMarketReplay({
     () => pickReplayBaseTimeframe(chartConfigs),
     [chartConfigs],
   );
+
+  /** 1m de séance pour former les TF > 1m, même sans pane 1m. */
+  const formingTimeframe = useMemo((): AvailableTimeframe | null => {
+    const needsForming = chartConfigs.some((c) => c.timeframe.durationSeconds > 60);
+    if (!needsForming) return null;
+    if (currentSessionTfs && !currentSessionTfs.includes('1m')) return null;
+    // Avant session-timeframes : tenter 1m si meta dispo (évite flash sans formation).
+    if (currentSessionTfs === null && !tfByValue.has('1m')) return null;
+    return tfByValue.get('1m') ?? ONE_MINUTE_TIMEFRAME;
+  }, [chartConfigs, currentSessionTfs, tfByValue]);
+
+  const shouldLoadForming1m = formingTimeframe != null;
 
   const rebuildEngine = useCallback(
     (symbol: string, startTs: number, endTs: number, charts: ReplayChartConfiguration[], keepTs?: number) => {
@@ -309,7 +322,11 @@ export function useMarketReplay({
     const requestId = ++barsRequestIdRef.current;
 
     const needed = [
-      ...new Set([...chartConfigs.map((c) => c.timeframe.value), baseTimeframe.value]),
+      ...new Set([
+        ...chartConfigs.map((c) => c.timeframe.value),
+        baseTimeframe.value,
+        ...(shouldLoadForming1m && formingTimeframe ? [formingTimeframe.value] : []),
+      ]),
     ];
     const { start, end } = sessionRange;
     const startTs = candleTimeToUnix(start);
@@ -374,7 +391,16 @@ export function useMarketReplay({
       });
     // chartConfigKey stabilise les 4 TF sélectionnés.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [instrument, sessionDate, sessionRange, chartConfigKey, baseTimeframe?.value, rebuildEngine]);
+  }, [
+    instrument,
+    sessionDate,
+    sessionRange,
+    chartConfigKey,
+    baseTimeframe?.value,
+    shouldLoadForming1m,
+    formingTimeframe?.value,
+    rebuildEngine,
+  ]);
 
   // Seek immédiat quand l'heure de début change sur une séance déjà chargée.
   useEffect(() => {
@@ -454,19 +480,32 @@ export function useMarketReplay({
     const out: Record<string, VisibleCandle[]> = {};
     for (const id of CHART_IDS) out[id] = [];
     if (!replayTimestamp) return out;
+    const stepSeconds = baseTimeframe?.durationSeconds;
+    const formingSeries =
+      formingTimeframe && (seriesByTf[formingTimeframe.value]?.length ?? 0) > 0
+        ? seriesByTf[formingTimeframe.value]
+        : undefined;
+    const stepSeries = baseTimeframe ? seriesByTf[baseTimeframe.value] : undefined;
     for (const cfg of chartConfigs) {
       const series = seriesByTf[cfg.timeframe.value] || [];
-      const baseSeries = baseTimeframe ? seriesByTf[baseTimeframe.value] : undefined;
+      // Priorité : 1m de séance ; repli : série du pas (plus fin des panes).
+      const primarySeries = formingSeries ?? stepSeries;
+      const primaryTf = formingSeries ? formingTimeframe : baseTimeframe;
+      const fallbackSeries = formingSeries ? stepSeries : undefined;
+      const fallbackTf = formingSeries ? baseTimeframe : undefined;
       out[cfg.chartId] = getVisibleCandles(
         series,
         cfg.timeframe,
         replayTimestamp,
-        baseSeries,
-        baseTimeframe,
+        primarySeries,
+        primaryTf,
+        stepSeconds,
+        fallbackSeries,
+        fallbackTf,
       );
     }
     return out;
-  }, [chartConfigs, seriesByTf, replayTimestamp, baseTimeframe]);
+  }, [chartConfigs, seriesByTf, replayTimestamp, baseTimeframe, formingTimeframe]);
 
   const lastPrice = useMemo(() => {
     if (!baseTimeframe || !replayTimestamp) return null;

@@ -66,19 +66,34 @@ export function bucketOpenUnix(timestamp: number, durationSeconds: number): numb
   return Math.floor(timestamp / durationSeconds) * durationSeconds;
 }
 
-function durationsCompatible(baseSeconds: number, higherSeconds: number): boolean {
+export function durationsCompatible(baseSeconds: number, higherSeconds: number): boolean {
   return baseSeconds > 0 && higherSeconds > baseSeconds && higherSeconds % baseSeconds === 0;
 }
 
+/** Meta 1m de repli si absente de availableTimeframes. */
+export const ONE_MINUTE_TIMEFRAME: AvailableTimeframe = {
+  value: '1m',
+  label: '1m',
+  durationSeconds: 60,
+};
+
 /**
- * Agrège des bougies de base dans [bucketStart, replayTimestamp] inclus pour
- * construire une bougie supérieure en formation.
+ * Agrège des bougies de base dans le bucket [bucketStart, bucketStart + higherDuration)
+ * dont l'ouverture est <= revealedUntil (données révélées jusqu'à cette seconde).
+ * `baseDurationSeconds` sert à n'inclure une barre de base que lorsqu'elle est
+ * entièrement couverte : open + baseDuration - 1 <= revealedUntil.
  */
 export function aggregateFormingCandle(
   baseCandles: ReplayCandle[],
   bucketStart: number,
-  replayTimestamp: number,
+  revealedUntil: number,
+  baseDurationSeconds = 1,
+  higherDurationSeconds?: number,
 ): VisibleCandle | null {
+  const bucketEnd =
+    higherDurationSeconds != null && higherDurationSeconds > 0
+      ? bucketStart + higherDurationSeconds
+      : Number.POSITIVE_INFINITY;
   let open: number | null = null;
   let high = -Infinity;
   let low = Infinity;
@@ -89,7 +104,10 @@ export function aggregateFormingCandle(
   for (const candle of baseCandles) {
     const t = parseCandleUnix(candle);
     if (t < bucketStart) continue;
-    if (t > replayTimestamp) break;
+    if (t >= bucketEnd) break;
+    // Barre entièrement révélée (équivalent à t <= revealedUntil quand
+    // revealedUntil = fin de pas alignée et t sur la grille de base).
+    if (t + baseDurationSeconds - 1 > revealedUntil) break;
     if (open === null) open = candle.o;
     high = Math.max(high, candle.h);
     low = Math.min(low, candle.l);
@@ -109,10 +127,36 @@ export function aggregateFormingCandle(
   };
 }
 
+function tryAggregateForming(
+  baseSeries: ReplayCandle[] | undefined,
+  baseTimeframe: AvailableTimeframe | null | undefined,
+  higherDuration: number,
+  bucketStart: number,
+  revealedUntil: number,
+  /** Si fourni, remplace baseTimeframe.durationSeconds pour le test de couverture. */
+  baseDurationOverride?: number,
+): VisibleCandle | null {
+  if (!baseSeries?.length || !baseTimeframe) return null;
+  if (!durationsCompatible(baseTimeframe.durationSeconds, higherDuration)) return null;
+  const baseDur =
+    baseDurationOverride != null && baseDurationOverride > 0
+      ? baseDurationOverride
+      : baseTimeframe.durationSeconds;
+  return aggregateFormingCandle(
+    baseSeries,
+    bucketStart,
+    revealedUntil,
+    baseDur,
+    higherDuration,
+  );
+}
+
 /**
- * Bougies visibles jusqu'à replayTimestamp (aucune donnée future).
+ * Bougies visibles jusqu'à la fin du pas courant (revealedUntil).
  * Si une série de base compatible est fournie, la dernière bougie du TF
- * supérieur peut être en formation.
+ * supérieur peut être en formation. `stepSeconds` = durée du pas moteur
+ * (plus fin des panes) ; défaut 1 pour préserver les appels legacy.
+ * `fallbackBase*` : repli si la série primaire est vide ou ne couvre pas le bucket.
  */
 export function getVisibleCandles(
   series: ReplayCandle[],
@@ -120,19 +164,26 @@ export function getVisibleCandles(
   replayTimestamp: number,
   baseSeries?: ReplayCandle[],
   baseTimeframe?: AvailableTimeframe | null,
+  stepSeconds?: number,
+  fallbackBaseSeries?: ReplayCandle[],
+  fallbackBaseTimeframe?: AvailableTimeframe | null,
 ): VisibleCandle[] {
   const duration = timeframe.durationSeconds;
+  // Sans stepSeconds explicite : revealedUntil = replayTimestamp (comportement legacy).
+  const stepProvided = stepSeconds != null && stepSeconds > 0;
+  const step = stepProvided ? stepSeconds! : 1;
+  const revealedUntil = replayTimestamp + step - 1;
   const closed: VisibleCandle[] = [];
   let latestNative: ReplayCandle | null = null;
 
   for (const candle of series) {
     const t = parseCandleUnix(candle);
-    if (t > replayTimestamp) break;
+    if (t > revealedUntil) break;
     latestNative = candle;
     // Convention : timestamp = ouverture. Visible seulement si clôturée
-    // (open + duration - 1 <= replay) OU si on formera la bougie courante via base.
+    // (open + duration - 1 <= revealedUntil) OU si on formera la bougie courante via base.
     const closeUnix = t + duration - 1;
-    if (closeUnix <= replayTimestamp) {
+    if (closeUnix <= revealedUntil) {
       closed.push({
         time: t,
         open: candle.o,
@@ -144,53 +195,67 @@ export function getVisibleCandles(
     }
   }
 
-  const canForm =
-    baseSeries &&
-    baseTimeframe &&
-    durationsCompatible(baseTimeframe.durationSeconds, duration);
-
-  if (canForm) {
-    const nativeOpen = latestNative ? parseCandleUnix(latestNative) : null;
-    const bucketStart = nativeOpen !== null && nativeOpen + duration > replayTimestamp
+  const nativeOpen = latestNative ? parseCandleUnix(latestNative) : null;
+  const bucketStart =
+    nativeOpen !== null && nativeOpen + duration > revealedUntil
       ? nativeOpen
-      : bucketOpenUnix(replayTimestamp, duration);
-    // Ne pas former si la bougie native est déjà clôturée et présente
-    const lastClosed = closed.length ? closed[closed.length - 1] : null;
-    if (!lastClosed || lastClosed.time < bucketStart) {
-      const forming = aggregateFormingCandle(baseSeries, bucketStart, replayTimestamp);
-      if (forming) {
-        closed.push(forming);
-      }
-    }
-  } else {
-    // Sans granularité inférieure : révéler uniquement les bougies natives
-    // dont l'ouverture est <= replayTimestamp (apparition à l'open historique).
-    // Si déjà filtrées par closeUnix ci-dessus, pour TF == base (ou égal),
-    // une bougie en cours n'est pas partiellement reconstruite.
-    if (baseTimeframe && baseTimeframe.durationSeconds === duration) {
-      // Même granularité : afficher aussi la bougie dont open <= replay
-      // même si non clôturée (c'est la bougie "courante" native).
-      const last = latestNative && parseCandleUnix(latestNative) + duration > replayTimestamp
-        ? latestNative
-        : null;
-      if (last) {
-        const t = parseCandleUnix(last);
-        if (!closed.some((c) => c.time === t)) {
-          closed.push({
-            time: t,
-            open: last.o,
-            high: last.h,
-            low: last.l,
-            close: last.c,
-            volume: last.v,
-          });
+      : bucketOpenUnix(revealedUntil, duration);
+  const lastClosed = closed.length ? closed[closed.length - 1] : null;
+  const needsForming = !lastClosed || lastClosed.time < bucketStart;
+
+  if (needsForming) {
+    // Legacy (pas de step) : inclusion open <= revealedUntil via baseDuration=1.
+    // Avec step moteur : n'inclure une barre de base que si entièrement révélée.
+    const primaryBaseDur = stepProvided ? baseTimeframe?.durationSeconds : 1;
+    const fallbackBaseDur = stepProvided ? fallbackBaseTimeframe?.durationSeconds : 1;
+    const forming =
+      tryAggregateForming(
+        baseSeries,
+        baseTimeframe,
+        duration,
+        bucketStart,
+        revealedUntil,
+        primaryBaseDur,
+      ) ??
+      tryAggregateForming(
+        fallbackBaseSeries,
+        fallbackBaseTimeframe,
+        duration,
+        bucketStart,
+        revealedUntil,
+        fallbackBaseDur,
+      );
+    if (forming) {
+      closed.push(forming);
+    } else {
+      // Sans formation : même granularité que la base (ou fallback) → bougie native courante.
+      const sameTf =
+        (baseTimeframe && baseTimeframe.durationSeconds === duration) ||
+        (fallbackBaseTimeframe && fallbackBaseTimeframe.durationSeconds === duration);
+      if (sameTf) {
+        const last =
+          latestNative && parseCandleUnix(latestNative) + duration > revealedUntil
+            ? latestNative
+            : null;
+        if (last) {
+          const t = parseCandleUnix(last);
+          if (!closed.some((c) => c.time === t)) {
+            closed.push({
+              time: t,
+              open: last.o,
+              high: last.h,
+              low: last.l,
+              close: last.c,
+              volume: last.v,
+            });
+          }
         }
       }
     }
   }
 
-  // Filet de sécurité anti-futur
-  return closed.filter((c) => c.time <= replayTimestamp);
+  // Filet de sécurité anti-futur (aucune open au-delà des données révélées)
+  return closed.filter((c) => c.time <= revealedUntil);
 }
 
 export class ReplayEngine {
