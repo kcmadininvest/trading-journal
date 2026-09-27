@@ -14,25 +14,7 @@ export type ReplayGridWorkspace = {
   drawingsByPane: Record<string, Drawing[]>;
   sharedDrawings: Drawing[];
   drawingStyle: DrawingStyle;
-  /** Overrides autofit par pane ; absent = défaut Settings. */
-  autoFitByPane?: Record<string, boolean>;
 };
-
-/** Ne garde que les entrées booléennes (localStorage non fiable). */
-export function sanitizeAutoFitByPane(
-  raw: unknown,
-): Record<string, boolean> | undefined {
-  if (raw == null || typeof raw !== 'object' || Array.isArray(raw)) {
-    return undefined;
-  }
-  const next: Record<string, boolean> = {};
-  for (const [chartId, value] of Object.entries(raw as Record<string, unknown>)) {
-    if (typeof value === 'boolean') {
-      next[chartId] = value;
-    }
-  }
-  return Object.keys(next).length > 0 ? next : undefined;
-}
 
 export type MarketReplayWorkspace = {
   version: 1;
@@ -76,19 +58,6 @@ export function loadMarketReplayWorkspace(
         (parsed.sessionStartTime !== '' && !/^\d{1,2}:\d{2}$/.test(parsed.sessionStartTime)))
     ) {
       delete parsed.sessionStartTime;
-    }
-    if (parsed.grid != null && typeof parsed.grid === 'object') {
-      const sanitized = sanitizeAutoFitByPane(
-        (parsed.grid as { autoFitByPane?: unknown }).autoFitByPane,
-      );
-      if (sanitized) {
-        parsed.grid = { ...parsed.grid, autoFitByPane: sanitized };
-      } else {
-        const { autoFitByPane: _drop, ...rest } = parsed.grid as ReplayGridWorkspace & {
-          autoFitByPane?: unknown;
-        };
-        parsed.grid = rest as ReplayGridWorkspace;
-      }
     }
     return parsed as MarketReplayWorkspace;
   } catch {

@@ -176,6 +176,7 @@ const MarketReplayPage: React.FC<MarketReplayPageProps> = ({ detached = false })
   const paneHandlesRef = useRef<Record<string, ReplayChartPaneHandle | null>>({});
   const [saving, setSaving] = useState(false);
   const [logarithmic, setLogarithmic] = useState(!!preferences.market_replay_logarithmic);
+  const [autoFit, setAutoFit] = useState(!!preferences.market_replay_autofit);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [showSendConfirm, setShowSendConfirm] = useState(false);
@@ -185,11 +186,12 @@ const MarketReplayPage: React.FC<MarketReplayPageProps> = ({ detached = false })
 
   useEffect(() => {
     setLogarithmic(!!preferences.market_replay_logarithmic);
-  }, [preferences.market_replay_logarithmic]);
+    setAutoFit(!!preferences.market_replay_autofit);
+  }, [preferences.market_replay_logarithmic, preferences.market_replay_autofit]);
 
   const persistChartPref = useCallback(
     async (
-      patch: { market_replay_logarithmic?: boolean },
+      patch: { market_replay_logarithmic?: boolean; market_replay_autofit?: boolean },
       rollback: () => void,
     ) => {
       mergePreferences(patch);
@@ -200,10 +202,11 @@ const MarketReplayPage: React.FC<MarketReplayPageProps> = ({ detached = false })
         rollback();
         mergePreferences({
           market_replay_logarithmic: logarithmic,
+          market_replay_autofit: autoFit,
         });
       }
     },
-    [mergePreferences, logarithmic],
+    [mergePreferences, logarithmic, autoFit],
   );
 
   const handleLogarithmicChange = useCallback(
@@ -213,6 +216,15 @@ const MarketReplayPage: React.FC<MarketReplayPageProps> = ({ detached = false })
       void persistChartPref({ market_replay_logarithmic: value }, () => setLogarithmic(previous));
     },
     [logarithmic, persistChartPref],
+  );
+
+  const handleAutoFitChange = useCallback(
+    (value: boolean) => {
+      const previous = autoFit;
+      setAutoFit(value);
+      void persistChartPref({ market_replay_autofit: value }, () => setAutoFit(previous));
+    },
+    [autoFit, persistChartPref],
   );
 
   const replay = useMarketReplay({
@@ -1104,9 +1116,10 @@ const MarketReplayPage: React.FC<MarketReplayPageProps> = ({ detached = false })
           onAdjustCommit={commitAdjustLevel}
           placementArmed={placementMode != null}
           logarithmic={logarithmic}
-          defaultAutoFit={!!preferences.market_replay_autofit}
+          autoFit={autoFit}
           playing={replay.playing}
           onLogarithmicChange={handleLogarithmicChange}
+          onAutoFitChange={handleAutoFitChange}
           loading={replay.loading}
           emptySession={replay.sessionHasBars === false}
           positionModel={positionModel}

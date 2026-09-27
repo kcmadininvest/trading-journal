@@ -79,7 +79,7 @@
   "marketReplayLogarithmic": "Logarithmische Skala",
   "marketReplayLogarithmicDesc": "Standardmäßig logarithmische Preisskala in Market-Replay-Charts verwenden",
   "marketReplayAutofit": "Kontinuierliches Autofit",
-  "marketReplayAutofitDesc": "Standardwert für jeden nicht angepassten Market-Replay-Chart: sichtbare Kerzen bei jedem Replay-Schritt einpassen",
+  "marketReplayAutofitDesc": "Sichtbare Kerzen bei jedem Replay-Schritt automatisch einpassen",
   "premiumRestrictionsEnabled": "Premium-Einschränkungen aktiviert",
   "premiumRestrictionsEnabledDesc": "Wenn deaktiviert, sind alle Premium-Funktionen für alle Benutzer zugänglich.",
   "premiumRestrictionsUpdated": "Premium-Einstellungen aktualisiert.",

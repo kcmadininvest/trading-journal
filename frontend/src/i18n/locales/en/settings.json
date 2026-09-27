@@ -81,7 +81,7 @@
   "marketReplayLogarithmic": "Logarithmic scale",
   "marketReplayLogarithmicDesc": "Use a logarithmic price scale by default on Market Replay charts",
   "marketReplayAutofit": "Continuous autofit",
-  "marketReplayAutofitDesc": "Default for each Market Replay chart that has not been customized: fit visible candles on every replay step",
+  "marketReplayAutofitDesc": "Automatically fit visible candles on every replay step",
   "premiumRestrictionsEnabled": "Premium restrictions enabled",
   "premiumRestrictionsEnabledDesc": "When disabled, all premium features are accessible to every user.",
   "premiumRestrictionsUpdated": "Premium settings updated.",
