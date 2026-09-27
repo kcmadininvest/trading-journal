@@ -85,25 +85,25 @@ const AboutPage: React.FC = () => {
   const seoData: Record<string, { title: string; description: string; keywords: string; name: string }> = {
     fr: {
       title: 'À Propos | K&C Trading Journal',
-      description: 'Découvrez l\'histoire et la mission de K&C Trading Journal. Une plateforme gratuite créée par passion pour aider les traders à suivre et améliorer leurs performances.',
+      description: 'Découvrez l\'histoire et la mission de K&C Trading Journal. Une plateforme créée par passion pour aider les traders à suivre et améliorer leurs performances. Inscription gratuite, sans engagement.',
       keywords: 'à propos, trading journal, histoire, mission, équipe',
       name: 'À Propos - K&C Trading Journal',
     },
     en: {
       title: 'About Us - Free Trading Journal Platform | K&C Trading Journal',
-      description: 'Discover the story and mission of K&C Trading Journal. A free platform created with passion to help traders track and improve their performance. Learn about our commitment to providing the best free trading journal software.',
+      description: 'Discover the story and mission of K&C Trading Journal. A platform created with passion to help traders track and improve their performance. Free signup, no commitment.',
       keywords: 'about trading journal, free trading software, trading platform, trading journal mission, professional trading tools, trading performance tracking, trader community',
       name: 'About - K&C Trading Journal',
     },
     es: {
       title: 'Acerca de | K&C Trading Journal',
-      description: 'Descubre la historia y la misión de K&C Trading Journal. Una plataforma gratuita creada con pasión para ayudar a los traders a seguir y mejorar su rendimiento.',
+      description: 'Descubre la historia y la misión de K&C Trading Journal. Una plataforma creada con pasión para ayudar a los traders a seguir y mejorar su rendimiento. Registro gratuito, sin compromiso.',
       keywords: 'acerca de, diario de trading, historia, misión, equipo',
       name: 'Acerca de - K&C Trading Journal',
     },
     de: {
       title: 'Über uns | K&C Trading Journal',
-      description: 'Entdecken Sie die Geschichte und Mission von K&C Trading Journal. Eine kostenlose Plattform, die mit Leidenschaft geschaffen wurde, um Tradern zu helfen, ihre Leistung zu verfolgen und zu verbessern.',
+      description: 'Entdecken Sie die Geschichte und Mission von K&C Trading Journal. Eine Plattform, die mit Leidenschaft geschaffen wurde, um Tradern zu helfen, ihre Leistung zu verfolgen und zu verbessern. Kostenlose Anmeldung, keine Verpflichtung.',
       keywords: 'über uns, Trading-Journal, Geschichte, Mission, Team',
       name: 'Über uns - K&C Trading Journal',
     },
@@ -212,9 +212,7 @@ const AboutPage: React.FC = () => {
                     })}
                   </p>
                   <p>
-                    {t('about:story.content2', {
-                      defaultValue: 'Cependant, la plupart des solutions disponibles étaient soit trop chères, soit limitées dans leurs fonctionnalités. J\'ai donc décidé de créer une plateforme complète, professionnelle et surtout 100% gratuite.',
-                    })}
+                    {t('about:story.content2')}
                   </p>
                 </div>
               </div>
@@ -240,18 +238,17 @@ const AboutPage: React.FC = () => {
                 })}
               </p>
               <p>
-                {t('about:mission.content2', {
-                  defaultValue: 'Nous croyons fermement que suivre ses progrès ne devrait pas être un luxe payant, surtout quand on apprend encore et qu\'on ne gagne pas encore d\'argent du trading.',
-                })}
+                {t('about:mission.content2')}
+              </p>
+              <p>
+                {t('about:mission.content3')}
               </p>
               <div className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full shadow-lg mt-6">
                 <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
                 <span className="text-white font-semibold text-lg">
-                  {t('about:mission.content3', {
-                    defaultValue: '100% Gratuit',
-                  })}
+                  {t('about:mission.badge')}
                 </span>
               </div>
             </div>
@@ -271,12 +268,10 @@ const AboutPage: React.FC = () => {
                   </svg>
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 mb-3">
-                  {t('about:values.free.title', { defaultValue: 'Gratuité' })}
+                  {t('about:values.free.title')}
                 </h3>
                 <p className="text-gray-600 leading-relaxed">
-                  {t('about:values.free.content', {
-                    defaultValue: 'Un outil professionnel accessible à tous, sans frais.',
-                  })}
+                  {t('about:values.free.content')}
                 </p>
               </div>
 
@@ -292,9 +287,7 @@ const AboutPage: React.FC = () => {
                   {t('about:values.transparency.title', { defaultValue: 'Transparence' })}
                 </h3>
                 <p className="text-gray-600 leading-relaxed">
-                  {t('about:values.transparency.content', {
-                    defaultValue: 'Aucun frais caché, aucune limitation surprise.',
-                  })}
+                  {t('about:values.transparency.content')}
                 </p>
               </div>
 
@@ -349,9 +342,7 @@ const AboutPage: React.FC = () => {
                   {t('about:future.title', { defaultValue: 'L\'Avenir' })}
                 </h2>
                 <p className="text-lg text-gray-700 leading-relaxed">
-                  {t('about:future.content', {
-                    defaultValue: 'Nous continuons d\'améliorer K&C Trading Journal en ajoutant de nouvelles fonctionnalités basées sur les retours de notre communauté. Notre objectif est de rester la meilleure solution gratuite de journal de trading disponible.',
-                  })}
+                  {t('about:future.content')}
                 </p>
               </div>
             </div>

@@ -4,10 +4,16 @@
   "hero": {
     "tagline": "Verwandeln Sie Ihre Daten in umsetzbare Erkenntnisse",
     "description": "Verfolgen Sie jeden Trade, analysieren Sie Ihre Muster, identifizieren Sie Ihre Stärken und Schwächen, um ein leistungsfähigerer und disziplinierterer Trader zu werden.",
-    "freeBadge": "100% Kostenlos • Keine Versteckten Gebühren"
+    "freeBadge": "Kostenlose Anmeldung • Keine Verpflichtung"
   },
   "features": {
     "viewAll": "Alle Funktionen anzeigen",
+    "coreTitle": "Kernfunktionen",
+    "newTitle": "Erweiterte Module",
+    "carousel": {
+      "pause": "Automatischen Wechsel pausieren",
+      "play": "Automatischen Wechsel fortsetzen"
+    },
     "tradeTracking": {
       "title": "Vollständige Trade-Verfolgung",
       "description": "Erfassen Sie alle Ihre Trades präzise. CSV-Import, Multi-Konten-Verwaltung, Echtzeit-Tracking Ihrer Leistung."
@@ -39,6 +45,38 @@
     "insights": {
       "title": "Intelligente Erkenntnisse",
       "description": "Entdecken Sie Ihre Handelsmuster, Ihre profitabelsten Momente und Ihre Gewohnheiten, um Ihren Ansatz zu optimieren."
+    },
+    "marketReplay": {
+      "title": "Market Replay",
+      "description": "Spielen Sie historische Multi-Timeframe-OHLC für manuelles Backtesting ab."
+    },
+    "sessionReplay": {
+      "title": "Sitzungs-Replay",
+      "description": "Spielen Sie Ihre TopStep-Sitzungen ab: Orders, Fills, Positionen, Intraday-PnL und Journal-Entwurf."
+    },
+    "dailyJournal": {
+      "title": "Tagebuch",
+      "description": "Schreiben Sie Ihre täglichen Trading-Notizen, organisieren Sie sie und finden Sie sie leicht wieder."
+    },
+    "journalQuestions": {
+      "title": "Tagesfragen",
+      "description": "Beantworten Sie einen konfigurierbaren Tagesfragebogen, um Ihre Trading-Routine zu strukturieren."
+    },
+    "backtestJournal": {
+      "title": "Backtest-Journal",
+      "description": "Wählen Sie eine Positionsstrategie, um Ihre Backtest-Beobachtungen zu protokollieren."
+    },
+    "historicalData": {
+      "title": "Historische Daten",
+      "description": "Laden Sie Rohkerzen pro realem Kontrakt herunter und speichern Sie sie (TopStepX)."
+    },
+    "goals": {
+      "title": "Meine Ziele",
+      "description": "Definieren und verfolgen Sie Ihre Trading-Ziele."
+    },
+    "behavior": {
+      "title": "Verhalten",
+      "description": "Analysieren Sie Ihre Disziplin, das Sizing nach Gewinn oder Verlust und Verhaltenssignale."
     }
   },
   "benefits": {
@@ -64,7 +102,7 @@
   },
   "about": {
     "title": "Über uns",
-    "summary": "K&C Trading Journal ist eine 100% kostenlose Plattform, die geschaffen wurde, um allen Tradern zu helfen, ihre Leistung zu verfolgen und zu verbessern. Ein professionelles Tool, das für alle zugänglich ist, ohne versteckte Gebühren.",
+    "summary": "K&C Trading Journal ist eine Plattform, die Tradern hilft, ihre Leistung zu verfolgen und zu verbessern. Ein professionelles Tool mit kostenloser Anmeldung und ohne Verpflichtung.",
     "learnMore": "Mehr erfahren"
   },
   "faq": {
@@ -72,8 +110,8 @@
     "subtitle": "Finden Sie schnell Antworten auf Ihre Fragen",
     "items": [
       {
-        "question": "Ist K&C Trading Journal wirklich kostenlos?",
-        "answer": "Ja, K&C Trading Journal ist 100% kostenlos, ohne versteckte Gebühren. Wir glauben, dass die Verfolgung Ihrer Handelsfortschritte kein bezahlter Luxus sein sollte, besonders wenn Sie noch lernen. Alle Funktionen sind kostenlos verfügbar."
+        "question": "Ist die Anmeldung kostenlos?",
+        "answer": "Ja, die Anmeldung ist kostenlos und ohne Verpflichtung. Sie können noch heute starten. Das Angebot und die Zugangsbedingungen zu den Funktionen können sich weiterentwickeln; sie werden in der Anwendung angezeigt."
       },
       {
         "question": "Wie kann ich meine Trades importieren?",
@@ -100,7 +138,7 @@
   "cta": {
     "title": "Bereit, Ihr Trading zu transformieren?",
     "description": "Schließen Sie sich Tradern an, die bereits K&C Trading Journal verwenden, um ihre Leistung zu verbessern. Starten Sie noch heute kostenlos.",
-    "subtitle": "Kostenlos • Keine Verpflichtung • Einrichtung in 2 Minuten",
+    "subtitle": "Kostenlose Anmeldung • Keine Verpflichtung • Einrichtung in 2 Minuten",
     "registerButton": "Registrieren - Kostenlos"
   },
   "contact": {
@@ -136,4 +174,3 @@
     "close": "Schließen"
   }
 }
-

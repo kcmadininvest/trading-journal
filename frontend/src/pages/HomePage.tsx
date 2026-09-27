@@ -5,6 +5,11 @@ import ContactModal from '../components/contact/ContactModal';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { changeLanguage } from '../i18n/config';
 import { SEOHead, SchemaMarkup } from '../components/SEO';
+import FeatureShowcase from '../components/marketing/FeatureShowcase';
+import {
+  ADVANCED_MARKETING_FEATURES,
+  CORE_MARKETING_FEATURES,
+} from '../components/marketing/marketingFeatures';
 
 const HomePage: React.FC = () => {
   const { t, i18n: i18nInstance } = useI18nTranslation();
@@ -143,27 +148,27 @@ const HomePage: React.FC = () => {
   const baseUrl = import.meta.env.VITE_BASE_URL || window.location.origin;
   const currentUrl = `${baseUrl}${window.location.pathname}`;
   
-  // Données SEO selon la langue
+  // Données SEO selon la langue (titres inchangés ; descriptions assouplies + modules)
   const seoData = {
     fr: {
       title: 'Journal de Trading Gratuit | K&C Trading Journal',
-      description: 'Journal de trading professionnel gratuit - Suivez, analysez et optimisez vos performances de trading avec des outils avancés. Import CSV, multi-comptes, statistiques détaillées. 100% gratuit, sans frais cachés.',
-      keywords: 'journal de trading, trading journal, suivi de trades, analyse trading, performance trading, logiciel trading, application trading',
+      description: 'Journal de trading professionnel - Suivez, analysez et optimisez vos performances avec des outils avancés. Import CSV, multi-comptes, statistiques, Market Replay, journal, objectifs. Inscription gratuite, sans engagement.',
+      keywords: 'journal de trading, trading journal, suivi de trades, analyse trading, performance trading, logiciel trading, application trading, market replay, replay de session, journal de backtest',
     },
     en: {
       title: 'Free Trading Journal & Performance Tracker | K&C Trading Journal',
-      description: 'Professional trading journal software to track trades, analyze performance, and improve your strategy. Free with CSV import, multi-account support, advanced statistics, and analytics. No hidden fees.',
-      keywords: 'trading journal, trading diary, trade tracker, trading log, stock trading journal, forex trading journal, crypto trading journal, day trading journal, trading performance tracker, trading analytics, free trading journal software, trading journal app, trade management, position tracking',
+      description: 'Professional trading journal software to track trades, analyze performance, and improve your strategy. CSV import, multi-account support, advanced statistics, Market Replay, journal, goals. Free signup, no commitment.',
+      keywords: 'trading journal, trading diary, trade tracker, trading log, stock trading journal, forex trading journal, crypto trading journal, day trading journal, trading performance tracker, trading analytics, free trading journal software, trading journal app, trade management, position tracking, market replay, session replay, backtest journal',
     },
     es: {
       title: 'Diario de Trading Gratuito | K&C Trading Journal',
-      description: 'Diario de trading profesional gratuito - Rastrea, analiza y optimiza tu rendimiento de trading con herramientas avanzadas. Importación CSV, multi-cuenta, estadísticas detalladas. 100% gratuito, sin costos ocultos.',
-      keywords: 'diario de trading, trading journal, seguimiento de trades, análisis de trading, rendimiento de trading, software de trading',
+      description: 'Diario de trading profesional - Rastrea, analiza y optimiza tu rendimiento con herramientas avanzadas. Importación CSV, multi-cuenta, estadísticas, Market Replay, diario, objetivos. Registro gratuito, sin compromiso.',
+      keywords: 'diario de trading, trading journal, seguimiento de trades, análisis de trading, rendimiento de trading, software de trading, market replay, replay de sesión',
     },
     de: {
       title: 'Kostenloses Trading-Journal | K&C Trading Journal',
-      description: 'Kostenloses professionelles Trading-Journal - Verfolgen, analysieren und optimieren Sie Ihre Trading-Leistung mit erweiterten Tools. CSV-Import, Multi-Konto, detaillierte Statistiken. 100% kostenlos, keine versteckten Gebühren.',
-      keywords: 'Trading-Journal, Journal de trading, Trade-Tracking, Trading-Analyse, Trading-Leistung, Trading-Software',
+      description: 'Professionelles Trading-Journal - Verfolgen, analysieren und optimieren Sie Ihre Leistung mit erweiterten Tools. CSV-Import, Multi-Konto, Statistiken, Market Replay, Tagebuch, Ziele. Kostenlose Anmeldung, keine Verpflichtung.',
+      keywords: 'Trading-Journal, Journal de trading, Trade-Tracking, Trading-Analyse, Trading-Leistung, Trading-Software, Market Replay, Sitzungs-Replay',
     },
   };
 
@@ -202,6 +207,14 @@ const HomePage: React.FC = () => {
                 'Multi-comptes',
                 'Statistiques détaillées',
                 'Visualisations avancées',
+                'Market Replay',
+                'Replay de session',
+                'Journal',
+                'Questions du jour',
+                'Journal de backtest',
+                'Données historiques',
+                'Mes Objectifs',
+                'Comportement',
               ],
             },
           },
@@ -216,6 +229,14 @@ const HomePage: React.FC = () => {
                   'Multi-account',
                   'Detailed statistics',
                   'Advanced visualizations',
+                  'Market Replay',
+                  'Session replay',
+                  'Journal',
+                  'Daily questions',
+                  'Backtest journal',
+                  'Historical data',
+                  'My Goals',
+                  'Behavior',
                 ],
               },
             },
@@ -230,6 +251,14 @@ const HomePage: React.FC = () => {
                   'Multi-cuenta',
                   'Estadísticas detalladas',
                   'Visualizaciones avanzadas',
+                  'Market Replay',
+                  'Replay de sesión',
+                  'Diario',
+                  'Preguntas del día',
+                  'Diario de backtest',
+                  'Datos históricos',
+                  'Mis Objetivos',
+                  'Comportamiento',
                 ],
               },
             },
@@ -244,6 +273,14 @@ const HomePage: React.FC = () => {
                   'Multi-Konto',
                   'Detaillierte Statistiken',
                   'Erweiterte Visualisierungen',
+                  'Market Replay',
+                  'Sitzungs-Replay',
+                  'Tagebuch',
+                  'Tagesfragen',
+                  'Backtest-Journal',
+                  'Historische Daten',
+                  'Meine Ziele',
+                  'Verhalten',
                 ],
               },
             },
@@ -485,115 +522,31 @@ const HomePage: React.FC = () => {
           </div>
         </div>
 
-        {/* Main Features Grid */}
+        {/* Main Features Showcase */}
         <div className="mb-8 text-center">
           <a
             href={getFeaturesUrl(currentLanguage)}
             className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl mb-8"
           >
-            {t('home:features.viewAll', { defaultValue: 'Voir toutes les fonctionnalités' })}
+            {t('home:features.viewAll')}
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </a>
         </div>
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
-          <div className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 border border-gray-100">
-            <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center mb-4 shadow-md">
-              <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-3">{t('home:features.tradeTracking.title')}</h3>
-            <p className="text-gray-600 leading-relaxed">
-              {t('home:features.tradeTracking.description')}
-            </p>
-          </div>
 
-          <div className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 border border-gray-100">
-            <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center mb-4 shadow-md">
-              <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-3">{t('home:features.advancedAnalysis.title')}</h3>
-            <p className="text-gray-600 leading-relaxed">
-              {t('home:features.advancedAnalysis.description')}
-            </p>
-          </div>
+        <FeatureShowcase
+          title={t('home:features.coreTitle')}
+          features={CORE_MARKETING_FEATURES}
+          accent="core"
+        />
 
-          <div className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 border border-gray-100">
-            <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center mb-4 shadow-md">
-              <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-3">{t('home:features.strategies.title')}</h3>
-            <p className="text-gray-600 leading-relaxed">
-              {t('home:features.strategies.description')}
-            </p>
-          </div>
-
-          <div className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 border border-gray-100">
-            <div className="w-14 h-14 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center mb-4 shadow-md">
-              <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-3">{t('home:features.statistics.title')}</h3>
-            <p className="text-gray-600 leading-relaxed">
-              {t('home:features.statistics.description')}
-            </p>
-          </div>
-
-          <div className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 border border-gray-100">
-            <div className="w-14 h-14 bg-gradient-to-br from-pink-500 to-pink-600 rounded-xl flex items-center justify-center mb-4 shadow-md">
-              <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-              </svg>
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-3">{t('home:features.emotions.title')}</h3>
-            <p className="text-gray-600 leading-relaxed">
-              {t('home:features.emotions.description')}
-            </p>
-          </div>
-
-          <div className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 border border-gray-100">
-            <div className="w-14 h-14 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl flex items-center justify-center mb-4 shadow-md">
-              <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-3">{t('home:features.calendar.title')}</h3>
-            <p className="text-gray-600 leading-relaxed">
-              {t('home:features.calendar.description')}
-            </p>
-          </div>
-
-          <div className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 border border-gray-100">
-            <div className="w-14 h-14 bg-gradient-to-br from-teal-500 to-teal-600 rounded-xl flex items-center justify-center mb-4 shadow-md">
-              <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-              </svg>
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-3">{t('home:features.multiAccount.title')}</h3>
-            <p className="text-gray-600 leading-relaxed">
-              {t('home:features.multiAccount.description')}
-            </p>
-          </div>
-
-          <div className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 border border-gray-100">
-            <div className="w-14 h-14 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl flex items-center justify-center mb-4 shadow-md">
-              <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-              </svg>
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-3">{t('home:features.insights.title')}</h3>
-            <p className="text-gray-600 leading-relaxed">
-              {t('home:features.insights.description')}
-            </p>
-          </div>
-        </div>
+        <FeatureShowcase
+          title={t('home:features.newTitle')}
+          features={ADVANCED_MARKETING_FEATURES}
+          accent="advanced"
+          autoPlayMs={6000}
+        />
 
         {/* Benefits Section */}
         <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-8 md:p-12 mb-16 border border-blue-100">
@@ -714,7 +667,7 @@ const HomePage: React.FC = () => {
             </h2>
             <p className="text-lg text-gray-700 leading-relaxed max-w-3xl mx-auto mb-6">
               {t('home:about.summary', {
-                defaultValue: 'K&C Trading Journal est une plateforme 100% gratuite créée pour aider tous les traders à suivre et améliorer leurs performances. Un outil professionnel accessible à tous, sans frais cachés.',
+                defaultValue: 'K&C Trading Journal est une plateforme créée pour aider les traders à suivre et améliorer leurs performances. Un outil professionnel, avec une inscription gratuite et sans engagement.',
               })}
             </p>
             <div className="mt-8">

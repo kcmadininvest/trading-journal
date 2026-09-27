@@ -485,3 +485,34 @@ html.font-size-large {
 .progress-bar-dynamic[data-width="98"] { transform: scaleX(0.98); }
 .progress-bar-dynamic[data-width="99"] { transform: scaleX(0.99); }
 .progress-bar-dynamic[data-width="100"] { transform: scaleX(1); }
+
+/* Marketing feature showcase */
+@keyframes feature-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes feature-progress {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+.animate-feature-in {
+  animation: feature-in 0.4s ease-out both;
+  will-change: opacity, transform;
+}
+
+.animate-feature-progress {
+  transform-origin: left center;
+  animation-name: feature-progress;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-feature-in,
+  .animate-feature-progress {
+    animation: none !important;
+    transform: none !important;
+  }
+}

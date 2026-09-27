@@ -4,10 +4,16 @@
   "hero": {
     "tagline": "Transforma tus datos en insights accionables",
     "description": "Sigue cada operación, analiza tus patrones, identifica tus fortalezas y debilidades para convertirte en un trader más eficiente y disciplinado.",
-    "freeBadge": "100% Gratis • Sin Costos Ocultos"
+    "freeBadge": "Registro gratuito • Sin compromiso"
   },
   "features": {
     "viewAll": "Ver todas las funcionalidades",
+    "coreTitle": "Funcionalidades esenciales",
+    "newTitle": "Módulos avanzados",
+    "carousel": {
+      "pause": "Pausar el desplazamiento",
+      "play": "Reanudar el desplazamiento"
+    },
     "tradeTracking": {
       "title": "Seguimiento Completo de Operaciones",
       "description": "Registra todas tus operaciones con precisión. Importación CSV, gestión multi-cuentas, seguimiento en tiempo real de tu rendimiento."
@@ -39,6 +45,38 @@
     "insights": {
       "title": "Insights Inteligentes",
       "description": "Descubre tus patrones de trading, tus momentos más rentables y tus hábitos para optimizar tu enfoque."
+    },
+    "marketReplay": {
+      "title": "Market Replay",
+      "description": "Reprodice el historial OHLC multi-timeframe para el backtest manual."
+    },
+    "sessionReplay": {
+      "title": "Replay de sesión",
+      "description": "Reprodice tus sesiones TopStep: órdenes, fills, posiciones, PnL intradía y borrador del diario."
+    },
+    "dailyJournal": {
+      "title": "Diario",
+      "description": "Escribe tus notas diarias de trading, organízalas y encuéntralas fácilmente."
+    },
+    "journalQuestions": {
+      "title": "Preguntas del día",
+      "description": "Responde a un cuestionario diario configurable para estructurar tu rutina de trading."
+    },
+    "backtestJournal": {
+      "title": "Diario de backtest",
+      "description": "Elige una estrategia de posición para registrar tus observaciones de backtest."
+    },
+    "historicalData": {
+      "title": "Datos históricos",
+      "description": "Descarga y almacena velas en bruto por contrato real (TopStepX)."
+    },
+    "goals": {
+      "title": "Mis Objetivos",
+      "description": "Define y sigue tus objetivos de trading."
+    },
+    "behavior": {
+      "title": "Comportamiento",
+      "description": "Analiza tu disciplina, el sizing tras ganancias o pérdidas, y las señales de comportamiento."
     }
   },
   "benefits": {
@@ -64,7 +102,7 @@
   },
   "about": {
     "title": "Acerca de",
-    "summary": "K&C Trading Journal es una plataforma 100% gratuita creada para ayudar a todos los traders a seguir y mejorar su rendimiento. Una herramienta profesional accesible para todos, sin costos ocultos.",
+    "summary": "K&C Trading Journal es una plataforma creada para ayudar a los traders a seguir y mejorar su rendimiento. Una herramienta profesional, con registro gratuito y sin compromiso.",
     "learnMore": "Saber más"
   },
   "faq": {
@@ -72,8 +110,8 @@
     "subtitle": "Encuentra rápidamente las respuestas a tus preguntas",
     "items": [
       {
-        "question": "¿K&C Trading Journal es realmente gratuito?",
-        "answer": "Sí, K&C Trading Journal es 100% gratuito, sin costos ocultos. Creemos que seguir tu progreso en trading no debería ser un lujo de pago, especialmente cuando aún estás aprendiendo. Todas las funcionalidades están disponibles gratuitamente."
+        "question": "¿El registro es gratuito?",
+        "answer": "Sí, el registro es gratuito y sin compromiso. Puedes empezar hoy mismo. La oferta y las condiciones de acceso a las funcionalidades pueden evolucionar; se indican en la aplicación."
       },
       {
         "question": "¿Cómo puedo importar mis operaciones?",
@@ -100,7 +138,7 @@
   "cta": {
     "title": "¿Listo para transformar tu trading?",
     "description": "Únete a traders que ya utilizan K&C Trading Journal para mejorar su rendimiento. Comienza gratis hoy mismo.",
-    "subtitle": "Gratis • Sin compromiso • Configuración en 2 minutos",
+    "subtitle": "Registro gratuito • Sin compromiso • Configuración en 2 minutos",
     "registerButton": "Registrarse - Gratis"
   },
   "contact": {
@@ -136,4 +174,3 @@
     "close": "Cerrar"
   }
 }
-

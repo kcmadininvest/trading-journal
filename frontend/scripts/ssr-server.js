@@ -75,33 +75,33 @@ async function generatePrerenderedHTML(route, lang, query = '') {
       '/': {
         fr: {
           title: 'Journal de Trading Gratuit | K&C Trading Journal',
-          description: 'Journal de trading professionnel gratuit - Suivez, analysez et optimisez vos performances de trading avec des outils avancés. Import CSV, multi-comptes, statistiques détaillées. 100% gratuit, sans frais cachés.',
-          keywords: 'journal de trading, trading journal, suivi de trades, analyse trading, performance trading, logiciel trading, application trading',
+          description: 'Journal de trading professionnel - Suivez, analysez et optimisez vos performances avec des outils avancés. Import CSV, multi-comptes, statistiques, Market Replay, journal, objectifs. Inscription gratuite, sans engagement.',
+          keywords: 'journal de trading, trading journal, suivi de trades, analyse trading, performance trading, logiciel trading, application trading, market replay, replay de session, journal de backtest',
           locale: 'fr_FR',
         },
         en: {
           title: 'Free Trading Journal & Performance Tracker | K&C Trading Journal',
-          description: 'Professional trading journal software to track trades, analyze performance, and improve your strategy. Free with CSV import, multi-account support, advanced statistics, and analytics. No hidden fees.',
-          keywords: 'trading journal, trading diary, trade tracker, trading log, stock trading journal, forex trading journal, crypto trading journal, day trading journal, trading performance tracker, trading analytics, free trading journal software, trading journal app, trade management, position tracking',
+          description: 'Professional trading journal software to track trades, analyze performance, and improve your strategy. CSV import, multi-account support, advanced statistics, Market Replay, journal, goals. Free signup, no commitment.',
+          keywords: 'trading journal, trading diary, trade tracker, trading log, stock trading journal, forex trading journal, crypto trading journal, day trading journal, trading performance tracker, trading analytics, free trading journal software, trading journal app, trade management, position tracking, market replay, session replay, backtest journal',
           locale: 'en_US',
         },
         es: {
           title: 'Diario de Trading Gratuito | K&C Trading Journal',
-          description: 'Diario de trading profesional gratuito - Rastrea, analiza y optimiza tu rendimiento de trading con herramientas avanzadas. Importación CSV, multi-cuenta, estadísticas detalladas. 100% gratuito, sin costos ocultos.',
-          keywords: 'diario de trading, trading journal, seguimiento de trades, análisis de trading, rendimiento de trading, software de trading',
+          description: 'Diario de trading profesional - Rastrea, analiza y optimiza tu rendimiento con herramientas avanzadas. Importación CSV, multi-cuenta, estadísticas, Market Replay, diario, objetivos. Registro gratuito, sin compromiso.',
+          keywords: 'diario de trading, trading journal, seguimiento de trades, análisis de trading, rendimiento de trading, software de trading, market replay, replay de sesión',
           locale: 'es_ES',
         },
         de: {
           title: 'Kostenloses Trading-Journal | K&C Trading Journal',
-          description: 'Kostenloses professionelles Trading-Journal - Verfolgen, analysieren und optimieren Sie Ihre Trading-Leistung mit erweiterten Tools. CSV-Import, Multi-Konto, detaillierte Statistiken. 100% kostenlos, keine versteckten Gebühren.',
-          keywords: 'Trading-Journal, Journal de trading, Trade-Tracking, Trading-Analyse, Trading-Leistung, Trading-Software',
+          description: 'Professionelles Trading-Journal - Verfolgen, analysieren und optimieren Sie Ihre Leistung mit erweiterten Tools. CSV-Import, Multi-Konto, Statistiken, Market Replay, Tagebuch, Ziele. Kostenlose Anmeldung, keine Verpflichtung.',
+          keywords: 'Trading-Journal, Journal de trading, Trade-Tracking, Trading-Analyse, Trading-Leistung, Trading-Software, Market Replay, Sitzungs-Replay',
           locale: 'de_DE',
         },
       },
       '/about': {
         en: {
           title: 'About Us - Free Trading Journal Platform | K&C Trading Journal',
-          description: 'Discover the story and mission of K&C Trading Journal. A free platform created with passion to help traders track and improve their performance. Learn about our commitment to providing the best free trading journal software.',
+          description: 'Discover the story and mission of K&C Trading Journal. A platform created with passion to help traders track and improve their performance. Free signup, no commitment.',
           keywords: 'about trading journal, free trading software, trading platform, trading journal mission, professional trading tools, trading performance tracking, trader community',
           locale: 'en_US',
         },
@@ -109,7 +109,7 @@ async function generatePrerenderedHTML(route, lang, query = '') {
       '/a-propos': {
         fr: {
           title: 'À Propos | K&C Trading Journal',
-          description: 'Découvrez l\'histoire et la mission de K&C Trading Journal. Une plateforme gratuite créée par passion pour aider les traders à suivre et améliorer leurs performances.',
+          description: 'Découvrez l\'histoire et la mission de K&C Trading Journal. Une plateforme créée par passion pour aider les traders à suivre et améliorer leurs performances. Inscription gratuite, sans engagement.',
           keywords: 'à propos, trading journal, histoire, mission, équipe',
           locale: 'fr_FR',
         },
@@ -117,16 +117,16 @@ async function generatePrerenderedHTML(route, lang, query = '') {
       '/features': {
         en: {
           title: 'Trading Journal Features - Track, Analyze & Optimize | K&C Trading Journal',
-          description: 'Discover all the features of K&C Trading Journal: trade tracking, advanced analytics, strategy management, detailed statistics, CSV import, multi-account support, performance metrics, and much more. 100% free trading journal software.',
-          keywords: 'trading journal features, trade tracking software, trading analytics, performance tracking, trading statistics, strategy management, CSV import, multi-account trading, trading metrics, position tracking, trade analysis tools',
+          description: 'Discover all the features of K&C Trading Journal: trade tracking, advanced analytics, strategy management, detailed statistics, CSV import, multi-account support, Market Replay, journal, goals, behavior and much more. Free signup.',
+          keywords: 'trading journal features, trade tracking software, trading analytics, performance tracking, trading statistics, strategy management, CSV import, multi-account trading, trading metrics, position tracking, trade analysis tools, market replay, session replay, backtest journal',
           locale: 'en_US',
         },
       },
       '/fonctionnalites': {
         fr: {
           title: 'Fonctionnalités | K&C Trading Journal',
-          description: 'Découvrez toutes les fonctionnalités de K&C Trading Journal : suivi de trades, analyses avancées, gestion de stratégies, statistiques détaillées et bien plus encore.',
-          keywords: 'fonctionnalités, features, suivi trades, analyse trading, statistiques trading, journal trading',
+          description: 'Découvrez toutes les fonctionnalités de K&C Trading Journal : suivi de trades, analyses avancées, gestion de stratégies, statistiques, Market Replay, journal, objectifs, comportement et bien plus encore.',
+          keywords: 'fonctionnalités, features, suivi trades, analyse trading, statistiques trading, journal trading, market replay, replay de session, journal de backtest, objectifs trading',
           locale: 'fr_FR',
         },
       },

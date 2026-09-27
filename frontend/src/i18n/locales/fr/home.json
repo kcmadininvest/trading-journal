@@ -4,10 +4,16 @@
   "hero": {
     "tagline": "Transformez vos données en insights actionnables",
     "description": "Suivez chaque trade, analysez vos patterns, identifiez vos forces et faiblesses pour devenir un trader plus performant et discipliné.",
-    "freeBadge": "100% Gratuit • Aucun frais caché"
+    "freeBadge": "Inscription gratuite • Sans engagement"
   },
   "features": {
     "viewAll": "Voir toutes les fonctionnalités",
+    "coreTitle": "Fonctionnalités essentielles",
+    "newTitle": "Modules avancés",
+    "carousel": {
+      "pause": "Mettre en pause le défilement",
+      "play": "Reprendre le défilement"
+    },
     "tradeTracking": {
       "title": "Suivi Complet des Trades",
       "description": "Enregistrez tous vos trades avec précision. Import CSV, gestion multi-comptes, suivi en temps réel de vos performances."
@@ -39,6 +45,38 @@
     "insights": {
       "title": "Insights Intelligents",
       "description": "Découvrez vos patterns de trading, vos moments les plus rentables et vos habitudes pour optimiser votre approche."
+    },
+    "marketReplay": {
+      "title": "Market Replay",
+      "description": "Rejouez l'historique OHLC multi-timeframes pour le backtest manuel."
+    },
+    "sessionReplay": {
+      "title": "Replay de session",
+      "description": "Rejouez vos sessions TopStep : ordres, fills, positions, PnL intraday et brouillon journal."
+    },
+    "dailyJournal": {
+      "title": "Journal",
+      "description": "Rédigez vos notes quotidiennes de trading, organisez-les et retrouvez-les facilement."
+    },
+    "journalQuestions": {
+      "title": "Questions du jour",
+      "description": "Répondez à un questionnaire journalier configurable pour structurer votre routine de trading."
+    },
+    "backtestJournal": {
+      "title": "Journal de backtest",
+      "description": "Choisissez une stratégie de position pour journaliser vos observations de backtest."
+    },
+    "historicalData": {
+      "title": "Données historiques",
+      "description": "Téléchargez et stockez des bougies brutes par contrat réel (TopStepX)."
+    },
+    "goals": {
+      "title": "Mes Objectifs",
+      "description": "Définissez et suivez vos objectifs de trading."
+    },
+    "behavior": {
+      "title": "Comportement",
+      "description": "Analysez votre discipline, le sizing après gain ou perte, et les signaux comportementaux."
     }
   },
   "benefits": {
@@ -64,13 +102,13 @@
   },
   "about": {
     "title": "À propos",
-    "summary": "K&C Trading Journal est une plateforme 100% gratuite créée pour aider tous les traders à suivre et améliorer leurs performances. Un outil professionnel accessible à tous, sans frais cachés.",
+    "summary": "K&C Trading Journal est une plateforme créée pour aider les traders à suivre et améliorer leurs performances. Un outil professionnel, avec une inscription gratuite et sans engagement.",
     "learnMore": "En savoir plus"
   },
   "cta": {
     "title": "Prêt à transformer votre trading ?",
     "description": "Rejoignez des traders qui utilisent déjà K&C Trading Journal pour améliorer leurs performances. Commencez gratuitement dès aujourd'hui.",
-    "subtitle": "Gratuit • Sans engagement • Configuration en 2 minutes",
+    "subtitle": "Inscription gratuite • Sans engagement • Configuration en 2 minutes",
     "registerButton": "S'inscrire - Gratuit"
   },
   "contact": {
@@ -110,8 +148,8 @@
     "subtitle": "Trouvez rapidement les réponses à vos questions",
     "items": [
       {
-        "question": "K&C Trading Journal est-il vraiment gratuit ?",
-        "answer": "Oui, K&C Trading Journal est 100% gratuit, sans frais cachés. Nous croyons que suivre ses progrès en trading ne devrait pas être un luxe payant, surtout quand on apprend encore. Toutes les fonctionnalités sont disponibles gratuitement."
+        "question": "L'inscription est-elle gratuite ?",
+        "answer": "Oui, l'inscription est gratuite et sans engagement. Vous pouvez démarrer dès aujourd'hui. L'offre et les conditions d'accès aux fonctionnalités peuvent évoluer ; elles sont indiquées dans l'application."
       },
       {
         "question": "Comment puis-je importer mes trades ?",
@@ -136,4 +174,3 @@
     ]
   }
 }
-

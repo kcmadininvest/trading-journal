@@ -1,6 +1,9 @@
 {
   "title": "Features",
   "subtitle": "All the features you need to track and improve your trading performance.",
+  "coreTitle": "Core features",
+  "advancedTitle": "Advanced modules",
+  "backHome": "Back to home",
   "additional": {
     "title": "Additional Features",
     "import": {

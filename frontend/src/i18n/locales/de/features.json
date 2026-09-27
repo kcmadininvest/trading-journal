@@ -1,6 +1,9 @@
 {
   "title": "Funktionen",
   "subtitle": "Alle Funktionen, die Sie benötigen, um Ihre Handelsleistung zu verfolgen und zu verbessern.",
+  "coreTitle": "Kernfunktionen",
+  "advancedTitle": "Erweiterte Module",
+  "backHome": "Zurück zur Startseite",
   "additional": {
     "title": "Zusätzliche Funktionen",
     "import": {

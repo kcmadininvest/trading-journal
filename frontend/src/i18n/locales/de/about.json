@@ -6,23 +6,24 @@
   "story": {
     "title": "Unsere Geschichte",
     "content1": "K&C Trading Journal entstand aus einer Leidenschaft für Informatik und Finanzmärkte. Als Trader erkannte ich schnell die Bedeutung der Verfolgung und Analyse der Leistung, um Fortschritte zu erzielen.",
-    "content2": "Die meisten verfügbaren Lösungen waren jedoch entweder zu teuer oder in ihren Funktionen begrenzt. Daher beschloss ich, eine vollständige, professionelle und vor allem 100% kostenlose Plattform zu erstellen."
+    "content2": "Die meisten verfügbaren Lösungen waren jedoch entweder zu teuer oder in ihren Funktionen begrenzt. Daher beschloss ich, eine vollständige, professionelle Plattform zu erstellen, die Sie ohne Verpflichtung starten können."
   },
   "mission": {
     "title": "Unsere Mission",
     "content1": "Unsere Mission ist einfach: allen Tradern, ob Anfänger oder erfahren, ein professionelles Tool zur Verfügung zu stellen, um ihre Handelsleistung zu verfolgen, zu analysieren und zu optimieren.",
-    "content2": "Wir glauben fest daran, dass die Verfolgung Ihrer Fortschritte kein bezahlter Luxus sein sollte, besonders wenn Sie noch lernen und noch kein Geld mit dem Trading verdienen.",
-    "content3": "Deshalb ist K&C Trading Journal 100% kostenlos, ohne versteckte Gebühren, ohne Einschränkungen."
+    "content2": "Wir glauben fest daran, dass die Verfolgung Ihrer Fortschritte kein Hindernis sein sollte, besonders wenn Sie noch lernen und noch kein Geld mit dem Trading verdienen.",
+    "content3": "Deshalb ist die Anmeldung bei K&C Trading Journal kostenlos und ohne Verpflichtung. Das Angebot und die Zugangsbedingungen zu den Funktionen können sich weiterentwickeln; sie werden in der Anwendung angezeigt.",
+    "badge": "Kostenlose Anmeldung • Keine Verpflichtung"
   },
   "values": {
     "title": "Unsere Werte",
     "free": {
-      "title": "Kostenlos",
-      "content": "Ein professionelles Tool, das für alle zugänglich ist, kostenlos."
+      "title": "Zugänglichkeit",
+      "content": "Ein professionelles Tool zum Starten, mit kostenloser Anmeldung."
     },
     "transparency": {
       "title": "Transparenz",
-      "content": "Keine versteckten Gebühren, keine Überraschungseinschränkungen."
+      "content": "Die Zugangsbedingungen zu den Funktionen werden in der Anwendung klar angezeigt."
     },
     "quality": {
       "title": "Qualität",
@@ -35,6 +36,6 @@
   },
   "future": {
     "title": "Die Zukunft",
-    "content": "Wir verbessern K&C Trading Journal kontinuierlich, indem wir neue Funktionen basierend auf dem Feedback unserer Community hinzufügen. Unser Ziel ist es, die beste kostenlose Trading-Journal-Lösung zu bleiben."
+    "content": "Wir verbessern K&C Trading Journal kontinuierlich, indem wir neue Funktionen basierend auf dem Feedback unserer Community hinzufügen. Unser Ziel ist es, eine Referenzlösung für Trading-Journale zu bleiben."
   }
 }

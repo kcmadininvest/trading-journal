@@ -4,10 +4,16 @@
   "hero": {
     "tagline": "Transform your data into actionable insights",
     "description": "Track every trade, analyze your patterns, identify your strengths and weaknesses to become a more performant and disciplined trader.",
-    "freeBadge": "100% Free • No Hidden Fees"
+    "freeBadge": "Free signup • No commitment"
   },
   "features": {
     "viewAll": "View all features",
+    "coreTitle": "Core features",
+    "newTitle": "Advanced modules",
+    "carousel": {
+      "pause": "Pause autoplay",
+      "play": "Resume autoplay"
+    },
     "tradeTracking": {
       "title": "Complete Trade Tracking",
       "description": "Record all your trades with precision. CSV import, multi-account management, real-time performance tracking."
@@ -39,6 +45,38 @@
     "insights": {
       "title": "Smart Insights",
       "description": "Discover your trading patterns, your most profitable moments and your habits to optimize your approach."
+    },
+    "marketReplay": {
+      "title": "Market Replay",
+      "description": "Replay historical multi-timeframe OHLC for manual backtesting."
+    },
+    "sessionReplay": {
+      "title": "Session replay",
+      "description": "Replay your TopStep sessions: orders, fills, positions, intraday PnL and journal draft."
+    },
+    "dailyJournal": {
+      "title": "Journal",
+      "description": "Write your daily trading notes, organize them and find them easily."
+    },
+    "journalQuestions": {
+      "title": "Daily questions",
+      "description": "Answer a configurable daily questionnaire to structure your trading routine."
+    },
+    "backtestJournal": {
+      "title": "Backtest journal",
+      "description": "Pick a position strategy to log your backtest observations."
+    },
+    "historicalData": {
+      "title": "Historical data",
+      "description": "Download and store raw bars per real contract (TopStepX)."
+    },
+    "goals": {
+      "title": "My Goals",
+      "description": "Define and track your trading goals."
+    },
+    "behavior": {
+      "title": "Behavior",
+      "description": "Analyze your discipline, sizing after wins or losses, and behavioral signals."
     }
   },
   "benefits": {
@@ -64,13 +102,13 @@
   },
   "about": {
     "title": "About",
-    "summary": "K&C Trading Journal is a 100% free platform created to help all traders track and improve their performance. A professional tool accessible to everyone, with no hidden fees.",
+    "summary": "K&C Trading Journal is a platform created to help traders track and improve their performance. A professional tool, with free signup and no commitment.",
     "learnMore": "Learn more"
   },
   "cta": {
     "title": "Ready to transform your trading?",
     "description": "Join traders who already use K&C Trading Journal to improve their performance. Start free today.",
-    "subtitle": "Free • No commitment • Setup in 2 minutes",
+    "subtitle": "Free signup • No commitment • Setup in 2 minutes",
     "registerButton": "Sign up - Free"
   },
   "contact": {
@@ -110,8 +148,8 @@
     "subtitle": "Quickly find answers to your questions",
     "items": [
       {
-        "question": "Is K&C Trading Journal really free?",
-        "answer": "Yes, K&C Trading Journal is 100% free, with no hidden fees. We believe that tracking your trading progress shouldn't be a paid luxury, especially when you're still learning. All features are available for free."
+        "question": "Is signup free?",
+        "answer": "Yes, signup is free and with no commitment. You can get started today. The offering and feature access conditions may evolve; they are shown in the application."
       },
       {
         "question": "How can I import my trades?",
@@ -136,4 +174,3 @@
     ]
   }
 }
-

@@ -1,6 +1,9 @@
 {
   "title": "Fonctionnalités",
   "subtitle": "Toutes les fonctionnalités dont vous avez besoin pour suivre et améliorer vos performances de trading.",
+  "coreTitle": "Fonctionnalités essentielles",
+  "advancedTitle": "Modules avancés",
+  "backHome": "Retour à l'accueil",
   "additional": {
     "title": "Fonctionnalités Additionnelles",
     "import": {

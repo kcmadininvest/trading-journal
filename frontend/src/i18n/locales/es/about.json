@@ -6,23 +6,24 @@
   "story": {
     "title": "Nuestra Historia",
     "content1": "K&C Trading Journal nació de una pasión por la informática y los mercados financieros. Como trader, rápidamente me di cuenta de la importancia de seguir y analizar el rendimiento para progresar.",
-    "content2": "Sin embargo, la mayoría de las soluciones disponibles eran demasiado caras o limitadas en sus funcionalidades. Por lo tanto, decidí crear una plataforma completa, profesional y sobre todo 100% gratuita."
+    "content2": "Sin embargo, la mayoría de las soluciones disponibles eran demasiado caras o limitadas en sus funcionalidades. Por lo tanto, decidí crear una plataforma completa y profesional, accesible para empezar sin compromiso."
   },
   "mission": {
     "title": "Nuestra Misión",
     "content1": "Nuestra misión es simple: proporcionar a todos los traders, ya sean principiantes o experimentados, una herramienta profesional para seguir, analizar y optimizar su rendimiento de trading.",
-    "content2": "Creemos firmemente que seguir tu progreso no debería ser un lujo de pago, especialmente cuando aún estás aprendiendo y no estás ganando dinero con el trading.",
-    "content3": "Por eso K&C Trading Journal es 100% gratuito, sin costos ocultos, sin limitaciones."
+    "content2": "Creemos firmemente que seguir tu progreso no debería ser un obstáculo, especialmente cuando aún estás aprendiendo y no estás ganando dinero con el trading.",
+    "content3": "Por eso el registro en K&C Trading Journal es gratuito y sin compromiso. La oferta y las condiciones de acceso a las funcionalidades pueden evolucionar; se indican en la aplicación.",
+    "badge": "Registro gratuito • Sin compromiso"
   },
   "values": {
     "title": "Nuestros Valores",
     "free": {
-      "title": "Gratis",
-      "content": "Una herramienta profesional accesible para todos, sin costos."
+      "title": "Accesibilidad",
+      "content": "Una herramienta profesional accesible para empezar, con registro gratuito."
     },
     "transparency": {
       "title": "Transparencia",
-      "content": "Sin costos ocultos, sin limitaciones sorpresa."
+      "content": "Las condiciones de acceso a las funcionalidades se indican claramente en la aplicación."
     },
     "quality": {
       "title": "Calidad",
@@ -35,6 +36,6 @@
   },
   "future": {
     "title": "El Futuro",
-    "content": "Continuamos mejorando K&C Trading Journal agregando nuevas funcionalidades basadas en los comentarios de nuestra comunidad. Nuestro objetivo es seguir siendo la mejor solución gratuita de diario de trading disponible."
+    "content": "Continuamos mejorando K&C Trading Journal agregando nuevas funcionalidades basadas en los comentarios de nuestra comunidad. Nuestro objetivo es seguir siendo una solución de referencia de diario de trading."
   }
 }
