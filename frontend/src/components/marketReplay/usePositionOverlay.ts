@@ -14,7 +14,10 @@ import {
   hitTestPosition,
   paintPositionOverlay,
   positionBBox,
+  positionBodyHitPad,
   positionIsComplete,
+  resolvePositionUiScale,
+  type PositionChromeOptions,
   type PositionHandleKind,
   type PositionLabelFormatters,
   type PositionOverlayModel,
@@ -45,6 +48,8 @@ export interface UsePositionOverlayParams {
   model: PositionOverlayModel | null;
   selected: boolean;
   formatters: PositionLabelFormatters;
+  /** Police / taille Settings pour le chrome canvas. */
+  chrome?: PositionChromeOptions;
   isDark?: boolean;
   onChange: (patch: PositionOverlayChange) => void;
   onSelect: (selected: boolean) => void;
@@ -65,6 +70,7 @@ export function usePositionOverlay({
   model,
   selected,
   formatters,
+  chrome,
   isDark = true,
   onChange,
   onSelect,
@@ -80,6 +86,8 @@ export function usePositionOverlay({
   selectedRef.current = selected;
   const formattersRef = useRef(formatters);
   formattersRef.current = formatters;
+  const chromeRef = useRef(chrome);
+  chromeRef.current = chrome;
   const isDarkRef = useRef(isDark);
   isDarkRef.current = isDark;
   const onChangeRef = useRef(onChange);
@@ -188,6 +196,7 @@ export function usePositionOverlay({
         formattersRef.current,
         priceCandlesRef.current,
         isDarkRef.current,
+        chromeRef.current,
       );
     },
     [resolveModel],
@@ -195,7 +204,7 @@ export function usePositionOverlay({
 
   useEffect(() => {
     requestPaintRef.current();
-  }, [model, selected, candles, formatters, isDark]);
+  }, [model, selected, candles, formatters, chrome, isDark]);
 
   useEffect(() => {
     if (!enabled) return;
@@ -281,7 +290,13 @@ export function usePositionOverlay({
       }
       return false;
     }
-    const hit = hitTestPosition(resolveModel(m), p, mapper, selectedRef.current);
+    const hit = hitTestPosition(
+      resolveModel(m),
+      p,
+      mapper,
+      selectedRef.current,
+      chromeRef.current,
+    );
     if (!hit) {
       if (hoverEdgeRef.current) {
         el.style.cursor = '';
@@ -314,7 +329,13 @@ export function usePositionOverlay({
     const p = localPoint(event);
     const mapper = buildMapper();
     if (!p || !mapper) return false;
-    const hit = hitTestPosition(resolveModel(m), p, mapper, selectedRef.current);
+    const hit = hitTestPosition(
+      resolveModel(m),
+      p,
+      mapper,
+      selectedRef.current,
+      chromeRef.current,
+    );
     if (!hit) {
       if (selectedRef.current) onSelectRef.current(false);
       return false;
@@ -427,7 +448,11 @@ export function usePositionOverlay({
     if (!mapper) return false;
     const bbox = positionBBox(resolveModel(m), mapper);
     if (!bbox) return false;
-    const pad = 4;
+    const uiScale = resolvePositionUiScale(
+      mapper,
+      chromeRef.current?.fontSizePref ?? 'medium',
+    );
+    const pad = positionBodyHitPad(uiScale);
     return (
       x >= bbox.left - pad &&
       x <= bbox.right + pad &&

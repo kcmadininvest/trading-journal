@@ -10,8 +10,15 @@ import { useTranslation } from 'react-i18next';
 import type { IChartApi, ISeriesApi } from 'lightweight-charts';
 import type { VisibleCandle } from '../../utils/replayEngine';
 import { usePreferences } from '../../hooks/usePreferences';
+import {
+  getFontStackFromFamily,
+  normalizeAppFontFamily,
+} from '../../utils/chartConfig';
 import { formatNumber } from '../../utils/numberFormat';
-import type { PositionOverlayModel } from '../../utils/positionToolPaint';
+import type {
+  PositionChromeOptions,
+  PositionOverlayModel,
+} from '../../utils/positionToolPaint';
 import type { TradeChartLevels } from './ReplayTradePanel';
 import {
   usePositionOverlay,
@@ -87,6 +94,15 @@ export function usePositionOverlayBox({
     };
   }, [preferences.number_format, t]);
 
+  const chrome = useMemo((): PositionChromeOptions => {
+    return {
+      fontSizePref: preferences.font_size,
+      fontFamily: getFontStackFromFamily(
+        normalizeAppFontFamily(preferences.font_family),
+      ),
+    };
+  }, [preferences.font_family, preferences.font_size]);
+
   /** Le corps ne capture pas au-dessus d’un niveau (entry/SL/TP via price lines). */
   const isPointerOnTradeLevel = useCallback(
     (y: number) => {
@@ -113,6 +129,7 @@ export function usePositionOverlayBox({
     model,
     selected,
     formatters,
+    chrome,
     isDark,
     onChange,
     onSelect,

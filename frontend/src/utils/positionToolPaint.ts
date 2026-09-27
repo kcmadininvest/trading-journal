@@ -40,11 +40,78 @@ export type PositionLabelFormatters = {
   };
 };
 
+/** Aligné sur Paramètres → Taille (comme getChartSvgFontSizes). */
+export type PositionFontSizePref = 'small' | 'medium' | 'large';
+
+export type PositionChromeOptions = {
+  fontSizePref?: PositionFontSizePref;
+  /** Stack CSS canvas, ex. issue de preferences.font_family. */
+  fontFamily?: string;
+};
+
 const PROFIT_FILL = 'rgba(38, 166, 154, 0.22)';
 const LOSS_FILL = 'rgba(239, 83, 80, 0.22)';
 const PROFIT_STROKE = '#26A69A';
 const LOSS_STROKE = '#EF5350';
 const ENTRY_STROKE = '#787B86';
+
+/** Aire de référence (pane ~640×360) pour le scale chrome. */
+export const POSITION_UI_REF_AREA = 640 * 360;
+export const POSITION_UI_SCALE_MIN = 0.7;
+export const POSITION_UI_SCALE_MAX = 1.35;
+/** Sous cette largeur (× uiScale), mode compact auto. */
+export const POSITION_COMPACT_BOX_WIDTH = 140;
+
+const BASE_LABEL_FONT_PX = 11;
+const BASE_LABEL_HEIGHT = 14;
+const BASE_LABEL_PAD_X = 4;
+const BASE_LABEL_INSET = 6;
+const BASE_BODY_HIT_PAD = 4;
+const DEFAULT_FONT_FAMILY = 'sans-serif';
+
+const FONT_SIZE_MULT: Record<PositionFontSizePref, number> = {
+  small: 10 / 12,
+  medium: 1,
+  large: 14 / 12,
+};
+
+/**
+ * Scale du chrome UI (labels, handles, hit) selon la taille du pane
+ * et la préférence de taille de police. Pas de scale avec le zoom prix.
+ */
+export function resolvePositionUiScale(
+  mapper: Pick<CoordMapper, 'width' | 'height'>,
+  fontSizePref: PositionFontSizePref = 'medium',
+): number {
+  const w = Math.max(1, mapper.width);
+  const h = Math.max(1, mapper.height);
+  const areaScale = Math.sqrt((w * h) / POSITION_UI_REF_AREA);
+  const clamped = Math.min(
+    POSITION_UI_SCALE_MAX,
+    Math.max(POSITION_UI_SCALE_MIN, areaScale),
+  );
+  return clamped * (FONT_SIZE_MULT[fontSizePref] ?? 1);
+}
+
+export function shouldUseCompactPositionLabels(
+  boxWidthPx: number,
+  uiScale: number,
+): boolean {
+  return boxWidthPx < POSITION_COMPACT_BOX_WIDTH * uiScale;
+}
+
+export function positionHandleRadius(uiScale: number): number {
+  return DRAWING_HANDLE_RADIUS * uiScale;
+}
+
+export function positionEdgeHitPx(uiScale: number): number {
+  return POSITION_EDGE_HIT_PX * uiScale;
+}
+
+export function positionBodyHitPad(uiScale: number): number {
+  return BASE_BODY_HIT_PAD * uiScale;
+}
+
 /** Trait d’évolution du prix — sombre en mode clair, clair en mode sombre. */
 export function positionPricePathStroke(isDark: boolean): string {
   return isDark ? 'rgba(255, 255, 255, 0.78)' : 'rgba(30, 41, 59, 0.82)';
@@ -348,7 +415,7 @@ export function positionBBox(
   return { left, top, right, bottom };
 }
 
-/** Largeur de préhension du bord droit (redimensionnement horizontal). */
+/** Largeur de préhension du bord droit (redimensionnement horizontal), base CSS px. */
 export const POSITION_EDGE_HIT_PX = 6;
 
 export function hitTestPosition(
@@ -356,31 +423,94 @@ export function hitTestPosition(
   p: PixelPoint,
   mapper: CoordMapper,
   selected: boolean,
+  chrome?: PositionChromeOptions,
 ): PositionHit | null {
   const bbox = positionBBox(model, mapper);
   if (!bbox) return null;
+
+  const uiScale = resolvePositionUiScale(mapper, chrome?.fontSizePref ?? 'medium');
+  const handleR = positionHandleRadius(uiScale);
+  const edgeHit = positionEdgeHitPx(uiScale);
+  const pad = positionBodyHitPad(uiScale);
 
   if (selected) {
     const handles = positionHandlePoints(model, mapper);
     const order: PositionHandleKind[] = ['entry', 'stop', 'target', 'end'];
     for (const kind of order) {
       const h = handles[kind];
-      if (h && dist(p, h) <= DRAWING_HANDLE_RADIUS + 4) {
+      if (h && dist(p, h) <= handleR + 4 * uiScale) {
         return { kind: 'handle', handle: kind };
       }
     }
   }
 
-  const pad = 4;
   const withinRows = p.y >= bbox.top - pad && p.y <= bbox.bottom + pad;
   // Tout le bord droit est saisissable, pas seulement la pastille.
-  if (withinRows && Math.abs(p.x - bbox.right) <= POSITION_EDGE_HIT_PX) {
+  if (withinRows && Math.abs(p.x - bbox.right) <= edgeHit) {
     return { kind: 'handle', handle: 'end' };
   }
   if (withinRows && p.x >= bbox.left - pad && p.x <= bbox.right + pad) {
     return { kind: 'body' };
   }
   return null;
+}
+
+export type PositionLabelTexts = {
+  entry: string;
+  stop: string;
+  target: string;
+};
+
+/**
+ * Variantes de texte (plein → compact) pour chaque ligne de stats.
+ * Le caller choisit la première qui rentre dans maxWidth.
+ */
+export function buildPositionLabelCandidates(
+  model: PositionOverlayModel,
+  formatters: PositionLabelFormatters,
+): { entry: string[]; stop: string[]; target: string[] } {
+  const entryPrice = formatters.formatPrice(model.entryPrice);
+  const stopPrice = formatters.formatPrice(model.stopPrice);
+  const targetPrice = formatters.formatPrice(model.targetPrice);
+  const rr = riskRewardRatio({
+    entryPrice: model.entryPrice,
+    stopPrice: model.stopPrice,
+    targetPrice: model.targetPrice,
+    side: model.side,
+  });
+  const rrFull =
+    rr != null ? `  ${formatters.labels.rr} ${formatters.formatRr(rr)}` : '';
+  const rrShort = rr != null ? ` ${formatters.formatRr(rr)}` : '';
+
+  return {
+    entry: [
+      `${formatters.labels.entry} ${entryPrice}`,
+      entryPrice,
+    ],
+    stop: [
+      `${formatters.labels.stop} ${stopPrice}`,
+      stopPrice,
+    ],
+    target: [
+      `${formatters.labels.target} ${targetPrice}${rrFull}`,
+      `${formatters.labels.target} ${targetPrice}`,
+      `${targetPrice}${rrShort}`,
+      targetPrice,
+    ],
+  };
+}
+
+/** Choisit la variante la plus longue qui tient dans maxContentWidth (sans padding). */
+export function pickFittingLabelText(
+  measureWidth: (text: string) => number,
+  candidates: string[],
+  maxContentWidth: number,
+): string {
+  if (candidates.length === 0) return '';
+  for (const text of candidates) {
+    if (measureWidth(text) <= maxContentWidth) return text;
+  }
+  return candidates[candidates.length - 1];
 }
 
 function drawZone(
@@ -424,35 +554,51 @@ function drawLabel(
   x: number,
   y: number,
   bg: string,
-  align: 'left' | 'right' = 'left',
+  uiScale: number,
+  fontFamily: string,
+  boxLeft: number,
+  boxRight: number,
 ) {
-  ctx.font = '11px sans-serif';
-  const padX = 4;
+  const fontPx = BASE_LABEL_FONT_PX * uiScale;
+  const padX = BASE_LABEL_PAD_X * uiScale;
+  const h = BASE_LABEL_HEIGHT * uiScale;
+  ctx.font = `${fontPx}px ${fontFamily}`;
   const metrics = ctx.measureText(text);
-  const w = metrics.width + padX * 2;
-  const h = 14;
-  const left = align === 'left' ? x : x - w;
+  let w = metrics.width + padX * 2;
+  const maxW = Math.max(padX * 2 + 4, boxRight - boxLeft);
+  if (w > maxW) w = maxW;
+  // Clamp dans la boîte (bord gauche → droit).
+  let left = Math.max(boxLeft, Math.min(x, boxRight - w));
+  if (left + w > boxRight) left = Math.max(boxLeft, boxRight - w);
   const top = y - h / 2;
   ctx.fillStyle = bg;
   ctx.fillRect(left, top, w, h);
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(left, top, w, h);
+  ctx.clip();
   ctx.fillStyle = '#ffffff';
   ctx.textBaseline = 'middle';
   ctx.textAlign = 'left';
   ctx.fillText(text, left + padX, y);
+  ctx.restore();
 }
 
 function drawHandles(
   ctx: CanvasRenderingContext2D,
   handles: Record<PositionHandleKind, PixelPoint | null>,
+  uiScale: number,
 ) {
+  const r = positionHandleRadius(uiScale);
+  const strokeW = 1.5 * uiScale;
   for (const h of Object.values(handles)) {
     if (!h) continue;
     ctx.beginPath();
-    ctx.arc(h.x, h.y, DRAWING_HANDLE_RADIUS, 0, Math.PI * 2);
+    ctx.arc(h.x, h.y, r, 0, Math.PI * 2);
     ctx.fillStyle = '#ffffff';
     ctx.fill();
     ctx.strokeStyle = ENTRY_STROKE;
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = strokeW;
     ctx.stroke();
   }
 }
@@ -465,6 +611,7 @@ export function paintPositionOverlay(
   formatters?: PositionLabelFormatters,
   candles?: PositionPriceCandle[],
   isDark = true,
+  chrome?: PositionChromeOptions,
 ) {
   const x1 = mapper.toX(model.entryTime);
   const x2 = mapper.toX(model.endTime);
@@ -485,16 +632,44 @@ export function paintPositionOverlay(
   const top = Math.min(yEntry, yStop, yTarget);
   const bottom = Math.max(yEntry, yStop, yTarget);
 
+  const uiScale = resolvePositionUiScale(mapper, chrome?.fontSizePref ?? 'medium');
+  const fontFamily = chrome?.fontFamily?.trim() || DEFAULT_FONT_FAMILY;
+  const inset = BASE_LABEL_INSET * uiScale;
+  const padX = BASE_LABEL_PAD_X * uiScale;
+  const fontPx = BASE_LABEL_FONT_PX * uiScale;
+  const boxWidth = right - left;
+
   drawZone(ctx, left, right, yEntry, yTarget, PROFIT_FILL, PROFIT_STROKE);
   drawZone(ctx, left, right, yEntry, yStop, LOSS_FILL, LOSS_STROKE);
-  drawHLine(ctx, left, right, yEntry, ENTRY_STROKE, selected ? 2.25 : 1.5);
-  drawHLine(ctx, left, right, yTarget, PROFIT_STROKE, selected ? 2 : 1.25);
-  drawHLine(ctx, left, right, yStop, LOSS_STROKE, selected ? 2 : 1.25);
+  drawHLine(
+    ctx,
+    left,
+    right,
+    yEntry,
+    ENTRY_STROKE,
+    (selected ? 2.25 : 1.5) * uiScale,
+  );
+  drawHLine(
+    ctx,
+    left,
+    right,
+    yTarget,
+    PROFIT_STROKE,
+    (selected ? 2 : 1.25) * uiScale,
+  );
+  drawHLine(
+    ctx,
+    left,
+    right,
+    yStop,
+    LOSS_STROKE,
+    (selected ? 2 : 1.25) * uiScale,
+  );
 
   // Bord vertical droit
   ctx.strokeStyle = colorWithAlpha(ENTRY_STROKE, 0.7);
-  ctx.lineWidth = 1;
-  ctx.setLineDash([4, 3]);
+  ctx.lineWidth = 1 * uiScale;
+  ctx.setLineDash([4 * uiScale, 3 * uiScale]);
   ctx.beginPath();
   ctx.moveTo(right, top);
   ctx.lineTo(right, bottom);
@@ -512,26 +687,27 @@ export function paintPositionOverlay(
   }
 
   if (formatters) {
-    // R:R = (TP − entrée) / (entrée − SL) : dépend donc des deux niveaux.
-    const rr = riskRewardRatio({
-      entryPrice: model.entryPrice,
-      stopPrice: model.stopPrice,
-      targetPrice: model.targetPrice,
-      side: model.side,
-    });
-    const entryText = `${formatters.labels.entry} ${formatters.formatPrice(model.entryPrice)}`;
-    const stopText = `${formatters.labels.stop} ${formatters.formatPrice(model.stopPrice)}`;
-    const rrText =
-      rr != null ? `  ${formatters.labels.rr} ${formatters.formatRr(rr)}` : '';
-    const targetText = `${formatters.labels.target} ${formatters.formatPrice(model.targetPrice)}${rrText}`;
+    const compact = shouldUseCompactPositionLabels(boxWidth, uiScale);
+    const candidates = buildPositionLabelCandidates(model, formatters);
+    // Compact : sauter les variantes avec libellé long (prix / R:R court).
+    const entryCands = compact ? candidates.entry.slice(1) : candidates.entry;
+    const stopCands = compact ? candidates.stop.slice(1) : candidates.stop;
+    const targetCands = compact ? candidates.target.slice(2) : candidates.target;
 
-    // Étiquettes à gauche, posées sur la boîte (bord d’entrée).
-    drawLabel(ctx, entryText, left + 6, yEntry, ENTRY_STROKE);
-    drawLabel(ctx, stopText, left + 6, yStop, LOSS_STROKE);
-    drawLabel(ctx, targetText, left + 6, yTarget, PROFIT_STROKE);
+    ctx.font = `${fontPx}px ${fontFamily}`;
+    const maxContent = Math.max(4, boxWidth - inset * 2 - padX * 2);
+    const measure = (text: string) => ctx.measureText(text).width;
+    const entryText = pickFittingLabelText(measure, entryCands, maxContent);
+    const stopText = pickFittingLabelText(measure, stopCands, maxContent);
+    const targetText = pickFittingLabelText(measure, targetCands, maxContent);
+
+    const labelX = left + inset;
+    drawLabel(ctx, entryText, labelX, yEntry, ENTRY_STROKE, uiScale, fontFamily, left, right);
+    drawLabel(ctx, stopText, labelX, yStop, LOSS_STROKE, uiScale, fontFamily, left, right);
+    drawLabel(ctx, targetText, labelX, yTarget, PROFIT_STROKE, uiScale, fontFamily, left, right);
   }
 
   if (selected) {
-    drawHandles(ctx, positionHandlePoints(model, mapper));
+    drawHandles(ctx, positionHandlePoints(model, mapper), uiScale);
   }
 }

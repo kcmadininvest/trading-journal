@@ -1,16 +1,25 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buildPositionLabelCandidates,
   buildPositionPricePath,
   hitTestPosition,
+  pickFittingLabelText,
   positionHandlePoints,
+  positionHandleRadius,
+  resolvePositionUiScale,
+  shouldUseCompactPositionLabels,
+  POSITION_UI_REF_AREA,
+  POSITION_UI_SCALE_MAX,
+  POSITION_UI_SCALE_MIN,
+  type PositionLabelFormatters,
   type PositionOverlayModel,
 } from './positionToolPaint';
 import type { CoordMapper } from './replayDrawings';
 
-function mapper(): CoordMapper {
+function mapper(overrides?: Partial<Pick<CoordMapper, 'width' | 'height'>>): CoordMapper {
   return {
-    width: 400,
-    height: 300,
+    width: overrides?.width ?? 400,
+    height: overrides?.height ?? 300,
     toX: (time) => time,
     toY: (price) => 300 - price,
     fromXY: (x, y) => ({ time: x, price: 300 - y }),
@@ -25,6 +34,17 @@ const model: PositionOverlayModel = {
   targetPrice: 220,
   endTime: 200,
   qty: 1,
+};
+
+const formatters: PositionLabelFormatters = {
+  formatPrice: (n) => n.toFixed(2),
+  formatRr: (n) => `1:${n.toFixed(2)}`,
+  labels: {
+    entry: 'Entry',
+    stop: 'Stop',
+    target: 'Target',
+    rr: 'R:R',
+  },
 };
 
 describe('positionToolPaint', () => {
@@ -134,5 +154,82 @@ describe('positionToolPaint', () => {
       expect(path[i].time).toBeGreaterThanOrEqual(path[i - 1].time);
     }
     expect(path.map((p) => p.time)).toEqual([100, 120, 150, 180]);
+  });
+});
+
+describe('position chrome scale', () => {
+  it('resolvePositionUiScale is below 1 on a small pane and above 1 on a large pane', () => {
+    const small = resolvePositionUiScale({ width: 280, height: 180 });
+    const side = Math.sqrt(POSITION_UI_REF_AREA);
+    const ref = resolvePositionUiScale({ width: side, height: side });
+    const large = resolvePositionUiScale({ width: 1200, height: 800 });
+    expect(small).toBeLessThan(1);
+    expect(small).toBeGreaterThanOrEqual(POSITION_UI_SCALE_MIN);
+    expect(ref).toBeCloseTo(1, 5);
+    expect(large).toBeGreaterThan(1);
+    expect(large).toBeLessThanOrEqual(POSITION_UI_SCALE_MAX);
+  });
+
+  it('resolvePositionUiScale clamps extreme pane sizes', () => {
+    expect(resolvePositionUiScale({ width: 40, height: 40 })).toBe(
+      POSITION_UI_SCALE_MIN,
+    );
+    expect(resolvePositionUiScale({ width: 4000, height: 3000 })).toBe(
+      POSITION_UI_SCALE_MAX,
+    );
+  });
+
+  it('resolvePositionUiScale respects font_size preference', () => {
+    const medium = resolvePositionUiScale({ width: 640, height: 360 }, 'medium');
+    const small = resolvePositionUiScale({ width: 640, height: 360 }, 'small');
+    const large = resolvePositionUiScale({ width: 640, height: 360 }, 'large');
+    expect(small).toBeLessThan(medium);
+    expect(large).toBeGreaterThan(medium);
+  });
+
+  it('shouldUseCompactPositionLabels when box is narrow', () => {
+    expect(shouldUseCompactPositionLabels(80, 1)).toBe(true);
+    expect(shouldUseCompactPositionLabels(200, 1)).toBe(false);
+  });
+
+  it('pickFittingLabelText picks the longest that fits', () => {
+    const measure = (t: string) => t.length;
+    expect(
+      pickFittingLabelText(measure, ['Entry 150.00', '150.00'], 20),
+    ).toBe('Entry 150.00');
+    expect(
+      pickFittingLabelText(measure, ['Entry 150.00', '150.00'], 8),
+    ).toBe('150.00');
+  });
+
+  it('buildPositionLabelCandidates includes full then compact variants', () => {
+    const c = buildPositionLabelCandidates(model, formatters);
+    expect(c.entry[0]).toContain('Entry');
+    expect(c.entry[c.entry.length - 1]).toBe('150.00');
+    expect(c.target[0]).toContain('R:R');
+    expect(c.target[c.target.length - 1]).toBe('220.00');
+  });
+
+  it('hit-test handle radius follows uiScale', () => {
+    const largeMapper = mapper({ width: 1200, height: 800 });
+    const scale = resolvePositionUiScale(largeMapper, 'large');
+    const r = positionHandleRadius(scale);
+    // À gauche de l’entry : hors body sur petit pane, dans le rayon handle sur grand pane.
+    const baseMiss = hitTestPosition(
+      model,
+      { x: 100 - 10, y: 150 },
+      mapper({ width: 200, height: 120 }),
+      true,
+      { fontSizePref: 'small' },
+    );
+    const scaledHit = hitTestPosition(
+      model,
+      { x: 100 - Math.floor(r * 0.85), y: 150 },
+      largeMapper,
+      true,
+      { fontSizePref: 'large' },
+    );
+    expect(baseMiss).toBeNull();
+    expect(scaledHit).toEqual({ kind: 'handle', handle: 'entry' });
   });
 });
