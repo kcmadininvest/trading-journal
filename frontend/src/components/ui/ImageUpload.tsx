@@ -18,6 +18,7 @@ export interface ImageUploadProps {
   description?: string;
   uploadFunction: (file: File) => Promise<{ original_url: string; thumbnail_url: string }>;
   deleteFunction?: (url: string) => Promise<{ message: string }>; // Fonction de suppression (optionnelle)
+  onRequestDelete?: (url: string) => void;
 }
 
 export const ImageUpload: React.FC<ImageUploadProps> = ({
@@ -30,6 +31,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
   description,
   uploadFunction,
   deleteFunction,
+  onRequestDelete,
 }) => {
   const { t } = useTranslation();
   const [isDragging, setIsDragging] = useState(false);
@@ -241,6 +243,10 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
 
     // Si une fonction de suppression est fournie et que l’URL est un fichier géré par le serveur
     if (deleteFunction && value && isAppHostedImageUrl(value)) {
+      if (onRequestDelete) {
+        onRequestDelete(value);
+        return;
+      }
       setIsDeleting(true);
       setError(null);
       
@@ -259,7 +265,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
       onRemove();
       setError(null);
     }
-  }, [disabled, isUploading, isDeleting, deleteFunction, value, onRemove, t]);
+  }, [disabled, isUploading, isDeleting, deleteFunction, onRequestDelete, value, onRemove, t]);
 
   const handleOpenImage = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();

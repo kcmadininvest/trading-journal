@@ -1496,6 +1496,10 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                       }}
                       uploadFunction={(file) => screenshotsService.uploadTradeScreenshot(file)}
                       deleteFunction={(url) => screenshotsService.deleteTradeScreenshot(url)}
+                      onRequestDelete={(url) => {
+                        setScreenshotToDelete({ url, type: 'trade', tradeId: trade.id });
+                        setDeleteScreenshotModalOpen(true);
+                      }}
                       description={t('trades:strategyCompliance.screenshotDescription')}
                     />
                   </div>
