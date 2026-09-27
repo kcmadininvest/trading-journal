@@ -75,6 +75,10 @@
   "backToHome": "Zurück zur Startseite",
   "hours": "Stunden",
   "minutes": "Minuten",
+  "time": "Uhrzeit",
+  "timePlaceholder": "HH:MM",
+  "openTimePicker": "Zeitauswahl öffnen",
+  "clear": "Löschen",
   "currentTime": "Aktuelle Uhrzeit",
   "done": "Fertig",
   "dailyJournal": {

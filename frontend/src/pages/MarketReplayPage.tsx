@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { ExternalLink } from 'lucide-react';
 import { PageShell } from '../components/layout';
 import { DateInput } from '../components/common/DateInput';
+import { TimeInput } from '../components/common/TimeInput';
 import { InstrumentPicker } from '../components/backtestJournal/InstrumentPicker';
 import { ReplayControls } from '../components/marketReplay/ReplayControls';
 import { ReplayGrid } from '../components/marketReplay/ReplayGrid';
@@ -43,8 +44,9 @@ import {
   type ReplayLayout,
   type ReplayMode,
 } from '../utils/marketReplayWorkspace';
+import { parseSessionStartTime } from '../utils/marketReplaySession';
 
-type InitParams = { campaign?: number; date?: string; instrument?: string };
+type InitParams = { campaign?: number; date?: string; instrument?: string; time?: string };
 
 function parseSearchParams(params: URLSearchParams): InitParams {
   const campaign = params.get('campaign');
@@ -52,6 +54,7 @@ function parseSearchParams(params: URLSearchParams): InitParams {
     campaign: campaign ? Number(campaign) : undefined,
     date: params.get('date') || undefined,
     instrument: params.get('instrument') || undefined,
+    time: parseSessionStartTime(params.get('time')) || undefined,
   };
 }
 
@@ -70,6 +73,7 @@ function parseInitParams(): InitParams {
     campaign: fromSearch.campaign ?? fromHash.campaign,
     date: fromSearch.date ?? fromHash.date,
     instrument: fromSearch.instrument ?? fromHash.instrument,
+    time: fromSearch.time ?? fromHash.time,
   };
 }
 
@@ -149,10 +153,14 @@ const MarketReplayPage: React.FC<MarketReplayPageProps> = ({ detached = false })
     (!init.date || init.date === restoredWorkspace.sessionDate),
   );
   const restored = canRestore ? restoredWorkspace : null;
+  const chartTimezone = preferences.timezone?.trim() || 'Europe/Paris';
 
   const [instrument, setInstrument] = useState(init.instrument || restored?.instrument || '');
   const [sessionDate, setSessionDate] = useState<string>(
     init.date || restored?.sessionDate || getTodayDateInTimezone(preferences.timezone),
+  );
+  const [sessionStartTime, setSessionStartTime] = useState<string>(
+    init.time || parseSessionStartTime(restored?.sessionStartTime) || '',
   );
   const [campaign, setCampaign] = useState<BacktestCampaign | null>(null);
   const [draft, setDraft] = useState<DraftTrade>(restored?.draft || emptyDraft);
@@ -220,8 +228,10 @@ const MarketReplayPage: React.FC<MarketReplayPageProps> = ({ detached = false })
   const replay = useMarketReplay({
     instrument: instrument.trim() || null,
     sessionDate,
+    sessionStartTime: sessionStartTime || null,
+    timeZone: chartTimezone,
     disciplined: replayMode === 'disciplined',
-    restoredTimestamp: restored?.replayTimestamp,
+    restoredTimestamp: init.time ? undefined : restored?.replayTimestamp,
     restoredPaneTfs: restored?.paneTfs,
     onSuggestSessionDate: useCallback((nextDate: string) => {
       setSessionDate(nextDate);
@@ -264,6 +274,7 @@ const MarketReplayPage: React.FC<MarketReplayPageProps> = ({ detached = false })
         version: 1,
         instrument: instrument.trim(),
         sessionDate,
+        sessionStartTime: sessionStartTime || undefined,
         campaignId: campaign?.id ?? restored?.campaignId ?? null,
         replayTimestamp: replay.replayTimestamp,
         speed: replay.speed,
@@ -276,7 +287,7 @@ const MarketReplayPage: React.FC<MarketReplayPageProps> = ({ detached = false })
       }, workspaceScope);
     }, 250);
     return () => window.clearTimeout(timer);
-  }, [instrument, sessionDate, campaign?.id, restored?.campaignId, replay.replayTimestamp, replay.speed, replay.requestedPaneTfs, replayMode, layout, draft, positionUi, gridWorkspace, workspaceScope]);
+  }, [instrument, sessionDate, sessionStartTime, campaign?.id, restored?.campaignId, replay.replayTimestamp, replay.speed, replay.requestedPaneTfs, replayMode, layout, draft, positionUi, gridWorkspace, workspaceScope]);
 
   const chartLevels = useMemo(
     () => ({
@@ -679,6 +690,7 @@ const MarketReplayPage: React.FC<MarketReplayPageProps> = ({ detached = false })
     const params = new URLSearchParams();
     if (instrument.trim()) params.set('instrument', instrument.trim());
     if (sessionDate) params.set('date', sessionDate);
+    if (sessionStartTime) params.set('time', sessionStartTime);
     if (campaign?.id != null) params.set('campaign', String(campaign.id));
     const qs = params.toString();
     const url = qs ? `/market-replay-popup?${qs}` : '/market-replay-popup';
@@ -693,7 +705,7 @@ const MarketReplayPage: React.FC<MarketReplayPageProps> = ({ detached = false })
       'market-replay-popup',
       `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`,
     );
-  }, [instrument, sessionDate, campaign?.id]);
+  }, [instrument, sessionDate, sessionStartTime, campaign?.id]);
 
   useMarketReplayKeyboard({
     enabled: Boolean(replay.range) && !showLeaveConfirm && !showClearConfirm && !showSendConfirm,
@@ -800,7 +812,7 @@ const MarketReplayPage: React.FC<MarketReplayPageProps> = ({ detached = false })
         </div>
         <div className="shrink-0 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2.5 shadow-sm space-y-3">
           <div className="flex flex-col gap-3 2xl:flex-row 2xl:items-start 2xl:justify-between">
-            <div className="grid grid-cols-1 sm:grid-cols-[minmax(16rem,18rem)_minmax(14rem,16rem)] gap-x-4 gap-y-2 min-w-0 items-start">
+            <div className="grid grid-cols-1 sm:grid-cols-[minmax(16rem,18rem)_minmax(14rem,16rem)_minmax(8rem,10rem)] gap-x-4 gap-y-2 min-w-0 items-start">
               <div className="min-w-0">
                 <label className="block text-xs text-gray-500 dark:text-gray-400">{t('instrument')}</label>
                 <InstrumentPicker
@@ -856,6 +868,25 @@ const MarketReplayPage: React.FC<MarketReplayPageProps> = ({ detached = false })
                   >
                     ›
                   </button>
+                </div>
+              </div>
+              <div className="min-w-0">
+                <label className="block text-xs text-gray-500 dark:text-gray-400" htmlFor="market-replay-start-time">
+                  {t('sessionStartTime')}
+                </label>
+                <div className="mt-1">
+                  <TimeInput
+                    id="market-replay-start-time"
+                    value={sessionStartTime}
+                    onChange={(v) => {
+                      setSessionStartTime(v);
+                      clearTrade();
+                    }}
+                    disabled={!instrument || !sessionDate}
+                    aria-label={t('sessionStartTime')}
+                    className={replayDateInputClass}
+                    compact
+                  />
                 </div>
               </div>
             </div>

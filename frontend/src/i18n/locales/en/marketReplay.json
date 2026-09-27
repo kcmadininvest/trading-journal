@@ -36,6 +36,7 @@
   "instrument": "Instrument",
   "selectInstrument": "Select an instrument",
   "sessionDate": "Session date",
+  "sessionStartTime": "Start time",
   "previousSession": "Previous session with data",
   "nextSession": "Next session with data",
   "dateWithData": "Session with historical data",

@@ -11,13 +11,21 @@ import {
   type ReplayChartConfiguration,
   type VisibleCandle,
 } from '../utils/replayEngine';
-import { candleTimeToUnix, sessionDateToUtcRange } from '../utils/marketReplaySession';
+import {
+  candleTimeToUnix,
+  resolveReplayStartUnix,
+  sessionDateToUtcRange,
+} from '../utils/marketReplaySession';
 
 const CHART_IDS = ['a', 'b', 'c', 'd'] as const;
 
 export interface UseMarketReplayParams {
   instrument: string | null;
   sessionDate: string | null;
+  /** Heure de début optionnelle (HH:mm) dans `timeZone`. */
+  sessionStartTime?: string | null;
+  /** Fuseau Settings pour interpréter `sessionStartTime`. */
+  timeZone?: string;
   disciplined?: boolean;
   restoredTimestamp?: number;
   restoredPaneTfs?: (string | null)[];
@@ -55,6 +63,8 @@ async function ensureSeries(
 export function useMarketReplay({
   instrument,
   sessionDate,
+  sessionStartTime = null,
+  timeZone = 'Europe/Paris',
   disciplined = false,
   restoredTimestamp,
   restoredPaneTfs,
@@ -84,6 +94,10 @@ export function useMarketReplay({
   seriesByTfRef.current = seriesByTf;
   const loadedWindowRef = useRef<string | null>(null);
   const restoreCursorConsumedRef = useRef(false);
+  /** Curseur « Début » effectif (heure choisie ou 1ʳᵉ bougie). */
+  const preferredStartTsRef = useRef<number | null>(null);
+  const startTimeAppliedKeyRef = useRef(`${sessionStartTime ?? ''}|${timeZone}`);
+  const skipStartTimeSeekOnceRef = useRef(true);
   const sessionDateRef = useRef(sessionDate);
   sessionDateRef.current = sessionDate;
   const onSuggestSessionDateRef = useRef(onSuggestSessionDate);
@@ -336,7 +350,15 @@ export function useMarketReplay({
         }
         const baseSeries = merged[baseTimeframe.value];
         const firstBaseBarTs = baseSeries && baseSeries.length > 0 ? candleTimeToUnix(baseSeries[0].t) : startTs;
-        const startCursorTs = firstBaseBarTs;
+        const resolvedStart = sessionDate
+          ? resolveReplayStartUnix(sessionDate, sessionStartTime, timeZone, startTs, endTs)
+          : null;
+        const startCursorTs =
+          resolvedStart != null
+            ? Math.min(Math.max(resolvedStart, firstBaseBarTs), endTs)
+            : firstBaseBarTs;
+        preferredStartTsRef.current = startCursorTs;
+        startTimeAppliedKeyRef.current = `${sessionStartTime ?? ''}|${timeZone}`;
         const keep = sameWindow ? engineRef.current?.replayTimestamp : (restored ?? startCursorTs);
         rebuildEngine(instrument, startTs, endTs, chartsSnapshot, keep);
         setPlaying(false);
@@ -353,6 +375,31 @@ export function useMarketReplay({
     // chartConfigKey stabilise les 4 TF sélectionnés.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [instrument, sessionDate, sessionRange, chartConfigKey, baseTimeframe?.value, rebuildEngine]);
+
+  // Seek immédiat quand l'heure de début change sur une séance déjà chargée.
+  useEffect(() => {
+    const appliedKey = `${sessionStartTime ?? ''}|${timeZone}`;
+    if (skipStartTimeSeekOnceRef.current) {
+      skipStartTimeSeekOnceRef.current = false;
+      startTimeAppliedKeyRef.current = appliedKey;
+      return;
+    }
+    if (startTimeAppliedKeyRef.current === appliedKey) return;
+    startTimeAppliedKeyRef.current = appliedKey;
+    if (!range || !sessionDate || !engineRef.current) return;
+    const resolved = resolveReplayStartUnix(
+      sessionDate,
+      sessionStartTime,
+      timeZone,
+      range.start,
+      range.end,
+    );
+    const target = resolved != null ? resolved : range.start;
+    const clamped = Math.min(Math.max(target, range.start), range.end);
+    preferredStartTsRef.current = clamped;
+    engineRef.current.setTimestamp(clamped);
+    setPlaying(false);
+  }, [sessionStartTime, sessionDate, timeZone, range]);
 
   const changePaneTimeframe = useCallback((chartId: string, timeframeValue: string) => {
     const idx = CHART_IDS.indexOf(chartId as (typeof CHART_IDS)[number]);
@@ -452,16 +499,27 @@ export function useMarketReplay({
     if (!disciplined) engineRef.current?.stepBackward();
   }, [disciplined]);
   const goStart = useCallback(() => {
-    if (!disciplined) engineRef.current?.goToStart();
-  }, [disciplined]);
+    if (disciplined) return;
+    const preferred = preferredStartTsRef.current;
+    if (sessionStartTime && preferred != null) {
+      engineRef.current?.setTimestamp(preferred);
+      return;
+    }
+    engineRef.current?.goToStart();
+  }, [disciplined, sessionStartTime]);
   const goEnd = useCallback(() => {
     if (!disciplined) engineRef.current?.goToEnd();
   }, [disciplined]);
   const reset = useCallback(() => {
     if (disciplined) return;
-    engineRef.current?.reset();
+    const preferred = preferredStartTsRef.current;
+    if (sessionStartTime && preferred != null) {
+      engineRef.current?.setTimestamp(preferred);
+    } else {
+      engineRef.current?.reset();
+    }
     setPlaying(false);
-  }, [disciplined]);
+  }, [disciplined, sessionStartTime]);
   const seek = useCallback((ts: number) => {
     if (disciplined && ts < replayTimestamp) return;
     if (disciplined && furthestTimestamp > 0 && ts > furthestTimestamp) return;

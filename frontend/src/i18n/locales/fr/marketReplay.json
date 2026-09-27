@@ -36,6 +36,7 @@
   "instrument": "Actif",
   "selectInstrument": "Choisir un instrument",
   "sessionDate": "Date de séance",
+  "sessionStartTime": "Heure de début",
   "previousSession": "Séance précédente avec données",
   "nextSession": "Séance suivante avec données",
   "dateWithData": "Séance avec données historiques",

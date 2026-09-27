@@ -20,6 +20,8 @@ export type MarketReplayWorkspace = {
   version: 1;
   instrument: string;
   sessionDate: string;
+  /** Heure de début optionnelle (HH:mm), fuseau Settings. */
+  sessionStartTime?: string;
   campaignId: number | null;
   replayTimestamp: number;
   speed: number;
@@ -49,6 +51,13 @@ export function loadMarketReplayWorkspace(
     const parsed = JSON.parse(raw) as Partial<MarketReplayWorkspace>;
     if (parsed.version !== 1 || typeof parsed.instrument !== 'string' || typeof parsed.sessionDate !== 'string') {
       return null;
+    }
+    if (
+      parsed.sessionStartTime != null &&
+      (typeof parsed.sessionStartTime !== 'string' ||
+        (parsed.sessionStartTime !== '' && !/^\d{1,2}:\d{2}$/.test(parsed.sessionStartTime)))
+    ) {
+      delete parsed.sessionStartTime;
     }
     return parsed as MarketReplayWorkspace;
   } catch {
