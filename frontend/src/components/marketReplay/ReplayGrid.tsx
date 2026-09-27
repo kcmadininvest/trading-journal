@@ -14,9 +14,11 @@ import type { VisibleCandle } from '../../utils/replayEngine';
 import {
   buildReplayOverlays,
   emptyPaneIndicators,
+  normalizePaneIndicators,
+  pendingAvwap,
+  removeAvwap,
   setAvwapAnchor,
   setAvwapStyle,
-  toggleAvwap,
   type PaneIndicators,
 } from '../../utils/replayIndicators';
 import {
@@ -121,9 +123,14 @@ export const ReplayGrid: React.FC<ReplayGridProps> = ({
 }) => {
   const { t } = useTranslation('marketReplay');
   const paneRefs = useRef<Record<string, ReplayChartPaneHandle | null>>({});
-  const [indicatorsByPane, setIndicatorsByPane] = useState<Record<string, PaneIndicators>>(
-    initialWorkspace?.indicatorsByPane ?? {},
-  );
+  const [indicatorsByPane, setIndicatorsByPane] = useState<Record<string, PaneIndicators>>(() => {
+    const raw = initialWorkspace?.indicatorsByPane ?? {};
+    const next: Record<string, PaneIndicators> = {};
+    for (const [chartId, indicators] of Object.entries(raw)) {
+      next[chartId] = normalizePaneIndicators(indicators);
+    }
+    return next;
+  });
   const [drawingScope, setDrawingScope] = useState<DrawingScope>(initialWorkspace?.drawingScope ?? 'pane');
   const [drawingsByPane, setDrawingsByPane] = useState<Record<string, Drawing[]>>(
     initialWorkspace?.drawingsByPane ?? {},
@@ -139,7 +146,7 @@ export const ReplayGrid: React.FC<ReplayGridProps> = ({
     initialWorkspace?.drawingStyle ?? DEFAULT_DRAWING_STYLE,
   );
   const [avwapStyleEditingByPane, setAvwapStyleEditingByPane] = useState<
-    Record<string, boolean>
+    Record<string, string | null>
   >({});
   const [maximizedChartId, setMaximizedChartId] = useState<string | null>(null);
   const visiblePanes = maximizedChartId
@@ -163,20 +170,20 @@ export const ReplayGrid: React.FC<ReplayGridProps> = ({
 
   const setPaneIndicators = useCallback((chartId: string, next: PaneIndicators) => {
     setIndicatorsByPane((prev) => ({ ...prev, [chartId]: next }));
-    if (!next.avwap) {
-      setAvwapStyleEditingByPane((prev) => {
-        if (!prev[chartId]) return prev;
-        return { ...prev, [chartId]: false };
-      });
-    }
+    setAvwapStyleEditingByPane((prev) => {
+      const editingId = prev[chartId];
+      if (!editingId) return prev;
+      if (next.avwaps.some((a) => a.id === editingId)) return prev;
+      return { ...prev, [chartId]: null };
+    });
   }, []);
 
   const clearAvwapStyleEdit = useCallback((chartId: string) => {
-    setAvwapStyleEditingByPane((prev) => ({ ...prev, [chartId]: false }));
+    setAvwapStyleEditingByPane((prev) => ({ ...prev, [chartId]: null }));
   }, []);
 
-  const selectAvwapStyle = useCallback((chartId: string) => {
-    setAvwapStyleEditingByPane((prev) => ({ ...prev, [chartId]: true }));
+  const selectAvwapStyle = useCallback((chartId: string, avwapId: string) => {
+    setAvwapStyleEditingByPane((prev) => ({ ...prev, [chartId]: avwapId }));
   }, []);
 
   const getDrawings = useCallback(
@@ -271,14 +278,25 @@ export const ReplayGrid: React.FC<ReplayGridProps> = ({
         const selectedDrawingId = selectedDrawingByPane[pane.chartId] ?? null;
         const drawingArmed = armedTool != null;
         const positionArmed = armedPositionSide != null;
+        const pending = pendingAvwap(indicators);
         const waitingAvwap =
-          indicators.avwap &&
-          indicators.avwapAnchor == null &&
+          pending != null &&
           !placementArmed &&
           !drawingArmed &&
           !positionArmed &&
           !loading &&
           !emptySession;
+        const avwapSelectable =
+          !placementArmed &&
+          !drawingArmed &&
+          !positionArmed &&
+          !loading &&
+          !emptySession;
+        const editingAvwapId = avwapStyleEditingByPane[pane.chartId] ?? null;
+        const editingAvwap =
+          editingAvwapId != null
+            ? indicators.avwaps.find((a) => a.id === editingAvwapId) ?? null
+            : null;
         return (
           <div
             key={pane.chartId}
@@ -308,7 +326,14 @@ export const ReplayGrid: React.FC<ReplayGridProps> = ({
                   value={indicators}
                   onChange={(next) => setPaneIndicators(pane.chartId, next)}
                   disabled={loading}
-                  onSelectAvwapStyle={() => selectAvwapStyle(pane.chartId)}
+                  onSelectAvwapStyle={(id) => {
+                    selectAvwapStyle(pane.chartId, id);
+                    setSelectedDrawingByPane((prev) => ({
+                      ...prev,
+                      [pane.chartId]: null,
+                    }));
+                    onPositionSelect?.(false);
+                  }}
                 />
                 <DrawingToolSelect
                   armedTool={armedTool}
@@ -401,18 +426,31 @@ export const ReplayGrid: React.FC<ReplayGridProps> = ({
                     : (price, time) => onPriceClick?.(price, time, pane.chartId)
                 }
                 onCandleClick={
-                  !placementArmed &&
-                  !drawingArmed &&
-                  !positionArmed &&
-                  indicators.avwap &&
-                  indicators.avwapAnchor == null
+                  waitingAvwap && pending
                     ? (time) => {
                         if (!pane.candles.some((c) => c.time === time)) return;
-                        setPaneIndicators(pane.chartId, setAvwapAnchor(indicators, time));
-                        selectAvwapStyle(pane.chartId);
+                        setPaneIndicators(
+                          pane.chartId,
+                          setAvwapAnchor(indicators, pending.id, time),
+                        );
+                        selectAvwapStyle(pane.chartId, pending.id);
+                        setSelectedDrawingByPane((prev) => ({
+                          ...prev,
+                          [pane.chartId]: null,
+                        }));
+                        onPositionSelect?.(false);
                       }
                     : undefined
                 }
+                avwapSelectable={avwapSelectable}
+                onAvwapSelect={(id) => {
+                  selectAvwapStyle(pane.chartId, id);
+                  setSelectedDrawingByPane((prev) => ({
+                    ...prev,
+                    [pane.chartId]: null,
+                  }));
+                  onPositionSelect?.(false);
+                }}
                 onLevelDrag={onLevelDrag}
                 onAdjustCommit={onAdjustCommit}
                 logarithmic={logarithmic}
@@ -448,6 +486,7 @@ export const ReplayGrid: React.FC<ReplayGridProps> = ({
                       ...prev,
                       [pane.chartId]: null,
                     }));
+                    clearAvwapStyleEdit(pane.chartId);
                   }
                 }}
                 onPositionClear={onPositionClear}
@@ -456,29 +495,33 @@ export const ReplayGrid: React.FC<ReplayGridProps> = ({
                   setArmedToolByPane((prev) => ({ ...prev, [pane.chartId]: tool }));
                   if (tool) clearAvwapStyleEdit(pane.chartId);
                 }}
-                avwapStyleEdit={(() => {
-                  if (
-                    !avwapStyleEditingByPane[pane.chartId] ||
-                    !indicators.avwap ||
-                    indicators.avwapAnchor == null
-                  ) {
-                    return null;
-                  }
-                  return {
-                    style: indicators.avwapStyle,
-                    anchorTime: indicators.avwapAnchor,
-                  };
-                })()}
+                avwapStyleEdit={
+                  editingAvwap && editingAvwap.anchorTime != null
+                    ? {
+                        id: editingAvwap.id,
+                        style: editingAvwap.style,
+                        anchorTime: editingAvwap.anchorTime,
+                      }
+                    : null
+                }
                 onAvwapStyleChange={(style) => {
+                  if (!editingAvwapId) return;
                   setIndicatorsByPane((prev) => {
                     const current = prev[pane.chartId] ?? emptyPaneIndicators();
-                    return { ...prev, [pane.chartId]: setAvwapStyle(current, style) };
+                    return {
+                      ...prev,
+                      [pane.chartId]: setAvwapStyle(current, editingAvwapId, style),
+                    };
                   });
                 }}
                 onAvwapStyleClear={() => {
+                  if (!editingAvwapId) return;
                   setIndicatorsByPane((prev) => {
                     const current = prev[pane.chartId] ?? emptyPaneIndicators();
-                    return { ...prev, [pane.chartId]: toggleAvwap(current, false) };
+                    return {
+                      ...prev,
+                      [pane.chartId]: removeAvwap(current, editingAvwapId),
+                    };
                   });
                   clearAvwapStyleEdit(pane.chartId);
                 }}
@@ -488,7 +531,7 @@ export const ReplayGrid: React.FC<ReplayGridProps> = ({
                 showAttributionLogo={paneIndex === 2}
                 className="absolute inset-0 h-full w-full"
               />
-              {waitingAvwap && !avwapStyleEditingByPane[pane.chartId] ? (
+              {waitingAvwap && !editingAvwapId ? (
                 <div className="pointer-events-none absolute left-2 top-2 z-10 rounded bg-purple-600/90 px-2 py-1 text-[11px] font-medium text-white shadow">
                   {t('avwapAnchorHint')}
                 </div>

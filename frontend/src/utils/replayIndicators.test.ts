@@ -1,14 +1,22 @@
 import { describe, expect, it } from 'vitest';
 import type { VisibleCandle } from './replayEngine';
 import {
+  addAvwap,
   addMovingAverage,
+  AVWAP_COLORS,
   buildReplayOverlays,
   computeAnchoredVwap,
   computeEma,
   computeSessionVwap,
   computeSma,
   emptyPaneIndicators,
-  toggleAvwap,
+  MAX_AVWAPS,
+  normalizePaneIndicators,
+  pendingAvwap,
+  pickAvwapAt,
+  removeAvwap,
+  setAvwapAnchor,
+  setAvwapStyle,
 } from './replayIndicators';
 
 function c(
@@ -116,13 +124,71 @@ describe('computeAnchoredVwap', () => {
   });
 });
 
+describe('multi AVWAP helpers', () => {
+  it('adds a pending AVWAP and blocks a second pending', () => {
+    const state = addAvwap(emptyPaneIndicators());
+    expect(state.avwaps).toHaveLength(1);
+    expect(pendingAvwap(state)?.anchorTime).toBeNull();
+    expect(addAvwap(state).avwaps).toHaveLength(1);
+  });
+
+  it('anchors and styles only the targeted id', () => {
+    let state = addAvwap(emptyPaneIndicators());
+    const firstId = state.avwaps[0].id;
+    state = setAvwapAnchor(state, firstId, 10);
+    state = addAvwap(state);
+    const secondId = state.avwaps[1].id;
+    state = setAvwapAnchor(state, secondId, 20);
+    state = setAvwapStyle(state, firstId, { color: '#EF5350', lineWidth: 4 });
+    expect(state.avwaps.find((a) => a.id === firstId)?.style).toEqual({
+      color: '#EF5350',
+      lineWidth: 4,
+    });
+    expect(state.avwaps.find((a) => a.id === secondId)?.style.color).not.toBe('#EF5350');
+    state = removeAvwap(state, firstId);
+    expect(state.avwaps.map((a) => a.id)).toEqual([secondId]);
+  });
+
+  it('reuses a free palette color after removal', () => {
+    let state = emptyPaneIndicators();
+    const ids: string[] = [];
+    for (let i = 0; i < 3; i += 1) {
+      state = addAvwap(state);
+      const id = state.avwaps[state.avwaps.length - 1].id;
+      ids.push(id);
+      state = setAvwapAnchor(state, id, i + 1);
+    }
+    const removedColor = state.avwaps[0].style.color;
+    state = removeAvwap(state, ids[0]);
+    state = addAvwap(state);
+    const next = state.avwaps[state.avwaps.length - 1];
+    expect(next.style.color).toBe(removedColor);
+  });
+
+  it('caps at MAX_AVWAPS', () => {
+    let state = emptyPaneIndicators();
+    for (let i = 0; i < MAX_AVWAPS; i += 1) {
+      state = addAvwap(state);
+      const id = state.avwaps[state.avwaps.length - 1].id;
+      state = setAvwapAnchor(state, id, i + 1);
+    }
+    expect(state.avwaps).toHaveLength(MAX_AVWAPS);
+    expect(addAvwap(state).avwaps).toHaveLength(MAX_AVWAPS);
+    expect(AVWAP_COLORS[0]).toBe('#a855f7');
+  });
+});
+
 describe('buildReplayOverlays', () => {
-  it('composes enabled overlays only', () => {
+  it('composes enabled overlays including multiple AVWAPs', () => {
     let state = emptyPaneIndicators();
     state = addMovingAverage(state, 'sma', 2);
     state = { ...state, vwap: true };
-    state = toggleAvwap(state, true);
-    state = { ...state, avwapAnchor: 2 };
+    state = addAvwap(state);
+    const firstId = state.avwaps[0].id;
+    state = setAvwapAnchor(state, firstId, 2);
+    state = addAvwap(state);
+    const secondId = state.avwaps[1].id;
+    state = setAvwapAnchor(state, secondId, 1);
     const overlays = buildReplayOverlays(
       [c(1, 1, { volume: 1 }), c(2, 3, { volume: 1 })],
       state,
@@ -130,24 +196,27 @@ describe('buildReplayOverlays', () => {
     expect(overlays.map((o) => o.id)).toEqual([
       expect.stringMatching(/^sma-2-/),
       'vwap',
-      'avwap',
+      firstId,
+      secondId,
     ]);
     expect(overlays[0].data).toHaveLength(1);
   });
 
   it('omits AVWAP until an anchor is set', () => {
-    const state = toggleAvwap(emptyPaneIndicators(), true);
+    const state = addAvwap(emptyPaneIndicators());
     const overlays = buildReplayOverlays([c(1, 1)], state);
     expect(overlays).toEqual([]);
   });
 
-  it('applies avwapStyle color and lineWidth to the AVWAP overlay', () => {
-    let state = toggleAvwap(emptyPaneIndicators(), true);
-    state = { ...state, avwapAnchor: 1, avwapStyle: { color: '#EF5350', lineWidth: 4 } };
+  it('applies avwap style color and lineWidth to the overlay', () => {
+    let state = addAvwap(emptyPaneIndicators());
+    const id = state.avwaps[0].id;
+    state = setAvwapAnchor(state, id, 1);
+    state = setAvwapStyle(state, id, { color: '#EF5350', lineWidth: 4 });
     const overlays = buildReplayOverlays([c(1, 1, { volume: 1 })], state);
     expect(overlays).toHaveLength(1);
     expect(overlays[0]).toMatchObject({
-      id: 'avwap',
+      id,
       color: '#EF5350',
       lineWidth: 4,
     });
@@ -157,5 +226,119 @@ describe('buildReplayOverlays', () => {
     const once = addMovingAverage(emptyPaneIndicators(), 'ema', 9);
     const twice = addMovingAverage(once, 'ema', 9);
     expect(twice.mas).toHaveLength(1);
+  });
+});
+
+describe('normalizePaneIndicators', () => {
+  it('migrates legacy single AVWAP', () => {
+    const next = normalizePaneIndicators({
+      vwap: true,
+      avwap: true,
+      avwapAnchor: 42,
+      avwapStyle: { color: '#abc', lineWidth: 3 },
+      mas: [{ id: 'sma-20-1', kind: 'sma', period: 20 }],
+    });
+    expect(next.vwap).toBe(true);
+    expect(next.mas).toHaveLength(1);
+    expect(next.avwaps).toEqual([
+      {
+        id: 'avwap-legacy',
+        anchorTime: 42,
+        style: { color: '#abc', lineWidth: 3 },
+      },
+    ]);
+  });
+
+  it('migrates legacy pending AVWAP', () => {
+    const next = normalizePaneIndicators({
+      vwap: false,
+      avwap: true,
+      avwapAnchor: null,
+      avwapStyle: { color: '#a855f7', lineWidth: 2 },
+    });
+    expect(next.avwaps).toEqual([
+      {
+        id: 'avwap-legacy',
+        anchorTime: null,
+        style: { color: '#a855f7', lineWidth: 2 },
+      },
+    ]);
+  });
+
+  it('returns empty when legacy AVWAP is off and mas is missing', () => {
+    const next = normalizePaneIndicators({ vwap: false, avwap: false });
+    expect(next).toEqual(emptyPaneIndicators());
+  });
+
+  it('keeps modern avwaps array and drops extra pendings', () => {
+    const next = normalizePaneIndicators({
+      vwap: false,
+      avwaps: [
+        {
+          id: 'avwap-1',
+          anchorTime: null,
+          style: { color: '#a855f7', lineWidth: 2 },
+        },
+        {
+          id: 'avwap-2',
+          anchorTime: null,
+          style: { color: '#ec4899', lineWidth: 2 },
+        },
+        {
+          id: 'avwap-3',
+          anchorTime: 10,
+          style: { color: '#8b5cf6', lineWidth: 2 },
+        },
+      ],
+      mas: [],
+    });
+    expect(next.avwaps).toHaveLength(2);
+    expect(next.avwaps.filter((a) => a.anchorTime == null)).toHaveLength(1);
+    expect(next.avwaps.some((a) => a.id === 'avwap-3')).toBe(true);
+  });
+});
+
+describe('pickAvwapAt', () => {
+  const overlays = [
+    {
+      id: 'vwap',
+      title: 'VWAP',
+      color: '#f59e0b',
+      data: [{ time: 1, value: 100 }],
+    },
+    {
+      id: 'avwap-a',
+      title: 'AVWAP',
+      color: '#a855f7',
+      data: [
+        { time: 1, value: 10 },
+        { time: 2, value: 20 },
+      ],
+    },
+    {
+      id: 'avwap-b',
+      title: 'AVWAP',
+      color: '#ec4899',
+      data: [
+        { time: 1, value: 50 },
+        { time: 2, value: 60 },
+      ],
+    },
+  ];
+
+  it('picks the closest AVWAP within tolerance', () => {
+    const priceToY = (price: number) => price; // 1:1
+    expect(pickAvwapAt(overlays, 2, 22, priceToY, 6)).toBe('avwap-a');
+    expect(pickAvwapAt(overlays, 2, 58, priceToY, 6)).toBe('avwap-b');
+  });
+
+  it('returns null when outside tolerance', () => {
+    const priceToY = (price: number) => price;
+    expect(pickAvwapAt(overlays, 2, 40, priceToY, 6)).toBeNull();
+  });
+
+  it('ignores non-AVWAP overlays', () => {
+    const priceToY = (price: number) => price;
+    expect(pickAvwapAt(overlays, 1, 100, priceToY, 6)).toBeNull();
   });
 });

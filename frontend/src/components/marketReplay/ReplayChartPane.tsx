@@ -21,7 +21,11 @@ import {
 } from 'lightweight-charts';
 import { useTranslation } from 'react-i18next';
 import { followAppendedBarsRange, type VisibleCandle } from '../../utils/replayEngine';
-import type { IndicatorOverlay } from '../../utils/replayIndicators';
+import {
+  AVWAP_HIT_TOLERANCE_PX,
+  pickAvwapAt,
+  type IndicatorOverlay,
+} from '../../utils/replayIndicators';
 import { useTheme } from '../../hooks/useTheme';
 import { usePreferences } from '../../hooks/usePreferences';
 import {
@@ -94,12 +98,15 @@ interface ReplayChartPaneProps {
   onPositionSelect?: (selected: boolean) => void;
   onPositionClear?: () => void;
   /** Édition style AVWAP (barre flottante près de l’ancre) ; null = pas d’édition. */
-  avwapStyleEdit?: { style: DrawingStyle; anchorTime: number } | null;
+  avwapStyleEdit?: { id: string; style: DrawingStyle; anchorTime: number } | null;
   onAvwapStyleChange?: (style: DrawingStyle) => void;
-  /** Désactive l’AVWAP (croix, comme supprimer un dessin). */
+  /** Supprime l’AVWAP sélectionné (croix / Suppr). */
   onAvwapStyleClear?: () => void;
-  /** Ferme uniquement la barre (clic à côté sur le graphique). */
+  /** Ferme uniquement la barre (clic à côté / Échap). */
   onAvwapStyleDismiss?: () => void;
+  /** Autorise le hit-test clic sur une ligne AVWAP. */
+  avwapSelectable?: boolean;
+  onAvwapSelect?: (id: string) => void;
   /** Affiche le logo TradingView (licence lightweight-charts). */
   showAttributionLogo?: boolean;
   className?: string;
@@ -134,11 +141,12 @@ function resolveAvwapStyleBarAnchor(
   series: ISeriesApi<'Candlestick'>,
   candles: VisibleCandle[],
   overlays: IndicatorOverlay[],
+  overlayId: string,
   anchorTime: number,
   containerWidth: number,
   containerHeight: number,
 ): { left: number; top: number } {
-  const avwap = overlays.find((o) => o.id === 'avwap');
+  const avwap = overlays.find((o) => o.id === overlayId);
   const firstPoint = avwap?.data[0];
   const pointTime = firstPoint?.time ?? anchorTime;
   const pointPrice =
@@ -363,6 +371,8 @@ export const ReplayChartPane = forwardRef<ReplayChartPaneHandle, ReplayChartPane
     onAvwapStyleChange,
     onAvwapStyleClear,
     onAvwapStyleDismiss,
+    avwapSelectable = false,
+    onAvwapSelect,
     showAttributionLogo = false,
     className = '',
   },
@@ -395,6 +405,14 @@ export const ReplayChartPane = forwardRef<ReplayChartPaneHandle, ReplayChartPane
   avwapStyleEditRef.current = avwapStyleEdit;
   const onAvwapStyleDismissRef = useRef(onAvwapStyleDismiss);
   onAvwapStyleDismissRef.current = onAvwapStyleDismiss;
+  const onAvwapStyleClearRef = useRef(onAvwapStyleClear);
+  onAvwapStyleClearRef.current = onAvwapStyleClear;
+  const avwapSelectableRef = useRef(avwapSelectable);
+  avwapSelectableRef.current = avwapSelectable;
+  const onAvwapSelectRef = useRef(onAvwapSelect);
+  onAvwapSelectRef.current = onAvwapSelect;
+  const overlaysRef = useRef(overlays);
+  overlaysRef.current = overlays;
   const overlaySeriesRef = useRef<Map<string, ISeriesApi<'Line'>>>(new Map());
   const [chartReady, setChartReady] = useState(false);
   const onLevelDragRef = useRef(onLevelDrag);
@@ -778,6 +796,26 @@ export const ReplayChartPane = forwardRef<ReplayChartPaneHandle, ReplayChartPane
         onCandleClickRef.current(rawTime);
         return;
       }
+      // Hit-test ligne AVWAP (sélection pour style / Suppr).
+      if (
+        avwapSelectableRef.current &&
+        typeof rawTime === 'number' &&
+        param.point &&
+        seriesRef.current
+      ) {
+        const series = seriesRef.current;
+        const hitId = pickAvwapAt(
+          overlaysRef.current,
+          rawTime,
+          param.point.y,
+          (price) => series.priceToCoordinate(price),
+          AVWAP_HIT_TOLERANCE_PX,
+        );
+        if (hitId) {
+          onAvwapSelectRef.current?.(hitId);
+          return;
+        }
+      }
       // Clic à côté : fermer la barre de style AVWAP (comme désélectionner une trend line).
       if (avwapStyleEditRef.current) {
         onAvwapStyleDismissRef.current?.();
@@ -873,6 +911,7 @@ export const ReplayChartPane = forwardRef<ReplayChartPaneHandle, ReplayChartPane
           series,
           candles,
           overlays,
+          avwapStyleEdit.id,
           avwapStyleEdit.anchorTime,
           el.clientWidth || 400,
           el.clientHeight || 220,
@@ -889,6 +928,31 @@ export const ReplayChartPane = forwardRef<ReplayChartPaneHandle, ReplayChartPane
       chart.timeScale().unsubscribeVisibleLogicalRangeChange(updateAnchor);
     };
   }, [avwapStyleEdit, candles, overlays, chartReady]);
+
+  useEffect(() => {
+    if (!avwapStyleEdit) return undefined;
+    const isEditableTarget = (target: EventTarget | null): boolean => {
+      if (!(target instanceof HTMLElement)) return false;
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return true;
+      return target.isContentEditable || Boolean(target.closest('[contenteditable="true"]'));
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (isEditableTarget(event.target) || event.metaKey || event.ctrlKey || event.altKey) {
+        return;
+      }
+      if (event.key === 'Delete' || event.key === 'Backspace') {
+        event.preventDefault();
+        onAvwapStyleClearRef.current?.();
+        return;
+      }
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onAvwapStyleDismissRef.current?.();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [avwapStyleEdit]);
 
   useEffect(() => {
     if (!chartRef.current) return;

@@ -3,6 +3,8 @@ import type { DrawingStyle } from './replayDrawings';
 
 export const MIN_MA_PERIOD = 2;
 export const MAX_MA_PERIOD = 500;
+export const MAX_AVWAPS = 10;
+export const AVWAP_HIT_TOLERANCE_PX = 6;
 
 export type MaKind = 'sma' | 'ema';
 
@@ -12,11 +14,15 @@ export interface ReplayMaIndicator {
   period: number;
 }
 
+export interface ReplayAvwapIndicator {
+  id: string;
+  anchorTime: number | null;
+  style: DrawingStyle;
+}
+
 export interface PaneIndicators {
   vwap: boolean;
-  avwap: boolean;
-  avwapAnchor: number | null;
-  avwapStyle: DrawingStyle;
+  avwaps: ReplayAvwapIndicator[];
   mas: ReplayMaIndicator[];
 }
 
@@ -41,6 +47,17 @@ export const DEFAULT_AVWAP_STYLE: DrawingStyle = {
   lineWidth: 2,
 };
 
+export const AVWAP_COLORS = [
+  '#a855f7',
+  '#ec4899',
+  '#8b5cf6',
+  '#d946ef',
+  '#6366f1',
+  '#c084fc',
+  '#f472b6',
+  '#a78bfa',
+] as const;
+
 export const MA_COLORS = [
   '#3b82f6',
   '#14b8a6',
@@ -55,15 +72,13 @@ export const MA_COLORS = [
 export function emptyPaneIndicators(): PaneIndicators {
   return {
     vwap: false,
-    avwap: false,
-    avwapAnchor: null,
-    avwapStyle: { ...DEFAULT_AVWAP_STYLE },
+    avwaps: [],
     mas: [],
   };
 }
 
 export function countActiveIndicators(state: PaneIndicators): number {
-  return state.mas.length + (state.vwap ? 1 : 0) + (state.avwap ? 1 : 0);
+  return state.mas.length + (state.vwap ? 1 : 0) + state.avwaps.length;
 }
 
 export function isValidMaPeriod(period: number): boolean {
@@ -72,6 +87,24 @@ export function isValidMaPeriod(period: number): boolean {
 
 export function colorForMa(index: number): string {
   return MA_COLORS[index % MA_COLORS.length];
+}
+
+export function isAvwapOverlayId(id: string): boolean {
+  return id.startsWith('avwap-');
+}
+
+export function pendingAvwap(state: PaneIndicators): ReplayAvwapIndicator | null {
+  return state.avwaps.find((a) => a.anchorTime == null) ?? null;
+}
+
+function nextAvwapColor(state: PaneIndicators): string {
+  const used = new Set(state.avwaps.map((a) => a.style.color.toLowerCase()));
+  const free = AVWAP_COLORS.find((c) => !used.has(c.toLowerCase()));
+  return free ?? AVWAP_COLORS[state.avwaps.length % AVWAP_COLORS.length];
+}
+
+function newAvwapId(): string {
+  return `avwap-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
 function typicalPrice(candle: VisibleCandle): number {
@@ -141,6 +174,43 @@ function computeVwapFrom(
   return points;
 }
 
+function valueAtTime(data: IndicatorPoint[], time: number): number | null {
+  let best: IndicatorPoint | null = null;
+  for (const point of data) {
+    if (point.time > time) break;
+    best = point;
+  }
+  return best?.value ?? null;
+}
+
+/**
+ * Hit-test AVWAP overlays near a click (price Y in chart coords).
+ * Returns the closest AVWAP id within tolerance, or null.
+ */
+export function pickAvwapAt(
+  overlays: IndicatorOverlay[],
+  time: number,
+  clickY: number,
+  priceToY: (price: number) => number | null,
+  tolerancePx: number = AVWAP_HIT_TOLERANCE_PX,
+): string | null {
+  let bestId: string | null = null;
+  let bestDist = Infinity;
+  for (const overlay of overlays) {
+    if (!isAvwapOverlayId(overlay.id)) continue;
+    const value = valueAtTime(overlay.data, time);
+    if (value == null) continue;
+    const y = priceToY(value);
+    if (y == null || !Number.isFinite(y)) continue;
+    const dist = Math.abs(y - clickY);
+    if (dist <= tolerancePx && dist < bestDist) {
+      bestDist = dist;
+      bestId = overlay.id;
+    }
+  }
+  return bestId;
+}
+
 export function buildReplayOverlays(
   candles: VisibleCandle[],
   state: PaneIndicators,
@@ -163,13 +233,14 @@ export function buildReplayOverlays(
       data: computeSessionVwap(candles),
     });
   }
-  if (state.avwap && state.avwapAnchor != null) {
+  for (const avwap of state.avwaps) {
+    if (avwap.anchorTime == null) continue;
     overlays.push({
-      id: 'avwap',
+      id: avwap.id,
       title: 'AVWAP',
-      color: state.avwapStyle.color,
-      lineWidth: state.avwapStyle.lineWidth,
-      data: computeAnchoredVwap(candles, state.avwapAnchor),
+      color: avwap.style.color,
+      lineWidth: avwap.style.lineWidth,
+      data: computeAnchoredVwap(candles, avwap.anchorTime),
     });
   }
   return overlays;
@@ -199,25 +270,129 @@ export function toggleVwap(state: PaneIndicators, enabled: boolean): PaneIndicat
   return { ...state, vwap: enabled };
 }
 
-export function toggleAvwap(state: PaneIndicators, enabled: boolean): PaneIndicators {
+export function addAvwap(state: PaneIndicators): PaneIndicators {
+  if (pendingAvwap(state) != null) return state;
+  if (state.avwaps.length >= MAX_AVWAPS) return state;
   return {
     ...state,
-    avwap: enabled,
-    avwapAnchor: enabled ? state.avwapAnchor : null,
+    avwaps: [
+      ...state.avwaps,
+      {
+        id: newAvwapId(),
+        anchorTime: null,
+        style: {
+          color: nextAvwapColor(state),
+          lineWidth: DEFAULT_AVWAP_STYLE.lineWidth,
+        },
+      },
+    ],
   };
 }
 
-export function setAvwapAnchor(state: PaneIndicators, time: number): PaneIndicators {
-  if (!state.avwap) return state;
-  return { ...state, avwapAnchor: time };
+export function removeAvwap(state: PaneIndicators, id: string): PaneIndicators {
+  return { ...state, avwaps: state.avwaps.filter((a) => a.id !== id) };
 }
 
-export function setAvwapStyle(state: PaneIndicators, style: DrawingStyle): PaneIndicators {
+export function setAvwapAnchor(
+  state: PaneIndicators,
+  id: string,
+  time: number,
+): PaneIndicators {
   return {
     ...state,
-    avwapStyle: {
-      color: style.color,
-      lineWidth: style.lineWidth,
-    },
+    avwaps: state.avwaps.map((a) =>
+      a.id === id ? { ...a, anchorTime: time } : a,
+    ),
   };
+}
+
+export function setAvwapStyle(
+  state: PaneIndicators,
+  id: string,
+  style: DrawingStyle,
+): PaneIndicators {
+  return {
+    ...state,
+    avwaps: state.avwaps.map((a) =>
+      a.id === id
+        ? {
+            ...a,
+            style: {
+              color: style.color,
+              lineWidth: style.lineWidth,
+            },
+          }
+        : a,
+    ),
+  };
+}
+
+function isDrawingStyle(value: unknown): value is DrawingStyle {
+  if (!value || typeof value !== 'object') return false;
+  const style = value as Record<string, unknown>;
+  return typeof style.color === 'string' && typeof style.lineWidth === 'number';
+}
+
+function isReplayAvwap(value: unknown): value is ReplayAvwapIndicator {
+  if (!value || typeof value !== 'object') return false;
+  const a = value as Record<string, unknown>;
+  return (
+    typeof a.id === 'string' &&
+    isAvwapOverlayId(a.id) &&
+    (a.anchorTime === null || typeof a.anchorTime === 'number') &&
+    isDrawingStyle(a.style)
+  );
+}
+
+function isReplayMa(value: unknown): value is ReplayMaIndicator {
+  if (!value || typeof value !== 'object') return false;
+  const ma = value as Record<string, unknown>;
+  return (
+    typeof ma.id === 'string' &&
+    (ma.kind === 'sma' || ma.kind === 'ema') &&
+    typeof ma.period === 'number'
+  );
+}
+
+/** Normalize workspace / legacy PaneIndicators to the current shape. */
+export function normalizePaneIndicators(raw: unknown): PaneIndicators {
+  const base = emptyPaneIndicators();
+  if (!raw || typeof raw !== 'object') return base;
+  const obj = raw as Record<string, unknown>;
+
+  const vwap = Boolean(obj.vwap);
+  const mas = Array.isArray(obj.mas) ? obj.mas.filter(isReplayMa) : [];
+
+  let avwaps: ReplayAvwapIndicator[] = [];
+  if (Array.isArray(obj.avwaps)) {
+    avwaps = obj.avwaps.filter(isReplayAvwap).slice(0, MAX_AVWAPS);
+  } else if (obj.avwap === true) {
+    const anchor =
+      typeof obj.avwapAnchor === 'number'
+        ? obj.avwapAnchor
+        : obj.avwapAnchor === null
+          ? null
+          : null;
+    const style = isDrawingStyle(obj.avwapStyle)
+      ? { color: obj.avwapStyle.color, lineWidth: obj.avwapStyle.lineWidth }
+      : { ...DEFAULT_AVWAP_STYLE };
+    avwaps = [
+      {
+        id: 'avwap-legacy',
+        anchorTime: anchor,
+        style,
+      },
+    ];
+  }
+
+  // At most one pending AVWAP: keep the first, drop extras
+  let seenPending = false;
+  avwaps = avwaps.filter((a) => {
+    if (a.anchorTime != null) return true;
+    if (seenPending) return false;
+    seenPending = true;
+    return true;
+  });
+
+  return { vwap, avwaps, mas };
 }

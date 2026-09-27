@@ -1,13 +1,18 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
+import { usePreferences } from '../../hooks/usePreferences';
+import { formatDateTimeShort, type DateFormatType } from '../../utils/dateFormat';
 import {
+  addAvwap,
   addMovingAverage,
   colorForMa,
   countActiveIndicators,
   isValidMaPeriod,
+  MAX_AVWAPS,
+  pendingAvwap,
+  removeAvwap,
   removeMovingAverage,
-  toggleAvwap,
   toggleVwap,
   VWAP_COLOR,
   type MaKind,
@@ -21,8 +26,8 @@ interface IndicatorSelectProps {
   value: PaneIndicators;
   onChange: (next: PaneIndicators) => void;
   disabled?: boolean;
-  /** Ouvre la barre de style AVWAP sur le panneau (comme une trend line). */
-  onSelectAvwapStyle?: () => void;
+  /** Ouvre la barre de style AVWAP pour l’id donné. */
+  onSelectAvwapStyle?: (id: string) => void;
 }
 
 export const IndicatorSelect: React.FC<IndicatorSelectProps> = ({
@@ -32,6 +37,8 @@ export const IndicatorSelect: React.FC<IndicatorSelectProps> = ({
   onSelectAvwapStyle,
 }) => {
   const { t } = useTranslation('marketReplay');
+  const { preferences } = usePreferences();
+  const chartTimezone = preferences.timezone?.trim() || 'Europe/Paris';
   const [open, setOpen] = useState(false);
   const [kind, setKind] = useState<MaKind>('sma');
   const [customPeriod, setCustomPeriod] = useState('');
@@ -47,6 +54,8 @@ export const IndicatorSelect: React.FC<IndicatorSelectProps> = ({
   });
 
   const activeCount = countActiveIndicators(value);
+  const pending = pendingAvwap(value);
+  const canAddAvwap = pending == null && value.avwaps.length < MAX_AVWAPS;
 
   const toggleDropdown = () => {
     if (disabled) return;
@@ -125,6 +134,16 @@ export const IndicatorSelect: React.FC<IndicatorSelectProps> = ({
   const customPeriodInvalid =
     customPeriod.trim() !== '' && !isValidMaPeriod(customPeriodParsed);
 
+  const formatAvwapLabel = (anchorTime: number | null): string => {
+    if (anchorTime == null) return t('avwapPending');
+    const formatted = formatDateTimeShort(
+      new Date(anchorTime * 1000).toISOString(),
+      preferences.date_format as DateFormatType,
+      chartTimezone,
+    );
+    return `${t('avwap')} · ${formatted}`;
+  };
+
   const menu = open && (
     <div
       ref={menuRef}
@@ -151,48 +170,82 @@ export const IndicatorSelect: React.FC<IndicatorSelectProps> = ({
         />
         <span className="text-gray-900 dark:text-gray-100">{t('vwap')}</span>
       </label>
-      <div className="flex items-center gap-2 rounded px-1.5 py-1 hover:bg-gray-50 dark:hover:bg-gray-700">
+
+      <div className="mt-0.5 space-y-0.5">
         <button
           type="button"
-          className={`h-2.5 w-2.5 shrink-0 rounded-full border border-gray-300 dark:border-gray-500 ${
-            value.avwap ? 'cursor-pointer ring-offset-1 hover:ring-1 hover:ring-blue-500' : 'cursor-default'
-          }`}
-          style={{ backgroundColor: value.avwapStyle.color }}
-          title={t('avwapStyleHint')}
-          aria-label={t('avwapStyle')}
-          disabled={disabled || !value.avwap}
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            if (!value.avwap || !onSelectAvwapStyle) return;
-            onSelectAvwapStyle();
+          disabled={disabled || !canAddAvwap}
+          title={
+            value.avwaps.length >= MAX_AVWAPS
+              ? t('avwapMaxReached')
+              : pending
+                ? t('avwapAnchorHint')
+                : undefined
+          }
+          className="flex w-full items-center gap-2 rounded px-1.5 py-1 text-left text-gray-900 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:text-gray-100 dark:hover:bg-gray-700"
+          onClick={() => {
+            onChange(addAvwap(value));
             setOpen(false);
           }}
-        />
-        <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-2">
-          <input
-            type="checkbox"
-            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
-            checked={value.avwap}
-            onChange={(e) => {
-              const enabled = e.target.checked;
-              onChange(toggleAvwap(value, enabled));
-              if (enabled) setOpen(false);
-            }}
-          />
-          <span className="text-gray-900 dark:text-gray-100">{t('avwap')}</span>
-        </label>
+        >
+          <span className="text-purple-600 dark:text-purple-300">+</span>
+          <span>{t('avwapAdd')}</span>
+        </button>
+        {pending ? (
+          <p className="px-1.5 pb-1 text-[10px] leading-snug text-purple-700 dark:text-purple-300">
+            {t('avwapAnchorHint')}
+          </p>
+        ) : null}
+        {value.avwaps.length > 0 ? (
+          <ul className="space-y-0.5 pb-1">
+            {value.avwaps.map((avwap) => {
+              const anchored = avwap.anchorTime != null;
+              return (
+                <li
+                  key={avwap.id}
+                  className="flex items-center justify-between gap-2 rounded px-1.5 py-0.5 hover:bg-gray-50 dark:hover:bg-gray-700"
+                >
+                  <span className="flex min-w-0 items-center gap-1.5 text-gray-900 dark:text-gray-100">
+                    <button
+                      type="button"
+                      className={`h-2.5 w-2.5 shrink-0 rounded-full border border-gray-300 dark:border-gray-500 ${
+                        anchored
+                          ? 'cursor-pointer ring-offset-1 hover:ring-1 hover:ring-blue-500'
+                          : 'cursor-default opacity-70'
+                      }`}
+                      style={{ backgroundColor: avwap.style.color }}
+                      title={t('avwapStyleHint')}
+                      aria-label={t('avwapStyle')}
+                      disabled={disabled || !anchored}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (!anchored || !onSelectAvwapStyle) return;
+                        onSelectAvwapStyle(avwap.id);
+                        setOpen(false);
+                      }}
+                    />
+                    <span className="truncate">{formatAvwapLabel(avwap.anchorTime)}</span>
+                  </span>
+                  <button
+                    type="button"
+                    className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-base leading-none text-gray-500 hover:bg-gray-200 hover:text-gray-800 dark:text-gray-400 dark:hover:bg-gray-600 dark:hover:text-gray-100"
+                    aria-label={t('removeIndicator')}
+                    onClick={() => onChange(removeAvwap(value, avwap.id))}
+                  >
+                    ×
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        ) : null}
+        {value.avwaps.some((a) => a.anchorTime != null) ? (
+          <p className="px-1.5 pb-1 text-[10px] leading-snug text-gray-500 dark:text-gray-400">
+            {t('avwapStyleHint')}
+          </p>
+        ) : null}
       </div>
-      {value.avwap && value.avwapAnchor == null ? (
-        <p className="px-1.5 pb-1 text-[10px] leading-snug text-purple-700 dark:text-purple-300">
-          {t('avwapAnchorHint')}
-        </p>
-      ) : null}
-      {value.avwap && value.avwapAnchor != null ? (
-        <p className="px-1.5 pb-1 text-[10px] leading-snug text-gray-500 dark:text-gray-400">
-          {t('avwapStyleHint')}
-        </p>
-      ) : null}
 
       <div className="mt-1 border-t border-gray-200 pt-2 dark:border-gray-700">
         <div className="mb-1.5 flex h-8 items-stretch gap-1 px-1">
