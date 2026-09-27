@@ -57,11 +57,11 @@ interface ReplayGridProps {
   /** Un bouton Entry / SL / TP / Sortie est armé : le clic chart ne pose pas d’AVWAP. */
   placementArmed?: boolean;
   logarithmic?: boolean;
-  autoFit?: boolean;
+  /** Défaut Settings pour les panes sans override. */
+  defaultAutoFit?: boolean;
   /** Replay en cours : forcer le suivi des nouvelles bougies même après interaction. */
   playing?: boolean;
   onLogarithmicChange?: (value: boolean) => void;
-  onAutoFitChange?: (value: boolean) => void;
   loading?: boolean;
   emptySession?: boolean;
   positionModel?: PositionOverlayModel | null;
@@ -107,10 +107,9 @@ export const ReplayGrid: React.FC<ReplayGridProps> = ({
   onAdjustCommit,
   placementArmed = false,
   logarithmic = false,
-  autoFit = false,
+  defaultAutoFit = false,
   playing = false,
   onLogarithmicChange,
-  onAutoFitChange,
   loading = false,
   emptySession = false,
   positionModel = null,
@@ -148,6 +147,9 @@ export const ReplayGrid: React.FC<ReplayGridProps> = ({
   const [drawingStyle, setDrawingStyle] = useState<DrawingStyle>(
     initialWorkspace?.drawingStyle ?? DEFAULT_DRAWING_STYLE,
   );
+  const [autoFitByPane, setAutoFitByPane] = useState<Record<string, boolean>>(
+    () => initialWorkspace?.autoFitByPane ?? {},
+  );
   const [avwapStyleEditingByPane, setAvwapStyleEditingByPane] = useState<
     Record<string, string | null>
   >({});
@@ -163,8 +165,37 @@ export const ReplayGrid: React.FC<ReplayGridProps> = ({
       drawingsByPane,
       sharedDrawings,
       drawingStyle,
+      autoFitByPane: Object.keys(autoFitByPane).length > 0 ? autoFitByPane : undefined,
     });
-  }, [indicatorsByPane, drawingScope, drawingsByPane, sharedDrawings, drawingStyle, onWorkspaceChange]);
+  }, [
+    indicatorsByPane,
+    drawingScope,
+    drawingsByPane,
+    sharedDrawings,
+    drawingStyle,
+    autoFitByPane,
+    onWorkspaceChange,
+  ]);
+
+  const paneAutoFit = useCallback(
+    (chartId: string): boolean => autoFitByPane[chartId] ?? defaultAutoFit,
+    [autoFitByPane, defaultAutoFit],
+  );
+
+  const togglePaneAutoFit = useCallback(
+    (chartId: string) => {
+      const next = !paneAutoFit(chartId);
+      setAutoFitByPane((prev) => {
+        if (next === defaultAutoFit) {
+          if (!(chartId in prev)) return prev;
+          const { [chartId]: _drop, ...rest } = prev;
+          return rest;
+        }
+        return { ...prev, [chartId]: next };
+      });
+    },
+    [paneAutoFit, defaultAutoFit],
+  );
 
   const paneIndicators = useCallback(
     (chartId: string): PaneIndicators => indicatorsByPane[chartId] ?? emptyPaneIndicators(),
@@ -402,9 +433,9 @@ export const ReplayGrid: React.FC<ReplayGridProps> = ({
                 <Tooltip content={t('autoFitHint')} position="top">
                   <button
                     type="button"
-                    className={paneToggleClass(autoFit)}
-                    aria-pressed={autoFit}
-                    onClick={() => onAutoFitChange?.(!autoFit)}
+                    className={paneToggleClass(paneAutoFit(pane.chartId))}
+                    aria-pressed={paneAutoFit(pane.chartId)}
+                    onClick={() => togglePaneAutoFit(pane.chartId)}
                     aria-label={t('autoFit')}
                   >
                     {t('autoFit')}
@@ -458,7 +489,7 @@ export const ReplayGrid: React.FC<ReplayGridProps> = ({
                 onLevelDrag={onLevelDrag}
                 onAdjustCommit={onAdjustCommit}
                 logarithmic={logarithmic}
-                autoFit={autoFit}
+                autoFit={paneAutoFit(pane.chartId)}
                 playing={playing}
                 drawings={drawings}
                 selectedDrawingId={selectedDrawingId}

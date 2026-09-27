@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import {
   clearMarketReplayWorkspace,
   loadMarketReplayWorkspace,
+  sanitizeAutoFitByPane,
   saveMarketReplayWorkspace,
   type MarketReplayWorkspace,
 } from './marketReplayWorkspace';
@@ -64,5 +65,47 @@ describe('marketReplayWorkspace', () => {
     saveMarketReplayWorkspace(workspace);
     clearMarketReplayWorkspace();
     expect(loadMarketReplayWorkspace()).toBeNull();
+  });
+
+  it('round-trips autoFitByPane overrides', () => {
+    saveMarketReplayWorkspace({
+      ...workspace,
+      grid: {
+        indicatorsByPane: {},
+        drawingScope: 'pane',
+        drawingsByPane: {},
+        sharedDrawings: [],
+        drawingStyle: { color: '#2962ff', lineWidth: 1 },
+        autoFitByPane: { a: true, c: false },
+      },
+    });
+    expect(loadMarketReplayWorkspace()?.grid?.autoFitByPane).toEqual({ a: true, c: false });
+  });
+
+  it('sanitizeAutoFitByPane keeps only booleans', () => {
+    expect(sanitizeAutoFitByPane({ a: true, b: 'false', c: 1, d: false })).toEqual({
+      a: true,
+      d: false,
+    });
+    expect(sanitizeAutoFitByPane('nope')).toBeUndefined();
+    expect(sanitizeAutoFitByPane({})).toBeUndefined();
+  });
+
+  it('drops non-boolean autoFitByPane entries on load', () => {
+    localStorage.setItem(
+      'trading-journal:market-replay-workspace:v1',
+      JSON.stringify({
+        ...workspace,
+        grid: {
+          indicatorsByPane: {},
+          drawingScope: 'pane',
+          drawingsByPane: {},
+          sharedDrawings: [],
+          drawingStyle: { color: '#2962ff', lineWidth: 1 },
+          autoFitByPane: { a: true, b: 'false' },
+        },
+      }),
+    );
+    expect(loadMarketReplayWorkspace()?.grid?.autoFitByPane).toEqual({ a: true });
   });
 });

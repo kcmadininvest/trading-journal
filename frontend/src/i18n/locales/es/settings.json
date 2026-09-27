@@ -79,7 +79,7 @@
   "marketReplayLogarithmic": "Escala logarítmica",
   "marketReplayLogarithmicDesc": "Usar la escala de precios logarítmica por defecto en los gráficos de Market Replay",
   "marketReplayAutofit": "Autofit continuo",
-  "marketReplayAutofitDesc": "Recentrar automáticamente las velas visibles en cada avance del replay",
+  "marketReplayAutofitDesc": "Valor predeterminado para cada gráfico de Market Replay no personalizado: recentrar las velas visibles en cada avance",
   "premiumRestrictionsEnabled": "Restricciones premium activadas",
   "premiumRestrictionsEnabledDesc": "Si se desactivan, todas las funciones premium son accesibles para todos los usuarios.",
   "premiumRestrictionsUpdated": "Ajustes premium actualizados.",

@@ -81,7 +81,7 @@
   "marketReplayLogarithmic": "Échelle logarithmique",
   "marketReplayLogarithmicDesc": "Utiliser l’échelle de prix logarithmique par défaut sur les graphiques Market Replay",
   "marketReplayAutofit": "Autofit continu",
-  "marketReplayAutofitDesc": "Recentrer automatiquement les bougies visibles à chaque avancée du replay",
+  "marketReplayAutofitDesc": "Valeur par défaut pour chaque graphique Market Replay non personnalisé : recentrer les bougies visibles à chaque avancée",
   "premiumRestrictionsEnabled": "Restrictions premium activées",
   "premiumRestrictionsEnabledDesc": "Si désactivé, toutes les fonctionnalités premium sont accessibles à tous les utilisateurs.",
   "premiumRestrictionsUpdated": "Paramètres premium mis à jour.",
