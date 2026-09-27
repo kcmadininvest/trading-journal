@@ -1,20 +1,23 @@
-"""Insertion bulk des bougies historiques."""
+"""Insertion bulk des bougies historiques (scopées par utilisateur)."""
 from __future__ import annotations
 
 from datetime import datetime
 from typing import Iterable
 
+from django.contrib.auth import get_user_model
 from django.utils import timezone as django_tz
 
 from market_data.models import HistoricalBar
 from market_data.services.normalizer import NormalizedBar
 
 DEFAULT_BATCH_SIZE = 2000
+User = get_user_model()
 
 
 def bars_to_model_instances(
     bars: Iterable[NormalizedBar],
     *,
+    user,
     instrument: str,
     symbol: str,
     contract_id: str,
@@ -23,9 +26,11 @@ def bars_to_model_instances(
     fetched_at: datetime | None = None,
 ) -> list[HistoricalBar]:
     fetched_at = fetched_at or django_tz.now()
+    user_id = user.pk if hasattr(user, 'pk') else user
     instances: list[HistoricalBar] = []
     for bar in bars:
         instances.append(HistoricalBar(
+            user_id=user_id,
             instrument=instrument,
             symbol=symbol,
             contract_id=contract_id,
@@ -52,6 +57,7 @@ def bars_to_model_instances(
 def bulk_insert_bars(
     bars: Iterable[NormalizedBar],
     *,
+    user,
     instrument: str,
     symbol: str,
     contract_id: str,
@@ -61,11 +67,14 @@ def bulk_insert_bars(
     batch_size: int = DEFAULT_BATCH_SIZE,
 ) -> int:
     """
-    Insert par lots avec ignore_conflicts (contrainte unique).
+    Insert par lots avec ignore_conflicts (contrainte unique user+contrat+tf+ts).
     Retourne le nombre d'instances soumises (pas forcément créées).
     """
+    if user is None:
+        raise ValueError('user est requis pour stocker des bougies historiques.')
     instances = bars_to_model_instances(
         bars,
+        user=user,
         instrument=instrument,
         symbol=symbol,
         contract_id=contract_id,

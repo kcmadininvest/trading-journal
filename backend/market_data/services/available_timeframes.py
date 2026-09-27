@@ -25,14 +25,16 @@ def _label_for_spec(code: str, bar_seconds: int) -> str:
     return f'{bar_seconds} seconds' if bar_seconds != 1 else '1 second'
 
 
-def list_available_timeframes(instrument: str) -> list[dict[str, Any]]:
+def list_available_timeframes(instrument: str, *, user) -> list[dict[str, Any]]:
     """
-    Retourne les timeframes pour lesquels l'instrument a des données stockées.
+    Retourne les timeframes pour lesquels l'instrument a des données stockées (user).
 
     Source : union BarCoverage (bars_stored > 0, status != empty) et HistoricalBar.
     Enrichissement via parse_timeframe (duration_seconds). Les codes inconnus
     du catalogue sont ignorés (pas de durée fiable).
     """
+    if user is None:
+        raise ValueError('user requis')
     instrument = (instrument or '').upper().strip()
     if not instrument:
         return []
@@ -40,7 +42,7 @@ def list_available_timeframes(instrument: str) -> list[dict[str, Any]]:
     codes: set[str] = set()
 
     cov_qs = (
-        BarCoverage.objects.filter(instrument=instrument)
+        BarCoverage.objects.filter(user=user, instrument=instrument)
         .exclude(status=BarCoverage.Status.EMPTY)
         .filter(bars_stored__gt=0)
         .values_list('timeframe', flat=True)
@@ -49,7 +51,7 @@ def list_available_timeframes(instrument: str) -> list[dict[str, Any]]:
     codes.update(cov_qs)
 
     bar_qs = (
-        HistoricalBar.objects.filter(instrument=instrument)
+        HistoricalBar.objects.filter(user=user, instrument=instrument)
         .values_list('timeframe', flat=True)
         .distinct()
     )
@@ -71,16 +73,18 @@ def list_available_timeframes(instrument: str) -> list[dict[str, Any]]:
     return result
 
 
-def latest_replay_coverage(instrument: str) -> dict[str, str | None]:
+def latest_replay_coverage(instrument: str, *, user) -> dict[str, str | None]:
     """
-    Dernière bougie stockée et date de séance suggérée pour Market Replay.
+    Dernière bougie stockée et date de séance suggérée pour Market Replay (user).
     """
+    if user is None:
+        raise ValueError('user requis')
     instrument = (instrument or '').upper().strip()
     if not instrument:
         return {'last_bar_at': None, 'latest_session_date': None}
 
     agg = (
-        HistoricalBar.objects.filter(instrument=instrument)
+        HistoricalBar.objects.filter(user=user, instrument=instrument)
         .aggregate(last=Max('timestamp_utc'))
     )
     last_ts = agg.get('last')
@@ -95,15 +99,20 @@ def latest_replay_coverage(instrument: str) -> dict[str, str | None]:
     }
 
 
-def list_instruments_with_stored_bars() -> list[str]:
-    """Instruments racines ayant au moins une couverture ou une bougie."""
+def list_instruments_with_stored_bars(*, user) -> list[str]:
+    """Instruments racines ayant au moins une couverture ou une bougie pour ce user."""
+    if user is None:
+        raise ValueError('user requis')
     from_cov = set(
-        BarCoverage.objects.exclude(status=BarCoverage.Status.EMPTY)
+        BarCoverage.objects.filter(user=user)
+        .exclude(status=BarCoverage.Status.EMPTY)
         .filter(bars_stored__gt=0)
         .values_list('instrument', flat=True)
         .distinct()
     )
     from_bars = set(
-        HistoricalBar.objects.values_list('instrument', flat=True).distinct()
+        HistoricalBar.objects.filter(user=user)
+        .values_list('instrument', flat=True)
+        .distinct()
     )
     return sorted(from_cov | from_bars)

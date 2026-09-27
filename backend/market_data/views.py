@@ -111,7 +111,7 @@ class InstrumentListView(APIView):
         )
         if with_bars:
             # Pas besoin TopStepX : uniquement les racines présentes en base.
-            roots = set(list_instruments_with_stored_bars())
+            roots = set(list_instruments_with_stored_bars(user=request.user))
             catalog = {i.instrument: i for i in list_instruments()}
             payload = []
             for root in sorted(roots):
@@ -174,8 +174,8 @@ class InstrumentTimeframesView(APIView):
         symbol = (instrument or '').upper().strip()
         if not symbol:
             return Response({'detail': 'Instrument requis.'}, status=400)
-        timeframes = list_available_timeframes(symbol)
-        coverage = latest_replay_coverage(symbol)
+        timeframes = list_available_timeframes(symbol, user=request.user)
+        coverage = latest_replay_coverage(symbol, user=request.user)
         return Response({
             'symbol': symbol,
             'timeframes': timeframes,
@@ -200,6 +200,7 @@ class InstrumentAvailableSessionsView(APIView):
         try:
             payload = list_available_sessions(
                 symbol,
+                user=request.user,
                 timeframe=timeframe,
                 contract=contract,
             )
@@ -234,6 +235,7 @@ class InstrumentSessionTimeframesView(APIView):
             timeframes = list_session_timeframes(
                 symbol,
                 parsed,
+                user=request.user,
                 contract=contract,
             )
             start_utc, end_utc = resolve_session_range_utc(parsed, symbol)
@@ -257,6 +259,7 @@ class BarsJsonView(APIView):
     def get(self, request):
         try:
             payload = fetch_replay_bars(
+                user=request.user,
                 instrument=request.query_params.get('instrument') or '',
                 timeframes_raw=request.query_params.get('timeframes') or '',
                 start=request.query_params.get('start') or '',
@@ -324,7 +327,7 @@ class CoverageListView(APIView):
 
     def get(self, request):
         instrument = request.query_params.get('instrument')
-        data = get_available_data(instrument)
+        data = get_available_data(request.user, instrument)
         return Response(data)
 
 
@@ -366,6 +369,7 @@ class BarsCsvExportView(APIView):
                 start=start,
                 end=end,
                 contract=contract,
+                user=request.user,
             )
         except ValueError as exc:
             return Response({'detail': str(exc)}, status=400)

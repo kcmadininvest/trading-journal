@@ -39,6 +39,7 @@ def normalized_bar_from_model(row: HistoricalBar) -> NormalizedBar:
 def _persist_session_timeframe(
     m1_bars: list[NormalizedBar],
     *,
+    user,
     instrument: str,
     contract_id: str,
     symbol: str,
@@ -46,12 +47,11 @@ def _persist_session_timeframe(
     timeframe: str,
 ) -> int:
     """
-    Remplace les TF dérivés de la séance par l'agrégat M1 local.
+    Remplace les TF dérivés de la séance par l'agrégat M1 local (pour ce user).
 
     Politique : dès que du M1 est présent, toutes les sources du couple
-    (contrat, TF, séance) sont effacées puis réécrites en
-    ``local_1m_aggregate`` (source de vérité pour les TF dérivés profilés).
-    Sans M1, ne pas appeler cette fonction — voir ``aggregate_contract_range``.
+    (user, contrat, TF, séance) sont effacées puis réécrites en
+    ``local_1m_aggregate``. Sans M1, ne pas appeler cette fonction.
     """
     result = aggregate_m1_session(
         m1_bars,
@@ -63,6 +63,7 @@ def _persist_session_timeframe(
 
     with transaction.atomic():
         HistoricalBar.objects.filter(
+            user=user,
             instrument=instrument,
             contract_id=contract_id,
             timeframe=timeframe,
@@ -70,6 +71,7 @@ def _persist_session_timeframe(
         ).delete()
         inserted = bulk_insert_bars(
             result.bars,
+            user=user,
             instrument=instrument,
             symbol=symbol,
             contract_id=contract_id,
@@ -77,6 +79,7 @@ def _persist_session_timeframe(
             source=AGGREGATED_BAR_SOURCE,
         )
         BarCoverage.objects.filter(
+            user=user,
             instrument=instrument,
             contract_id=contract_id,
             timeframe=timeframe,
@@ -85,6 +88,7 @@ def _persist_session_timeframe(
             end_utc=end_utc,
         ).delete()
         BarCoverage.objects.create(
+            user=user,
             instrument=instrument,
             contract_id=contract_id,
             timeframe=timeframe,
@@ -103,6 +107,7 @@ def _persist_session_timeframe(
 
 def aggregate_contract_range(
     *,
+    user,
     instrument: str,
     contract_id: str,
     start: datetime,
@@ -111,6 +116,8 @@ def aggregate_contract_range(
     symbol: str = '',
     should_cancel: Callable[[], bool] | None = None,
 ) -> dict[str, int]:
+    if user is None:
+        raise ValueError('user est requis pour agréger les bougies.')
     instrument = (instrument or '').upper().strip()
     contract_id = (contract_id or '').strip()
     if not instrument or not contract_id:
@@ -133,6 +140,7 @@ def aggregate_contract_range(
     # Uniquement les séances qui ont du M1 : agréger sans M1 effacerait les
     # TF dérivés existants (delete + insert 0).
     sessions = sorted(set(HistoricalBar.objects.filter(
+        user=user,
         instrument=instrument,
         contract_id=contract_id,
         timeframe='1m',
@@ -147,6 +155,7 @@ def aggregate_contract_range(
             break
         rows = list(
             HistoricalBar.objects.filter(
+                user=user,
                 instrument=instrument,
                 contract_id=contract_id,
                 timeframe='1m',
@@ -160,6 +169,7 @@ def aggregate_contract_range(
         for code in codes:
             counts[code] += _persist_session_timeframe(
                 session_bars,
+                user=user,
                 instrument=instrument,
                 contract_id=contract_id,
                 symbol=session_symbol,

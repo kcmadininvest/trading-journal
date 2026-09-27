@@ -49,13 +49,15 @@ def _sleep_backoff(attempt: int, *, rate_limited: bool = False) -> None:
 
 
 def _complete_coverages_overlapping(
+    user,
     contract_id: str,
     timeframe: str,
     start: datetime,
     end: datetime,
 ) -> list[tuple[datetime, datetime]]:
-    """Plages déjà complete qui chevauchent [start, end)."""
+    """Plages déjà complete qui chevauchent [start, end) pour ce user."""
     qs = BarCoverage.objects.filter(
+        user=user,
         contract_id=contract_id,
         timeframe=timeframe,
         status=BarCoverage.Status.COMPLETE,
@@ -100,6 +102,7 @@ def _iter_chunks(
 
 def _persist_coverage(
     *,
+    user,
     instrument: str,
     contract_id: str,
     timeframe: str,
@@ -108,14 +111,17 @@ def _persist_coverage(
     report: ValidationReport,
     source: str,
 ) -> BarCoverage:
-    # Remplacer les coverages chevauchantes du même contrat/tf
+    # Remplacer les coverages chevauchantes du même user/contrat/tf/plage
     BarCoverage.objects.filter(
+        user=user,
         contract_id=contract_id,
         timeframe=timeframe,
         start_utc=start,
         end_utc=end,
+        source=source,
     ).delete()
     return BarCoverage.objects.create(
+        user=user,
         instrument=instrument,
         contract_id=contract_id,
         timeframe=timeframe,
@@ -223,6 +229,7 @@ def download_contract_range(
     start: datetime,
     end: datetime,
     timeframe: str = '1m',
+    user=None,
     job: HistoricalDownloadJob | None = None,
     live_preference: tuple[bool, ...] = DEFAULT_LIVE_PREFERENCE,
     live_modes: list[bool] | None = None,
@@ -231,17 +238,20 @@ def download_contract_range(
 ) -> dict:
     """
     Télécharge [start, end) pour un contrat, skip des plages complete,
-    upsert coverage + issues.
+    upsert coverage + issues (scopés par user).
 
     progress_offset / progress_weight : part de la barre globale (multi-contrats).
     live_modes : liste mutable partagée pour désactiver live sur tout le job.
     """
+    owner = user or (job.user if job is not None else None)
+    if owner is None:
+        raise ValueError('user ou job.user est requis pour télécharger des bougies.')
     if start.tzinfo is None:
         start = start.replace(tzinfo=timezone.utc)
     if end.tzinfo is None:
         end = end.replace(tzinfo=timezone.utc)
 
-    covered = _complete_coverages_overlapping(contract_id, timeframe, start, end)
+    covered = _complete_coverages_overlapping(owner, contract_id, timeframe, start, end)
     todo = _subtract_ranges(start, end, covered)
     total_bars = 0
     chunks_done = 0
@@ -281,10 +291,10 @@ def download_contract_range(
 
             # Skip / découpe si déjà complete (tous les gaps restants, pas seulement le 1er)
             ranges_to_fetch = [(sub_start, sub_end)]
-            if _complete_coverages_overlapping(contract_id, timeframe, sub_start, sub_end):
+            if _complete_coverages_overlapping(owner, contract_id, timeframe, sub_start, sub_end):
                 still = _subtract_ranges(
                     sub_start, sub_end,
-                    _complete_coverages_overlapping(contract_id, timeframe, sub_start, sub_end),
+                    _complete_coverages_overlapping(owner, contract_id, timeframe, sub_start, sub_end),
                 )
                 if not still:
                     continue
@@ -347,6 +357,7 @@ def download_contract_range(
                         timeframe=timeframe,
                     )
                     _persist_coverage(
+                        user=owner,
                         instrument=instrument,
                         contract_id=contract_id,
                         timeframe=timeframe,
@@ -381,6 +392,7 @@ def download_contract_range(
                 )
                 inserted = bulk_insert_bars(
                     bars,
+                    user=owner,
                     instrument=instrument,
                     symbol=symbol,
                     contract_id=contract_id,
@@ -392,6 +404,7 @@ def download_contract_range(
                 report.bars_stored = max(report.bars_stored, inserted)
 
                 _persist_coverage(
+                    user=owner,
                     instrument=instrument,
                     contract_id=contract_id,
                     timeframe=timeframe,
@@ -498,6 +511,7 @@ def run_download_job(job_id: int) -> None:
             start=segment_start,
             end=segment_end,
             timeframe=source_timeframe,
+            user=job.user,
             job=job,
             live_modes=live_modes,
             **progress,
@@ -506,6 +520,7 @@ def run_download_job(job_id: int) -> None:
             job.progress_pct = max(job.progress_pct or 0, 99)
             job.save(update_fields=['progress_pct', 'updated_at'])
             counts = aggregate_contract_range(
+                user=job.user,
                 instrument=job.instrument,
                 contract_id=contract_id,
                 start=segment_start,

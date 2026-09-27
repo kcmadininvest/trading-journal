@@ -1,5 +1,6 @@
 from datetime import date, datetime, timedelta, timezone
 
+from django.contrib.auth import get_user_model
 from django.test import SimpleTestCase, TestCase
 
 from market_data.models import BarCoverage, HistoricalBar
@@ -8,6 +9,8 @@ from market_data.services.aggregation import aggregate_m1_session
 from market_data.services.ingester import bulk_insert_bars
 from market_data.services.normalizer import normalize_bar_row
 from market_data.services.sessions import session_bounds_utc
+
+User = get_user_model()
 
 
 class SessionBoundsTests(SimpleTestCase):
@@ -168,6 +171,7 @@ class AggregateContractRangeTests(TestCase):
     session_open = datetime(2026, 9, 7, 22, 0, tzinfo=timezone.utc)
 
     def setUp(self):
+        self.user = User.objects.create_user(username='agguser', password='x')
         bars = [
             normalize_bar_row(
                 {
@@ -184,6 +188,7 @@ class AggregateContractRangeTests(TestCase):
         ]
         bulk_insert_bars(
             bars,
+            user=self.user,
             instrument='MES',
             symbol='MESU6',
             contract_id=self.contract_id,
@@ -192,6 +197,7 @@ class AggregateContractRangeTests(TestCase):
 
     def test_cancellation_before_session_leaves_derived_bars_unchanged(self):
         counts = aggregate_contract_range(
+            user=self.user,
             instrument='MES',
             contract_id=self.contract_id,
             start=self.session_open,
@@ -208,6 +214,7 @@ class AggregateContractRangeTests(TestCase):
 
     def test_replaces_session_bars_and_persists_aligned_coverage(self):
         params = {
+            'user': self.user,
             'instrument': 'MES',
             'contract_id': self.contract_id,
             'start': self.session_open,
@@ -254,6 +261,7 @@ class AggregateContractRangeTests(TestCase):
         derived_session = date_cls(2026, 9, 9)
         derived_ts = datetime(2026, 9, 8, 22, 0, tzinfo=timezone.utc)
         HistoricalBar.objects.create(
+            user=self.user,
             instrument='MES',
             symbol='MESU6',
             contract_id=self.contract_id,
@@ -272,6 +280,7 @@ class AggregateContractRangeTests(TestCase):
         )
 
         counts = aggregate_contract_range(
+            user=self.user,
             instrument='MES',
             contract_id=self.contract_id,
             start=self.session_open,

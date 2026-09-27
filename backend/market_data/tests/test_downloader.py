@@ -34,11 +34,13 @@ class RangeSubtractTests(TestCase):
 
 class IngesterTests(TestCase):
     def test_bulk_insert_dedup_constraint(self):
+        user = User.objects.create_user(username='ingestuser', password='x')
         start = datetime(2025, 3, 10, 14, 0, tzinfo=timezone.utc)
         rows = make_m1_bars(start, 3)
         bars, _ = normalize_bars(rows, instrument='NQ')
         n1 = bulk_insert_bars(
             bars,
+            user=user,
             instrument='NQ',
             symbol='NQH5',
             contract_id='CON.F.US.ENQ.H25',
@@ -46,6 +48,7 @@ class IngesterTests(TestCase):
         )
         n2 = bulk_insert_bars(
             bars,
+            user=user,
             instrument='NQ',
             symbol='NQH5',
             contract_id='CON.F.US.ENQ.H25',
@@ -67,6 +70,7 @@ class DownloadContractRangeTests(TestCase):
 
     def test_skips_complete_coverage(self):
         BarCoverage.objects.create(
+            user=self.user,
             instrument='NQ',
             contract_id='CON.F.US.ENQ.H25',
             timeframe='1m',
@@ -88,6 +92,7 @@ class DownloadContractRangeTests(TestCase):
             symbol='NQH5',
             start=self.start,
             end=self.end,
+            user=self.user,
         )
         client.retrieve_bars.assert_not_called()
         self.assertEqual(result['bars_fetched'], 0)
@@ -135,6 +140,7 @@ class DownloadContractRangeTests(TestCase):
                 symbol='NQH5',
                 start=self.start,
                 end=self.end,
+                user=self.user,
                 live_preference=(False,),
             )
         cov = BarCoverage.objects.get(contract_id='CON.F.US.ENQ.H25')
@@ -155,6 +161,7 @@ class DownloadContractRangeTests(TestCase):
                 start=self.start,
                 end=self.end,
                 timeframe='5m',
+                user=self.user,
                 live_preference=(False,),
             )
         kwargs = client.retrieve_bars.call_args.kwargs
@@ -173,6 +180,7 @@ class DownloadContractRangeTests(TestCase):
                 start=self.start,
                 end=self.end,
                 timeframe='1h',
+                user=self.user,
                 live_preference=(False,),
             )
         kwargs = client.retrieve_bars.call_args.kwargs
@@ -199,6 +207,7 @@ class DownloadContractRangeTests(TestCase):
                 symbol='NQH5',
                 start=self.start,
                 end=self.end,
+                user=self.user,
                 live_preference=(False, True),
             )
         self.assertEqual(result['bars_fetched'], 5)

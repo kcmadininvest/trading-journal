@@ -22,8 +22,10 @@ User = get_user_model()
 
 class AvailableTimeframesServiceTests(TestCase):
     def setUp(self):
+        self.user = User.objects.create_user(username='tfsvc', password='x')
         self.now = django_tz.now()
         BarCoverage.objects.create(
+            user=self.user,
             instrument='NQ',
             contract_id='CON.F.US.ENQ.H25',
             timeframe='1m',
@@ -35,6 +37,7 @@ class AvailableTimeframesServiceTests(TestCase):
             fetched_at=self.now,
         )
         BarCoverage.objects.create(
+            user=self.user,
             instrument='NQ',
             contract_id='CON.F.US.ENQ.H25',
             timeframe='5m',
@@ -47,6 +50,7 @@ class AvailableTimeframesServiceTests(TestCase):
         )
         # Empty coverage ignored
         BarCoverage.objects.create(
+            user=self.user,
             instrument='NQ',
             contract_id='CON.F.US.ENQ.H25',
             timeframe='15m',
@@ -59,6 +63,7 @@ class AvailableTimeframesServiceTests(TestCase):
         )
         # Bar-only TF (no coverage)
         HistoricalBar.objects.create(
+            user=self.user,
             instrument='NQ',
             symbol='NQH5',
             contract_id='CON.F.US.ENQ.H25',
@@ -77,7 +82,7 @@ class AvailableTimeframesServiceTests(TestCase):
         )
 
     def test_lists_sorted_by_duration(self):
-        rows = list_available_timeframes('NQ')
+        rows = list_available_timeframes('NQ', user=self.user)
         values = [r['value'] for r in rows]
         self.assertEqual(values, ['1m', '5m', '1h'])
         self.assertEqual(rows[0]['duration_seconds'], 60)
@@ -86,8 +91,8 @@ class AvailableTimeframesServiceTests(TestCase):
         self.assertIn('label', rows[0])
 
     def test_empty_instrument(self):
-        self.assertEqual(list_available_timeframes(''), [])
-        self.assertEqual(list_available_timeframes('ES'), [])
+        self.assertEqual(list_available_timeframes('', user=self.user), [])
+        self.assertEqual(list_available_timeframes('ES', user=self.user), [])
 
 
 class ReplayApiTests(TestCase):
@@ -100,6 +105,7 @@ class ReplayApiTests(TestCase):
         for i in range(5):
             ts = base + timedelta(minutes=i)
             HistoricalBar.objects.create(
+            user=self.user,
                 instrument='NQ',
                 symbol='NQH5',
                 contract_id='CON.F.US.ENQ.H25',
@@ -117,6 +123,7 @@ class ReplayApiTests(TestCase):
                 fetched_at=self.now,
             )
         HistoricalBar.objects.create(
+            user=self.user,
             instrument='NQ',
             symbol='NQH5',
             contract_id='CON.F.US.ENQ.H25',
@@ -134,6 +141,7 @@ class ReplayApiTests(TestCase):
             fetched_at=self.now,
         )
         BarCoverage.objects.create(
+            user=self.user,
             instrument='NQ',
             contract_id='CON.F.US.ENQ.H25',
             timeframe='1m',
@@ -161,7 +169,7 @@ class ReplayApiTests(TestCase):
 
     def test_latest_replay_coverage_empty(self):
         self.assertEqual(
-            latest_replay_coverage('ES'),
+            latest_replay_coverage('ES', user=self.user),
             {'last_bar_at': None, 'latest_session_date': None},
         )
 
@@ -215,6 +223,7 @@ class ReplayApiTests(TestCase):
     def test_available_sessions_service_distinct(self):
         other = datetime(2025, 3, 12, 14, 0, tzinfo=timezone.utc)
         HistoricalBar.objects.create(
+            user=self.user,
             instrument='NQ',
             symbol='NQH5',
             contract_id='CON.F.US.ENQ.H25',
@@ -231,18 +240,18 @@ class ReplayApiTests(TestCase):
             is_rth=True,
             fetched_at=self.now,
         )
-        payload = list_available_sessions('NQ', timeframe='1m', contract='front')
+        payload = list_available_sessions('NQ', user=self.user, timeframe='1m', contract='front')
         self.assertEqual(payload['sessions'], ['2025-03-10', '2025-03-12'])
         self.assertEqual(payload['earliest'], '2025-03-10')
         self.assertEqual(payload['latest'], '2025-03-12')
 
     def test_available_sessions_empty_instrument(self):
         self.assertEqual(
-            list_available_sessions('ES'),
+            list_available_sessions('ES', user=self.user),
             {'sessions': [], 'earliest': None, 'latest': None},
         )
         self.assertEqual(
-            list_available_sessions(''),
+            list_available_sessions('', user=self.user),
             {'sessions': [], 'earliest': None, 'latest': None},
         )
 
@@ -266,13 +275,14 @@ class ReplayApiTests(TestCase):
     def test_session_timeframes_service_multiple(self):
         # setUp crée 1m et 5m pour 2025-03-10
         self.assertEqual(
-            list_session_timeframes('NQ', '2025-03-10'),
+            list_session_timeframes('NQ', '2025-03-10', user=self.user),
             ['1m', '5m'],
         )
 
     def test_session_timeframes_service_only_1m(self):
         only_1m = datetime(2025, 3, 11, 14, 0, tzinfo=timezone.utc)
         HistoricalBar.objects.create(
+            user=self.user,
             instrument='NQ',
             symbol='NQH5',
             contract_id='CON.F.US.ENQ.H25',
@@ -290,13 +300,13 @@ class ReplayApiTests(TestCase):
             fetched_at=self.now,
         )
         self.assertEqual(
-            list_session_timeframes('NQ', '2025-03-11'),
+            list_session_timeframes('NQ', '2025-03-11', user=self.user),
             ['1m'],
         )
 
     def test_session_timeframes_service_empty(self):
-        self.assertEqual(list_session_timeframes('', '2025-03-10'), [])
-        self.assertEqual(list_session_timeframes('NQ', '2025-03-01'), [])
+        self.assertEqual(list_session_timeframes('', '2025-03-10', user=self.user), [])
+        self.assertEqual(list_session_timeframes('NQ', '2025-03-01', user=self.user), [])
 
     def test_session_timeframes_endpoint(self):
         res = self.client.get(

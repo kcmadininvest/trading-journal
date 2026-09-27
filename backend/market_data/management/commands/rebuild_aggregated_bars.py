@@ -3,6 +3,7 @@ from __future__ import annotations
 import time
 from datetime import date
 
+from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand, CommandError
 from django.utils.dateparse import parse_date
 
@@ -17,11 +18,18 @@ from market_data.services.aggregation import aggregate_m1_session
 from market_data.services.sessions import get_session_profile, session_bounds_utc
 from market_data.services.timeframes import parse_timeframe
 
+User = get_user_model()
+
 
 class Command(BaseCommand):
-    help = 'Prévisualise ou reconstruit les timeframes dérivés depuis les bougies 1m.'
+    help = 'Prévisualise ou reconstruit les timeframes dérivés depuis les bougies 1m (par user).'
 
     def add_arguments(self, parser):
+        parser.add_argument(
+            '--user',
+            required=True,
+            help='Username (ou id numérique) du propriétaire des barres.',
+        )
         parser.add_argument('--instrument', action='append', dest='instruments')
         parser.add_argument('--contract', action='append', dest='contracts')
         parser.add_argument('--start')
@@ -31,6 +39,7 @@ class Command(BaseCommand):
         parser.add_argument('--apply', action='store_true')
 
     def handle(self, *args, **options):
+        user = self._resolve_user(options['user'])
         instruments = {value.upper().strip() for value in options['instruments'] or []}
         contracts = {value.strip() for value in options['contracts'] or []}
         start_date = self._parse_optional_date(options['start'], '--start')
@@ -59,11 +68,12 @@ class Command(BaseCommand):
                 'retirez --start/--end et utilisez-les uniquement pour le dry-run.',
             )
 
-        groups = self._session_groups(instruments, contracts, start_date, end_date, timeframes)
+        groups = self._session_groups(user, instruments, contracts, start_date, end_date, timeframes)
         if not groups:
             self.stdout.write('Aucune séance M1 ou timeframe dérivé à traiter.')
             return
 
+        self.stdout.write(f'User: {user.username} (id={user.pk})')
         self.stdout.write('Mode: application demandée' if options['apply'] else 'Mode: DRY-RUN — aucune modification')
         self.stdout.write(f'Séances: {len(groups)} | Timeframes: {", ".join(timeframes)}')
         totals = {code: {'existing': 0, 'proposed': 0} for code in timeframes}
@@ -71,6 +81,7 @@ class Command(BaseCommand):
         for instrument, contract_id, session_date in groups:
             rows = list(
                 HistoricalBar.objects.filter(
+                    user=user,
                     instrument=instrument,
                     contract_id=contract_id,
                     timeframe='1m',
@@ -86,6 +97,7 @@ class Command(BaseCommand):
                     timeframe=timeframe,
                 )
                 existing = HistoricalBar.objects.filter(
+                    user=user,
                     instrument=instrument,
                     contract_id=contract_id,
                     timeframe=timeframe,
@@ -116,6 +128,7 @@ class Command(BaseCommand):
             for instrument, contract_id, session_date in groups:
                 rows = list(
                     HistoricalBar.objects.filter(
+                        user=user,
                         instrument=instrument,
                         contract_id=contract_id,
                         timeframe='1m',
@@ -124,6 +137,7 @@ class Command(BaseCommand):
                 )
                 start_utc, end_utc = session_bounds_utc(session_date, instrument)
                 aggregate_contract_range(
+                    user=user,
                     instrument=instrument,
                     contract_id=contract_id,
                     start=start_utc,
@@ -135,11 +149,25 @@ class Command(BaseCommand):
                     time.sleep(options['pause_ms'] / 1000)
             for instrument, contract_id in sorted({(row[0], row[1]) for row in groups}):
                 BarCoverage.objects.filter(
+                    user=user,
                     instrument=instrument,
                     contract_id=contract_id,
                     timeframe__in=timeframes,
                 ).exclude(source=AGGREGATED_BAR_SOURCE).delete()
             self.stdout.write(self.style.SUCCESS('Reconstruction terminée.'))
+
+    @staticmethod
+    def _resolve_user(raw: str):
+        raw = (raw or '').strip()
+        if not raw:
+            raise CommandError('--user est obligatoire.')
+        if raw.isdigit():
+            user = User.objects.filter(pk=int(raw)).first()
+        else:
+            user = User.objects.filter(username=raw).first()
+        if user is None:
+            raise CommandError(f'Utilisateur introuvable: {raw}')
+        return user
 
     @staticmethod
     def _parse_optional_date(raw: str | None, option: str) -> date | None:
@@ -151,8 +179,9 @@ class Command(BaseCommand):
         return parsed
 
     @staticmethod
-    def _session_groups(instruments, contracts, start_date, end_date, timeframes):
+    def _session_groups(user, instruments, contracts, start_date, end_date, timeframes):
         query = HistoricalBar.objects.filter(
+            user=user,
             timeframe__in=('1m', *timeframes),
             session_date__isnull=False,
         )

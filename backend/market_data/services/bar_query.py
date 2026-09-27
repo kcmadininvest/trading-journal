@@ -82,16 +82,19 @@ def get_bars(
     contract: str | None = None,
     roll_method: str = 'calendar',
     *,
+    user,
     include_paris: bool = False,
 ) -> pd.DataFrame:
     """
-    Retourne un DataFrame de bougies brutes, chronologiques, non ajustées.
+    Retourne un DataFrame de bougies brutes, chronologiques, non ajustées (scopées user).
 
     - contract=<id réel> : une série d'un seul contrat
     - contract="front" : vue assemblée via roll_method (défaut calendar)
     - contract=None : tous les contrats de l'instrument sur la période
       (plusieurs contract_id possibles — pas une série continue)
     """
+    if user is None:
+        raise ValueError('user requis')
     instrument = (instrument or '').upper().strip()
     if not instrument:
         raise ValueError('instrument requis')
@@ -104,6 +107,7 @@ def get_bars(
 
     if contract_key and contract_key.lower() != 'front':
         qs = HistoricalBar.objects.filter(
+            user=user,
             instrument=instrument,
             timeframe=timeframe,
             contract_id=contract_key,
@@ -121,6 +125,7 @@ def get_bars(
         # Enrichir avec les contrats déjà en base
         db_cids = (
             HistoricalBar.objects.filter(
+                user=user,
                 instrument=instrument,
                 timeframe=timeframe,
                 timestamp_utc__gte=start_dt,
@@ -152,6 +157,7 @@ def get_bars(
         frames: list[pd.DataFrame] = []
         for seg in segments:
             qs = HistoricalBar.objects.filter(
+                user=user,
                 instrument=instrument,
                 timeframe=timeframe,
                 contract_id=seg.contract_id,
@@ -165,6 +171,7 @@ def get_bars(
             # Aucune échéance résolue : retomber sur tous les contrats de la fenêtre
             # (évite calendrier non vide + /bars front vide).
             qs = HistoricalBar.objects.filter(
+                user=user,
                 instrument=instrument,
                 timeframe=timeframe,
                 timestamp_utc__gte=start_dt,
@@ -187,6 +194,7 @@ def get_bars(
                 df['is_roll'] = roll_flags
     else:
         qs = HistoricalBar.objects.filter(
+            user=user,
             instrument=instrument,
             timeframe=timeframe,
             timestamp_utc__gte=start_dt,
@@ -201,9 +209,11 @@ def get_bars(
     return df
 
 
-def get_available_data(instrument: str | None = None) -> list[dict[str, Any]]:
-    """Agrège BarCoverage pour connaître les périodes téléchargées."""
-    qs = BarCoverage.objects.all()
+def get_available_data(user, instrument: str | None = None) -> list[dict[str, Any]]:
+    """Agrège BarCoverage pour connaître les périodes téléchargées (scopées user)."""
+    if user is None:
+        raise ValueError('user requis')
+    qs = BarCoverage.objects.filter(user=user)
     if instrument:
         qs = qs.filter(instrument=instrument.upper().strip())
     qs = qs.order_by('instrument', 'contract_id', 'start_utc')

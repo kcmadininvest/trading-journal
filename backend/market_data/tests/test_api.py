@@ -258,6 +258,7 @@ class MarketDataApiTests(TestCase):
         bars, _ = normalize_bars(rows, instrument='MES')
         bulk_insert_bars(
             bars,
+            user=self.user,
             instrument='MES',
             symbol='MESH5',
             contract_id='CON.F.US.MES.H25',
@@ -290,6 +291,7 @@ class MarketDataApiTests(TestCase):
         )
         bulk_insert_bars(
             bars,
+            user=self.user,
             instrument='MES',
             symbol='MESU6',
             contract_id='CON.F.US.MES.U26',

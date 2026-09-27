@@ -2,12 +2,15 @@ from datetime import datetime, timedelta, timezone
 from io import StringIO
 from unittest.mock import patch
 
+from django.contrib.auth import get_user_model
 from django.core.management import call_command
 from django.core.management.base import CommandError
 from django.test import TestCase
 from django.utils import timezone as django_timezone
 
 from market_data.models import BarCoverage, HistoricalBar
+
+User = get_user_model()
 from market_data.services.ingester import bulk_insert_bars
 from market_data.services.normalizer import normalize_bars
 from market_data.tests.fixtures_bars import make_m1_bars
@@ -19,15 +22,18 @@ class RebuildAggregatedBarsCommandTests(TestCase):
     start = datetime(2026, 9, 7, 22, 0, tzinfo=timezone.utc)
 
     def setUp(self):
+        self.user = User.objects.create_user(username='rebuilduser', password='x')
         m1, _ = normalize_bars(make_m1_bars(self.start, 5), instrument=self.instrument)
         bulk_insert_bars(
             m1,
+            user=self.user,
             instrument=self.instrument,
             symbol='MESU6',
             contract_id=self.contract_id,
             source='topstepx_sim',
         )
         HistoricalBar.objects.create(
+            user=self.user,
             instrument=self.instrument,
             symbol='MESU6',
             contract_id=self.contract_id,
@@ -45,6 +51,7 @@ class RebuildAggregatedBarsCommandTests(TestCase):
             source='topstepx_sim',
         )
         BarCoverage.objects.create(
+            user=self.user,
             instrument=self.instrument,
             contract_id=self.contract_id,
             timeframe='5m',
@@ -61,6 +68,7 @@ class RebuildAggregatedBarsCommandTests(TestCase):
         output = StringIO()
         call_command(
             'rebuild_aggregated_bars',
+            user=self.user.username,
             instruments=[self.instrument],
             timeframes='5m',
             stdout=output,
@@ -87,6 +95,7 @@ class RebuildAggregatedBarsCommandTests(TestCase):
         output = StringIO()
         call_command(
             'rebuild_aggregated_bars',
+            user=self.user.username,
             instruments=[self.instrument],
             timeframes='5m',
             apply=True,
@@ -127,6 +136,7 @@ class RebuildAggregatedBarsCommandTests(TestCase):
         with self.assertRaises(CommandError):
             call_command(
                 'rebuild_aggregated_bars',
+                user=self.user.username,
                 instruments=[self.instrument],
                 timeframes='5m',
                 apply=True,

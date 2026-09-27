@@ -69,11 +69,18 @@ class FuturesContract(models.Model):
 
 class HistoricalBar(models.Model):
     """
-    Bougie OHLCV brute d'un contrat réel.
+    Bougie OHLCV brute d'un contrat réel, propre à un utilisateur.
 
     Aucun indicateur calculé, aucun ajustement de prix, aucune logique de stratégie.
+    Isolée par user : les données viennent de l'abonnement API du payeur.
     """
 
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='historical_bars',
+        verbose_name=_('Utilisateur'),
+    )
     instrument = models.CharField(max_length=16, db_index=True)
     symbol = models.CharField(max_length=32, blank=True, default='')
     contract_id = models.CharField(max_length=64, db_index=True)
@@ -105,26 +112,26 @@ class HistoricalBar(models.Model):
         verbose_name_plural = _('Bougies historiques')
         constraints = [
             models.UniqueConstraint(
-                fields=['contract_id', 'timeframe', 'timestamp_utc'],
-                name='uniq_historical_bar_contract_tf_ts',
+                fields=['user', 'contract_id', 'timeframe', 'timestamp_utc'],
+                name='uniq_historical_bar_user_contract_tf_ts',
             ),
         ]
         indexes = [
             models.Index(
-                fields=['instrument', 'timeframe', 'timestamp_utc'],
-                name='md_bar_instr_tf_ts',
+                fields=['user', 'instrument', 'timeframe', 'timestamp_utc'],
+                name='md_bar_user_instr_tf_ts',
             ),
             models.Index(
-                fields=['contract_id', 'timeframe', 'timestamp_utc'],
-                name='md_bar_cid_tf_ts',
+                fields=['user', 'contract_id', 'timeframe', 'timestamp_utc'],
+                name='md_bar_user_cid_tf_ts',
             ),
             models.Index(
-                fields=['instrument', 'timeframe', 'ny_date', 'ny_time'],
-                name='md_bar_instr_tf_ny',
+                fields=['user', 'instrument', 'timeframe', 'ny_date', 'ny_time'],
+                name='md_bar_user_instr_tf_ny',
             ),
             models.Index(
-                fields=['instrument', 'timeframe', 'session_date'],
-                name='md_bar_instr_tf_sess',
+                fields=['user', 'instrument', 'timeframe', 'session_date'],
+                name='md_bar_user_instr_tf_sess',
             ),
         ]
 
@@ -133,13 +140,19 @@ class HistoricalBar(models.Model):
 
 
 class BarCoverage(models.Model):
-    """Plage temporelle téléchargée pour un contrat — couverture honnête."""
+    """Plage temporelle téléchargée pour un contrat — couverture honnête, par user."""
 
     class Status(models.TextChoices):
         COMPLETE = 'complete', _('Complete')
         PARTIAL = 'partial', _('Partial')
         EMPTY = 'empty', _('Empty')
 
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='bar_coverages',
+        verbose_name=_('Utilisateur'),
+    )
     instrument = models.CharField(max_length=16, db_index=True)
     contract_id = models.CharField(max_length=64, db_index=True)
     timeframe = models.CharField(max_length=8, default='1m')
@@ -164,14 +177,20 @@ class BarCoverage(models.Model):
         db_table = 'market_data_bar_coverage'
         verbose_name = _('Couverture de bougies')
         verbose_name_plural = _('Couvertures de bougies')
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'contract_id', 'timeframe', 'start_utc', 'end_utc', 'source'],
+                name='uniq_bar_coverage_user_range_source',
+            ),
+        ]
         indexes = [
             models.Index(
-                fields=['instrument', 'contract_id', 'timeframe', 'start_utc', 'end_utc'],
-                name='md_cov_range',
+                fields=['user', 'instrument', 'contract_id', 'timeframe', 'start_utc', 'end_utc'],
+                name='md_cov_user_range',
             ),
             models.Index(
-                fields=['contract_id', 'timeframe', 'status'],
-                name='md_cov_status',
+                fields=['user', 'contract_id', 'timeframe', 'status'],
+                name='md_cov_user_status',
             ),
         ]
 

@@ -16,8 +16,8 @@ from market_data.services.roll import front_contract_id_on_date
 from market_data.services.timeframes import UnknownTimeframe, parse_timeframe
 
 
-def _contracts_for_front_filter(instrument: str) -> list[ResolvedContract]:
-    """Catalogue + contrats déjà présents en base (avec échéance si dérivable)."""
+def _contracts_for_front_filter(user, instrument: str) -> list[ResolvedContract]:
+    """Catalogue + contrats déjà présents en base pour ce user (avec échéance si dérivable)."""
     today = datetime.now(timezone.utc).date()
     contracts = list(
         list_contracts_for_instrument(
@@ -28,7 +28,7 @@ def _contracts_for_front_filter(instrument: str) -> list[ResolvedContract]:
     )
     known_ids = {c.contract_id for c in contracts}
     db_cids = (
-        HistoricalBar.objects.filter(instrument=instrument)
+        HistoricalBar.objects.filter(user=user, instrument=instrument)
         .values_list('contract_id', flat=True)
         .distinct()
     )
@@ -54,22 +54,26 @@ def _contracts_for_front_filter(instrument: str) -> list[ResolvedContract]:
 def list_available_sessions(
     instrument: str,
     *,
+    user,
     timeframe: str | None = '1m',
     contract: str | None = 'front',
 ) -> dict[str, Any]:
     """
-    Liste distincte des ``session_date`` ayant au moins une bougie.
+    Liste distincte des ``session_date`` ayant au moins une bougie (scopée user).
 
     - ``timeframe`` : filtre optionnel (défaut ``1m``). Chaîne vide = tous les TF.
     - ``contract`` : id réel, ou ``front`` = séances du contrat front calendaire
       (aligné sur ``get_bars(..., contract='front')``). Si le roll n'est pas
       résolvable (pas d'échéances), retombe sur tous les contrats.
     """
+    if user is None:
+        raise ValueError('user requis')
     instrument = (instrument or '').upper().strip()
     if not instrument:
         return {'sessions': [], 'earliest': None, 'latest': None}
 
     qs = HistoricalBar.objects.filter(
+        user=user,
         instrument=instrument,
         session_date__isnull=False,
     )
@@ -93,7 +97,7 @@ def list_available_sessions(
         if not pairs:
             dates = []
         else:
-            contracts = _contracts_for_front_filter(instrument)
+            contracts = _contracts_for_front_filter(user, instrument)
             by_date: dict[date, set[str]] = {}
             for session_d, cid in pairs:
                 if session_d is None:
@@ -119,15 +123,18 @@ def list_session_timeframes(
     instrument: str,
     session_date: str | date,
     *,
+    user,
     contract: str | None = 'front',
 ) -> list[str]:
     """
-    Timeframes stockés pour une séance et un instrument donnés.
+    Timeframes stockés pour une séance et un instrument donnés (scopés user).
 
     - ``contract`` : id réel, ou ``front`` = contrat front calendaire du jour
       (aligné sur les bars replay). Roll non résolvable → tous les contrats.
     Retourne les codes de timeframe triés par durée croissante.
     """
+    if user is None:
+        raise ValueError('user requis')
     instrument = (instrument or '').upper().strip()
     if not instrument:
         return []
@@ -139,6 +146,7 @@ def list_session_timeframes(
         session_date = parsed
 
     qs = HistoricalBar.objects.filter(
+        user=user,
         instrument=instrument,
         session_date=session_date,
     )
@@ -147,7 +155,7 @@ def list_session_timeframes(
     if contract_key and contract_key.lower() != 'front':
         qs = qs.filter(contract_id=contract_key)
     else:
-        contracts = _contracts_for_front_filter(instrument)
+        contracts = _contracts_for_front_filter(user, instrument)
         front_id = front_contract_id_on_date(instrument, session_date, contracts)
         if front_id is not None:
             qs = qs.filter(contract_id=front_id)

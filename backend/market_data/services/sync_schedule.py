@@ -92,11 +92,15 @@ def user_has_active_download(user) -> bool:
 
 def last_stored_timestamp(
     *,
+    user,
     instrument: str,
     timeframe: str,
     contract_id: str = '',
 ) -> datetime | None:
+    if user is None:
+        raise ValueError('user requis')
     qs = HistoricalBar.objects.filter(
+        user=user,
         instrument=instrument.upper().strip(),
         timeframe=timeframe,
     )
@@ -108,6 +112,7 @@ def last_stored_timestamp(
 
 def compute_sync_window(
     *,
+    user,
     instrument: str,
     timeframe: str,
     contract_id: str = '',
@@ -116,12 +121,16 @@ def compute_sync_window(
 ) -> tuple[datetime, datetime] | None:
     """
     Retourne (start, end) UTC aware, ou None si rien à télécharger (déjà à jour).
+    Fenêtre calculée uniquement sur les barres de ``user``.
     """
+    if user is None:
+        raise ValueError('user requis')
     end = now_utc or timezone.now()
     if timezone.is_naive(end):
         end = timezone.make_aware(end, timezone.utc)
 
     last_ts = last_stored_timestamp(
+        user=user,
         instrument=instrument,
         timeframe=timeframe,
         contract_id=contract_id,
@@ -141,6 +150,7 @@ def compute_sync_window(
 
 def compute_profiled_sync_window(
     *,
+    user,
     instrument: str,
     contract_id: str = '',
     requested_timeframes: list[str] | tuple[str, ...] = (),
@@ -148,7 +158,7 @@ def compute_profiled_sync_window(
     bootstrap_days: int = BOOTSTRAP_LOOKBACK_DAYS,
 ) -> tuple[datetime, datetime] | None:
     """
-    Fenêtre de sync pour instruments agrégés localement depuis le 1m.
+    Fenêtre de sync pour instruments agrégés localement depuis le 1m (scopée user).
 
     Union de :
     - fenêtre gap-fill du 1m (source) ;
@@ -156,6 +166,8 @@ def compute_profiled_sync_window(
     - si un TF dérivé n'a encore aucune barre alors que du 1m existe :
       backfill depuis la première barre 1m jusqu'à maintenant.
     """
+    if user is None:
+        raise ValueError('user requis')
     end = now_utc or timezone.now()
     if timezone.is_naive(end):
         end = timezone.make_aware(end, timezone.utc)
@@ -165,6 +177,7 @@ def compute_profiled_sync_window(
     ends: list[datetime] = []
     for tf in tfs:
         window = compute_sync_window(
+            user=user,
             instrument=instrument,
             timeframe=tf,
             contract_id=contract_id,
@@ -176,6 +189,7 @@ def compute_profiled_sync_window(
             ends.append(window[1])
 
     m1_qs = HistoricalBar.objects.filter(
+        user=user,
         instrument=instrument.upper().strip(),
         timeframe='1m',
     )
@@ -188,6 +202,7 @@ def compute_profiled_sync_window(
         if tf == '1m':
             continue
         if last_stored_timestamp(
+            user=user,
             instrument=instrument,
             timeframe=tf,
             contract_id=contract_id,
@@ -218,6 +233,7 @@ def enqueue_target_job(
         return None
 
     window = compute_sync_window(
+        user=user,
         instrument=target.instrument,
         timeframe=tf,
         contract_id=target.contract_id,
@@ -479,6 +495,7 @@ def run_sync_for_settings(
             requested = {timeframe for _target, timeframe in group}
             requested_timeframes = [code for code in ALLOWED_TIMEFRAMES if code in requested]
             window = compute_profiled_sync_window(
+                user=user,
                 instrument=instrument,
                 contract_id=contract_id,
                 requested_timeframes=requested_timeframes,

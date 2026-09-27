@@ -67,11 +67,13 @@ class RollMethodTests(TestCase):
 
 class GetBarsTests(TestCase):
     def setUp(self):
+        self.user = User.objects.create_user(username='barquery', password='x')
         self.now = django_tz.now()
         base = datetime(2025, 3, 10, 14, 0, tzinfo=timezone.utc)
         for i in range(5):
             ts = base + timedelta(minutes=i)
             HistoricalBar.objects.create(
+                user=self.user,
                 instrument='NQ',
                 symbol='NQH5',
                 contract_id='CON.F.US.ENQ.H25',
@@ -98,6 +100,7 @@ class GetBarsTests(TestCase):
             start='2025-03-10T14:00:00Z',
             end='2025-03-10T14:05:00Z',
             contract='CON.F.US.ENQ.H25',
+            user=self.user,
         )
         self.assertEqual(len(df), 5)
         self.assertTrue((df['contract_id'] == 'CON.F.US.ENQ.H25').all())
@@ -108,6 +111,7 @@ class GetBarsTests(TestCase):
         for i in range(3):
             ts = base + timedelta(minutes=i)
             HistoricalBar.objects.create(
+                user=self.user,
                 instrument='NQ',
                 symbol='NQM5',
                 contract_id='CON.F.US.ENQ.M25',
@@ -148,6 +152,7 @@ class GetBarsTests(TestCase):
                 end='2025-06-02',
                 contract='front',
                 roll_method='calendar',
+                user=self.user,
             )
         self.assertGreater(len(df), 0)
         # Prices never adjusted — still raw decimals
@@ -155,6 +160,7 @@ class GetBarsTests(TestCase):
 
     def test_get_available_data(self):
         BarCoverage.objects.create(
+            user=self.user,
             instrument='NQ',
             contract_id='CON.F.US.ENQ.H25',
             timeframe='1m',
@@ -167,7 +173,7 @@ class GetBarsTests(TestCase):
             source='topstepx_sim',
             fetched_at=self.now,
         )
-        data = get_available_data('NQ')
+        data = get_available_data(self.user, 'NQ')
         self.assertEqual(len(data), 1)
         self.assertEqual(data[0]['status'], 'partial')
         self.assertEqual(data[0]['bars_stored'], 5)

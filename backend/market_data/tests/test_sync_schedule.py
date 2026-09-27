@@ -34,9 +34,12 @@ User = get_user_model()
 
 
 class SyncScheduleWindowTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='windowuser', password='x')
+
     def test_bootstrap_when_no_bars(self):
         now = datetime(2026, 9, 13, 12, 0, tzinfo=dt_tz.utc)
-        window = compute_sync_window(instrument='MES', timeframe='1m', now_utc=now)
+        window = compute_sync_window(user=self.user, instrument='MES', timeframe='1m', now_utc=now)
         self.assertIsNotNone(window)
         start, end = window
         self.assertEqual(end, now)
@@ -45,6 +48,7 @@ class SyncScheduleWindowTests(TestCase):
     def test_gap_fill_from_last_bar(self):
         last = datetime(2026, 9, 12, 18, 0, tzinfo=dt_tz.utc)
         HistoricalBar.objects.create(
+            user=self.user,
             instrument='MES',
             contract_id='CON.F.US.MES.U26',
             timeframe='1m',
@@ -59,13 +63,14 @@ class SyncScheduleWindowTests(TestCase):
             fetched_at=last,
         )
         now = datetime(2026, 9, 13, 12, 0, tzinfo=dt_tz.utc)
-        window = compute_sync_window(instrument='MES', timeframe='1m', now_utc=now)
+        window = compute_sync_window(user=self.user, instrument='MES', timeframe='1m', now_utc=now)
         self.assertEqual(window[0], last + timedelta(seconds=1))
         self.assertEqual(window[1], now)
 
     def test_none_when_already_up_to_date(self):
         now = datetime(2026, 9, 13, 12, 0, tzinfo=dt_tz.utc)
         HistoricalBar.objects.create(
+            user=self.user,
             instrument='MES',
             contract_id='CON.F.US.MES.U26',
             timeframe='1m',
@@ -79,7 +84,7 @@ class SyncScheduleWindowTests(TestCase):
             ny_time=now.time().replace(tzinfo=None),
             fetched_at=now,
         )
-        self.assertIsNone(compute_sync_window(instrument='MES', timeframe='1m', now_utc=now))
+        self.assertIsNone(compute_sync_window(user=self.user, instrument='MES', timeframe='1m', now_utc=now))
 
 
 class SyncScheduleDueTests(TestCase):
@@ -168,6 +173,7 @@ class SyncEnqueueTests(TestCase):
 
         now = datetime(2026, 9, 13, 12, 0, tzinfo=dt_tz.utc)
         HistoricalBar.objects.create(
+            user=self.user,
             instrument='MES',
             symbol='MESU6',
             contract_id='CON.F.US.MES.U26',
@@ -184,6 +190,7 @@ class SyncEnqueueTests(TestCase):
             fetched_at=timezone.now(),
         )
         HistoricalBar.objects.create(
+            user=self.user,
             instrument='MES',
             symbol='MESU6',
             contract_id='CON.F.US.MES.U26',
@@ -201,6 +208,7 @@ class SyncEnqueueTests(TestCase):
         )
 
         window = compute_profiled_sync_window(
+            user=self.user,
             instrument='MES',
             requested_timeframes=['5m'],
             now_utc=now,
@@ -248,6 +256,7 @@ class SyncEnqueueTests(TestCase):
     def test_run_up_to_date_when_nothing_to_fetch(self, mock_dispatch):
         now = timezone.now()
         HistoricalBar.objects.create(
+            user=self.user,
             instrument='MES',
             contract_id='CON.F.US.MES.U26',
             timeframe='1m',

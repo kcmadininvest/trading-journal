@@ -73,6 +73,7 @@ def _parse_timeframes_param(raw: str) -> list[str]:
 
 def fetch_replay_bars(
     *,
+    user,
     instrument: str,
     timeframes_raw: str,
     start: str,
@@ -80,7 +81,7 @@ def fetch_replay_bars(
     contract: str | None = 'front',
 ) -> dict[str, Any]:
     """
-    Charge les séries natives demandées via get_bars.
+    Charge les séries natives demandées via get_bars (scopées user).
 
     Retourne :
     {
@@ -91,6 +92,8 @@ def fetch_replay_bars(
       "series": { "1m": [{t,o,h,l,c,v}, ...], ... }
     }
     """
+    if user is None:
+        raise ReplayBarsError('Utilisateur requis.')
     instrument = (instrument or '').upper().strip()
     if not instrument:
         raise ReplayBarsError('Paramètre instrument requis.')
@@ -124,6 +127,7 @@ def fetch_replay_bars(
                 start=start_dt,
                 end=end_dt,
                 contract=contract_key,
+                user=user,
             )
         except ValueError as exc:
             raise ReplayBarsError(str(exc)) from exc
