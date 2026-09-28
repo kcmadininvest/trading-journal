@@ -40,7 +40,7 @@
     },
     "multiAccount": {
       "title": "Multi-Account",
-      "description": "Manage multiple trading accounts (TopStep, IBKR, NinjaTrader, etc.) and analyze them separately or aggregated."
+      "description": "Manage multiple trading accounts (brokers, prop firms, platforms, etc.) and analyze them separately or aggregated."
     },
     "insights": {
       "title": "Smart Insights",
@@ -52,7 +52,7 @@
     },
     "sessionReplay": {
       "title": "Session replay",
-      "description": "Replay your TopStep sessions: orders, fills, positions, intraday PnL and journal draft."
+      "description": "Replay your trading sessions: orders, fills, positions, intraday PnL and journal draft."
     },
     "dailyJournal": {
       "title": "Journal",
@@ -68,7 +68,7 @@
     },
     "historicalData": {
       "title": "Historical data",
-      "description": "Download and store raw bars per real contract (TopStepX)."
+      "description": "Download and store raw bars per real contract via your integrations."
     },
     "goals": {
       "title": "My Goals",
@@ -157,7 +157,7 @@
       },
       {
         "question": "Can I manage multiple trading accounts?",
-        "answer": "Absolutely! K&C Trading Journal supports managing multiple trading accounts (TopStep, IBKR, NinjaTrader, etc.). You can analyze each account separately or see an aggregated view of all your accounts."
+        "answer": "Absolutely! K&C Trading Journal supports managing multiple trading accounts (brokers, prop firms, platforms, etc.). You can analyze each account separately or see an aggregated view of all your accounts."
       },
       {
         "question": "Is my data secure?",

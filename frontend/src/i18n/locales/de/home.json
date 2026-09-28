@@ -40,7 +40,7 @@
     },
     "multiAccount": {
       "title": "Multi-Konten",
-      "description": "Verwalten Sie mehrere Handelskonten (TopStep, IBKR, NinjaTrader, etc.) und analysieren Sie sie separat oder aggregiert."
+      "description": "Verwalten Sie mehrere Handelskonten (Broker, Prop Firms, Plattformen usw.) und analysieren Sie sie separat oder aggregiert."
     },
     "insights": {
       "title": "Intelligente Erkenntnisse",
@@ -52,7 +52,7 @@
     },
     "sessionReplay": {
       "title": "Sitzungs-Replay",
-      "description": "Spielen Sie Ihre TopStep-Sitzungen ab: Orders, Fills, Positionen, Intraday-PnL und Journal-Entwurf."
+      "description": "Spielen Sie Ihre Trading-Sitzungen ab: Orders, Fills, Positionen, Intraday-PnL und Journal-Entwurf."
     },
     "dailyJournal": {
       "title": "Tagebuch",
@@ -68,7 +68,7 @@
     },
     "historicalData": {
       "title": "Historische Daten",
-      "description": "Laden Sie Rohkerzen pro realem Kontrakt herunter und speichern Sie sie (TopStepX)."
+      "description": "Laden Sie Rohkerzen pro realem Kontrakt über Ihre Integrationen herunter und speichern Sie sie."
     },
     "goals": {
       "title": "Meine Ziele",
@@ -119,7 +119,7 @@
       },
       {
         "question": "Kann ich mehrere Handelskonten verwalten?",
-        "answer": "Absolut! K&C Trading Journal unterstützt die Verwaltung mehrerer Handelskonten (TopStep, IBKR, NinjaTrader, etc.). Sie können jedes Konto separat analysieren oder eine aggregierte Ansicht aller Ihrer Konten sehen."
+        "answer": "Absolut! K&C Trading Journal unterstützt die Verwaltung mehrerer Handelskonten (Broker, Prop Firms, Plattformen usw.). Sie können jedes Konto separat analysieren oder eine aggregierte Ansicht aller Ihrer Konten sehen."
       },
       {
         "question": "Sind meine Daten sicher?",

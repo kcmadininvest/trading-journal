@@ -40,7 +40,7 @@
     },
     "multiAccount": {
       "title": "Multi-Cuentas",
-      "description": "Gestiona múltiples cuentas de trading (TopStep, IBKR, NinjaTrader, etc.) y analízalas por separado o de forma agregada."
+      "description": "Gestiona múltiples cuentas de trading (brokers, prop firms, plataformas, etc.) y analízalas por separado o de forma agregada."
     },
     "insights": {
       "title": "Insights Inteligentes",
@@ -52,7 +52,7 @@
     },
     "sessionReplay": {
       "title": "Replay de sesión",
-      "description": "Reprodice tus sesiones TopStep: órdenes, fills, posiciones, PnL intradía y borrador del diario."
+      "description": "Reprodice tus sesiones de trading: órdenes, fills, posiciones, PnL intradía y borrador del diario."
     },
     "dailyJournal": {
       "title": "Diario",
@@ -68,7 +68,7 @@
     },
     "historicalData": {
       "title": "Datos históricos",
-      "description": "Descarga y almacena velas en bruto por contrato real (TopStepX)."
+      "description": "Descarga y almacena velas en bruto por contrato real a través de tus integraciones."
     },
     "goals": {
       "title": "Mis Objetivos",
@@ -119,7 +119,7 @@
       },
       {
         "question": "¿Puedo gestionar múltiples cuentas de trading?",
-        "answer": "¡Absolutamente! K&C Trading Journal admite la gestión de múltiples cuentas de trading (TopStep, IBKR, NinjaTrader, etc.). Puedes analizar cada cuenta por separado o ver una vista agregada de todas tus cuentas."
+        "answer": "¡Absolutamente! K&C Trading Journal admite la gestión de múltiples cuentas de trading (brokers, prop firms, plataformas, etc.). Puedes analizar cada cuenta por separado o ver una vista agregada de todas tus cuentas."
       },
       {
         "question": "¿Están seguros mis datos?",
