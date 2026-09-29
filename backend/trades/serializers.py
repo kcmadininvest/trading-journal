@@ -860,6 +860,11 @@ class PositionStrategyCreateSerializer(serializers.ModelSerializer):
     """
     Serializer pour la création de nouvelles stratégies.
     """
+    # CharField (pas URLField) : les réponses API exposent des URLs signées
+    # plus longues que 200 car. ; validate_* les normalise avant stockage.
+    example_screenshot = serializers.CharField(required=False, allow_blank=True)
+    example_screenshot_thumbnail = serializers.CharField(required=False, allow_blank=True)
+
     class Meta:
         model = PositionStrategy
         fields = [

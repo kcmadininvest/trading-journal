@@ -140,7 +140,7 @@ class PositionStrategiesService {
 
     if (!res.ok) {
       const error = await res.json().catch(() => ({ detail: res.statusText }));
-      throw new Error(error.detail || `Failed to create position strategy: ${res.statusText}`);
+      throw new Error(error.detail || JSON.stringify(error) || `Failed to create position strategy: ${res.statusText}`);
     }
 
     return res.json();

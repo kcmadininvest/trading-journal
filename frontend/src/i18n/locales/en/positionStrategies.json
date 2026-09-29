@@ -17,6 +17,8 @@
   "archive": "Archive",
   "unarchive": "Unarchive",
   "delete": "Delete",
+  "duplicate": "Duplicate",
+  "copySuffix": "Copy",
   "editStrategy": "Edit strategy",
   "createStrategy": "New strategy",
   "status": "Status",

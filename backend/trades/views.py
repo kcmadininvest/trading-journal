@@ -4180,6 +4180,9 @@ class PositionStrategyViewSet(viewsets.ModelViewSet):
         """
         Supprime un screenshot d'exemple et sa miniature du serveur.
         Seul le propriétaire peut supprimer ses fichiers.
+        Si une PositionStrategy de l'utilisateur référence encore le fichier
+        (original ou miniature), le fichier est conservé (kept=True) pour
+        ne pas casser une stratégie originale, une version ou une copie.
         """
         from .image_processor import image_processor
         import logging
@@ -4204,6 +4207,32 @@ class PositionStrategyViewSet(viewsets.ModelViewSet):
             return Response({
                 'error': 'Vous n\'êtes pas autorisé à supprimer ce fichier'
             }, status=status.HTTP_403_FORBIDDEN)
+
+        if '_thumb.webp' in canonical_url:
+            original_url = canonical_url.replace('_thumb.webp', '.webp')
+            thumbnail_url = canonical_url
+        elif canonical_url.endswith('.webp'):
+            original_url = canonical_url
+            thumbnail_url = canonical_url[:-5] + '_thumb.webp'
+        else:
+            original_url = canonical_url
+            thumbnail_url = canonical_url
+
+        still_referenced = PositionStrategy.objects.filter(  # type: ignore
+            user=request.user
+        ).filter(
+            models.Q(example_screenshot__in=[original_url, thumbnail_url])
+            | models.Q(example_screenshot_thumbnail__in=[original_url, thumbnail_url])
+        ).exists()
+
+        if still_referenced:
+            logger.info(
+                f"Screenshot de stratégie conservé (référencé) pour l'utilisateur {user_id}: {canonical_url}"
+            )
+            return Response({
+                'message': 'Screenshot conservé car encore utilisé par une stratégie',
+                'kept': True,
+            }, status=status.HTTP_200_OK)
         
         try:
             # Supprimer le fichier et sa miniature

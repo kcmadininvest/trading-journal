@@ -453,13 +453,20 @@ const PositionStrategiesPage: React.FC = () => {
 
   // Gérer le changement de filtre avec transition
   useEffect(() => {
-    if (pendingFilterStatus !== null) {
-      setIsTransitioning(true);
-      setIsLoading(true);
-      // Changer le filterStatus après avoir activé la transition
-      setFilterStatus(pendingFilterStatus);
+    if (pendingFilterStatus === null) return;
+
+    // Recliquer sur l'onglet déjà actif ne change pas filterStatus :
+    // sans ce garde-fou, isLoading/isTransitioning resteraient bloqués.
+    if (pendingFilterStatus === filterStatus) {
       setPendingFilterStatus(null);
+      return;
     }
+
+    setIsTransitioning(true);
+    setIsLoading(true);
+    setFilterStatus(pendingFilterStatus);
+    setPendingFilterStatus(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingFilterStatus]);
 
   // Charger les données quand filterStatus ou searchQuery change
@@ -720,12 +727,17 @@ const PositionStrategiesPage: React.FC = () => {
     return null;
   };
 
-  // Ouvrir le modal d'édition
-  const handleEdit = (strategy: PositionStrategy) => {
-    setSelectedStrategy(strategy);
-    setStatusDropdownOpen(false);
-    
-    // Convertir les règles en chaînes si elles sont des objets
+  const TITLE_MAX_LENGTH = 200;
+
+  const buildFormDataFromStrategy = (
+    strategy: PositionStrategy,
+    overrides?: Partial<{
+      title: string;
+      description: string;
+      status: 'active' | 'archived' | 'draft';
+      version_notes: string;
+    }>
+  ) => {
     const normalizedSections = strategy.strategy_content?.sections?.map(section => ({
       title: section.title || '',
       rules: section.rules?.map(rule => {
@@ -737,20 +749,45 @@ const PositionStrategiesPage: React.FC = () => {
         return String(rule || '');
       }) || ['']
     })) || [{ title: '', rules: [''] }];
-    
-    const newFormData = {
-      title: strategy.title,
-      description: strategy.description || '',
-      status: strategy.status,
+
+    return {
+      title: overrides?.title ?? strategy.title,
+      description: overrides?.description ?? (strategy.description || ''),
+      status: overrides?.status ?? strategy.status,
       strategy_content: {
         sections: normalizedSections
       },
-      version_notes: strategy.version_notes || '',
+      version_notes: overrides?.version_notes ?? (strategy.version_notes || ''),
       example_screenshot: strategy.example_screenshot || '',
       example_screenshot_thumbnail: strategy.example_screenshot_thumbnail || '',
     };
-    
-    setFormData(newFormData);
+  };
+
+  // Ouvrir le modal d'édition
+  const handleEdit = (strategy: PositionStrategy) => {
+    setSelectedStrategy(strategy);
+    setStatusDropdownOpen(false);
+    setFormData(buildFormDataFromStrategy(strategy));
+    setShowModal(true);
+  };
+
+  // Ouvrir le modal de création pré-rempli (rien n'est créé tant que l'utilisateur n'enregistre pas)
+  const handleDuplicate = (strategy: PositionStrategy) => {
+    const copySuffix = t('positionStrategies:copySuffix', { defaultValue: 'Copie' });
+    const rawTitle = `${strategy.title} (${copySuffix})`;
+    const title = rawTitle.length > TITLE_MAX_LENGTH
+      ? rawTitle.slice(0, TITLE_MAX_LENGTH)
+      : rawTitle;
+
+    setSelectedStrategy(null);
+    setStatusDropdownOpen(false);
+    setOpenMenuId(null);
+    setMenuPosition(null);
+    setFormData(buildFormDataFromStrategy(strategy, {
+      title,
+      status: 'draft',
+      version_notes: '',
+    }));
     setShowModal(true);
   };
 
@@ -758,6 +795,7 @@ const PositionStrategiesPage: React.FC = () => {
   const handleSave = async () => {
     try {
       setIsLoading(true);
+      setError(null);
       
       if (selectedStrategy) {
         // Mise à jour
@@ -766,13 +804,20 @@ const PositionStrategiesPage: React.FC = () => {
           create_new_version: selectedStrategy.status !== 'draft',
         };
         await positionStrategiesService.update(selectedStrategy.id, updateData);
+        setShowModal(false);
+        setStatusDropdownOpen(false);
+        await Promise.all([loadStrategies(), loadCounts()]);
       } else {
-        // Création
+        // Création (y compris duplication via formulaire pré-rempli)
         await positionStrategiesService.create(formData);
+        setShowModal(false);
+        setStatusDropdownOpen(false);
+        if (formData.status === 'draft' && filterStatus !== 'draft') {
+          setPendingFilterStatus('draft');
+        } else {
+          await Promise.all([loadStrategies(), loadCounts()]);
+        }
       }
-      setShowModal(false);
-      setStatusDropdownOpen(false);
-      await Promise.all([loadStrategies(), loadCounts()]);
     } catch (err: any) {
       setError(err.message || 'Erreur lors de la sauvegarde');
     } finally {
@@ -1149,7 +1194,9 @@ const PositionStrategiesPage: React.FC = () => {
             <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
               <div className="flex flex-wrap gap-2 flex-1 min-w-0">
                                 <button
-                  onClick={() => setPendingFilterStatus('active')}
+                  onClick={() => {
+                    if (filterStatus !== 'active') setPendingFilterStatus('active');
+                  }}
                   className={`flex-1 min-w-[calc(50%-0.25rem)] sm:min-w-0 px-2 sm:px-3 md:px-4 py-2 text-xs sm:text-sm md:text-base rounded-lg font-medium transition-colors flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap ${
                     filterStatus === 'active'
                       ? 'bg-blue-600 text-white'
@@ -1166,7 +1213,9 @@ const PositionStrategiesPage: React.FC = () => {
                   </span>
                 </button>
                 <button
-                  onClick={() => setPendingFilterStatus('draft')}
+                  onClick={() => {
+                    if (filterStatus !== 'draft') setPendingFilterStatus('draft');
+                  }}
                   className={`flex-1 min-w-[calc(50%-0.25rem)] sm:min-w-0 px-2 sm:px-3 md:px-4 py-2 text-xs sm:text-sm md:text-base rounded-lg font-medium transition-colors flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap ${
                     filterStatus === 'draft'
                       ? 'bg-yellow-600 text-white'
@@ -1183,7 +1232,9 @@ const PositionStrategiesPage: React.FC = () => {
                   </span>
                 </button>
                 <button
-                  onClick={() => setPendingFilterStatus('archived')}
+                  onClick={() => {
+                    if (filterStatus !== 'archived') setPendingFilterStatus('archived');
+                  }}
                   className={`flex-1 min-w-[calc(50%-0.25rem)] sm:min-w-0 px-2 sm:px-3 md:px-4 py-2 text-xs sm:text-sm md:text-base rounded-lg font-medium transition-colors flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap ${
                     filterStatus === 'archived'
                       ? 'bg-gray-600 text-white'
@@ -1407,6 +1458,15 @@ const PositionStrategiesPage: React.FC = () => {
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
                                       </svg>
                                       {t('positionStrategies:unarchive', { defaultValue: 'Désarchiver' })}
+                                    </button>
+                                    <button
+                                      onClick={() => handleDuplicate(strategy)}
+                                      className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 flex items-center gap-2 transition-colors"
+                                    >
+                                      <svg className="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                      </svg>
+                                      {t('positionStrategies:duplicate', { defaultValue: 'Dupliquer' })}
                                     </button>
                                     <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
                                     <button
@@ -1688,6 +1748,15 @@ const PositionStrategiesPage: React.FC = () => {
                             </button>
                           </>
                         )}
+                        <button
+                          onClick={() => handleDuplicate(strategy)}
+                          className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 flex items-center gap-2 transition-colors"
+                        >
+                          <svg className="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                          </svg>
+                          {t('positionStrategies:duplicate', { defaultValue: 'Dupliquer' })}
+                        </button>
                         <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
                         <button
                           onClick={() => {
@@ -1758,6 +1827,11 @@ const PositionStrategiesPage: React.FC = () => {
 
               {/* Content */}
               <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6">
+                {error && (
+                  <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 dark:border-red-800 dark:bg-red-900/20">
+                    <p className="text-sm text-red-800 dark:text-red-300 break-words">{error}</p>
+                  </div>
+                )}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     {t('positionStrategies:title', { defaultValue: 'Titre' })} *
