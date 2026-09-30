@@ -229,11 +229,15 @@ class ScreenshotsService {
    * @param screenshotUrl - L'URL du screenshot à supprimer
    * @returns Message de confirmation
    */
-  async deleteStrategyScreenshot(screenshotUrl: string): Promise<{ message: string }> {
+  async deleteStrategyScreenshot(
+    screenshotUrl: string,
+    options: { keepalive?: boolean } = {}
+  ): Promise<{ message: string }> {
     const response = await this.fetchWithAuth(
       `${this.BASE_URL}/api/trades/position-strategies/delete_screenshot/`,
       {
         method: 'POST',
+        keepalive: options.keepalive,
         headers: {
           'Content-Type': 'application/json',
         },

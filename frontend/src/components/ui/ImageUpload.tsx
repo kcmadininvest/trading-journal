@@ -43,6 +43,14 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
   const [blobPreviewUrl, setBlobPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const previewFailedRef = useRef<string | null>(null);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     setImageError(false);
@@ -156,15 +164,25 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
     setUploadProgress(0);
     setError(null);
 
-    try {
-      // Simuler une progression
-      const progressInterval = setInterval(() => {
+    // Simuler une progression
+    const progressInterval = setInterval(() => {
+      if (isMountedRef.current) {
         setUploadProgress((prev) => Math.min(prev + 10, 90));
-      }, 200);
+      }
+    }, 200);
 
+    try {
       const response = await uploadFunction(file);
-
       clearInterval(progressInterval);
+
+      // Le formulaire a été fermé pendant l'upload : personne ne référencera ce fichier.
+      if (!isMountedRef.current) {
+        if (deleteFunction && response.original_url) {
+          deleteFunction(response.original_url).catch(() => undefined);
+        }
+        return;
+      }
+
       setUploadProgress(100);
 
       // Appeler le callback avec les URLs
@@ -174,17 +192,20 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
       });
 
       setTimeout(() => {
+        if (!isMountedRef.current) return;
         setIsUploading(false);
         setUploadProgress(0);
       }, 500);
     } catch (err: any) {
+      clearInterval(progressInterval);
+      if (!isMountedRef.current) return;
       setError(err.message || t('trades:strategyCompliance.uploadError', { 
         defaultValue: 'Erreur lors de l\'upload' 
       }));
       setIsUploading(false);
       setUploadProgress(0);
     }
-  }, [validateFile, uploadFunction, onUpload, t]);
+  }, [validateFile, uploadFunction, deleteFunction, onUpload, t]);
 
   const handleDragEnter = useCallback((e: React.DragEvent) => {
     e.preventDefault();

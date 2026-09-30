@@ -320,6 +320,31 @@ const PositionStrategiesPage: React.FC = () => {
   const menuRefs = useRef<Record<number, HTMLDivElement | null>>({});
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
   const statusDropdownRef = useRef<HTMLDivElement | null>(null);
+  // Image envoyée pendant la session de modale et pas encore rattachée à une stratégie enregistrée
+  const sessionUploadedScreenshotRef = useRef<string | null>(null);
+
+  const discardSessionUpload = (keepalive = false) => {
+    const url = sessionUploadedScreenshotRef.current;
+    sessionUploadedScreenshotRef.current = null;
+    if (!url) return;
+    screenshotsService.deleteStrategyScreenshot(url, { keepalive }).catch(() => undefined);
+  };
+
+  useEffect(() => {
+    const handlePageHide = () => discardSessionUpload(true);
+    window.addEventListener('pagehide', handlePageHide);
+    return () => {
+      window.removeEventListener('pagehide', handlePageHide);
+      discardSessionUpload();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const closeStrategyModal = () => {
+    discardSessionUpload();
+    setShowModal(false);
+    setStatusDropdownOpen(false);
+  };
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeSectionIndex, setActiveSectionIndex] = useState<number | null>(null);
   const [activeRuleIndex, setActiveRuleIndex] = useState<{ sectionIndex: number; ruleIndex: number } | null>(null);
@@ -480,6 +505,7 @@ const PositionStrategiesPage: React.FC = () => {
 
   // Ouvrir le modal de création
   const handleCreate = () => {
+    sessionUploadedScreenshotRef.current = null;
     setSelectedStrategy(null);
     setStatusDropdownOpen(false);
     setFormData({
@@ -765,6 +791,7 @@ const PositionStrategiesPage: React.FC = () => {
 
   // Ouvrir le modal d'édition
   const handleEdit = (strategy: PositionStrategy) => {
+    sessionUploadedScreenshotRef.current = null;
     setSelectedStrategy(strategy);
     setStatusDropdownOpen(false);
     setFormData(buildFormDataFromStrategy(strategy));
@@ -779,6 +806,7 @@ const PositionStrategiesPage: React.FC = () => {
       ? rawTitle.slice(0, TITLE_MAX_LENGTH)
       : rawTitle;
 
+    sessionUploadedScreenshotRef.current = null;
     setSelectedStrategy(null);
     setStatusDropdownOpen(false);
     setOpenMenuId(null);
@@ -804,14 +832,14 @@ const PositionStrategiesPage: React.FC = () => {
           create_new_version: selectedStrategy.status !== 'draft',
         };
         await positionStrategiesService.update(selectedStrategy.id, updateData);
-        setShowModal(false);
-        setStatusDropdownOpen(false);
+        sessionUploadedScreenshotRef.current = null;
+        closeStrategyModal();
         await Promise.all([loadStrategies(), loadCounts()]);
       } else {
         // Création (y compris duplication via formulaire pré-rempli)
         await positionStrategiesService.create(formData);
-        setShowModal(false);
-        setStatusDropdownOpen(false);
+        sessionUploadedScreenshotRef.current = null;
+        closeStrategyModal();
         if (formData.status === 'draft' && filterStatus !== 'draft') {
           setPendingFilterStatus('draft');
         } else {
@@ -1787,8 +1815,7 @@ const PositionStrategiesPage: React.FC = () => {
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-2 sm:p-4"
             onClick={(e) => {
               if (e.target === e.currentTarget) {
-                setShowModal(false);
-                setStatusDropdownOpen(false);
+                closeStrategyModal();
               }
             }}
           >
@@ -1813,10 +1840,7 @@ const PositionStrategiesPage: React.FC = () => {
                   </div>
                 </div>
                 <button
-                  onClick={() => {
-                    setShowModal(false);
-                    setStatusDropdownOpen(false);
-                  }}
+                  onClick={closeStrategyModal}
                   className="w-8 h-8 rounded-lg text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center transition-colors flex-shrink-0"
                 >
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1867,6 +1891,7 @@ const PositionStrategiesPage: React.FC = () => {
                   value={formData.example_screenshot}
                   thumbnailUrl={formData.example_screenshot_thumbnail}
                   onUpload={(urls) => {
+                    sessionUploadedScreenshotRef.current = urls.original;
                     setFormData({ 
                       ...formData, 
                       example_screenshot: urls.original,
@@ -1874,6 +1899,9 @@ const PositionStrategiesPage: React.FC = () => {
                     });
                   }}
                   onRemove={() => {
+                    if (sessionUploadedScreenshotRef.current === formData.example_screenshot) {
+                      sessionUploadedScreenshotRef.current = null;
+                    }
                     setFormData({ 
                       ...formData, 
                       example_screenshot: '',
@@ -2041,10 +2069,7 @@ const PositionStrategiesPage: React.FC = () => {
               {/* Footer */}
               <div className="px-3 sm:px-6 py-3 sm:py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-3 flex-shrink-0">
                 <button
-                  onClick={() => {
-                    setShowModal(false);
-                    setStatusDropdownOpen(false);
-                  }}
+                  onClick={closeStrategyModal}
                   className="px-3 sm:px-4 py-2 text-sm sm:text-base text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                 >
                   {t('positionStrategies:cancel', { defaultValue: 'Annuler' })}
