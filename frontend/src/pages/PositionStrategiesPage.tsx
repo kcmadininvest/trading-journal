@@ -337,7 +337,6 @@ const PositionStrategiesPage: React.FC = () => {
       window.removeEventListener('pagehide', handlePageHide);
       discardSessionUpload();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const closeStrategyModal = () => {
