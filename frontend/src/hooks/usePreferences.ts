@@ -41,6 +41,8 @@ export const usePreferences = (): PreferencesContextType => {
         pnl_display: 'net',
         market_replay_logarithmic: false,
         market_replay_autofit: false,
+        daily_journal_table_editor: true,
+        daily_journal_view_mode: 'grid',
       },
       loading: false,
       refreshPreferences: async () => {},

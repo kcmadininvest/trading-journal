@@ -95,6 +95,10 @@ export interface UserPreferences {
   market_replay_logarithmic?: boolean;
   /** Market Replay : autofit continu pendant la lecture. */
   market_replay_autofit?: boolean;
+  /** Journal quotidien : afficher le mini-éditeur de tableau. */
+  daily_journal_table_editor?: boolean;
+  /** Journal quotidien : vue grille ou liste. */
+  daily_journal_view_mode?: 'grid' | 'list';
   created_at?: string;
   updated_at?: string;
 }

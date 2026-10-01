@@ -4,6 +4,7 @@ import rehypeRaw from 'rehype-raw';
 import remarkGfm from 'remark-gfm';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { dailyJournalService, DailyJournalEntry, DailyJournalGroupedEntry, DailyJournalGroupedYear } from '../services/dailyJournal';
+import userService from '../services/userService';
 import { DailyJournalEditor } from '../components/dailyJournal/DailyJournalEditor';
 import { DailyJournalCard } from '../components/dailyJournal/DailyJournalCard';
 import { usePreferences } from '../hooks/usePreferences';
@@ -18,7 +19,7 @@ import { PageShell } from '../components/layout';
 
 const DailyJournalPage: React.FC = () => {
   const { t, i18n } = useI18nTranslation();
-  const { preferences } = usePreferences();
+  const { preferences, mergePreferences } = usePreferences();
   const { selectedAccountId, setSelectedAccountId, loading: accountLoading } = useTradingAccount();
   const hideAccountNumber = useAccountNumberVisibility();
   const [groupedYears, setGroupedYears] = useState<DailyJournalGroupedYear[]>([]);
@@ -40,10 +41,13 @@ const DailyJournalPage: React.FC = () => {
   useEffect(() => { selectedYearRef.current = selectedYear; }, [selectedYear]);
   useEffect(() => { selectedMonthRef.current = selectedMonth; }, [selectedMonth]);
 
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => {
-    const saved = localStorage.getItem('dailyJournal_viewMode');
-    return (saved === 'grid' || saved === 'list') ? saved : 'grid';
-  });
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>(
+    () => (preferences.daily_journal_view_mode === 'list' ? 'list' : 'grid'),
+  );
+
+  useEffect(() => {
+    setViewMode(preferences.daily_journal_view_mode === 'list' ? 'list' : 'grid');
+  }, [preferences.daily_journal_view_mode]);
 
   const loadEntries = useCallback(async () => {
     setIsLoading(true);
@@ -125,8 +129,18 @@ const DailyJournalPage: React.FC = () => {
   };
 
   const handleViewModeChange = (mode: 'grid' | 'list') => {
+    const previous = viewMode;
     setViewMode(mode);
-    localStorage.setItem('dailyJournal_viewMode', mode);
+    mergePreferences({ daily_journal_view_mode: mode });
+    void (async () => {
+      try {
+        await userService.updatePreferences({ daily_journal_view_mode: mode });
+      } catch (error) {
+        console.error('Erreur lors de la mise à jour du mode d\'affichage du journal:', error);
+        setViewMode(previous);
+        mergePreferences({ daily_journal_view_mode: previous });
+      }
+    })();
   };
 
   const resolvedLanguage = useMemo<LanguageType>(() => {

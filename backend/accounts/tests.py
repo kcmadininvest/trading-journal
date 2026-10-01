@@ -61,6 +61,24 @@ class UserPreferencesThemeTests(APITestCase):
         prefs = UserPreferences.objects.get(user=self.user)
         self.assertEqual(prefs.theme, 'light')
 
+    def test_put_updates_daily_journal_prefs(self) -> None:
+        self.client.force_authenticate(user=self.user)
+        response = self.client.put(
+            '/api/accounts/preferences/',
+            {
+                'daily_journal_table_editor': False,
+                'daily_journal_view_mode': 'list',
+            },
+            format='json',
+        )
+        self.assertEqual(response.status_code, 200, response.data)
+        prefs = UserPreferences.objects.get(user=self.user)
+        self.assertFalse(prefs.daily_journal_table_editor)
+        self.assertEqual(prefs.daily_journal_view_mode, 'list')
+        payload = response.data.get('preferences') or response.data
+        self.assertFalse(payload.get('daily_journal_table_editor'))
+        self.assertEqual(payload.get('daily_journal_view_mode'), 'list')
+
 
 class AppSettingsApiTests(APITestCase):
     def setUp(self) -> None:

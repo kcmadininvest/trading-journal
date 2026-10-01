@@ -282,6 +282,18 @@ class UserPreferences(models.Model):
         verbose_name=_('Market Replay — autofit continu'),
         help_text=str(_('Recentrer automatiquement les bougies visibles pendant la lecture Market Replay.')),
     )
+    daily_journal_table_editor = models.BooleanField(
+        default=True,
+        verbose_name=_('Journal — mini-éditeur de tableau'),
+        help_text=str(_('Afficher le mini-éditeur visuel lors de l’édition d’un tableau dans le journal quotidien.')),
+    )
+    daily_journal_view_mode = models.CharField(
+        max_length=10,
+        choices=[('grid', 'Grille'), ('list', 'Liste')],
+        default='grid',
+        verbose_name=_('Journal — mode d’affichage'),
+        help_text=str(_('Vue grille ou liste des entrées du journal quotidien.')),
+    )
 
     # Métadonnées
     created_at = models.DateTimeField(

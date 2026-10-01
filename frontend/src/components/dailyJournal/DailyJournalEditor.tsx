@@ -4,8 +4,10 @@ import rehypeRaw from 'rehype-raw';
 import remarkGfm from 'remark-gfm';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { dailyJournalService, DailyJournalEntry, DailyJournalImage } from '../../services/dailyJournal';
+import userService from '../../services/userService';
+import { usePreferences } from '../../hooks/usePreferences';
 import { getFullMediaUrl } from '../../utils/mediaUrl';
-import { DeleteConfirmModal } from '../ui';
+import { DeleteConfirmModal, Tooltip } from '../ui';
 import { ImageUploader } from './ImageUploader';
 import { JournalEditorToolbar } from './JournalEditorToolbar';
 import { JournalTableEditor } from './JournalTableEditor';
@@ -40,6 +42,7 @@ export const DailyJournalEditor: React.FC<DailyJournalEditorProps> = ({
   defaultShowPreview = false,
 }) => {
   const { t } = useI18nTranslation();
+  const { preferences, mergePreferences } = usePreferences();
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const [entry, setEntry] = useState<DailyJournalEntry | null>(initialEntry);
   const [content, setContent] = useState(initialEntry?.content || '');
@@ -55,9 +58,22 @@ export const DailyJournalEditor: React.FC<DailyJournalEditorProps> = ({
   const [textColor, setTextColor] = useState('#2563eb');
   const [highlightColor, setHighlightColor] = useState('#fde68a');
   const [activeTable, setActiveTable] = useState<{ start: number; end: number; data: MarkdownTableData } | null>(null);
+  const [tableEditorEnabled, setTableEditorEnabled] = useState(
+    () => preferences.daily_journal_table_editor !== false,
+  );
 
   const textColorInputRef = useRef<HTMLInputElement | null>(null);
   const highlightInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    setTableEditorEnabled(preferences.daily_journal_table_editor !== false);
+  }, [preferences.daily_journal_table_editor]);
+
+  useEffect(() => {
+    if (!tableEditorEnabled) {
+      setActiveTable(null);
+    }
+  }, [tableEditorEnabled]);
 
   const draftKey = useMemo(() => `dailyJournalDraft:${date}:${tradingAccountId ?? 'all'}`, [date, tradingAccountId]);
 
@@ -360,9 +376,14 @@ export const DailyJournalEditor: React.FC<DailyJournalEditorProps> = ({
         const prefix = needsLeading ? (prev.endsWith('\n') ? '\n' : '\n\n') : '';
         const next = `${prev}${prefix}${table}\n\n`;
         const start = prev.length + prefix.length;
-        setActiveTable({ start, end: start + table.length, data });
+        if (tableEditorEnabled) {
+          setActiveTable({ start, end: start + table.length, data });
+        } else {
+          setActiveTable(null);
+        }
         return next;
       });
+      setShowPreview(true);
       return;
     }
 
@@ -378,7 +399,11 @@ export const DailyJournalEditor: React.FC<DailyJournalEditorProps> = ({
     const next = `${before}${insertion}${after}`;
     const tableStart = start + prefix.length;
     setContent(next);
-    setActiveTable({ start: tableStart, end: tableStart + table.length, data });
+    if (tableEditorEnabled) {
+      setActiveTable({ start: tableStart, end: tableStart + table.length, data });
+    } else {
+      setActiveTable(null);
+    }
     setShowPreview(true);
   };
 
@@ -390,6 +415,7 @@ export const DailyJournalEditor: React.FC<DailyJournalEditorProps> = ({
   };
 
   const syncActiveTableFromCursor = () => {
+    if (!tableEditorEnabled) return;
     const textarea = textareaRef.current;
     if (!textarea) return;
     const found = findMarkdownTableAt(content, textarea.selectionStart);
@@ -401,6 +427,32 @@ export const DailyJournalEditor: React.FC<DailyJournalEditorProps> = ({
     if (activeTable && textarea.selectionStart >= activeTable.start && textarea.selectionStart <= activeTable.end) {
       return;
     }
+  };
+
+  const toggleTableEditor = () => {
+    const previous = tableEditorEnabled;
+    const next = !previous;
+    setTableEditorEnabled(next);
+    mergePreferences({ daily_journal_table_editor: next });
+    if (!next) {
+      setActiveTable(null);
+    } else {
+      window.requestAnimationFrame(() => {
+        const textarea = textareaRef.current;
+        if (!textarea) return;
+        const found = findMarkdownTableAt(content, textarea.selectionStart);
+        if (found) setActiveTable(found);
+      });
+    }
+    void (async () => {
+      try {
+        await userService.updatePreferences({ daily_journal_table_editor: next });
+      } catch (error) {
+        console.error('Erreur lors de la mise à jour de la préférence journal:', error);
+        setTableEditorEnabled(previous);
+        mergePreferences({ daily_journal_table_editor: previous });
+      }
+    })();
   };
 
   const applySpanStyle = (style: string) => {
@@ -507,20 +559,41 @@ export const DailyJournalEditor: React.FC<DailyJournalEditorProps> = ({
         </div>
       )}
 
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
         <JournalEditorToolbar
           onAction={handleToolbarAction}
           onInsertText={handleInsertText}
           onInsertTable={handleInsertTable}
           disabled={isLoading || isSaving}
         />
-        <button
-          type="button"
-          onClick={() => setShowPreview((prev) => !prev)}
-          className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
-        >
-          {showPreview ? t('dailyJournal.hidePreview', { defaultValue: 'Masquer la preview' }) : t('dailyJournal.showPreview', { defaultValue: 'Afficher la preview' })}
-        </button>
+        <div className="flex items-center gap-3 flex-shrink-0">
+          <Tooltip
+            position="top"
+            offset={{ y: 8 }}
+            content={t('dailyJournal.tableEditorTooltip', {
+              defaultValue:
+                'Le mini-éditeur s’affiche uniquement lorsque le curseur est positionné dans un tableau.',
+            })}
+          >
+            <button
+              type="button"
+              onClick={toggleTableEditor}
+              className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+              aria-pressed={tableEditorEnabled}
+            >
+              {tableEditorEnabled
+                ? t('dailyJournal.hideTableEditor', { defaultValue: 'Masquer le mini-éditeur' })
+                : t('dailyJournal.showTableEditor', { defaultValue: 'Afficher le mini-éditeur' })}
+            </button>
+          </Tooltip>
+          <button
+            type="button"
+            onClick={() => setShowPreview((prev) => !prev)}
+            className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+          >
+            {showPreview ? t('dailyJournal.hidePreview', { defaultValue: 'Masquer la preview' }) : t('dailyJournal.showPreview', { defaultValue: 'Afficher la preview' })}
+          </button>
+        </div>
       </div>
 
       <input
@@ -555,7 +628,7 @@ export const DailyJournalEditor: React.FC<DailyJournalEditorProps> = ({
           const next = event.target.value;
           const cursor = event.target.selectionStart;
           setContent(next);
-          if (!activeTable) return;
+          if (!tableEditorEnabled || !activeTable) return;
           const found =
             findMarkdownTableAt(next, cursor) ||
             findMarkdownTableAt(next, Math.min(activeTable.start, Math.max(0, next.length - 1)));
@@ -569,7 +642,7 @@ export const DailyJournalEditor: React.FC<DailyJournalEditorProps> = ({
         disabled={isLoading || isSaving}
       />
 
-      {activeTable && (
+      {tableEditorEnabled && activeTable && (
         <JournalTableEditor
           data={activeTable.data}
           onChange={handleTableDataChange}
