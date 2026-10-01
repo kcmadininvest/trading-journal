@@ -208,6 +208,18 @@ const DailyJournalPage: React.FC = () => {
     ),
   }), []);
 
+  const cardPreviewMarkdownComponents = useMemo<Components>(
+    () => ({
+      ...markdownComponents,
+      table: () => (
+        <span className="inline-flex items-center rounded-md border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 text-xs font-medium text-gray-600 dark:text-gray-300">
+          {t('dailyJournal.tablePlaceholder', { defaultValue: 'Tableau' })}
+        </span>
+      ),
+    }),
+    [markdownComponents, t],
+  );
+
   const selectedYearData = useMemo(() => {
     const yearData = groupedYears.find((year) => year.year === selectedYear) || null;
     if (!yearData) return null;
@@ -652,7 +664,7 @@ const DailyJournalPage: React.FC = () => {
                                     <ReactMarkdown
                                       remarkPlugins={[remarkGfm]}
                                       rehypePlugins={[rehypeRaw]}
-                                      components={markdownComponents}
+                                      components={cardPreviewMarkdownComponents}
                                     >
                                       {entry.content_preview}
                                     </ReactMarkdown>

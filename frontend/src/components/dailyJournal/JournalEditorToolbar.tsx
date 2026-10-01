@@ -2,24 +2,33 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { Tooltip } from '../ui';
 
+const TABLE_MAX_SIZE = 6;
+
 interface JournalEditorToolbarProps {
   onAction: (action: 'bold' | 'italic' | 'underline' | 'strike' | 'code' | 'heading1' | 'heading2' | 'heading3' | 'bullet' | 'numbered' | 'link' | 'quote' | 'textColor' | 'highlight' | 'alignLeft' | 'alignCenter' | 'alignRight' | 'justify') => void;
   onInsertText?: (text: string) => void;
+  onInsertTable?: (cols: number, rows: number) => void;
   disabled?: boolean;
 }
 
-export const JournalEditorToolbar: React.FC<JournalEditorToolbarProps> = ({ onAction, onInsertText, disabled = false }) => {
+export const JournalEditorToolbar: React.FC<JournalEditorToolbarProps> = ({
+  onAction,
+  onInsertText,
+  onInsertTable,
+  disabled = false,
+}) => {
   const { t } = useI18nTranslation();
   const buttonClass =
     'px-2 py-1 text-sm font-medium text-gray-800 dark:text-gray-100 ' +
     'bg-gray-50 dark:bg-gray-700/90 border border-gray-200 dark:border-gray-600 rounded ' +
     'hover:bg-gray-100 dark:hover:bg-gray-600 ' +
     'disabled:opacity-50 disabled:cursor-not-allowed transition-colors';
-  const [activePicker, setActivePicker] = useState<'emoji' | null>(null);
+  const [activePicker, setActivePicker] = useState<'emoji' | 'table' | null>(null);
+  const [tableHover, setTableHover] = useState<{ cols: number; rows: number }>({ cols: 1, rows: 1 });
   const toolbarRef = useRef<HTMLDivElement | null>(null);
   const tooltipProps = { position: 'top' as const, offset: { y: 8 } };
 
-  const emojiOptions = ['😀', '🙂', '🤔', '😅', '😴', '�', '🥳', '�', '�', '�', '😡', '😱', '💪', '🙏', '🧘', '💡', '🔥', '🚀', '📉', '📈', '⚠️', '✅', '❌', '⭐', '💰', '🧠', '🎯'];
+  const emojiOptions = ['😀', '🙂', '🤔', '😅', '😴', '🥳', '😡', '😱', '💪', '🙏', '🧘', '💡', '🔥', '🚀', '📉', '📈', '⚠️', '✅', '❌', '⭐', '💰', '🧠', '🎯'];
 
   useEffect(() => {
     if (!activePicker) return;
@@ -37,9 +46,24 @@ export const JournalEditorToolbar: React.FC<JournalEditorToolbarProps> = ({ onAc
     setActivePicker((prev) => (prev === 'emoji' ? null : 'emoji'));
   };
 
+  const toggleTablePicker = () => {
+    if (disabled) return;
+    setActivePicker((prev) => {
+      if (prev === 'table') return null;
+      setTableHover({ cols: 1, rows: 1 });
+      return 'table';
+    });
+  };
+
   const handleInsert = (text: string) => {
     if (disabled) return;
     onInsertText?.(text);
+    setActivePicker(null);
+  };
+
+  const handleInsertTable = (cols: number, rows: number) => {
+    if (disabled) return;
+    onInsertTable?.(cols, rows);
     setActivePicker(null);
   };
 
@@ -169,6 +193,72 @@ export const JournalEditorToolbar: React.FC<JournalEditorToolbarProps> = ({ onAc
           Lien
         </button>
       </Tooltip>
+      <div className="relative">
+        <Tooltip {...tooltipProps} content={t('dailyJournal.tooltip.table', { defaultValue: 'Tableau' })}>
+          <button
+            type="button"
+            onClick={toggleTablePicker}
+            disabled={disabled}
+            className={buttonClass}
+            aria-expanded={activePicker === 'table'}
+            aria-label={t('dailyJournal.tooltip.table', { defaultValue: 'Tableau' })}
+          >
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2}>
+              <rect x="3" y="4" width="18" height="16" rx="1.5" />
+              <path d="M3 10h18" strokeLinecap="round" />
+              <path d="M3 15h18" strokeLinecap="round" />
+              <path d="M9 4v16" strokeLinecap="round" />
+              <path d="M15 4v16" strokeLinecap="round" />
+            </svg>
+          </button>
+        </Tooltip>
+        {activePicker === 'table' && (
+          <div
+            className="absolute left-0 z-20 mt-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 shadow-xl p-3"
+            onMouseLeave={() => setTableHover({ cols: 1, rows: 1 })}
+          >
+            <div
+              className="inline-grid gap-1.5"
+              style={{ gridTemplateColumns: `repeat(${TABLE_MAX_SIZE}, 1.25rem)` }}
+              role="grid"
+              aria-label={t('dailyJournal.tooltip.table', { defaultValue: 'Tableau' })}
+            >
+              {Array.from({ length: TABLE_MAX_SIZE * TABLE_MAX_SIZE }, (_, index) => {
+                const cols = (index % TABLE_MAX_SIZE) + 1;
+                const rows = Math.floor(index / TABLE_MAX_SIZE) + 1;
+                const selected = cols <= tableHover.cols && rows <= tableHover.rows;
+                return (
+                  <button
+                    key={`${cols}x${rows}`}
+                    type="button"
+                    role="gridcell"
+                    aria-label={t('dailyJournal.tableSize', {
+                      defaultValue: '{{cols}} × {{rows}}',
+                      cols,
+                      rows,
+                    })}
+                    className={`h-5 w-5 rounded-sm border transition-colors ${
+                      selected
+                        ? 'border-blue-500 bg-blue-100 dark:bg-blue-900/50'
+                        : 'border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/60'
+                    }`}
+                    onMouseEnter={() => setTableHover({ cols, rows })}
+                    onFocus={() => setTableHover({ cols, rows })}
+                    onClick={() => handleInsertTable(cols, rows)}
+                  />
+                );
+              })}
+            </div>
+            <p className="mt-2 text-center text-xs text-gray-600 dark:text-gray-300">
+              {t('dailyJournal.tableSize', {
+                defaultValue: '{{cols}} × {{rows}}',
+                cols: tableHover.cols,
+                rows: tableHover.rows,
+              })}
+            </p>
+          </div>
+        )}
+      </div>
       <div className="relative">
         <Tooltip {...tooltipProps} content={t('dailyJournal.tooltip.emoji', { defaultValue: 'Émoticônes' })}>
           <button

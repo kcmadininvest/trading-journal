@@ -516,3 +516,37 @@ html.font-size-large {
     transform: none !important;
   }
 }
+
+/* Daily journal Markdown tables (GFM) */
+.journal-markdown table {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+  margin: 0.75rem 0;
+  font-size: inherit;
+}
+
+.journal-markdown th,
+.journal-markdown td {
+  border: 1px solid #d1d5db;
+  padding: 0.4rem 0.65rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.journal-markdown th {
+  background-color: #f3f4f6;
+  font-weight: 600;
+}
+
+.dark .journal-markdown th,
+.dark .journal-markdown td {
+  border-color: #4b5563;
+}
+
+.dark .journal-markdown th {
+  background-color: #374151;
+}
+

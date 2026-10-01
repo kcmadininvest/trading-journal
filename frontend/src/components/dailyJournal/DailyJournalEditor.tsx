@@ -8,8 +8,15 @@ import { getFullMediaUrl } from '../../utils/mediaUrl';
 import { DeleteConfirmModal } from '../ui';
 import { ImageUploader } from './ImageUploader';
 import { JournalEditorToolbar } from './JournalEditorToolbar';
+import { JournalTableEditor } from './JournalTableEditor';
 import { ComplianceScreenshots } from './ComplianceScreenshots';
 import { JournalQuestionsStatusLink } from './JournalQuestionsStatusLink';
+import {
+  MarkdownTableData,
+  createEmptyTableData,
+  findMarkdownTableAt,
+  serializeMarkdownTable,
+} from './markdownTable';
 
 interface DailyJournalEditorProps {
   date: string;
@@ -47,6 +54,7 @@ export const DailyJournalEditor: React.FC<DailyJournalEditorProps> = ({
   const [isDeleting, setIsDeleting] = useState(false);
   const [textColor, setTextColor] = useState('#2563eb');
   const [highlightColor, setHighlightColor] = useState('#fde68a');
+  const [activeTable, setActiveTable] = useState<{ start: number; end: number; data: MarkdownTableData } | null>(null);
 
   const textColorInputRef = useRef<HTMLInputElement | null>(null);
   const highlightInputRef = useRef<HTMLInputElement | null>(null);
@@ -339,6 +347,62 @@ export const DailyJournalEditor: React.FC<DailyJournalEditorProps> = ({
     });
   };
 
+  const handleInsertTable = (cols: number, rows: number) => {
+    const data = createEmptyTableData(cols, rows, (index) =>
+      t('dailyJournal.tableHeader', { defaultValue: 'Colonne {{index}}', index }),
+    );
+    const table = serializeMarkdownTable(data);
+    const textarea = textareaRef.current;
+
+    if (!textarea) {
+      setContent((prev) => {
+        const needsLeading = prev.length > 0 && !prev.endsWith('\n\n');
+        const prefix = needsLeading ? (prev.endsWith('\n') ? '\n' : '\n\n') : '';
+        const next = `${prev}${prefix}${table}\n\n`;
+        const start = prev.length + prefix.length;
+        setActiveTable({ start, end: start + table.length, data });
+        return next;
+      });
+      return;
+    }
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const before = content.slice(0, start);
+    const after = content.slice(end);
+    const needsLeading = before.length > 0 && !before.endsWith('\n\n');
+    const prefix = needsLeading ? (before.endsWith('\n') ? '\n' : '\n\n') : '';
+    const needsTrailing = after.length > 0 && !after.startsWith('\n\n');
+    const suffix = needsTrailing ? (after.startsWith('\n') ? '\n' : '\n\n') : after.length === 0 ? '\n\n' : '';
+    const insertion = `${prefix}${table}${suffix}`;
+    const next = `${before}${insertion}${after}`;
+    const tableStart = start + prefix.length;
+    setContent(next);
+    setActiveTable({ start: tableStart, end: tableStart + table.length, data });
+    setShowPreview(true);
+  };
+
+  const handleTableDataChange = (data: MarkdownTableData) => {
+    if (!activeTable) return;
+    const table = serializeMarkdownTable(data);
+    setContent((prev) => `${prev.slice(0, activeTable.start)}${table}${prev.slice(activeTable.end)}`);
+    setActiveTable({ start: activeTable.start, end: activeTable.start + table.length, data });
+  };
+
+  const syncActiveTableFromCursor = () => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    const found = findMarkdownTableAt(content, textarea.selectionStart);
+    if (found) {
+      setActiveTable(found);
+      return;
+    }
+    // Keep current editor if cursor is still inside its range
+    if (activeTable && textarea.selectionStart >= activeTable.start && textarea.selectionStart <= activeTable.end) {
+      return;
+    }
+  };
+
   const applySpanStyle = (style: string) => {
     const textarea = textareaRef.current;
     if (!textarea) return;
@@ -444,7 +508,12 @@ export const DailyJournalEditor: React.FC<DailyJournalEditorProps> = ({
       )}
 
       <div className="flex items-center justify-between gap-3">
-        <JournalEditorToolbar onAction={handleToolbarAction} onInsertText={handleInsertText} disabled={isLoading || isSaving} />
+        <JournalEditorToolbar
+          onAction={handleToolbarAction}
+          onInsertText={handleInsertText}
+          onInsertTable={handleInsertTable}
+          disabled={isLoading || isSaving}
+        />
         <button
           type="button"
           onClick={() => setShowPreview((prev) => !prev)}
@@ -482,14 +551,35 @@ export const DailyJournalEditor: React.FC<DailyJournalEditorProps> = ({
       <textarea
         ref={textareaRef}
         value={content}
-        onChange={(event) => setContent(event.target.value)}
+        onChange={(event) => {
+          const next = event.target.value;
+          const cursor = event.target.selectionStart;
+          setContent(next);
+          if (!activeTable) return;
+          const found =
+            findMarkdownTableAt(next, cursor) ||
+            findMarkdownTableAt(next, Math.min(activeTable.start, Math.max(0, next.length - 1)));
+          setActiveTable(found);
+        }}
+        onSelect={syncActiveTableFromCursor}
+        onClick={syncActiveTableFromCursor}
+        onKeyUp={syncActiveTableFromCursor}
         placeholder={t('dailyJournal.placeholder', { defaultValue: 'Ecrivez votre journal...' })}
         className={`w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 ${compact ? 'min-h-[120px]' : 'min-h-[200px]'}`}
         disabled={isLoading || isSaving}
       />
 
+      {activeTable && (
+        <JournalTableEditor
+          data={activeTable.data}
+          onChange={handleTableDataChange}
+          onClose={() => setActiveTable(null)}
+          disabled={isLoading || isSaving}
+        />
+      )}
+
       {showPreview && (
-        <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-800 dark:text-gray-200">
+        <div className="journal-markdown rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-800 dark:text-gray-200">
           {content.trim() ? (
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}

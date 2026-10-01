@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import ReactMarkdown, { Components } from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
@@ -64,6 +64,18 @@ export const DailyJournalCard: React.FC<DailyJournalCardProps> = ({
   const [popoverLayout, setPopoverLayout] = useState<PopoverLayout | null>(null);
 
   const previewPanelId = `journal-card-preview-${entry.id}`;
+
+  const cardMarkdownComponents = useMemo(
+    () => ({
+      ...markdownComponents,
+      table: () => (
+        <span className="inline-flex items-center rounded-md border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 text-xs font-medium text-gray-600 dark:text-gray-300">
+          {t('dailyJournal.tablePlaceholder', { defaultValue: 'Tableau' })}
+        </span>
+      ),
+    }),
+    [markdownComponents, t],
+  );
 
   const updatePopoverLayout = useCallback(() => {
     if (!isPreviewOpen || !eyeButtonRef.current) return;
@@ -193,7 +205,7 @@ export const DailyJournalCard: React.FC<DailyJournalCardProps> = ({
             {t('dailyJournal.cardPreviewClose', { defaultValue: 'Fermer' })}
           </button>
         </div>
-        <div className="p-3 overflow-y-auto min-h-0 text-sm text-gray-700 dark:text-gray-300">
+        <div className="journal-markdown p-3 overflow-y-auto min-h-0 text-sm text-gray-700 dark:text-gray-300">
           {isPreviewLoading ? (
             <p className="text-gray-500 dark:text-gray-400">{t('dailyJournal.cardPreviewLoading', { defaultValue: 'Chargement…' })}</p>
           ) : previewLoadError && !previewContent?.trim() ? (
@@ -263,7 +275,7 @@ export const DailyJournalCard: React.FC<DailyJournalCardProps> = ({
                     : undefined
                 }
               >
-                <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>
+                <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={cardMarkdownComponents}>
                   {entry.content_preview}
                 </ReactMarkdown>
               </div>

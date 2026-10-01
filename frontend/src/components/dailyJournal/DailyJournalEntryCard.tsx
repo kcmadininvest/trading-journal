@@ -65,6 +65,11 @@ export const DailyJournalEntryCard: React.FC<DailyJournalEntryCardProps> = ({ en
                   {children}
                 </blockquote>
               ),
+              table: () => (
+                <span className="inline-flex items-center rounded-md border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 text-xs font-medium text-gray-600 dark:text-gray-300">
+                  {t('dailyJournal.tablePlaceholder', { defaultValue: 'Tableau' })}
+                </span>
+              ),
             }}
           >
             {entry.content}
