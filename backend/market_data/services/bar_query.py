@@ -210,58 +210,34 @@ def get_bars(
 
 
 def get_available_data(user, instrument: str | None = None) -> list[dict[str, Any]]:
-    """Agrège BarCoverage pour connaître les périodes téléchargées (scopées user)."""
+    """Liste les BarCoverage de l’utilisateur (une entrée par plage stockée)."""
     if user is None:
         raise ValueError('user requis')
     qs = BarCoverage.objects.filter(user=user)
     if instrument:
         qs = qs.filter(instrument=instrument.upper().strip())
-    qs = qs.order_by('instrument', 'contract_id', 'start_utc')
+    qs = qs.order_by('instrument', 'contract_id', 'timeframe', 'start_utc')
 
-    # Agrégation simple par instrument + contract + timeframe
-    grouped: dict[tuple, dict[str, Any]] = {}
-    for cov in qs:
-        key = (cov.instrument, cov.contract_id, cov.timeframe)
-        entry = grouped.get(key)
-        if entry is None:
-            grouped[key] = {
-                'instrument': cov.instrument,
-                'contract_id': cov.contract_id,
-                'timeframe': cov.timeframe,
-                'start_utc': cov.start_utc.isoformat(),
-                'end_utc': cov.end_utc.isoformat(),
-                'bars_stored': cov.bars_stored,
-                'bars_expected': cov.bars_expected,
-                'unexpected_missing_count': cov.unexpected_missing_count,
-                'status': cov.status,
-                'ranges': [{
+    return [
+        {
+            'instrument': cov.instrument,
+            'contract_id': cov.contract_id,
+            'timeframe': cov.timeframe,
+            'start_utc': cov.start_utc.isoformat(),
+            'end_utc': cov.end_utc.isoformat(),
+            'bars_stored': cov.bars_stored,
+            'bars_expected': cov.bars_expected,
+            'unexpected_missing_count': cov.unexpected_missing_count,
+            'status': cov.status,
+            'ranges': [
+                {
                     'start_utc': cov.start_utc.isoformat(),
                     'end_utc': cov.end_utc.isoformat(),
                     'status': cov.status,
                     'bars_stored': cov.bars_stored,
                     'bars_expected': cov.bars_expected,
-                }],
-            }
-        else:
-            entry['bars_stored'] += cov.bars_stored
-            entry['bars_expected'] += cov.bars_expected
-            entry['unexpected_missing_count'] += cov.unexpected_missing_count
-            if cov.start_utc.isoformat() < entry['start_utc']:
-                entry['start_utc'] = cov.start_utc.isoformat()
-            if cov.end_utc.isoformat() > entry['end_utc']:
-                entry['end_utc'] = cov.end_utc.isoformat()
-            # Status global : complete seulement si toutes les plages le sont
-            if entry['status'] != BarCoverage.Status.COMPLETE or cov.status != BarCoverage.Status.COMPLETE:
-                if cov.status == BarCoverage.Status.EMPTY and entry['status'] == BarCoverage.Status.EMPTY:
-                    entry['status'] = BarCoverage.Status.EMPTY
-                else:
-                    entry['status'] = BarCoverage.Status.PARTIAL
-            entry['ranges'].append({
-                'start_utc': cov.start_utc.isoformat(),
-                'end_utc': cov.end_utc.isoformat(),
-                'status': cov.status,
-                'bars_stored': cov.bars_stored,
-                'bars_expected': cov.bars_expected,
-            })
-
-    return list(grouped.values())
+                }
+            ],
+        }
+        for cov in qs
+    ]

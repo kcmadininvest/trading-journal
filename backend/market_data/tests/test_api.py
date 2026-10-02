@@ -33,6 +33,60 @@ class MarketDataApiTests(TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.json(), [])
 
+    def test_quality_issues_empty(self):
+        res = self.client.get('/api/market-data/quality-issues/')
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json(), [])
+
+    def test_quality_issues_scoped_to_user(self):
+        from market_data.models import BarQualityIssue
+
+        other = User.objects.create_user(
+            username='other',
+            email='other@example.com',
+            password='x',
+        )
+        job_mine = HistoricalDownloadJob.objects.create(
+            user=self.user,
+            instrument='NQ',
+            contract_id='CON.F.US.ENQ.H25',
+            timeframe='1m',
+            start_utc=datetime(2025, 3, 10, tzinfo=dt_tz.utc),
+            end_utc=datetime(2025, 3, 11, tzinfo=dt_tz.utc),
+            status=HistoricalDownloadJob.Status.COMPLETED,
+        )
+        job_other = HistoricalDownloadJob.objects.create(
+            user=other,
+            instrument='NQ',
+            contract_id='CON.F.US.ENQ.H25',
+            timeframe='1m',
+            start_utc=datetime(2025, 3, 10, tzinfo=dt_tz.utc),
+            end_utc=datetime(2025, 3, 11, tzinfo=dt_tz.utc),
+            status=HistoricalDownloadJob.Status.COMPLETED,
+        )
+        BarQualityIssue.objects.create(
+            job=job_mine,
+            issue_type='gap',
+            severity='warning',
+            instrument='NQ',
+            contract_id='CON.F.US.ENQ.H25',
+            timeframe='1m',
+        )
+        BarQualityIssue.objects.create(
+            job=job_other,
+            issue_type='duplicate',
+            severity='error',
+            instrument='NQ',
+            contract_id='CON.F.US.ENQ.H25',
+            timeframe='1m',
+        )
+
+        res = self.client.get('/api/market-data/quality-issues/?instrument=NQ')
+        self.assertEqual(res.status_code, 200)
+        body = res.json()
+        self.assertEqual(len(body), 1)
+        self.assertEqual(body[0]['issue_type'], 'gap')
+
     def test_instruments_fallback_catalog(self):
         with patch(
             'market_data.views.call_with_valid_session_token',

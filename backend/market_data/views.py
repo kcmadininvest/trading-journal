@@ -509,8 +509,24 @@ class DownloadJobIssuesView(APIView):
             job = HistoricalDownloadJob.objects.get(pk=job_id, user=request.user)
         except HistoricalDownloadJob.DoesNotExist:
             return Response({'detail': 'Job introuvable.'}, status=404)
-        issues = BarQualityIssue.objects.filter(job=job).order_by('-created_at')[:500]
+        issues = BarQualityIssue.objects.filter(job=job).order_by('-created_at')[:5000]
         return Response(QualityIssueSerializer(issues, many=True).data)
+
+
+class QualityIssueListView(APIView):
+    """Anomalies qualité des jobs de l’utilisateur, filtrables par instrument."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        instrument = (request.query_params.get('instrument') or '').upper().strip()
+        qs = BarQualityIssue.objects.filter(job__user=request.user).order_by(
+            '-created_at',
+            '-id',
+        )
+        if instrument:
+            qs = qs.filter(instrument=instrument)
+        return Response(QualityIssueSerializer(qs[:5000], many=True).data)
 
 
 def _get_or_create_sync_settings(user) -> HistoricalSyncSettings:

@@ -238,6 +238,13 @@ class HistoricalDataService {
     return res.json();
   }
 
+  async listQualityIssues(instrument?: string): Promise<QualityIssue[]> {
+    const qs = instrument ? `?instrument=${encodeURIComponent(instrument)}` : '';
+    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/market-data/quality-issues/${qs}`);
+    if (!res.ok) throw new Error('Erreur chargement anomalies');
+    return res.json();
+  }
+
   async exportBarsCsv(params: {
     instrument: string;
     timeframe: string;

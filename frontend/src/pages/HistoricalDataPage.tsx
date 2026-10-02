@@ -75,8 +75,11 @@ const HistoricalDataPage: React.FC = () => {
   const [bootLoading, setBootLoading] = useState(true);
   const [starting, setStarting] = useState(false);
   const [bottomTab, setBottomTab] = useState<'coverage' | 'issues'>('coverage');
-  const [coverageFilter, setCoverageFilter] = useState<'all' | 'with_data' | 'empty'>('with_data');
+  const [coverageFilter, setCoverageFilter] = useState<'all' | 'with_data' | 'empty'>('all');
   const [coveragePageSize, setCoveragePageSize] = useState(
+    () => preferences.items_per_page ?? DEFAULT_ITEMS_PER_PAGE,
+  );
+  const [issuesPageSize, setIssuesPageSize] = useState(
     () => preferences.items_per_page ?? DEFAULT_ITEMS_PER_PAGE,
   );
   const [exporting, setExporting] = useState(false);
@@ -254,6 +257,26 @@ const HistoricalDataPage: React.FC = () => {
     }
   }, []);
 
+  const loadIssues = useCallback(async (instr: string) => {
+    if (!instr) {
+      setIssues([]);
+      return;
+    }
+    try {
+      const data = await historicalDataService.listQualityIssues(instr);
+      setIssues(data);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const refreshInstrumentData = useCallback(
+    async (instr: string) => {
+      await Promise.all([loadCoverage(instr), loadIssues(instr)]);
+    },
+    [loadCoverage, loadIssues],
+  );
+
   const loadContracts = useCallback(
     async (instr: string) => {
       if (!instr) {
@@ -304,10 +327,14 @@ const HistoricalDataPage: React.FC = () => {
   }, [syncStatus, refreshSyncStatus, loadSyncHealth]);
 
   useEffect(() => {
-    if (!instrument) return;
+    if (!instrument) {
+      setCoverage([]);
+      setIssues([]);
+      return;
+    }
     void loadContracts(instrument);
-    void loadCoverage(instrument);
-  }, [instrument, loadContracts, loadCoverage]);
+    void refreshInstrumentData(instrument);
+  }, [instrument, loadContracts, refreshInstrumentData]);
 
   const batchBusyRef = useRef(false);
 
@@ -352,17 +379,7 @@ const HistoricalDataPage: React.FC = () => {
     const isBusy = batchJobs.some((j) => !TERMINAL.has(j.status));
     if (batchBusyRef.current && !isBusy && batchJobs.length > 0) {
       const instr = batchJobs[0]?.instrument;
-      void (async () => {
-        try {
-          const issueLists = await Promise.all(
-            batchJobs.map((j) => historicalDataService.getJobIssues(j.id)),
-          );
-          setIssues(issueLists.flat());
-        } catch {
-          /* ignore */
-        }
-        if (instr) void loadCoverage(instr);
-      })();
+      if (instr) void refreshInstrumentData(instr);
 
       const failedJob = batchJobs.find((j) => j.status === 'failed' || j.status === 'cancelled');
       const total = batchTimeframeTotal;
@@ -383,7 +400,14 @@ const HistoricalDataPage: React.FC = () => {
       }
     }
     batchBusyRef.current = isBusy;
-  }, [batchJobs, batchTimeframeDone, batchTimeframeFailed, batchTimeframeTotal, loadCoverage, t]);
+  }, [
+    batchJobs,
+    batchTimeframeDone,
+    batchTimeframeFailed,
+    batchTimeframeTotal,
+    refreshInstrumentData,
+    t,
+  ]);
 
   const handleStart = async () => {
     if (!instrument || !start || !end || timeframes.length === 0) return;
@@ -568,11 +592,31 @@ const HistoricalDataPage: React.FC = () => {
     goToCoveragePageRef.current = goToCoveragePage;
   }, [goToCoveragePage]);
 
+  const {
+    currentPage: issuesPage,
+    totalPages: issuesTotalPages,
+    paginatedItems: paginatedIssues,
+    totalItems: issuesTotalItems,
+    goToPage: goToIssuesPage,
+    startIndex: issuesStartIndex,
+    endIndex: issuesEndIndex,
+  } = usePagination(issues, {
+    itemsPerPage: issuesPageSize,
+    initialPage: 1,
+  });
+
+  const goToIssuesPageRef = useRef(goToIssuesPage);
+  useEffect(() => {
+    goToIssuesPageRef.current = goToIssuesPage;
+  }, [goToIssuesPage]);
+
   useEffect(() => {
     if (preferencesLoading) return;
     const prefSize = preferences.items_per_page ?? DEFAULT_ITEMS_PER_PAGE;
     setCoveragePageSize((prev) => (prev === prefSize ? prev : prefSize));
+    setIssuesPageSize((prev) => (prev === prefSize ? prev : prefSize));
     goToCoveragePageRef.current(1);
+    goToIssuesPageRef.current(1);
   }, [preferencesLoading, preferences.items_per_page]);
 
   useEffect(() => {
@@ -584,6 +628,20 @@ const HistoricalDataPage: React.FC = () => {
       goToCoveragePageRef.current(coverageTotalPages);
     }
   }, [coveragePage, coverageTotalPages]);
+
+  useEffect(() => {
+    if (issuesTotalPages > 0 && issuesPage > issuesTotalPages) {
+      goToIssuesPageRef.current(issuesTotalPages);
+    }
+  }, [issuesPage, issuesTotalPages]);
+
+  const prevIssuesLengthRef = useRef(issues.length);
+  useEffect(() => {
+    if (prevIssuesLengthRef.current !== issues.length) {
+      goToIssuesPageRef.current(1);
+      prevIssuesLengthRef.current = issues.length;
+    }
+  }, [issues.length]);
 
   const {
     currentPage: syncRunsPage,
@@ -632,6 +690,22 @@ const HistoricalDataPage: React.FC = () => {
   const handleCoveragePageSizeChange = async (size: number) => {
     const sanitized = Number.isFinite(size) && size > 0 ? size : DEFAULT_ITEMS_PER_PAGE;
     setCoveragePageSize(sanitized);
+    setIssuesPageSize(sanitized);
+    goToCoveragePage(1);
+    goToIssuesPage(1);
+    try {
+      await userService.updatePreferences({ items_per_page: sanitized });
+      window.dispatchEvent(new CustomEvent('preferences:updated'));
+    } catch (error) {
+      console.error('[HistoricalDataPage] Failed to persist items_per_page', error);
+    }
+  };
+
+  const handleIssuesPageSizeChange = async (size: number) => {
+    const sanitized = Number.isFinite(size) && size > 0 ? size : DEFAULT_ITEMS_PER_PAGE;
+    setIssuesPageSize(sanitized);
+    setCoveragePageSize(sanitized);
+    goToIssuesPage(1);
     goToCoveragePage(1);
     try {
       await userService.updatePreferences({ items_per_page: sanitized });
@@ -1547,7 +1621,7 @@ const HistoricalDataPage: React.FC = () => {
                 </button>
                 <button
                   type="button"
-                  onClick={() => void loadCoverage(instrument)}
+                  onClick={() => void refreshInstrumentData(instrument)}
                   disabled={!instrument || bootLoading}
                   className={replaySecondaryButtonClass}
                 >
@@ -1749,8 +1823,8 @@ const HistoricalDataPage: React.FC = () => {
                     {t('noIssues')}
                   </p>
                 ) : (
-                  <ul className="max-h-80 divide-y divide-gray-200 overflow-y-auto rounded-lg border border-gray-200 dark:divide-gray-700 dark:border-gray-700">
-                    {issues.slice(0, 100).map((iss) => {
+                  <ul className="divide-y divide-gray-200 overflow-hidden rounded-lg border border-gray-200 dark:divide-gray-700 dark:border-gray-700">
+                    {paginatedIssues.map((iss) => {
                       const severity = severityVisual(iss.severity);
                       return (
                         <li
@@ -1798,6 +1872,23 @@ const HistoricalDataPage: React.FC = () => {
                     endIndex={coverageEndIndex}
                     onPageChange={goToCoveragePage}
                     onPageSizeChange={handleCoveragePageSizeChange}
+                    pageSizeOptions={[5, 10, 25, 50, 100]}
+                    className="border-t-0"
+                  />
+                </div>
+              ) : null}
+
+              {bottomTab === 'issues' && issues.length > 0 ? (
+                <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow dark:border-gray-700 dark:bg-gray-800">
+                  <PaginationControls
+                    currentPage={issuesPage}
+                    totalPages={issuesTotalPages}
+                    totalItems={issuesTotalItems}
+                    itemsPerPage={issuesPageSize}
+                    startIndex={issuesStartIndex}
+                    endIndex={issuesEndIndex}
+                    onPageChange={goToIssuesPage}
+                    onPageSizeChange={handleIssuesPageSizeChange}
                     pageSizeOptions={[5, 10, 25, 50, 100]}
                     className="border-t-0"
                   />
