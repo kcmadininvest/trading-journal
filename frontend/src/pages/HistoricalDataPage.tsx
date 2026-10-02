@@ -428,6 +428,41 @@ const HistoricalDataPage: React.FC = () => {
     return map[status] || status;
   };
 
+  const severityVisual = (severity: string) => {
+    switch (severity) {
+      case 'error':
+        return {
+          label: t('severityError'),
+          className: 'bg-rose-50 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300',
+        };
+      case 'warning':
+        return {
+          label: t('severityWarning'),
+          className: 'bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
+        };
+      case 'info':
+      default:
+        return {
+          label: t('severityInfo'),
+          className: 'bg-gray-100 text-gray-700 dark:bg-gray-700/50 dark:text-gray-200',
+        };
+    }
+  };
+
+  const issueTypeLabel = (issueType: string) => {
+    const map: Record<string, string> = {
+      duplicate: t('issueTypeDuplicate'),
+      missing_timestamp: t('issueTypeMissingTimestamp'),
+      non_monotonic: t('issueTypeNonMonotonic'),
+      ohlc_inconsistent: t('issueTypeOhlcInconsistent'),
+      invalid_volume: t('issueTypeInvalidVolume'),
+      gap: t('issueTypeGap'),
+      expected_gap: t('issueTypeExpectedGap'),
+      unknown_session_profile: t('issueTypeUnknownSessionProfile'),
+    };
+    return map[issueType] || issueType;
+  };
+
   const syncStatusVisual = useCallback(
     (status: SyncRunStatus | '' | undefined) => {
       switch (status) {
@@ -1630,7 +1665,7 @@ const HistoricalDataPage: React.FC = () => {
                         key={tab.id}
                         type="button"
                         onClick={() => setBottomTab(tab.id)}
-                        className={`whitespace-nowrap border-b-2 px-1 py-2 text-sm font-medium transition-colors ${
+                        className={`inline-flex items-center gap-2 whitespace-nowrap border-b-2 px-1 py-2 text-sm font-medium transition-colors ${
                           bottomTab === tab.id
                             ? 'border-sky-500 text-sky-600 dark:text-sky-400'
                             : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
@@ -1638,7 +1673,11 @@ const HistoricalDataPage: React.FC = () => {
                         aria-current={bottomTab === tab.id ? 'page' : undefined}
                       >
                         {tab.label}
-                        {tab.id === 'issues' && issues.length > 0 ? ` (${issues.length})` : ''}
+                        {tab.id === 'issues' && issues.length > 0 ? (
+                          <span className="inline-flex shrink-0 items-center rounded-full bg-rose-100 px-2 py-0.5 text-xs font-semibold text-rose-700 dark:bg-rose-900/40 dark:text-rose-200">
+                            {fmtNum(issues.length)}
+                          </span>
+                        ) : null}
                       </button>
                     ))}
                   </nav>
@@ -1669,43 +1708,39 @@ const HistoricalDataPage: React.FC = () => {
                           {t('noCoverageFiltered')}
                         </p>
                       ) : (
-                        <div className="overflow-x-auto">
-                          <table className="min-w-full text-left text-sm">
-                            <thead className="border-b border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400">
-                              <tr>
-                                <th className="py-2 pr-4 font-medium">{t('contract')}</th>
-                                <th className="py-2 pr-4 font-medium">{t('timeframe')}</th>
-                                <th className="py-2 pr-4 font-medium">{t('status')}</th>
-                                <th className="py-2 pr-4 font-medium">{t('barsStored')}</th>
-                                <th className="py-2 pr-4 font-medium">{t('barsExpected')}</th>
-                                <th className="py-2 pr-4 font-medium">{t('missing')}</th>
-                                <th className="py-2 font-medium">{t('range')}</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {paginatedCoverage.map((c) => (
-                                <tr
-                                  key={`${c.contract_id}-${c.timeframe}-${c.start_utc}`}
-                                  className="border-b border-gray-100 dark:border-gray-800 text-gray-900 dark:text-gray-100"
-                                >
-                                  <td className="py-2.5 pr-4 whitespace-nowrap">{c.contract_id}</td>
-                                  <td className="py-2.5 pr-4 whitespace-nowrap">{c.timeframe}</td>
-                                  <td className="py-2.5 pr-4">
-                                    <StatusBadge status={c.status} label={statusLabel(c.status)} />
-                                  </td>
-                                  <td className="py-2.5 pr-4">{fmtNum(c.bars_stored)}</td>
-                                  <td className="py-2.5 pr-4">{fmtNum(c.bars_expected)}</td>
-                                  <td className="py-2.5 pr-4">
-                                    {fmtNum(c.unexpected_missing_count)}
-                                  </td>
-                                  <td className="py-2.5 whitespace-nowrap">
-                                    {fmtDateIso(c.start_utc)} → {fmtDateIso(c.end_utc)}
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
+                        <ul className="divide-y divide-gray-200 overflow-hidden rounded-lg border border-gray-200 dark:divide-gray-700 dark:border-gray-700">
+                          {paginatedCoverage.map((c) => (
+                            <li
+                              key={`${c.contract_id}-${c.timeframe}-${c.start_utc}`}
+                              className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2.5 text-sm"
+                            >
+                              <StatusBadge status={c.status} label={statusLabel(c.status)} />
+                              <span className="font-medium text-gray-900 dark:text-gray-100">
+                                {c.contract_id}
+                              </span>
+                              <span className="text-xs text-gray-600 dark:text-gray-300">
+                                {c.timeframe}
+                              </span>
+                              <span className="text-xs text-gray-500 dark:text-gray-400">
+                                {t('barsStored')}:{' '}
+                                {t('coverageBarsRatio', {
+                                  stored: fmtNum(c.bars_stored),
+                                  expected: fmtNum(c.bars_expected),
+                                })}
+                              </span>
+                              {c.unexpected_missing_count > 0 ? (
+                                <span className="text-xs font-medium text-amber-700 dark:text-amber-400">
+                                  {t('coverageMissingCount', {
+                                    value: fmtNum(c.unexpected_missing_count),
+                                  })}
+                                </span>
+                              ) : null}
+                              <span className="text-xs text-gray-500 dark:text-gray-400 sm:ml-auto">
+                                {fmtDateIso(c.start_utc)} → {fmtDateIso(c.end_utc)}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
                       )}
                     </div>
                   )
@@ -1714,28 +1749,40 @@ const HistoricalDataPage: React.FC = () => {
                     {t('noIssues')}
                   </p>
                 ) : (
-                  <ul className="max-h-80 space-y-2 overflow-y-auto text-sm">
-                    {issues.slice(0, 100).map((iss) => (
-                      <li
-                        key={iss.id}
-                        className="rounded-md border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/30 px-3 py-2 text-gray-700 dark:text-gray-300"
-                      >
-                        <span className="font-medium text-gray-900 dark:text-gray-100">
-                          {iss.issue_type}
-                        </span>
-                        <span className="text-gray-500 dark:text-gray-400"> · {iss.severity}</span>
-                        {iss.timestamp_utc ? (
-                          <span className="block sm:inline sm:before:content-['·_'] text-gray-500 dark:text-gray-400">
-                            {fmtDateTime(iss.timestamp_utc)}
+                  <ul className="max-h-80 divide-y divide-gray-200 overflow-y-auto rounded-lg border border-gray-200 dark:divide-gray-700 dark:border-gray-700">
+                    {issues.slice(0, 100).map((iss) => {
+                      const severity = severityVisual(iss.severity);
+                      return (
+                        <li
+                          key={iss.id}
+                          className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2.5 text-sm"
+                        >
+                          <span
+                            className={`inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${severity.className}`}
+                          >
+                            {severity.label}
                           </span>
-                        ) : null}
-                        {iss.contract_id ? (
-                          <span className="block sm:inline sm:before:content-['·_'] text-gray-500 dark:text-gray-400">
-                            {iss.contract_id}
+                          <span className="font-medium text-gray-900 dark:text-gray-100">
+                            {issueTypeLabel(iss.issue_type)}
                           </span>
-                        ) : null}
-                      </li>
-                    ))}
+                          {iss.timeframe ? (
+                            <span className="text-xs text-gray-600 dark:text-gray-300">
+                              {iss.timeframe}
+                            </span>
+                          ) : null}
+                          {iss.contract_id ? (
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              {iss.contract_id}
+                            </span>
+                          ) : null}
+                          {iss.timestamp_utc ? (
+                            <span className="text-xs text-gray-500 dark:text-gray-400 sm:ml-auto">
+                              {fmtDateTime(iss.timestamp_utc)}
+                            </span>
+                          ) : null}
+                        </li>
+                      );
+                    })}
                   </ul>
                 )}
               </div>
@@ -1808,12 +1855,14 @@ const JobStatusChip: React.FC<{ timeframe: string; status: string; label: string
 const StatusBadge: React.FC<{ status: string; label: string }> = ({ status, label }) => {
   const tone =
     status === 'complete'
-      ? 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400'
+      ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
       : status === 'partial'
-        ? 'bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400'
-        : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300';
+        ? 'bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'
+        : 'bg-gray-100 text-gray-700 dark:bg-gray-700/50 dark:text-gray-200';
   return (
-    <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${tone}`}>
+    <span
+      className={`inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${tone}`}
+    >
       {label}
     </span>
   );
