@@ -4,6 +4,7 @@ from __future__ import annotations
 import csv
 import io
 import logging
+import uuid
 from datetime import date as date_cls, timezone
 
 from django.http import HttpResponse
@@ -42,7 +43,7 @@ from market_data.services.available_timeframes import (
     list_available_timeframes,
     list_instruments_with_stored_bars,
 )
-from market_data.services.bar_query import get_available_data, get_bars
+from market_data.services.bar_query import get_bars
 from market_data.services.contracts import list_contracts_for_instrument
 from market_data.services.download_dispatch import (
     abandon_stale_pending_jobs,
@@ -52,6 +53,10 @@ from market_data.services.download_dispatch import (
     dispatch_historical_download,
 )
 from market_data.services.instruments import list_instruments, search_instruments
+from market_data.services.launch_summary import (
+    list_manual_launch_coverage,
+    list_manual_launch_quality_issues,
+)
 from market_data.services.replay_bars import ReplayBarsError, fetch_replay_bars
 from market_data.services.sessions import get_session_profile, resolve_session_range_utc, session_bounds_utc
 from market_data.services.sync_schedule import (
@@ -323,11 +328,13 @@ class ContractListView(APIView):
 
 
 class CoverageListView(APIView):
+    """Couverture actuelle des lancements manuels (une ligne par batch)."""
+
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        instrument = request.query_params.get('instrument')
-        data = get_available_data(request.user, instrument)
+        instrument = (request.query_params.get('instrument') or '').upper().strip() or None
+        data = list_manual_launch_coverage(request.user, instrument)
         return Response(data)
 
 
@@ -452,6 +459,7 @@ class DownloadJobListCreateView(APIView):
 
         jobs = []
         requested_timeframes = data['timeframes']
+        batch_id = uuid.uuid4()
         if profile_known:
             job = HistoricalDownloadJob.objects.create(
                 user=request.user,
@@ -460,6 +468,7 @@ class DownloadJobListCreateView(APIView):
                 timeframe='1m',
                 requested_timeframes=requested_timeframes,
                 trigger=HistoricalDownloadJob.Trigger.MANUAL,
+                batch_id=batch_id,
                 start_utc=start,
                 end_utc=end,
                 status=HistoricalDownloadJob.Status.PENDING,
@@ -476,6 +485,7 @@ class DownloadJobListCreateView(APIView):
                     timeframe=tf,
                     requested_timeframes=[tf],
                     trigger=HistoricalDownloadJob.Trigger.MANUAL,
+                    batch_id=batch_id,
                     start_utc=start,
                     end_utc=end,
                     status=HistoricalDownloadJob.Status.PENDING,
@@ -514,19 +524,14 @@ class DownloadJobIssuesView(APIView):
 
 
 class QualityIssueListView(APIView):
-    """Anomalies qualité des jobs de l’utilisateur, filtrables par instrument."""
+    """Anomalies qualité des lancements manuels (une ligne par batch)."""
 
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        instrument = (request.query_params.get('instrument') or '').upper().strip()
-        qs = BarQualityIssue.objects.filter(job__user=request.user).order_by(
-            '-created_at',
-            '-id',
-        )
-        if instrument:
-            qs = qs.filter(instrument=instrument)
-        return Response(QualityIssueSerializer(qs[:5000], many=True).data)
+        instrument = (request.query_params.get('instrument') or '').upper().strip() or None
+        data = list_manual_launch_quality_issues(request.user, instrument)
+        return Response(data)
 
 
 def _get_or_create_sync_settings(user) -> HistoricalSyncSettings:

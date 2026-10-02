@@ -70,6 +70,7 @@ class DownloadJobSerializer(serializers.ModelSerializer):
             'timeframe',
             'requested_timeframes',
             'trigger',
+            'batch_id',
             'start_utc',
             'end_utc',
             'status',

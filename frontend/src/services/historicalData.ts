@@ -21,23 +21,32 @@ export interface MarketContract {
   expiry_date: string | null;
 }
 
-export interface CoverageEntry {
-  instrument: string;
-  contract_id: string;
-  timeframe: string;
-  start_utc: string;
-  end_utc: string;
+export interface CoverageTotals {
   bars_stored: number;
   bars_expected: number;
   unexpected_missing_count: number;
-  status: 'complete' | 'partial' | 'empty';
-  ranges: Array<{
-    start_utc: string;
-    end_utc: string;
-    status: string;
-    bars_stored: number;
-    bars_expected: number;
-  }>;
+  complete: number;
+  partial: number;
+}
+
+export interface LaunchCoverageRow {
+  batch_id: string;
+  instrument: string;
+  contract_id: string;
+  timeframes: string[];
+  start_utc: string;
+  end_utc: string;
+  launched_at: string;
+  job_status: string;
+  bars_stored: number;
+  bars_expected: number;
+  unexpected_missing_count: number;
+  coverage_status: 'complete' | 'partial' | 'empty';
+}
+
+export interface CoverageResponse {
+  totals: CoverageTotals;
+  launches: LaunchCoverageRow[];
 }
 
 export interface DownloadJob {
@@ -47,6 +56,7 @@ export interface DownloadJob {
   timeframe: string;
   requested_timeframes?: string[];
   trigger?: string;
+  batch_id?: string | null;
   start_utc: string;
   end_utc: string;
   status: string;
@@ -123,6 +133,25 @@ export interface QualityIssue {
   created_at: string;
 }
 
+export interface LaunchQualityRow {
+  batch_id: string;
+  instrument: string;
+  contract_id: string;
+  timeframes: string[];
+  start_utc: string;
+  end_utc: string;
+  launched_at: string;
+  job_status: string;
+  unexpected_missing_count: number;
+  issue_total: number;
+  issue_counts: Record<string, number>;
+  max_severity: string;
+}
+
+export interface QualityIssuesResponse {
+  launches: LaunchQualityRow[];
+}
+
 class HistoricalDataService {
   private readonly BASE_URL = getApiBaseUrl();
 
@@ -180,11 +209,21 @@ class HistoricalDataService {
     return res.json();
   }
 
-  async getCoverage(instrument?: string): Promise<CoverageEntry[]> {
+  async getCoverage(instrument?: string): Promise<CoverageResponse> {
     const qs = instrument ? `?instrument=${encodeURIComponent(instrument)}` : '';
     const res = await this.fetchWithAuth(`${this.BASE_URL}/api/market-data/coverage/${qs}`);
     if (!res.ok) throw new Error('Erreur chargement couverture');
-    return res.json();
+    const body = await res.json();
+    return {
+      totals: body?.totals ?? {
+        bars_stored: 0,
+        bars_expected: 0,
+        unexpected_missing_count: 0,
+        complete: 0,
+        partial: 0,
+      },
+      launches: Array.isArray(body?.launches) ? body.launches : [],
+    };
   }
 
   async listJobs(): Promise<DownloadJob[]> {
@@ -238,11 +277,14 @@ class HistoricalDataService {
     return res.json();
   }
 
-  async listQualityIssues(instrument?: string): Promise<QualityIssue[]> {
+  async listQualityIssues(instrument?: string): Promise<QualityIssuesResponse> {
     const qs = instrument ? `?instrument=${encodeURIComponent(instrument)}` : '';
     const res = await this.fetchWithAuth(`${this.BASE_URL}/api/market-data/quality-issues/${qs}`);
     if (!res.ok) throw new Error('Erreur chargement anomalies');
-    return res.json();
+    const body = await res.json();
+    return {
+      launches: Array.isArray(body?.launches) ? body.launches : [],
+    };
   }
 
   async exportBarsCsv(params: {

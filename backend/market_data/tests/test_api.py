@@ -31,14 +31,18 @@ class MarketDataApiTests(TestCase):
     def test_coverage_empty(self):
         res = self.client.get('/api/market-data/coverage/')
         self.assertEqual(res.status_code, 200)
-        self.assertEqual(res.json(), [])
+        body = res.json()
+        self.assertEqual(body['launches'], [])
+        self.assertEqual(body['totals']['bars_stored'], 0)
 
     def test_quality_issues_empty(self):
         res = self.client.get('/api/market-data/quality-issues/')
         self.assertEqual(res.status_code, 200)
-        self.assertEqual(res.json(), [])
+        self.assertEqual(res.json(), {'launches': []})
 
     def test_quality_issues_scoped_to_user(self):
+        import uuid
+
         from market_data.models import BarQualityIssue
 
         other = User.objects.create_user(
@@ -46,11 +50,15 @@ class MarketDataApiTests(TestCase):
             email='other@example.com',
             password='x',
         )
+        mine_batch = uuid.uuid4()
+        other_batch = uuid.uuid4()
         job_mine = HistoricalDownloadJob.objects.create(
             user=self.user,
             instrument='NQ',
             contract_id='CON.F.US.ENQ.H25',
             timeframe='1m',
+            trigger=HistoricalDownloadJob.Trigger.MANUAL,
+            batch_id=mine_batch,
             start_utc=datetime(2025, 3, 10, tzinfo=dt_tz.utc),
             end_utc=datetime(2025, 3, 11, tzinfo=dt_tz.utc),
             status=HistoricalDownloadJob.Status.COMPLETED,
@@ -60,14 +68,16 @@ class MarketDataApiTests(TestCase):
             instrument='NQ',
             contract_id='CON.F.US.ENQ.H25',
             timeframe='1m',
+            trigger=HistoricalDownloadJob.Trigger.MANUAL,
+            batch_id=other_batch,
             start_utc=datetime(2025, 3, 10, tzinfo=dt_tz.utc),
             end_utc=datetime(2025, 3, 11, tzinfo=dt_tz.utc),
             status=HistoricalDownloadJob.Status.COMPLETED,
         )
         BarQualityIssue.objects.create(
             job=job_mine,
-            issue_type='gap',
-            severity='warning',
+            issue_type='ohlc_inconsistent',
+            severity='error',
             instrument='NQ',
             contract_id='CON.F.US.ENQ.H25',
             timeframe='1m',
@@ -84,8 +94,8 @@ class MarketDataApiTests(TestCase):
         res = self.client.get('/api/market-data/quality-issues/?instrument=NQ')
         self.assertEqual(res.status_code, 200)
         body = res.json()
-        self.assertEqual(len(body), 1)
-        self.assertEqual(body[0]['issue_type'], 'gap')
+        self.assertEqual(len(body['launches']), 1)
+        self.assertEqual(body['launches'][0]['issue_counts'], {'ohlc_inconsistent': 1})
 
     def test_instruments_fallback_catalog(self):
         with patch(
@@ -115,7 +125,9 @@ class MarketDataApiTests(TestCase):
         self.assertEqual(len(body['jobs']), 1)
         self.assertEqual(body['jobs'][0]['instrument'], 'NQ')
         self.assertEqual(body['jobs'][0]['timeframe'], '1m')
+        self.assertIsNotNone(body['jobs'][0].get('batch_id'))
         job = HistoricalDownloadJob.objects.get(user=self.user)
+        self.assertEqual(str(job.batch_id), body['jobs'][0]['batch_id'])
         mock_dispatch.assert_called_once_with(job.id)
 
     def test_create_download_rejects_invalid_timeframe(self):

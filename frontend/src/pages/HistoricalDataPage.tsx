@@ -21,17 +21,26 @@ import { formatNumber } from '../utils/numberFormat';
 import { getTodayDateInTimezone, addCalendarDays } from '../components/replay/replayDateNav';
 import { userService } from '../services/userService';
 import historicalDataService, {
-  CoverageEntry,
+  CoverageTotals,
   DownloadJob,
+  LaunchCoverageRow,
+  LaunchQualityRow,
   MarketContract,
   MarketInstrument,
-  QualityIssue,
   SyncHealth,
   SyncRun,
   SyncRunStatus,
   SyncSettings,
   SyncTarget,
 } from '../services/historicalData';
+
+const EMPTY_COVERAGE_TOTALS: CoverageTotals = {
+  bars_stored: 0,
+  bars_expected: 0,
+  unexpected_missing_count: 0,
+  complete: 0,
+  partial: 0,
+};
 
 const TERMINAL = new Set(['completed', 'failed', 'cancelled']);
 /** Fenêtre par défaut : historique TopStepX sim souvent limité au contrat front récent. */
@@ -70,8 +79,9 @@ const HistoricalDataPage: React.FC = () => {
   const [timeframes, setTimeframes] = useState<string[]>(['1m']);
   const [exportTimeframes, setExportTimeframes] = useState<string[]>(['1m']);
   const [batchJobs, setBatchJobs] = useState<DownloadJob[]>([]);
-  const [coverage, setCoverage] = useState<CoverageEntry[]>([]);
-  const [issues, setIssues] = useState<QualityIssue[]>([]);
+  const [coverageLaunches, setCoverageLaunches] = useState<LaunchCoverageRow[]>([]);
+  const [coverageTotals, setCoverageTotals] = useState<CoverageTotals>(EMPTY_COVERAGE_TOTALS);
+  const [issueLaunches, setIssueLaunches] = useState<LaunchQualityRow[]>([]);
   const [bootLoading, setBootLoading] = useState(true);
   const [starting, setStarting] = useState(false);
   const [bottomTab, setBottomTab] = useState<'coverage' | 'issues'>('coverage');
@@ -246,12 +256,14 @@ const HistoricalDataPage: React.FC = () => {
 
   const loadCoverage = useCallback(async (instr: string) => {
     if (!instr) {
-      setCoverage([]);
+      setCoverageLaunches([]);
+      setCoverageTotals(EMPTY_COVERAGE_TOTALS);
       return;
     }
     try {
       const data = await historicalDataService.getCoverage(instr);
-      setCoverage(data);
+      setCoverageLaunches(data.launches);
+      setCoverageTotals(data.totals);
     } catch {
       /* ignore */
     }
@@ -259,12 +271,12 @@ const HistoricalDataPage: React.FC = () => {
 
   const loadIssues = useCallback(async (instr: string) => {
     if (!instr) {
-      setIssues([]);
+      setIssueLaunches([]);
       return;
     }
     try {
       const data = await historicalDataService.listQualityIssues(instr);
-      setIssues(data);
+      setIssueLaunches(data.launches);
     } catch {
       /* ignore */
     }
@@ -328,8 +340,9 @@ const HistoricalDataPage: React.FC = () => {
 
   useEffect(() => {
     if (!instrument) {
-      setCoverage([]);
-      setIssues([]);
+      setCoverageLaunches([]);
+      setCoverageTotals(EMPTY_COVERAGE_TOTALS);
+      setIssueLaunches([]);
       return;
     }
     void loadContracts(instrument);
@@ -414,7 +427,7 @@ const HistoricalDataPage: React.FC = () => {
     const endClamped = end > todayIso ? todayIso : end;
     if (endClamped !== end) setEnd(endClamped);
     setStarting(true);
-    setIssues([]);
+    setIssueLaunches([]);
     try {
       const created = await historicalDataService.startDownload({
         instrument,
@@ -555,6 +568,22 @@ const HistoricalDataPage: React.FC = () => {
     }
   };
 
+  const buildIssueSummary = (row: LaunchQualityRow) => {
+    const parts = Object.entries(row.issue_counts)
+      .filter(([, count]) => count > 0)
+      .map(([itype, count]) => `${fmtNum(count)} ${issueTypeLabel(itype)}`);
+    const missing =
+      row.unexpected_missing_count > 0
+        ? t('coverageMissingCount', { value: fmtNum(row.unexpected_missing_count) })
+        : '';
+    if (parts.length === 0 && !missing) {
+      return t('noIssuesOnLaunch');
+    }
+    if (parts.length === 0) return missing;
+    if (!missing) return parts.join(', ');
+    return `${parts.join(', ')} · ${missing}`;
+  };
+
   const coverageFilterOptions = useMemo(
     () => [
       { value: 'all', label: t('coverageFilterAll') },
@@ -566,13 +595,13 @@ const HistoricalDataPage: React.FC = () => {
 
   const filteredCoverage = useMemo(() => {
     if (coverageFilter === 'with_data') {
-      return coverage.filter((c) => c.bars_stored > 0);
+      return coverageLaunches.filter((c) => c.bars_stored > 0);
     }
     if (coverageFilter === 'empty') {
-      return coverage.filter((c) => c.bars_stored <= 0);
+      return coverageLaunches.filter((c) => c.bars_stored <= 0);
     }
-    return coverage;
-  }, [coverage, coverageFilter]);
+    return coverageLaunches;
+  }, [coverageLaunches, coverageFilter]);
 
   const {
     currentPage: coveragePage,
@@ -592,6 +621,14 @@ const HistoricalDataPage: React.FC = () => {
     goToCoveragePageRef.current = goToCoveragePage;
   }, [goToCoveragePage]);
 
+  const flaggedIssueLaunches = useMemo(
+    () =>
+      issueLaunches.filter(
+        (row) => row.issue_total > 0 || row.unexpected_missing_count > 0,
+      ),
+    [issueLaunches],
+  );
+
   const {
     currentPage: issuesPage,
     totalPages: issuesTotalPages,
@@ -600,7 +637,7 @@ const HistoricalDataPage: React.FC = () => {
     goToPage: goToIssuesPage,
     startIndex: issuesStartIndex,
     endIndex: issuesEndIndex,
-  } = usePagination(issues, {
+  } = usePagination(issueLaunches, {
     itemsPerPage: issuesPageSize,
     initialPage: 1,
   });
@@ -635,13 +672,13 @@ const HistoricalDataPage: React.FC = () => {
     }
   }, [issuesPage, issuesTotalPages]);
 
-  const prevIssuesLengthRef = useRef(issues.length);
+  const prevIssuesLengthRef = useRef(issueLaunches.length);
   useEffect(() => {
-    if (prevIssuesLengthRef.current !== issues.length) {
+    if (prevIssuesLengthRef.current !== issueLaunches.length) {
       goToIssuesPageRef.current(1);
-      prevIssuesLengthRef.current = issues.length;
+      prevIssuesLengthRef.current = issueLaunches.length;
     }
-  }, [issues.length]);
+  }, [issueLaunches.length]);
 
   const {
     currentPage: syncRunsPage,
@@ -714,20 +751,6 @@ const HistoricalDataPage: React.FC = () => {
       console.error('[HistoricalDataPage] Failed to persist items_per_page', error);
     }
   };
-
-  const coverageTotals = useMemo(() => {
-    return filteredCoverage.reduce(
-      (acc, row) => {
-        acc.stored += row.bars_stored;
-        acc.expected += row.bars_expected;
-        acc.missing += row.unexpected_missing_count;
-        if (row.status === 'complete') acc.complete += 1;
-        else if (row.status === 'partial') acc.partial += 1;
-        return acc;
-      },
-      { stored: 0, expected: 0, missing: 0, complete: 0, partial: 0 },
-    );
-  }, [filteredCoverage]);
 
   const handleExportCsv = async () => {
     if (!instrument || !start || !end || exportTimeframes.length === 0) return;
@@ -1517,7 +1540,9 @@ const HistoricalDataPage: React.FC = () => {
                       setContractId('');
                       setContracts([]);
                       if (!next) {
-                        setCoverage([]);
+                        setCoverageLaunches([]);
+                        setCoverageTotals(EMPTY_COVERAGE_TOTALS);
+                        setIssueLaunches([]);
                       }
                     }}
                     options={instrumentOptions}
@@ -1649,9 +1674,9 @@ const HistoricalDataPage: React.FC = () => {
           ) : (
             <div className="space-y-4 sm:space-y-6">
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
-                <StatCard label={t('barsStored')} value={fmtNum(coverageTotals.stored)} />
-                <StatCard label={t('barsExpected')} value={fmtNum(coverageTotals.expected)} />
-                <StatCard label={t('missing')} value={fmtNum(coverageTotals.missing)} />
+                <StatCard label={t('barsStored')} value={fmtNum(coverageTotals.bars_stored)} />
+                <StatCard label={t('barsExpected')} value={fmtNum(coverageTotals.bars_expected)} />
+                <StatCard label={t('missing')} value={fmtNum(coverageTotals.unexpected_missing_count)} />
                 <StatCard label={t('statusComplete')} value={fmtNum(coverageTotals.complete)} />
                 <StatCard label={t('statusPartial')} value={fmtNum(coverageTotals.partial)} />
               </div>
@@ -1747,9 +1772,9 @@ const HistoricalDataPage: React.FC = () => {
                         aria-current={bottomTab === tab.id ? 'page' : undefined}
                       >
                         {tab.label}
-                        {tab.id === 'issues' && issues.length > 0 ? (
+                        {tab.id === 'issues' && flaggedIssueLaunches.length > 0 ? (
                           <span className="inline-flex shrink-0 items-center rounded-full bg-rose-100 px-2 py-0.5 text-xs font-semibold text-rose-700 dark:bg-rose-900/40 dark:text-rose-200">
-                            {fmtNum(issues.length)}
+                            {fmtNum(flaggedIssueLaunches.length)}
                           </span>
                         ) : null}
                       </button>
@@ -1758,7 +1783,7 @@ const HistoricalDataPage: React.FC = () => {
                 </div>
 
                 {bottomTab === 'coverage' ? (
-                  coverage.length === 0 ? (
+                  coverageLaunches.length === 0 ? (
                     <p className="text-sm text-gray-600 dark:text-gray-400 py-4 text-center">
                       {t('noCoverage')}
                     </p>
@@ -1785,15 +1810,24 @@ const HistoricalDataPage: React.FC = () => {
                         <ul className="divide-y divide-gray-200 overflow-hidden rounded-lg border border-gray-200 dark:divide-gray-700 dark:border-gray-700">
                           {paginatedCoverage.map((c) => (
                             <li
-                              key={`${c.contract_id}-${c.timeframe}-${c.start_utc}`}
+                              key={c.batch_id}
                               className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2.5 text-sm"
                             >
-                              <StatusBadge status={c.status} label={statusLabel(c.status)} />
+                              <StatusBadge
+                                status={c.coverage_status}
+                                label={statusLabel(c.coverage_status)}
+                              />
+                              <span className="text-xs text-gray-500 dark:text-gray-400">
+                                {fmtDateTime(c.launched_at)}
+                              </span>
+                              <span className="inline-flex shrink-0 items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700 dark:bg-gray-700/50 dark:text-gray-200">
+                                {statusLabel(c.job_status)}
+                              </span>
                               <span className="font-medium text-gray-900 dark:text-gray-100">
-                                {c.contract_id}
+                                {c.contract_id || t('allContracts')}
                               </span>
                               <span className="text-xs text-gray-600 dark:text-gray-300">
-                                {c.timeframe}
+                                {c.timeframes.join(', ')}
                               </span>
                               <span className="text-xs text-gray-500 dark:text-gray-400">
                                 {t('barsStored')}:{' '}
@@ -1818,17 +1852,20 @@ const HistoricalDataPage: React.FC = () => {
                       )}
                     </div>
                   )
-                ) : issues.length === 0 ? (
+                ) : issueLaunches.length === 0 ? (
                   <p className="text-sm text-gray-600 dark:text-gray-400 py-4 text-center">
                     {t('noIssues')}
                   </p>
                 ) : (
                   <ul className="divide-y divide-gray-200 overflow-hidden rounded-lg border border-gray-200 dark:divide-gray-700 dark:border-gray-700">
                     {paginatedIssues.map((iss) => {
-                      const severity = severityVisual(iss.severity);
+                      const severityKey =
+                        iss.max_severity ||
+                        (iss.unexpected_missing_count > 0 ? 'warning' : 'info');
+                      const severity = severityVisual(severityKey);
                       return (
                         <li
-                          key={iss.id}
+                          key={iss.batch_id}
                           className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2.5 text-sm"
                         >
                           <span
@@ -1836,24 +1873,23 @@ const HistoricalDataPage: React.FC = () => {
                           >
                             {severity.label}
                           </span>
-                          <span className="font-medium text-gray-900 dark:text-gray-100">
-                            {issueTypeLabel(iss.issue_type)}
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            {fmtDateTime(iss.launched_at)}
                           </span>
-                          {iss.timeframe ? (
+                          <span className="font-medium text-gray-900 dark:text-gray-100">
+                            {iss.contract_id || t('allContracts')}
+                          </span>
+                          {iss.timeframes.length > 0 ? (
                             <span className="text-xs text-gray-600 dark:text-gray-300">
-                              {iss.timeframe}
+                              {iss.timeframes.join(', ')}
                             </span>
                           ) : null}
-                          {iss.contract_id ? (
-                            <span className="text-xs text-gray-500 dark:text-gray-400">
-                              {iss.contract_id}
-                            </span>
-                          ) : null}
-                          {iss.timestamp_utc ? (
-                            <span className="text-xs text-gray-500 dark:text-gray-400 sm:ml-auto">
-                              {fmtDateTime(iss.timestamp_utc)}
-                            </span>
-                          ) : null}
+                          <span className="text-xs text-gray-600 dark:text-gray-300">
+                            {buildIssueSummary(iss)}
+                          </span>
+                          <span className="text-xs text-gray-500 dark:text-gray-400 sm:ml-auto">
+                            {fmtDateIso(iss.start_utc)} → {fmtDateIso(iss.end_utc)}
+                          </span>
                         </li>
                       );
                     })}
@@ -1878,7 +1914,7 @@ const HistoricalDataPage: React.FC = () => {
                 </div>
               ) : null}
 
-              {bottomTab === 'issues' && issues.length > 0 ? (
+              {bottomTab === 'issues' && issueLaunches.length > 0 ? (
                 <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow dark:border-gray-700 dark:bg-gray-800">
                   <PaginationControls
                     currentPage={issuesPage}

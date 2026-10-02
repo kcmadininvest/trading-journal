@@ -232,6 +232,12 @@ class HistoricalDownloadJob(models.Model):
         default=Trigger.MANUAL,
         db_index=True,
     )
+    batch_id = models.UUIDField(
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text=_('Identifiant commun aux jobs d’un même clic « Lancer » manuel.'),
+    )
     start_utc = models.DateTimeField()
     end_utc = models.DateTimeField()
     status = models.CharField(
@@ -257,6 +263,7 @@ class HistoricalDownloadJob(models.Model):
         indexes = [
             models.Index(fields=['user', 'status', '-created_at']),
             models.Index(fields=['instrument', 'status']),
+            models.Index(fields=['user', 'trigger', 'batch_id', '-created_at']),
         ]
 
     def __str__(self) -> str:
