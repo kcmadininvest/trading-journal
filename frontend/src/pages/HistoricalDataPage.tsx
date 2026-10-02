@@ -6,7 +6,7 @@ import { DateInput } from '../components/common/DateInput';
 import { CustomSelect } from '../components/common/CustomSelect';
 import { CustomMultiSelect } from '../components/common/CustomMultiSelect';
 import { NumberInputStepper } from '../components/common/NumberInputStepper';
-import { PaginationControls } from '../components/ui';
+import { PaginationControls, Tooltip } from '../components/ui';
 import {
   replayCardClass,
   replayDateInputClass,
@@ -457,18 +457,19 @@ const HistoricalDataPage: React.FC = () => {
     return map[status] || status;
   };
 
-  const issueTypeLabel = (issueType: string) => {
+  const issueTypeLabel = (issueType: string, count = 1) => {
     const map: Record<string, string> = {
-      duplicate: t('issueTypeDuplicate'),
-      missing_timestamp: t('issueTypeMissingTimestamp'),
-      non_monotonic: t('issueTypeNonMonotonic'),
-      ohlc_inconsistent: t('issueTypeOhlcInconsistent'),
-      invalid_volume: t('issueTypeInvalidVolume'),
-      gap: t('issueTypeGap'),
-      expected_gap: t('issueTypeExpectedGap'),
-      unknown_session_profile: t('issueTypeUnknownSessionProfile'),
+      duplicate: 'issueTypeDuplicate',
+      missing_timestamp: 'issueTypeMissingTimestamp',
+      non_monotonic: 'issueTypeNonMonotonic',
+      ohlc_inconsistent: 'issueTypeOhlcInconsistent',
+      invalid_volume: 'issueTypeInvalidVolume',
+      gap: 'issueTypeGap',
+      expected_gap: 'issueTypeExpectedGap',
+      unknown_session_profile: 'issueTypeUnknownSessionProfile',
     };
-    return map[issueType] || issueType;
+    const key = map[issueType];
+    return key ? t(key, { count }) : issueType;
   };
 
   const syncStatusVisual = useCallback(
@@ -543,7 +544,7 @@ const HistoricalDataPage: React.FC = () => {
     if (!row.issue_total) return '';
     return Object.entries(row.issue_counts || {})
       .filter(([, count]) => count > 0)
-      .map(([itype, count]) => `${fmtNum(count)} ${issueTypeLabel(itype)}`)
+      .map(([itype, count]) => `${fmtNum(count)} ${issueTypeLabel(itype, count)}`)
       .join(', ');
   };
 
@@ -1464,7 +1465,30 @@ const HistoricalDataPage: React.FC = () => {
                 </div>
 
                 <div className="min-w-0">
-                  <label className={labelClass}>{t('timeframesLabel')}</label>
+                  <label className={labelClass}>
+                    <span className="inline-flex items-center gap-1.5">
+                      <span>{t('timeframesLabel')}</span>
+                      <Tooltip
+                        content={t('sourceTimeframeHint')}
+                        position="top"
+                        className="shrink-0 items-center leading-none"
+                        contentClassName="whitespace-pre-line block"
+                      >
+                        <svg
+                          className="block h-3.5 w-3.5 shrink-0 cursor-help text-gray-400 dark:text-gray-500 sm:h-4 sm:w-4"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                          aria-label={t('sourceTimeframeHint')}
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      </Tooltip>
+                    </span>
+                  </label>
                   <CustomMultiSelect
                     className="w-full"
                     value={timeframes}
@@ -1475,9 +1499,6 @@ const HistoricalDataPage: React.FC = () => {
                     clearLabel={t('syncTimeframesClear')}
                     selectedCountLabel={(count) => t('syncTimeframesCount', { count })}
                   />
-                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                    {t('sourceTimeframeHint')}
-                  </p>
                 </div>
 
                 <div className="min-w-0">
