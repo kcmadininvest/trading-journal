@@ -42,6 +42,9 @@ export interface LaunchCoverageRow {
   bars_expected: number;
   unexpected_missing_count: number;
   coverage_status: 'complete' | 'partial' | 'empty';
+  issue_total: number;
+  issue_counts: Record<string, number>;
+  max_severity: string;
 }
 
 export interface CoverageResponse {
@@ -121,36 +124,27 @@ export interface SyncHealth {
   download_dispatch_mode: 'celery' | 'inline';
 }
 
-export interface QualityIssue {
-  id: number;
-  issue_type: string;
-  severity: string;
-  instrument: string;
-  contract_id: string;
-  timeframe: string;
-  timestamp_utc: string | null;
-  details: Record<string, unknown>;
-  created_at: string;
+export interface HistoricalDataExport {
+  blob: Blob;
+  filename: string;
 }
 
-export interface LaunchQualityRow {
-  batch_id: string;
-  instrument: string;
-  contract_id: string;
-  timeframes: string[];
-  start_utc: string;
-  end_utc: string;
-  launched_at: string;
-  job_status: string;
-  unexpected_missing_count: number;
-  issue_total: number;
-  issue_counts: Record<string, number>;
-  max_severity: string;
-}
-
-export interface QualityIssuesResponse {
-  launches: LaunchQualityRow[];
-}
+const responseFilename = (header: string | null): string | null => {
+  if (!header) return null;
+  const encoded = header.match(/filename\*=UTF-8''([^;]+)/i)?.[1];
+  if (encoded) {
+    try {
+      return decodeURIComponent(encoded.replace(/^"|"$/g, ''));
+    } catch {
+      return null;
+    }
+  }
+  return (
+    header.match(/filename="([^"]+)"/i)?.[1] ??
+    header.match(/filename=([^;]+)/i)?.[1]?.trim() ??
+    null
+  );
+};
 
 class HistoricalDataService {
   private readonly BASE_URL = getApiBaseUrl();
@@ -271,36 +265,24 @@ class HistoricalDataService {
     return res.json();
   }
 
-  async getJobIssues(id: number): Promise<QualityIssue[]> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/market-data/downloads/${id}/issues/`);
-    if (!res.ok) throw new Error('Erreur issues');
-    return res.json();
-  }
-
-  async listQualityIssues(instrument?: string): Promise<QualityIssuesResponse> {
-    const qs = instrument ? `?instrument=${encodeURIComponent(instrument)}` : '';
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/market-data/quality-issues/${qs}`);
-    if (!res.ok) throw new Error('Erreur chargement anomalies');
-    const body = await res.json();
-    return {
-      launches: Array.isArray(body?.launches) ? body.launches : [],
-    };
-  }
-
   async exportBarsCsv(params: {
     instrument: string;
-    timeframe: string;
+    timeframes: string[];
     start: string;
     end: string;
     contract_id?: string;
     session_dates?: boolean;
-  }): Promise<Blob> {
+  }): Promise<HistoricalDataExport> {
     const qs = new URLSearchParams({
       instrument: params.instrument,
-      timeframe: params.timeframe,
       start: params.start,
       end: params.end,
     });
+    if (params.timeframes.length === 1) {
+      qs.set('timeframe', params.timeframes[0]);
+    } else {
+      qs.set('timeframes', params.timeframes.join(','));
+    }
     if (params.contract_id) qs.set('contract_id', params.contract_id);
     if (params.session_dates) qs.set('session_dates', '1');
     const res = await this.fetchWithAuth(`${this.BASE_URL}/api/market-data/bars/export/?${qs}`);
@@ -308,7 +290,14 @@ class HistoricalDataService {
       const body = await res.json().catch(() => ({}));
       throw new Error(body.detail || 'Erreur export CSV');
     }
-    return res.blob();
+    const fallback =
+      params.timeframes.length === 1
+        ? `${params.instrument}_${params.timeframes[0]}_${params.start.slice(0, 10)}_${params.end.slice(0, 10)}.csv`
+        : `${params.instrument}_${params.start.slice(0, 10)}_${params.end.slice(0, 10)}.zip`;
+    return {
+      blob: await res.blob(),
+      filename: responseFilename(res.headers.get('Content-Disposition')) || fallback,
+    };
   }
 
   async getSyncSettings(): Promise<SyncSettings> {

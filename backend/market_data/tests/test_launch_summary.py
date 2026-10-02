@@ -85,11 +85,6 @@ class LaunchSummaryApiTests(TestCase):
         self.assertEqual(body['launches'], [])
         self.assertEqual(body['totals']['bars_stored'], 0)
 
-    def test_quality_issues_empty_shape(self):
-        res = self.client.get('/api/market-data/quality-issues/')
-        self.assertEqual(res.status_code, 200)
-        self.assertEqual(res.json(), {'launches': []})
-
     def test_one_row_per_manual_batch_with_daily_coverages(self):
         self._make_job()
         day1 = self.start
@@ -139,16 +134,11 @@ class LaunchSummaryApiTests(TestCase):
         self.assertEqual(row['unexpected_missing_count'], 10)
         self.assertEqual(row['coverage_status'], 'partial')
         self.assertEqual(cov['totals']['bars_stored'], 110)
-
-        issues = self.client.get('/api/market-data/quality-issues/?instrument=NQ').json()
-        self.assertEqual(len(issues['launches']), 1)
-        iss = issues['launches'][0]
-        self.assertEqual(iss['issue_total'], 2)
-        self.assertEqual(iss['issue_counts'].get('ohlc_inconsistent'), 1)
-        self.assertEqual(iss['issue_counts'].get('duplicate'), 1)
-        self.assertNotIn('gap', iss['issue_counts'])
-        self.assertEqual(iss['max_severity'], 'error')
-        self.assertEqual(iss['unexpected_missing_count'], 10)
+        self.assertEqual(row['issue_total'], 2)
+        self.assertEqual(row['issue_counts'].get('ohlc_inconsistent'), 1)
+        self.assertEqual(row['issue_counts'].get('duplicate'), 1)
+        self.assertNotIn('gap', row['issue_counts'])
+        self.assertEqual(row['max_severity'], 'error')
 
     def test_multi_job_batch_single_row(self):
         """Deux timeframes sans profil → un batch, une ligne."""
@@ -175,6 +165,7 @@ class LaunchSummaryApiTests(TestCase):
         self.assertEqual(len(cov['launches']), 1)
         self.assertEqual(set(cov['launches'][0]['timeframes']), {'1m', '5m'})
         self.assertEqual(cov['launches'][0]['bars_stored'], 120)
+        self.assertEqual(cov['launches'][0]['issue_total'], 0)
 
     def test_scheduled_job_excluded(self):
         self._make_job(
@@ -186,10 +177,8 @@ class LaunchSummaryApiTests(TestCase):
         self.assertEqual(cov['launches'], [])
         # Totaux instrument incluent quand même les bougies en base
         self.assertEqual(cov['totals']['bars_stored'], 10)
-        issues = self.client.get('/api/market-data/quality-issues/?instrument=NQ').json()
-        self.assertEqual(issues['launches'], [])
 
-    def test_quality_issues_scoped_to_user(self):
+    def test_issue_counts_scoped_to_user(self):
         mine_batch = uuid.uuid4()
         other_batch = uuid.uuid4()
         job_mine = self._make_job(batch_id=mine_batch)
@@ -210,9 +199,10 @@ class LaunchSummaryApiTests(TestCase):
             contract_id='CON.F.US.ENQ.H25',
             timeframe='1m',
         )
-        body = self.client.get('/api/market-data/quality-issues/?instrument=NQ').json()
+        body = self.client.get('/api/market-data/coverage/?instrument=NQ').json()
         self.assertEqual(len(body['launches']), 1)
         self.assertEqual(body['launches'][0]['issue_counts'], {'ohlc_inconsistent': 1})
+        self.assertEqual(body['launches'][0]['issue_total'], 1)
 
     def test_relaunch_shows_current_coverage(self):
         """Relance sur période déjà complète → couverture complète, pas 0."""

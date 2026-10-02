@@ -1,3 +1,5 @@
+import io
+import zipfile
 from datetime import datetime, timezone as dt_tz
 from unittest.mock import patch
 
@@ -35,12 +37,7 @@ class MarketDataApiTests(TestCase):
         self.assertEqual(body['launches'], [])
         self.assertEqual(body['totals']['bars_stored'], 0)
 
-    def test_quality_issues_empty(self):
-        res = self.client.get('/api/market-data/quality-issues/')
-        self.assertEqual(res.status_code, 200)
-        self.assertEqual(res.json(), {'launches': []})
-
-    def test_quality_issues_scoped_to_user(self):
+    def test_coverage_issue_counts_scoped_to_user(self):
         import uuid
 
         from market_data.models import BarQualityIssue
@@ -91,11 +88,16 @@ class MarketDataApiTests(TestCase):
             timeframe='1m',
         )
 
-        res = self.client.get('/api/market-data/quality-issues/?instrument=NQ')
+        res = self.client.get('/api/market-data/coverage/?instrument=NQ')
         self.assertEqual(res.status_code, 200)
         body = res.json()
         self.assertEqual(len(body['launches']), 1)
         self.assertEqual(body['launches'][0]['issue_counts'], {'ohlc_inconsistent': 1})
+        self.assertEqual(body['launches'][0]['issue_total'], 1)
+
+    def test_quality_issues_endpoint_removed(self):
+        res = self.client.get('/api/market-data/quality-issues/')
+        self.assertEqual(res.status_code, 404)
 
     def test_instruments_fallback_catalog(self):
         with patch(
@@ -348,6 +350,99 @@ class MarketDataApiTests(TestCase):
         self.assertEqual(lines[0], 'timestamp,open,high,low,close,volume,contract_id')
         self.assertEqual(len(lines), 4)  # header + 3 bars
         self.assertIn('CON.F.US.MES.H25', lines[1])
+
+    def test_bars_multi_timeframe_export_returns_one_zip(self):
+        start = datetime(2025, 3, 10, 14, 0, tzinfo=dt_tz.utc)
+        bars, _ = normalize_bars(make_m1_bars(start, 6), instrument='MES')
+        bulk_insert_bars(
+            bars,
+            user=self.user,
+            instrument='MES',
+            symbol='MESH5',
+            contract_id='CON.F.US.MES.H25',
+            timeframe='1m',
+            source='test',
+        )
+
+        res = self.client.get(
+            '/api/market-data/bars/export/',
+            {
+                'instrument': 'MES',
+                'timeframes': '1m,5m',
+                'start': '2025-03-10',
+                'end': '2025-03-11',
+                'contract_id': 'CON.F.US.MES.H25',
+            },
+        )
+
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res['Content-Type'], 'application/zip')
+        self.assertEqual(
+            res['Content-Disposition'],
+            'attachment; filename="MES_2025-03-10_2025-03-11.zip"',
+        )
+        with zipfile.ZipFile(io.BytesIO(res.content)) as archive:
+            self.assertEqual(
+                archive.namelist(),
+                [
+                    'MES_1m_2025-03-10_2025-03-11.csv',
+                    'MES_5m_2025-03-10_2025-03-11.csv',
+                ],
+            )
+            one_minute = archive.read(archive.namelist()[0]).decode('utf-8')
+            five_minutes = archive.read(archive.namelist()[1]).decode('utf-8')
+        self.assertEqual(len(one_minute.strip().splitlines()), 7)
+        self.assertEqual(
+            five_minutes.strip(),
+            'timestamp,open,high,low,close,volume,contract_id',
+        )
+
+    def test_bars_multi_timeframe_export_deduplicates_timeframes(self):
+        res = self.client.get(
+            '/api/market-data/bars/export/',
+            {
+                'instrument': 'MES',
+                'timeframes': '1m,1m',
+                'start': '2025-03-10',
+                'end': '2025-03-11',
+            },
+        )
+
+        self.assertEqual(res.status_code, 200)
+        self.assertIn('text/csv', res['Content-Type'])
+        self.assertIn('MES_1m_2025-03-10_2025-03-11.csv', res['Content-Disposition'])
+
+    def test_bars_multi_timeframe_export_rejects_invalid_timeframe(self):
+        res = self.client.get(
+            '/api/market-data/bars/export/',
+            {
+                'instrument': 'MES',
+                'timeframes': '1m,invalid',
+                'start': '2025-03-10',
+                'end': '2025-03-11',
+            },
+        )
+
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res['Content-Type'], 'application/json')
+
+    @patch('market_data.views._bars_csv_content')
+    def test_bars_multi_timeframe_export_is_atomic(self, csv_content):
+        csv_content.side_effect = ['timestamp\n', ValueError('Trop de lignes')]
+
+        res = self.client.get(
+            '/api/market-data/bars/export/',
+            {
+                'instrument': 'MES',
+                'timeframes': '1m,5m',
+                'start': '2025-03-10',
+                'end': '2025-03-11',
+            },
+        )
+
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['detail'], 'Trop de lignes')
+        self.assertNotEqual(res['Content-Type'], 'application/zip')
 
     def test_bars_csv_export_session_dates_includes_previous_evening(self):
         start = datetime(2026, 9, 7, 22, 0, tzinfo=dt_tz.utc)

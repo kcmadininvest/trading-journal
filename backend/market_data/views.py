@@ -5,6 +5,7 @@ import csv
 import io
 import logging
 import uuid
+import zipfile
 from datetime import date as date_cls, timezone
 
 from django.http import HttpResponse
@@ -53,10 +54,7 @@ from market_data.services.download_dispatch import (
     dispatch_historical_download,
 )
 from market_data.services.instruments import list_instruments, search_instruments
-from market_data.services.launch_summary import (
-    list_manual_launch_coverage,
-    list_manual_launch_quality_issues,
-)
+from market_data.services.launch_summary import list_manual_launch_coverage
 from market_data.services.replay_bars import ReplayBarsError, fetch_replay_bars
 from market_data.services.sessions import get_session_profile, resolve_session_range_utc, session_bounds_utc
 from market_data.services.sync_schedule import (
@@ -338,6 +336,43 @@ class CoverageListView(APIView):
         return Response(data)
 
 
+def _export_filename(*parts):
+    return '_'.join(
+        ''.join(
+            char if char.isascii() and (char.isalnum() or char in '.-') else '_'
+            for char in part
+        )
+        for part in parts
+    )
+
+
+def _bars_csv_content(*, instrument, timeframe, start, end, contract, user):
+    df = get_bars(
+        instrument,
+        timeframe=timeframe,
+        start=start,
+        end=end,
+        contract=contract,
+        user=user,
+    )
+    if len(df) > MAX_CSV_ROWS:
+        raise ValueError(
+            f'Trop de lignes ({len(df)}). '
+            f'Maximum {MAX_CSV_ROWS} — réduisez la période ou le contrat.'
+        )
+
+    buffer = io.StringIO()
+    if df.empty:
+        csv.writer(buffer).writerow(CSV_EXPORT_COLUMNS)
+    else:
+        export_df = df.rename(columns={'timestamp_utc': 'timestamp'}).copy()
+        export_df['timestamp'] = export_df['timestamp'].map(
+            lambda ts: ts.isoformat().replace('+00:00', 'Z') if hasattr(ts, 'isoformat') else str(ts),
+        )
+        export_df[list(CSV_EXPORT_COLUMNS)].to_csv(buffer, index=False)
+    return buffer.getvalue()
+
+
 class BarsCsvExportView(APIView):
     """Export CSV des bougies stockées pour une période (filtres UI)."""
 
@@ -361,61 +396,59 @@ class BarsCsvExportView(APIView):
             start = session_bounds_utc(start_date, instrument)[0].isoformat()
             end = session_bounds_utc(end_date, instrument)[1].isoformat()
 
-        raw_tf = (request.query_params.get('timeframe') or '1m').strip()
+        raw_timeframes = request.query_params.get('timeframes')
+        requested_timeframes = (
+            raw_timeframes.split(',')
+            if raw_timeframes is not None
+            else [request.query_params.get('timeframe') or '1m']
+        )
         try:
-            timeframe = parse_timeframe(raw_tf).code
+            timeframes = list(dict.fromkeys(
+                parse_timeframe(raw.strip()).code
+                for raw in requested_timeframes
+                if raw.strip()
+            ))
         except UnknownTimeframe as exc:
             return Response({'detail': str(exc)}, status=400)
+        if not timeframes:
+            return Response({'detail': 'Paramètre timeframe requis.'}, status=400)
 
         contract = (request.query_params.get('contract_id') or '').strip() or None
-
+        files = []
         try:
-            df = get_bars(
-                instrument,
-                timeframe=timeframe,
-                start=start,
-                end=end,
-                contract=contract,
-                user=request.user,
-            )
+            for timeframe in timeframes:
+                content = _bars_csv_content(
+                    instrument=instrument,
+                    timeframe=timeframe,
+                    start=start,
+                    end=end,
+                    contract=contract,
+                    user=request.user,
+                )
+                filename = _export_filename(
+                    instrument,
+                    timeframe,
+                    start_label,
+                    f'{end_label}.csv',
+                )
+                files.append((filename, content))
         except ValueError as exc:
             return Response({'detail': str(exc)}, status=400)
         except Exception as exc:
             logger.exception('CSV export failed instrument=%s', instrument)
             return Response({'detail': str(exc)}, status=500)
 
-        if len(df) > MAX_CSV_ROWS:
-            return Response(
-                {
-                    'detail': (
-                        f'Trop de lignes ({len(df)}). '
-                        f'Maximum {MAX_CSV_ROWS} — réduisez la période ou le contrat.'
-                    ),
-                },
-                status=400,
-            )
+        if len(files) == 1:
+            response = HttpResponse(files[0][1], content_type='text/csv; charset=utf-8')
+            response['Content-Disposition'] = f'attachment; filename="{files[0][0]}"'
+            return response
 
-        buffer = io.StringIO()
-        if df.empty:
-            writer = csv.writer(buffer)
-            writer.writerow(CSV_EXPORT_COLUMNS)
-        else:
-            export_df = df.rename(columns={'timestamp_utc': 'timestamp'})
-            # Normaliser timestamp ISO
-            export_df = export_df.copy()
-            export_df['timestamp'] = export_df['timestamp'].map(
-                lambda ts: ts.isoformat().replace('+00:00', 'Z') if hasattr(ts, 'isoformat') else str(ts),
-            )
-            export_df[list(CSV_EXPORT_COLUMNS)].to_csv(buffer, index=False)
-
-        filename = (
-            f"{instrument}_{timeframe}_"
-            f"{start_label}_{end_label}.csv"
-        ).replace(' ', '_')
-        response = HttpResponse(
-            buffer.getvalue(),
-            content_type='text/csv; charset=utf-8',
-        )
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(buffer, mode='w', compression=zipfile.ZIP_DEFLATED) as archive:
+            for filename, content in files:
+                archive.writestr(filename, content.encode('utf-8'))
+        filename = _export_filename(instrument, start_label, f'{end_label}.zip')
+        response = HttpResponse(buffer.getvalue(), content_type='application/zip')
         response['Content-Disposition'] = f'attachment; filename="{filename}"'
         return response
 
@@ -521,17 +554,6 @@ class DownloadJobIssuesView(APIView):
             return Response({'detail': 'Job introuvable.'}, status=404)
         issues = BarQualityIssue.objects.filter(job=job).order_by('-created_at')[:5000]
         return Response(QualityIssueSerializer(issues, many=True).data)
-
-
-class QualityIssueListView(APIView):
-    """Anomalies qualité des lancements manuels (une ligne par batch)."""
-
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        instrument = (request.query_params.get('instrument') or '').upper().strip() or None
-        data = list_manual_launch_quality_issues(request.user, instrument)
-        return Response(data)
 
 
 def _get_or_create_sync_settings(user) -> HistoricalSyncSettings:

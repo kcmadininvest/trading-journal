@@ -24,7 +24,6 @@ import historicalDataService, {
   CoverageTotals,
   DownloadJob,
   LaunchCoverageRow,
-  LaunchQualityRow,
   MarketContract,
   MarketInstrument,
   SyncHealth,
@@ -57,6 +56,19 @@ const SYNC_IDLE_POLL_MS = 15000;
 
 const labelClass = 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2';
 
+function triggerBrowserDownload(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.rel = 'noopener';
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+}
+
 const HistoricalDataPage: React.FC = () => {
   const { t } = useTranslation('historicalData');
   const { preferences, loading: preferencesLoading } = usePreferences();
@@ -77,22 +89,18 @@ const HistoricalDataPage: React.FC = () => {
   );
   const [end, setEnd] = useState(() => getTodayDateInTimezone('Europe/Paris'));
   const [timeframes, setTimeframes] = useState<string[]>(['1m']);
-  const [exportTimeframes, setExportTimeframes] = useState<string[]>(['1m']);
   const [batchJobs, setBatchJobs] = useState<DownloadJob[]>([]);
   const [coverageLaunches, setCoverageLaunches] = useState<LaunchCoverageRow[]>([]);
   const [coverageTotals, setCoverageTotals] = useState<CoverageTotals>(EMPTY_COVERAGE_TOTALS);
-  const [issueLaunches, setIssueLaunches] = useState<LaunchQualityRow[]>([]);
   const [bootLoading, setBootLoading] = useState(true);
   const [starting, setStarting] = useState(false);
-  const [bottomTab, setBottomTab] = useState<'coverage' | 'issues'>('coverage');
-  const [coverageFilter, setCoverageFilter] = useState<'all' | 'with_data' | 'empty'>('all');
   const [coveragePageSize, setCoveragePageSize] = useState(
     () => preferences.items_per_page ?? DEFAULT_ITEMS_PER_PAGE,
   );
-  const [issuesPageSize, setIssuesPageSize] = useState(
-    () => preferences.items_per_page ?? DEFAULT_ITEMS_PER_PAGE,
-  );
   const [exporting, setExporting] = useState(false);
+  const exportingRef = useRef(false);
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [exportDialogTimeframes, setExportDialogTimeframes] = useState<string[]>(['1m']);
   const [syncSettings, setSyncSettings] = useState<SyncSettings | null>(null);
   const [syncRuns, setSyncRuns] = useState<SyncRun[]>([]);
   const [syncRunsPageSize, setSyncRunsPageSize] = useState(SYNC_RUNS_PAGE_SIZE_DEFAULT);
@@ -269,24 +277,11 @@ const HistoricalDataPage: React.FC = () => {
     }
   }, []);
 
-  const loadIssues = useCallback(async (instr: string) => {
-    if (!instr) {
-      setIssueLaunches([]);
-      return;
-    }
-    try {
-      const data = await historicalDataService.listQualityIssues(instr);
-      setIssueLaunches(data.launches);
-    } catch {
-      /* ignore */
-    }
-  }, []);
-
   const refreshInstrumentData = useCallback(
     async (instr: string) => {
-      await Promise.all([loadCoverage(instr), loadIssues(instr)]);
+      await loadCoverage(instr);
     },
-    [loadCoverage, loadIssues],
+    [loadCoverage],
   );
 
   const loadContracts = useCallback(
@@ -342,7 +337,6 @@ const HistoricalDataPage: React.FC = () => {
     if (!instrument) {
       setCoverageLaunches([]);
       setCoverageTotals(EMPTY_COVERAGE_TOTALS);
-      setIssueLaunches([]);
       return;
     }
     void loadContracts(instrument);
@@ -427,7 +421,6 @@ const HistoricalDataPage: React.FC = () => {
     const endClamped = end > todayIso ? todayIso : end;
     if (endClamped !== end) setEnd(endClamped);
     setStarting(true);
-    setIssueLaunches([]);
     try {
       const created = await historicalDataService.startDownload({
         instrument,
@@ -438,7 +431,6 @@ const HistoricalDataPage: React.FC = () => {
         session_dates: true,
       });
       setBatchJobs(created.jobs);
-      setBottomTab('coverage');
     } catch (e) {
       const msg = e instanceof Error ? e.message : t('loadError');
       toast.error(
@@ -463,27 +455,6 @@ const HistoricalDataPage: React.FC = () => {
       cancelled: t('statusFailed'),
     };
     return map[status] || status;
-  };
-
-  const severityVisual = (severity: string) => {
-    switch (severity) {
-      case 'error':
-        return {
-          label: t('severityError'),
-          className: 'bg-rose-50 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300',
-        };
-      case 'warning':
-        return {
-          label: t('severityWarning'),
-          className: 'bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
-        };
-      case 'info':
-      default:
-        return {
-          label: t('severityInfo'),
-          className: 'bg-gray-100 text-gray-700 dark:bg-gray-700/50 dark:text-gray-200',
-        };
-    }
   };
 
   const issueTypeLabel = (issueType: string) => {
@@ -568,40 +539,13 @@ const HistoricalDataPage: React.FC = () => {
     }
   };
 
-  const buildIssueSummary = (row: LaunchQualityRow) => {
-    const parts = Object.entries(row.issue_counts)
+  const buildNonGapIssueSummary = (row: LaunchCoverageRow) => {
+    if (!row.issue_total) return '';
+    return Object.entries(row.issue_counts || {})
       .filter(([, count]) => count > 0)
-      .map(([itype, count]) => `${fmtNum(count)} ${issueTypeLabel(itype)}`);
-    const missing =
-      row.unexpected_missing_count > 0
-        ? t('coverageMissingCount', { value: fmtNum(row.unexpected_missing_count) })
-        : '';
-    if (parts.length === 0 && !missing) {
-      return t('noIssuesOnLaunch');
-    }
-    if (parts.length === 0) return missing;
-    if (!missing) return parts.join(', ');
-    return `${parts.join(', ')} · ${missing}`;
+      .map(([itype, count]) => `${fmtNum(count)} ${issueTypeLabel(itype)}`)
+      .join(', ');
   };
-
-  const coverageFilterOptions = useMemo(
-    () => [
-      { value: 'all', label: t('coverageFilterAll') },
-      { value: 'with_data', label: t('coverageFilterWithData') },
-      { value: 'empty', label: t('coverageFilterEmpty') },
-    ],
-    [t],
-  );
-
-  const filteredCoverage = useMemo(() => {
-    if (coverageFilter === 'with_data') {
-      return coverageLaunches.filter((c) => c.bars_stored > 0);
-    }
-    if (coverageFilter === 'empty') {
-      return coverageLaunches.filter((c) => c.bars_stored <= 0);
-    }
-    return coverageLaunches;
-  }, [coverageLaunches, coverageFilter]);
 
   const {
     currentPage: coveragePage,
@@ -611,7 +555,7 @@ const HistoricalDataPage: React.FC = () => {
     goToPage: goToCoveragePage,
     startIndex: coverageStartIndex,
     endIndex: coverageEndIndex,
-  } = usePagination(filteredCoverage, {
+  } = usePagination(coverageLaunches, {
     itemsPerPage: coveragePageSize,
     initialPage: 1,
   });
@@ -621,64 +565,18 @@ const HistoricalDataPage: React.FC = () => {
     goToCoveragePageRef.current = goToCoveragePage;
   }, [goToCoveragePage]);
 
-  const flaggedIssueLaunches = useMemo(
-    () =>
-      issueLaunches.filter(
-        (row) => row.issue_total > 0 || row.unexpected_missing_count > 0,
-      ),
-    [issueLaunches],
-  );
-
-  const {
-    currentPage: issuesPage,
-    totalPages: issuesTotalPages,
-    paginatedItems: paginatedIssues,
-    totalItems: issuesTotalItems,
-    goToPage: goToIssuesPage,
-    startIndex: issuesStartIndex,
-    endIndex: issuesEndIndex,
-  } = usePagination(issueLaunches, {
-    itemsPerPage: issuesPageSize,
-    initialPage: 1,
-  });
-
-  const goToIssuesPageRef = useRef(goToIssuesPage);
-  useEffect(() => {
-    goToIssuesPageRef.current = goToIssuesPage;
-  }, [goToIssuesPage]);
-
   useEffect(() => {
     if (preferencesLoading) return;
     const prefSize = preferences.items_per_page ?? DEFAULT_ITEMS_PER_PAGE;
     setCoveragePageSize((prev) => (prev === prefSize ? prev : prefSize));
-    setIssuesPageSize((prev) => (prev === prefSize ? prev : prefSize));
     goToCoveragePageRef.current(1);
-    goToIssuesPageRef.current(1);
   }, [preferencesLoading, preferences.items_per_page]);
-
-  useEffect(() => {
-    goToCoveragePageRef.current(1);
-  }, [coverageFilter]);
 
   useEffect(() => {
     if (coverageTotalPages > 0 && coveragePage > coverageTotalPages) {
       goToCoveragePageRef.current(coverageTotalPages);
     }
   }, [coveragePage, coverageTotalPages]);
-
-  useEffect(() => {
-    if (issuesTotalPages > 0 && issuesPage > issuesTotalPages) {
-      goToIssuesPageRef.current(issuesTotalPages);
-    }
-  }, [issuesPage, issuesTotalPages]);
-
-  const prevIssuesLengthRef = useRef(issueLaunches.length);
-  useEffect(() => {
-    if (prevIssuesLengthRef.current !== issueLaunches.length) {
-      goToIssuesPageRef.current(1);
-      prevIssuesLengthRef.current = issueLaunches.length;
-    }
-  }, [issueLaunches.length]);
 
   const {
     currentPage: syncRunsPage,
@@ -727,22 +625,6 @@ const HistoricalDataPage: React.FC = () => {
   const handleCoveragePageSizeChange = async (size: number) => {
     const sanitized = Number.isFinite(size) && size > 0 ? size : DEFAULT_ITEMS_PER_PAGE;
     setCoveragePageSize(sanitized);
-    setIssuesPageSize(sanitized);
-    goToCoveragePage(1);
-    goToIssuesPage(1);
-    try {
-      await userService.updatePreferences({ items_per_page: sanitized });
-      window.dispatchEvent(new CustomEvent('preferences:updated'));
-    } catch (error) {
-      console.error('[HistoricalDataPage] Failed to persist items_per_page', error);
-    }
-  };
-
-  const handleIssuesPageSizeChange = async (size: number) => {
-    const sanitized = Number.isFinite(size) && size > 0 ? size : DEFAULT_ITEMS_PER_PAGE;
-    setIssuesPageSize(sanitized);
-    setCoveragePageSize(sanitized);
-    goToIssuesPage(1);
     goToCoveragePage(1);
     try {
       await userService.updatePreferences({ items_per_page: sanitized });
@@ -752,36 +634,45 @@ const HistoricalDataPage: React.FC = () => {
     }
   };
 
-  const handleExportCsv = async () => {
-    if (!instrument || !start || !end || exportTimeframes.length === 0) return;
+  const openExportDialog = () => {
+    if (!instrument || !start || !end || exportingRef.current) return;
+    setExportDialogTimeframes(timeframes.length > 0 ? [...timeframes] : ['1m']);
+    setExportDialogOpen(true);
+  };
+
+  const handleExportCsv = async (selectedTimeframes: string[]) => {
+    if (
+      !instrument ||
+      !start ||
+      !end ||
+      selectedTimeframes.length === 0 ||
+      exportingRef.current
+    ) {
+      return;
+    }
+    exportingRef.current = true;
     setExporting(true);
+    setExportDialogOpen(false);
+
     try {
-      for (const tf of exportTimeframes) {
-        const blob = await historicalDataService.exportBarsCsv({
-          instrument,
-          timeframe: tf,
-          start: `${start}T00:00:00Z`,
-          end: `${end}T23:59:59Z`,
-          contract_id: contractId || undefined,
-          session_dates: true,
-        });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${instrument}_${tf}_${start}_${end}.csv`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(url);
-      }
+      const exported = await historicalDataService.exportBarsCsv({
+        instrument,
+        timeframes: selectedTimeframes,
+        start: `${start}T00:00:00Z`,
+        end: `${end}T23:59:59Z`,
+        contract_id: contractId || undefined,
+        session_dates: true,
+      });
+      triggerBrowserDownload(exported.blob, exported.filename);
       toast.success(
-        exportTimeframes.length === 1
+        selectedTimeframes.length === 1
           ? t('exportSuccess')
-          : t('exportSuccessMulti', { count: exportTimeframes.length }),
+          : t('exportSuccessMulti', { count: selectedTimeframes.length }),
       );
     } catch (e) {
       toast.error(e instanceof Error ? e.message : t('exportError'));
     } finally {
+      exportingRef.current = false;
       setExporting(false);
     }
   };
@@ -1542,7 +1433,6 @@ const HistoricalDataPage: React.FC = () => {
                       if (!next) {
                         setCoverageLaunches([]);
                         setCoverageTotals(EMPTY_COVERAGE_TOTALS);
-                        setIssueLaunches([]);
                       }
                     }}
                     options={instrumentOptions}
@@ -1618,19 +1508,6 @@ const HistoricalDataPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="max-w-xs">
-                <label className={labelClass}>{t('exportTimeframesLabel')}</label>
-                <CustomMultiSelect
-                  className="w-full"
-                  value={exportTimeframes}
-                  onChange={setExportTimeframes}
-                  options={timeframeOptions}
-                  placeholder={t('syncTimeframesPlaceholder')}
-                  clearLabel={t('syncTimeframesClear')}
-                  selectedCountLabel={(count) => t('syncTimeframesCount', { count })}
-                />
-              </div>
-
               <div className="flex w-full flex-wrap items-end gap-2">
                 <button
                   type="button"
@@ -1654,8 +1531,8 @@ const HistoricalDataPage: React.FC = () => {
                 </button>
                 <button
                   type="button"
-                  onClick={() => void handleExportCsv()}
-                  disabled={!instrument || bootLoading || exporting || exportTimeframes.length === 0}
+                  onClick={openExportDialog}
+                  disabled={!instrument || bootLoading || exporting || !start || !end}
                   className={replaySecondaryButtonClass}
                 >
                   {exporting ? t('exporting') : t('exportCsv')}
@@ -1752,143 +1629,60 @@ const HistoricalDataPage: React.FC = () => {
               )}
 
               <div className={`${replayCardClass} p-4 sm:p-5`}>
-                <div className="mb-4 border-b border-gray-200 dark:border-gray-700">
-                  <nav className="-mb-px flex gap-4 overflow-x-auto" aria-label="Historical coverage tabs">
-                    {(
-                      [
-                        { id: 'coverage' as const, label: t('coverage') },
-                        { id: 'issues' as const, label: t('issues') },
-                      ] as const
-                    ).map((tab) => (
-                      <button
-                        key={tab.id}
-                        type="button"
-                        onClick={() => setBottomTab(tab.id)}
-                        className={`inline-flex items-center gap-2 whitespace-nowrap border-b-2 px-1 py-2 text-sm font-medium transition-colors ${
-                          bottomTab === tab.id
-                            ? 'border-sky-500 text-sky-600 dark:text-sky-400'
-                            : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
-                        }`}
-                        aria-current={bottomTab === tab.id ? 'page' : undefined}
-                      >
-                        {tab.label}
-                        {tab.id === 'issues' && flaggedIssueLaunches.length > 0 ? (
-                          <span className="inline-flex shrink-0 items-center rounded-full bg-rose-100 px-2 py-0.5 text-xs font-semibold text-rose-700 dark:bg-rose-900/40 dark:text-rose-200">
-                            {fmtNum(flaggedIssueLaunches.length)}
-                          </span>
-                        ) : null}
-                      </button>
-                    ))}
-                  </nav>
-                </div>
+                <h3 className="mb-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
+                  {t('coverage')}
+                </h3>
 
-                {bottomTab === 'coverage' ? (
-                  coverageLaunches.length === 0 ? (
-                    <p className="text-sm text-gray-600 dark:text-gray-400 py-4 text-center">
-                      {t('noCoverage')}
-                    </p>
-                  ) : (
-                    <div className="space-y-3">
-                      <div className="max-w-xs">
-                        <label className={labelClass}>{t('coverageFilter')}</label>
-                        <CustomSelect
-                          className="w-full"
-                          value={coverageFilter}
-                          onChange={(value) =>
-                            setCoverageFilter(
-                              (value === 'with_data' || value === 'empty' ? value : 'all'),
-                            )
-                          }
-                          options={coverageFilterOptions}
-                        />
-                      </div>
-                      {filteredCoverage.length === 0 ? (
-                        <p className="text-sm text-gray-600 dark:text-gray-400 py-4 text-center">
-                          {t('noCoverageFiltered')}
-                        </p>
-                      ) : (
-                        <ul className="divide-y divide-gray-200 overflow-hidden rounded-lg border border-gray-200 dark:divide-gray-700 dark:border-gray-700">
-                          {paginatedCoverage.map((c) => (
-                            <li
-                              key={c.batch_id}
-                              className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2.5 text-sm"
-                            >
-                              <StatusBadge
-                                status={c.coverage_status}
-                                label={statusLabel(c.coverage_status)}
-                              />
-                              <span className="text-xs text-gray-500 dark:text-gray-400">
-                                {fmtDateTime(c.launched_at)}
-                              </span>
-                              <span className="inline-flex shrink-0 items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700 dark:bg-gray-700/50 dark:text-gray-200">
-                                {statusLabel(c.job_status)}
-                              </span>
-                              <span className="font-medium text-gray-900 dark:text-gray-100">
-                                {c.contract_id || t('allContracts')}
-                              </span>
-                              <span className="text-xs text-gray-600 dark:text-gray-300">
-                                {c.timeframes.join(', ')}
-                              </span>
-                              <span className="text-xs text-gray-500 dark:text-gray-400">
-                                {t('barsStored')}:{' '}
-                                {t('coverageBarsRatio', {
-                                  stored: fmtNum(c.bars_stored),
-                                  expected: fmtNum(c.bars_expected),
-                                })}
-                              </span>
-                              {c.unexpected_missing_count > 0 ? (
-                                <span className="text-xs font-medium text-amber-700 dark:text-amber-400">
-                                  {t('coverageMissingCount', {
-                                    value: fmtNum(c.unexpected_missing_count),
-                                  })}
-                                </span>
-                              ) : null}
-                              <span className="text-xs text-gray-500 dark:text-gray-400 sm:ml-auto">
-                                {fmtDateIso(c.start_utc)} → {fmtDateIso(c.end_utc)}
-                              </span>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-                  )
-                ) : issueLaunches.length === 0 ? (
+                {coverageLaunches.length === 0 ? (
                   <p className="text-sm text-gray-600 dark:text-gray-400 py-4 text-center">
-                    {t('noIssues')}
+                    {t('noCoverage')}
                   </p>
                 ) : (
                   <ul className="divide-y divide-gray-200 overflow-hidden rounded-lg border border-gray-200 dark:divide-gray-700 dark:border-gray-700">
-                    {paginatedIssues.map((iss) => {
-                      const severityKey =
-                        iss.max_severity ||
-                        (iss.unexpected_missing_count > 0 ? 'warning' : 'info');
-                      const severity = severityVisual(severityKey);
+                    {paginatedCoverage.map((c) => {
+                      const issueSummary = buildNonGapIssueSummary(c);
                       return (
                         <li
-                          key={iss.batch_id}
+                          key={c.batch_id}
                           className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2.5 text-sm"
                         >
-                          <span
-                            className={`inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${severity.className}`}
-                          >
-                            {severity.label}
-                          </span>
+                          <StatusBadge
+                            status={c.coverage_status}
+                            label={statusLabel(c.coverage_status)}
+                          />
                           <span className="text-xs text-gray-500 dark:text-gray-400">
-                            {fmtDateTime(iss.launched_at)}
+                            {fmtDateTime(c.launched_at)}
+                          </span>
+                          <span className="inline-flex shrink-0 items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700 dark:bg-gray-700/50 dark:text-gray-200">
+                            {statusLabel(c.job_status)}
                           </span>
                           <span className="font-medium text-gray-900 dark:text-gray-100">
-                            {iss.contract_id || t('allContracts')}
+                            {c.contract_id || t('allContracts')}
                           </span>
-                          {iss.timeframes.length > 0 ? (
-                            <span className="text-xs text-gray-600 dark:text-gray-300">
-                              {iss.timeframes.join(', ')}
+                          <span className="text-xs text-gray-600 dark:text-gray-300">
+                            {c.timeframes.join(', ')}
+                          </span>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            {t('barsStored')}:{' '}
+                            {t('coverageBarsRatio', {
+                              stored: fmtNum(c.bars_stored),
+                              expected: fmtNum(c.bars_expected),
+                            })}
+                          </span>
+                          {c.unexpected_missing_count > 0 ? (
+                            <span className="text-xs font-medium text-amber-700 dark:text-amber-400">
+                              {t('coverageMissingCount', {
+                                value: fmtNum(c.unexpected_missing_count),
+                              })}
                             </span>
                           ) : null}
-                          <span className="text-xs text-gray-600 dark:text-gray-300">
-                            {buildIssueSummary(iss)}
-                          </span>
+                          {issueSummary ? (
+                            <span className="text-xs font-medium text-rose-700 dark:text-rose-300">
+                              {issueSummary}
+                            </span>
+                          ) : null}
                           <span className="text-xs text-gray-500 dark:text-gray-400 sm:ml-auto">
-                            {fmtDateIso(iss.start_utc)} → {fmtDateIso(iss.end_utc)}
+                            {fmtDateIso(c.start_utc)} → {fmtDateIso(c.end_utc)}
                           </span>
                         </li>
                       );
@@ -1897,7 +1691,7 @@ const HistoricalDataPage: React.FC = () => {
                 )}
               </div>
 
-              {bottomTab === 'coverage' && filteredCoverage.length > 0 ? (
+              {coverageLaunches.length > 0 ? (
                 <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow dark:border-gray-700 dark:bg-gray-800">
                   <PaginationControls
                     currentPage={coveragePage}
@@ -1913,23 +1707,6 @@ const HistoricalDataPage: React.FC = () => {
                   />
                 </div>
               ) : null}
-
-              {bottomTab === 'issues' && issueLaunches.length > 0 ? (
-                <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow dark:border-gray-700 dark:bg-gray-800">
-                  <PaginationControls
-                    currentPage={issuesPage}
-                    totalPages={issuesTotalPages}
-                    totalItems={issuesTotalItems}
-                    itemsPerPage={issuesPageSize}
-                    startIndex={issuesStartIndex}
-                    endIndex={issuesEndIndex}
-                    onPageChange={goToIssuesPage}
-                    onPageSizeChange={handleIssuesPageSizeChange}
-                    pageSizeOptions={[5, 10, 25, 50, 100]}
-                    className="border-t-0"
-                  />
-                </div>
-              ) : null}
             </div>
           )}
         </>
@@ -1937,6 +1714,88 @@ const HistoricalDataPage: React.FC = () => {
           </details>
           </>
         )}
+      {exportDialogOpen ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !exporting) {
+              setExportDialogOpen(false);
+            }
+          }}
+        >
+          <div
+            className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg transform transition-all duration-300 animate-in zoom-in-95 slide-in-from-bottom-4 border border-gray-100 dark:border-gray-700 overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="historical-export-dialog-title"
+          >
+            <div className="relative border-b border-blue-100 dark:border-blue-900/40 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 px-6 py-4">
+              <h2
+                id="historical-export-dialog-title"
+                className="text-xl font-bold text-gray-900 dark:text-gray-100 pr-10"
+              >
+                {t('exportCsv')}
+              </h2>
+              {!exporting ? (
+                <button
+                  type="button"
+                  onClick={() => setExportDialogOpen(false)}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  className="absolute top-4 right-3 z-20 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors p-2 hover:bg-white/80 dark:hover:bg-gray-700/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 cursor-pointer"
+                  aria-label={t('common:cancel', { defaultValue: 'Annuler' })}
+                >
+                  <svg className="w-6 h-6 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              ) : null}
+            </div>
+
+            <div className="p-6">
+              <div className="mb-6 space-y-2">
+                <label className={labelClass}>{t('exportTimeframesLabel')}</label>
+                <CustomMultiSelect
+                  className="w-full"
+                  value={exportDialogTimeframes}
+                  onChange={setExportDialogTimeframes}
+                  options={timeframeOptions}
+                  disabled={exporting}
+                  placeholder={t('syncTimeframesPlaceholder')}
+                  clearLabel={t('syncTimeframesClear')}
+                  selectedCountLabel={(count) => t('syncTimeframesCount', { count })}
+                />
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100 dark:border-gray-700">
+                <button
+                  type="button"
+                  onClick={() => setExportDialogOpen(false)}
+                  disabled={exporting}
+                  className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-all focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {t('common:cancel', { defaultValue: 'Annuler' })}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handleExportCsv(exportDialogTimeframes)}
+                  disabled={exporting || exportDialogTimeframes.length === 0}
+                  className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium text-sm shadow-sm hover:shadow-md"
+                >
+                  {exporting ? (
+                    <span className="flex items-center">
+                      <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                      {t('exporting')}
+                    </span>
+                  ) : (
+                    t('exportCsv')
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </PageShell>
   );
 };

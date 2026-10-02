@@ -13,6 +13,8 @@ interface ConfirmModalProps {
   confirmButtonText?: string;
   cancelButtonText?: string;
   showCancelButton?: boolean;
+  /** Grise le bouton Confirmer sans bloquer Annuler / fermeture. */
+  confirmDisabled?: boolean;
   /** default = en-tête bleu (confirmation) ; warning = ambre (ex. archivage) */
   variant?: ConfirmModalVariant;
   /** Largeur du panneau (défaut lg). */
@@ -60,6 +62,7 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
   confirmButtonText,
   cancelButtonText,
   showCancelButton = true,
+  confirmDisabled = false,
   variant = 'default',
   size = 'lg',
 }) => {
@@ -177,7 +180,7 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
             <button
               type="button"
               onClick={handleConfirm}
-              disabled={isLoading}
+              disabled={isLoading || confirmDisabled}
               className={`px-4 py-2 dark:focus:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium text-sm shadow-sm hover:shadow-md ${vs.confirmBtn}`}
             >
               {isLoading ? (

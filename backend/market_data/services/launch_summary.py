@@ -265,12 +265,15 @@ def list_manual_launch_coverage(
     *,
     limit: int = MAX_LAUNCHES,
 ) -> dict[str, Any]:
-    """Couverture actuelle par lancement manuel + totaux instrument."""
+    """Couverture actuelle par lancement manuel + anomalies non-gap + totaux."""
     launches_meta = _list_manual_batches(user, instrument, limit=limit)
     by_batch = _load_coverages_for_launches(user, launches_meta)
+    issues = _issue_aggregates(user, [m['batch_id'] for m in launches_meta])
+    empty_issues = {'issue_counts': {}, 'issue_total': 0, 'max_severity': ''}
     launches: list[dict[str, Any]] = []
     for meta in launches_meta:
         cov_sum = _sum_coverages(by_batch.get(meta['batch_id'], []))
+        iss = issues.get(meta['batch_id']) or empty_issues
         launches.append({
             'batch_id': meta['batch_id'],
             'instrument': meta['instrument'],
@@ -284,43 +287,11 @@ def list_manual_launch_coverage(
             'bars_expected': cov_sum['bars_expected'],
             'unexpected_missing_count': cov_sum['unexpected_missing_count'],
             'coverage_status': cov_sum['status'],
+            'issue_total': iss['issue_total'],
+            'issue_counts': iss['issue_counts'],
+            'max_severity': iss['max_severity'],
         })
     return {
         'totals': _instrument_totals(user, instrument),
         'launches': launches,
     }
-
-
-def list_manual_launch_quality_issues(
-    user,
-    instrument: str | None = None,
-    *,
-    limit: int = MAX_LAUNCHES,
-) -> dict[str, Any]:
-    """Anomalies (hors gaps) + manquantes, une ligne par lancement manuel."""
-    launches_meta = _list_manual_batches(user, instrument, limit=limit)
-    by_batch = _load_coverages_for_launches(user, launches_meta)
-    issues = _issue_aggregates(user, [m['batch_id'] for m in launches_meta])
-    launches: list[dict[str, Any]] = []
-    for meta in launches_meta:
-        cov_sum = _sum_coverages(by_batch.get(meta['batch_id'], []))
-        iss = issues.get(meta['batch_id']) or {
-            'issue_counts': {},
-            'issue_total': 0,
-            'max_severity': '',
-        }
-        launches.append({
-            'batch_id': meta['batch_id'],
-            'instrument': meta['instrument'],
-            'contract_id': meta['contract_id'],
-            'timeframes': meta['timeframes'],
-            'start_utc': _iso(meta['start_utc']),
-            'end_utc': _iso(meta['end_utc']),
-            'launched_at': _iso(meta['launched_at']),
-            'job_status': meta['job_status'],
-            'unexpected_missing_count': cov_sum['unexpected_missing_count'],
-            'issue_total': iss['issue_total'],
-            'issue_counts': iss['issue_counts'],
-            'max_severity': iss['max_severity'],
-        })
-    return {'launches': launches}
