@@ -263,7 +263,10 @@ class HistoricalDownloadJob(models.Model):
         indexes = [
             models.Index(fields=['user', 'status', '-created_at']),
             models.Index(fields=['instrument', 'status']),
-            models.Index(fields=['user', 'trigger', 'batch_id', '-created_at']),
+            models.Index(
+                fields=['user', 'trigger', 'batch_id', '-created_at'],
+                name='md_job_user_trig_batch',
+            ),
         ]
 
     def __str__(self) -> str:
