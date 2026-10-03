@@ -354,7 +354,7 @@ const HomePage: React.FC = () => {
         );
       })()}
       
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-200 to-indigo-300 flex items-center justify-center p-4">
       {/* Header avec boutons et sélecteur de langue */}
       <div className="fixed top-4 right-4 z-50">
         {/* Menu desktop - visible sur écrans moyens et plus grands */}
@@ -549,7 +549,7 @@ const HomePage: React.FC = () => {
         />
 
         {/* Benefits Section */}
-        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-8 md:p-12 mb-16 border border-blue-100">
+        <div className="bg-gradient-to-br from-blue-200 to-indigo-200 rounded-2xl p-8 md:p-12 mb-16 border border-blue-300">
           <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-12">
             {t('home:benefits.title')}
           </h2>
@@ -557,7 +557,7 @@ const HomePage: React.FC = () => {
             <div className="bg-white rounded-xl p-6 shadow-md">
               <div className="flex items-start">
                 <div className="flex-shrink-0">
-                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <div className="w-12 h-12 bg-blue-200 rounded-lg flex items-center justify-center">
                     <svg className="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
                     </svg>
@@ -573,7 +573,7 @@ const HomePage: React.FC = () => {
             <div className="bg-white rounded-xl p-6 shadow-md">
               <div className="flex items-start">
                 <div className="flex-shrink-0">
-                  <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                  <div className="w-12 h-12 bg-green-200 rounded-lg flex items-center justify-center">
                     <svg className="w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
                     </svg>
@@ -589,7 +589,7 @@ const HomePage: React.FC = () => {
             <div className="bg-white rounded-xl p-6 shadow-md">
               <div className="flex items-start">
                 <div className="flex-shrink-0">
-                  <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                  <div className="w-12 h-12 bg-purple-200 rounded-lg flex items-center justify-center">
                     <svg className="w-6 h-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                     </svg>
@@ -605,7 +605,7 @@ const HomePage: React.FC = () => {
             <div className="bg-white rounded-xl p-6 shadow-md">
               <div className="flex items-start">
                 <div className="flex-shrink-0">
-                  <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                  <div className="w-12 h-12 bg-orange-200 rounded-lg flex items-center justify-center">
                     <svg className="w-6 h-6 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                     </svg>
@@ -655,7 +655,7 @@ const HomePage: React.FC = () => {
         </div>
 
         {/* About Section - Résumé */}
-        <div className="bg-gradient-to-br from-gray-50 to-blue-50 rounded-2xl p-10 md:p-12 shadow-xl mb-12 border border-gray-200">
+        <div className="bg-gradient-to-br from-gray-200 to-blue-200 rounded-2xl p-10 md:p-12 shadow-xl mb-12 border border-gray-300">
           <div className="max-w-4xl mx-auto text-center">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full mb-6 shadow-lg">
               <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">

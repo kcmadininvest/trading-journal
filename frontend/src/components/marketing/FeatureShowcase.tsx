@@ -52,8 +52,8 @@ const FeatureShowcase: React.FC<FeatureShowcaseProps> = ({
 
   const stageRing =
     accent === 'advanced'
-      ? 'ring-1 ring-indigo-200/80 border-indigo-100'
-      : 'ring-1 ring-blue-200/70 border-blue-100';
+      ? 'ring-1 ring-indigo-300/80 border-indigo-200'
+      : 'ring-1 ring-blue-300/70 border-blue-200';
 
   return (
     <section
@@ -85,7 +85,7 @@ const FeatureShowcase: React.FC<FeatureShowcaseProps> = ({
           <button
             type="button"
             onClick={() => setPaused((p) => !p)}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 shadow-sm transition-colors hover:border-blue-400 hover:text-blue-600"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-600 shadow-sm transition-colors hover:border-blue-400 hover:text-blue-600"
             aria-label={paused ? t('home:features.carousel.play') : t('home:features.carousel.pause')}
             title={paused ? t('home:features.carousel.play') : t('home:features.carousel.pause')}
           >
@@ -94,7 +94,7 @@ const FeatureShowcase: React.FC<FeatureShowcaseProps> = ({
           <button
             type="button"
             onClick={goPrev}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 shadow-sm transition-colors hover:border-blue-400 hover:text-blue-600"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-600 shadow-sm transition-colors hover:border-blue-400 hover:text-blue-600"
             aria-label={t('common:previous')}
           >
             <ChevronLeft className="h-5 w-5" />
@@ -102,7 +102,7 @@ const FeatureShowcase: React.FC<FeatureShowcaseProps> = ({
           <button
             type="button"
             onClick={goNext}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 shadow-sm transition-colors hover:border-blue-400 hover:text-blue-600"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-600 shadow-sm transition-colors hover:border-blue-400 hover:text-blue-600"
             aria-label={t('common:next')}
           >
             <ChevronRight className="h-5 w-5" />
@@ -146,7 +146,7 @@ const FeatureShowcase: React.FC<FeatureShowcaseProps> = ({
               </p>
 
               {!reduceMotion && !paused && (
-                <div className="mt-8 h-1 w-full max-w-xs overflow-hidden rounded-full bg-gray-100" aria-hidden>
+                <div className="mt-8 h-1 w-full max-w-xs overflow-hidden rounded-full bg-gray-200" aria-hidden>
                   <div
                     key={`progress-${animKey}`}
                     className="h-full rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 animate-feature-progress"
@@ -158,7 +158,7 @@ const FeatureShowcase: React.FC<FeatureShowcaseProps> = ({
           </div>
 
           {/* Sélecteur : grille de pastilles, sans scrollbar */}
-          <div className="min-w-0 border-t border-gray-100 bg-gradient-to-b from-slate-50/90 to-white p-4 md:p-5 lg:rounded-r-3xl lg:border-l lg:border-t-0">
+          <div className="min-w-0 border-t border-gray-200 bg-gradient-to-b from-slate-200/90 to-white p-4 md:p-5 lg:rounded-r-3xl lg:border-l lg:border-t-0">
             <div
               className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-2"
               role="tablist"
@@ -175,8 +175,8 @@ const FeatureShowcase: React.FC<FeatureShowcaseProps> = ({
                     onClick={() => goTo(index)}
                     className={`flex min-h-[4.5rem] flex-col items-start gap-2 rounded-xl border p-3 text-left transition-all duration-200 ${
                       isActive
-                        ? 'border-blue-300 bg-white shadow-md ring-1 ring-blue-100'
-                        : 'border-gray-100 bg-white/70 hover:border-gray-200 hover:bg-white hover:shadow-sm'
+                        ? 'border-blue-400 bg-white shadow-md ring-1 ring-blue-200'
+                        : 'border-gray-200 bg-white/70 hover:border-gray-300 hover:bg-white hover:shadow-sm'
                     }`}
                   >
                     <span

@@ -85,7 +85,7 @@ const FeaturesPage: React.FC = () => {
 
   if (!isLangApplied || currentI18nLang !== savedLang) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-200 to-indigo-300 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading...</p>
@@ -142,7 +142,7 @@ const FeaturesPage: React.FC = () => {
         }}
       />
 
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4">
+      <div className="min-h-screen bg-gradient-to-br from-blue-200 to-indigo-300 py-12 px-4">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-14">
             <p className="text-sm font-semibold uppercase tracking-wider text-indigo-600 mb-3">
@@ -169,7 +169,7 @@ const FeaturesPage: React.FC = () => {
             autoPlayMs={6000}
           />
 
-          <section className="bg-white rounded-2xl shadow-xl p-8 md:p-12 border border-gray-100">
+          <section className="bg-white rounded-2xl shadow-xl p-8 md:p-12 border border-gray-200">
             <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">
               {t('features:additional.title')}
             </h2>
@@ -177,7 +177,7 @@ const FeaturesPage: React.FC = () => {
               {ADDITIONAL_KEYS.map((key) => (
                 <div
                   key={key}
-                  className="rounded-xl border border-gray-100 bg-gradient-to-br from-slate-50 to-white p-6 hover:shadow-md transition-shadow duration-200"
+                  className="rounded-xl border border-gray-200 bg-gradient-to-br from-slate-100 to-white p-6 hover:shadow-md transition-shadow duration-200"
                 >
                   <h3 className="text-xl font-bold text-gray-900 mb-3">
                     {t(`features:additional.${key}.title`)}
