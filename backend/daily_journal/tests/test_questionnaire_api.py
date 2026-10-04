@@ -634,3 +634,79 @@ class QuestionnaireApiTests(APITestCase):
         ]))
         self.assertEqual(trimmed[1], 'Foo')
         self.assertEqual(trimmed[2], 'foo (2)')
+
+    def _put_day_number(self, question_id: int, value, day: str = '2026-07-12'):
+        return self.client.put(
+            '/api/daily-journal/answers/bulk/',
+            {
+                'scope': 'day',
+                'date': day,
+                'trading_account': self.account.id,
+                'answers': [{'question_id': question_id, 'value': value}],
+            },
+            format='json',
+        )
+
+    def test_number_integer_decimal_and_legacy(self):
+        questionnaire = Questionnaire.get_or_create_for_scope(self.user, 'day')
+        integer_q = QuestionnaireQuestion.objects.create(
+            questionnaire=questionnaire,
+            label='Contrats',
+            answer_type='number',
+            config={'decimal': False},
+            order=0,
+        )
+        decimal_q = QuestionnaireQuestion.objects.create(
+            questionnaire=questionnaire,
+            label='Ratio',
+            answer_type='number',
+            config={'decimal': True},
+            order=1,
+        )
+        legacy_q = QuestionnaireQuestion.objects.create(
+            questionnaire=questionnaire,
+            label='Ancien nombre',
+            answer_type='number',
+            config={'min': 0, 'max': 1, 'step': 1},
+            order=2,
+        )
+
+        whole = self._put_day_number(integer_q.id, 2.0, '2026-07-12')
+        self.assertEqual(whole.status_code, status.HTTP_200_OK)
+        self.assertEqual(whole.data['answers'][0]['value'], 2)
+
+        rejected = self._put_day_number(integer_q.id, 1.5, '2026-07-13')
+        self.assertEqual(rejected.status_code, status.HTTP_400_BAD_REQUEST)
+
+        decimal = self._put_day_number(decimal_q.id, 1.5, '2026-07-12')
+        self.assertEqual(decimal.status_code, status.HTTP_200_OK)
+        self.assertEqual(decimal.data['answers'][0]['value'], 1.5)
+
+        whole_in_decimal = self._put_day_number(decimal_q.id, 3, '2026-07-16')
+        self.assertEqual(whole_in_decimal.status_code, status.HTTP_200_OK)
+        self.assertIsInstance(whole_in_decimal.data['answers'][0]['value'], int)
+
+        big = 2 ** 60 + 1
+        big_res = self._put_day_number(integer_q.id, big, '2026-07-16')
+        self.assertEqual(big_res.status_code, status.HTTP_200_OK)
+        self.assertEqual(big_res.data['answers'][0]['value'], big)
+
+        legacy = self._put_day_number(legacy_q.id, 1.5, '2026-07-14')
+        self.assertEqual(legacy.status_code, status.HTTP_200_OK)
+        self.assertEqual(legacy.data['answers'][0]['value'], 1.5)
+
+        kept = self._put_day_number(legacy_q.id, 2.5, '2026-07-15')
+        self.assertEqual(kept.status_code, status.HTTP_200_OK)
+        legacy_q.config = {'decimal': False}
+        legacy_q.save(update_fields=['config', 'updated_at'])
+
+        same = self._put_day_number(legacy_q.id, 2.5, '2026-07-15')
+        self.assertEqual(same.status_code, status.HTTP_200_OK)
+        self.assertEqual(same.data['answers'][0]['value'], 2.5)
+
+        changed = self._put_day_number(legacy_q.id, 3.5, '2026-07-15')
+        self.assertEqual(changed.status_code, status.HTTP_400_BAD_REQUEST)
+
+        replaced = self._put_day_number(legacy_q.id, 3, '2026-07-15')
+        self.assertEqual(replaced.status_code, status.HTTP_200_OK)
+        self.assertEqual(replaced.data['answers'][0]['value'], 3)

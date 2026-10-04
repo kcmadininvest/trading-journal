@@ -4,7 +4,7 @@ from rest_framework import serializers
 
 from trades.models import ImportedTrade, TradingAccount
 
-from .answer_validation import validate_answer_value
+from .answer_validation import number_values_equal, validate_answer_value
 from .conditional_visibility import (
     is_question_visible,
     validate_show_if_for_question,
@@ -487,7 +487,19 @@ class BulkAnswersSerializer(serializers.Serializer):
             if isinstance(value, list) and len(value) == 0 and not question.required:
                 continue
 
-            value = validate_answer_value(question, value)
+            existing_answer = existing_by_qid.get(qid)
+            config = question.config if isinstance(question.config, dict) else {}
+            # Une réponse décimale déjà enregistrée reste valide si la question
+            # passe ensuite en entier et que le formulaire renvoie la même valeur.
+            if (
+                question.answer_type == 'number'
+                and config.get('decimal') is False
+                and existing_answer is not None
+                and number_values_equal(existing_answer.value, value)
+            ):
+                value = existing_answer.value
+            else:
+                value = validate_answer_value(question, value)
 
             if value is None:
                 continue

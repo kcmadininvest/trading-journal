@@ -4,6 +4,7 @@ import { replayPrimaryButtonClass } from '../replay/replayStyles';
 import { CustomSelect } from '../common/CustomSelect';
 import { CustomMultiSelect } from '../common/CustomMultiSelect';
 import { DateInput } from '../common/DateInput';
+import { NumberInput } from '../common/NumberInput';
 import { usePreferences } from '../../hooks/usePreferences';
 import { formatNumber, NumberFormatType } from '../../utils/numberFormat';
 import {
@@ -481,7 +482,7 @@ const QuestionField: React.FC<QuestionFieldProps> = ({
   disabled,
 }) => {
   const { t } = useTranslation('journalQuestions');
-  const config = (question.config || {}) as Record<string, number | string | undefined>;
+  const config = (question.config || {}) as Record<string, number | string | boolean | undefined>;
 
   if (question.answer_type === 'boolean') {
     const selected =
@@ -517,18 +518,38 @@ const QuestionField: React.FC<QuestionFieldProps> = ({
     );
   }
 
-  if (question.answer_type === 'number' || question.answer_type === 'scale') {
-    const min = config.min != null ? Number(config.min) : question.answer_type === 'scale' ? 1 : undefined;
-    const max = config.max != null ? Number(config.max) : question.answer_type === 'scale' ? 5 : undefined;
+  if (question.answer_type === 'number') {
+    const decimal = config.decimal !== false;
+    return (
+      <NumberInput
+        value={value == null || value === '' ? '' : (value as string | number)}
+        digits={decimal ? 2 : 0}
+        step={decimal ? 'any' : 1}
+        disabled={disabled}
+        commitOnChange
+        onChange={(raw) => {
+          if (raw === '') {
+            onChange(null);
+            return;
+          }
+          const num = Number(raw);
+          if (!Number.isFinite(num)) {
+            onChange(null);
+            return;
+          }
+          onChange(decimal ? num : Math.round(num));
+        }}
+        className={`${FIELD_INPUT_CLASS} max-w-[160px] h-10`}
+      />
+    );
+  }
+
+  if (question.answer_type === 'scale') {
+    const min = config.min != null ? Number(config.min) : 1;
+    const max = config.max != null ? Number(config.max) : 5;
     const step = config.step != null ? Number(config.step) : 1;
 
-    if (
-      question.answer_type === 'scale' &&
-      min != null &&
-      max != null &&
-      Number.isFinite(min) &&
-      Number.isFinite(max)
-    ) {
+    if (Number.isFinite(min) && Number.isFinite(max)) {
       const options = scaleValues(min, max, step);
       if (options.length > 0 && options.length <= MAX_SCALE_SEGMENT_VALUES) {
         const selected =

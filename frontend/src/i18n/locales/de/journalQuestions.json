@@ -58,7 +58,9 @@
   "config": {
     "min": "Minimum",
     "max": "Maximum",
-    "step": "Schrittweite"
+    "step": "Schrittweite",
+    "integer": "Ganzzahl",
+    "decimal": "Dezimalzahl"
   },
   "addIf": "Frage hinzufügen, die nur angezeigt wird wenn…",
   "showIf": "Nur in bestimmten Fällen",

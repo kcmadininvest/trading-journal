@@ -13,6 +13,15 @@ from .models import CHOICE_ANSWER_TYPES, QuestionnaireQuestion
 DATE_RE = re.compile(r'^\d{4}-\d{2}-\d{2}$')
 
 
+def number_values_equal(stored: Any, incoming: Any) -> bool:
+    """Vrai si deux valeurs numériques JSON sont le même nombre."""
+    if isinstance(stored, bool) or isinstance(incoming, bool):
+        return False
+    if isinstance(stored, (int, float)) and isinstance(incoming, (int, float)):
+        return float(stored) == float(incoming)
+    return False
+
+
 def validate_answer_value(question: QuestionnaireQuestion, value: Any) -> Any:
     answer_type = question.answer_type
     config = question.config if isinstance(question.config, dict) else {}
@@ -46,11 +55,13 @@ def validate_answer_value(question: QuestionnaireQuestion, value: Any) -> Any:
     if answer_type == 'number':
         if isinstance(value, bool) or not isinstance(value, (int, float)):
             raise serializers.ValidationError('Nombre attendu.')
-        num = float(value)
-        if config.get('min') is not None and num < float(config['min']):
-            raise serializers.ValidationError(f'Valeur minimale : {config["min"]}.')
-        if config.get('max') is not None and num > float(config['max']):
-            raise serializers.ValidationError(f'Valeur maximale : {config["max"]}.')
+        # Clé absente : comportement historique, les décimales restent acceptées.
+        if config.get('decimal') is False:
+            if isinstance(value, int):
+                return value
+            if not value.is_integer():
+                raise serializers.ValidationError('Nombre entier attendu.')
+            return int(value)
         return value
 
     if answer_type == 'scale':

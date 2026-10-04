@@ -58,7 +58,9 @@
   "config": {
     "min": "Minimum",
     "max": "Maximum",
-    "step": "Pas"
+    "step": "Pas",
+    "integer": "Entier",
+    "decimal": "Décimal"
   },
   "addIf": "Ajouter une question qui s’affiche seulement si…",
   "showIf": "Uniquement dans certains cas",

@@ -16,6 +16,8 @@ interface NumberInputProps {
   padLength?: number;
   required?: boolean;
   disabled?: boolean;
+  /** Publish the parsed value on each keystroke instead of only on blur. */
+  commitOnChange?: boolean;
 }
 
 /**
@@ -36,6 +38,7 @@ export const NumberInput: React.FC<NumberInputProps> = ({
   padLength,
   required = false,
   disabled = false,
+  commitOnChange = false,
 }) => {
   const { preferences } = usePreferences();
   const [displayValue, setDisplayValue] = useState('');
@@ -131,6 +134,10 @@ export const NumberInput: React.FC<NumberInputProps> = ({
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (disabled) return;
     setDisplayValue(e.target.value);
+    if (commitOnChange) {
+      const standardValue = parseToStandard(e.target.value);
+      if (standardValue || !required) onChange(standardValue);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {

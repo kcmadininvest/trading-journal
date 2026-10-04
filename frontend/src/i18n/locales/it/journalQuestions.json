@@ -58,7 +58,9 @@
   "config": {
     "min": "Minimo",
     "max": "Massimo",
-    "step": "Passo"
+    "step": "Passo",
+    "integer": "Intero",
+    "decimal": "Decimale"
   },
   "addIf": "Aggiungi una domanda visibile solo se…",
   "showIf": "Solo in certi casi",

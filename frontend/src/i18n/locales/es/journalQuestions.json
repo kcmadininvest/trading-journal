@@ -58,7 +58,9 @@
   "config": {
     "min": "Mínimo",
     "max": "Máximo",
-    "step": "Paso"
+    "step": "Paso",
+    "integer": "Entero",
+    "decimal": "Decimal"
   },
   "addIf": "Añadir una pregunta que solo se muestre si…",
   "showIf": "Solo en ciertos casos",

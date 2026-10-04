@@ -334,7 +334,10 @@ export const JournalQuestionsSettings: React.FC<JournalQuestionsSettingsProps> =
         label: editor.label.trim(),
         help_text: editor.help_text,
         answer_type: editor.answer_type,
-        config: editor.config,
+        config:
+          editor.answer_type === 'number'
+            ? { decimal: editor.config.decimal !== false }
+            : editor.config,
         is_active: editor.is_active,
         choices,
       };
@@ -1226,6 +1229,7 @@ function EditorModal({
                 disabled={busy}
                 onChange={(v) => {
                   const answer_type = (v as AnswerType) || 'boolean';
+                  if (answer_type === editor.answer_type) return;
                   update({
                     answer_type,
                     choices: NEEDS_CHOICES.has(answer_type) ? editor.choices : [],
@@ -1233,7 +1237,7 @@ function EditorModal({
                       answer_type === 'scale'
                         ? { min: 1, max: 5, step: 1 }
                         : answer_type === 'number'
-                          ? { min: undefined, max: undefined, step: 1 }
+                          ? { decimal: false }
                           : {},
                   });
                 }}
@@ -1245,7 +1249,30 @@ function EditorModal({
             </div>
           </label>
 
-          {(editor.answer_type === 'scale' || editor.answer_type === 'number') && (
+          {editor.answer_type === 'number' && (
+            <div className="inline-flex rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-1">
+              {([false, true] as const).map((decimal) => {
+                const selected = (editor.config.decimal !== false) === decimal;
+                return (
+                  <button
+                    key={decimal ? 'decimal' : 'integer'}
+                    type="button"
+                    disabled={busy}
+                    onClick={() => update({ config: { decimal } })}
+                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors disabled:opacity-50 ${
+                      selected
+                        ? 'bg-blue-600 text-white'
+                        : 'text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800'
+                    }`}
+                  >
+                    {t(decimal ? 'journalQuestions:config.decimal' : 'journalQuestions:config.integer')}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {editor.answer_type === 'scale' && (
             <div className="grid grid-cols-3 gap-2">
               {(['min', 'max', 'step'] as const).map((key) => (
                 <label key={key} className="block text-sm">

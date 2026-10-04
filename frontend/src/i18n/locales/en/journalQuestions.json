@@ -58,7 +58,9 @@
   "config": {
     "min": "Minimum",
     "max": "Maximum",
-    "step": "Step"
+    "step": "Step",
+    "integer": "Integer",
+    "decimal": "Decimal"
   },
   "addIf": "Add a question that shows only if…",
   "showIf": "Only in certain cases",
