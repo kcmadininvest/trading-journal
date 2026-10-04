@@ -113,7 +113,7 @@ function SegmentedControl<T extends string | number | boolean>({
 }: {
   options: SegmentedOption<T>[];
   value: T | null;
-  onChange: (value: T) => void;
+  onChange: (value: T | null) => void;
   disabled?: boolean;
 }) {
   return (
@@ -125,7 +125,7 @@ function SegmentedControl<T extends string | number | boolean>({
             key={String(opt.value)}
             type="button"
             disabled={disabled}
-            onClick={() => onChange(opt.value)}
+            onClick={() => onChange(selected ? null : opt.value)}
             aria-pressed={selected}
             className={`inline-flex h-9 items-center justify-center px-4 rounded-[0.3rem] text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
               selected
@@ -162,6 +162,7 @@ export const JournalQuestionsForm: React.FC<JournalQuestionsFormProps> = ({
   const [baselineSnapshot, setBaselineSnapshot] = useState('');
   const valuesRef = useRef(values);
   valuesRef.current = values;
+  const initialValuesRef = useRef<Record<number, unknown>>({});
 
   useEffect(() => {
     if (!success) return undefined;
@@ -215,6 +216,7 @@ export const JournalQuestionsForm: React.FC<JournalQuestionsFormProps> = ({
         }
         setValues(next);
         valuesRef.current = next;
+        initialValuesRef.current = next;
         setBaselineSnapshot(visibleValuesSnapshot(payload.questions, next));
       } catch (err: any) {
         if (!cancelled) setError(err?.message || t('loadError'));
@@ -263,7 +265,10 @@ export const JournalQuestionsForm: React.FC<JournalQuestionsFormProps> = ({
         })
         .filter((a) => {
           if (!visibleIds.has(a.question_id)) return true;
-          return isAnswered(a.value);
+          if (isAnswered(a.value)) return true;
+          // Visible et vidée : n'envoyer null que si une réponse existait au chargement,
+          // pour que le serveur la supprime. Une question jamais répondue reste absente.
+          return isAnswered(initialValuesRef.current[a.question_id]);
         });
 
       await journalQuestionsService.bulkSaveAnswers({
@@ -288,6 +293,7 @@ export const JournalQuestionsForm: React.FC<JournalQuestionsFormProps> = ({
       }
       setValues(next);
       valuesRef.current = next;
+      initialValuesRef.current = next;
       setBaselineSnapshot(visibleValuesSnapshot(payload.questions, next));
       setSuccess(t('saved'));
       onSaved?.();
@@ -622,12 +628,24 @@ const QuestionField: React.FC<QuestionFieldProps> = ({
         : typeof value === 'number'
           ? value
           : Number(value);
+    const selectedId = Number.isFinite(choiceId as number) ? (choiceId as number) : null;
+    const hasChoice =
+      selectedId != null && question.choices.some((c) => c.id === selectedId);
+    const options: { value: number | null; label: string }[] = question.choices.map((c) => ({
+      value: c.id!,
+      label: c.label,
+    }));
+    if (!hasChoice) {
+      options.unshift({ value: null, label: t('selectOption') });
+    } else if (!question.required) {
+      options.unshift({ value: null, label: t('clearAnswer') });
+    }
     return (
       <CustomSelect
-        value={Number.isFinite(choiceId as number) ? (choiceId as number) : null}
+        value={hasChoice ? selectedId : null}
         disabled={disabled}
         onChange={(v) => onChange(v)}
-        options={question.choices.map((c) => ({ value: c.id!, label: c.label }))}
+        options={options}
         placeholder={t('selectOption')}
       />
     );

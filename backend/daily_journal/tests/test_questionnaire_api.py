@@ -232,7 +232,7 @@ class QuestionnaireApiTests(APITestCase):
         )
         self.assertEqual(good.status_code, status.HTTP_200_OK)
 
-    def test_bulk_null_preserves_existing_optional_answers(self):
+    def test_bulk_null_clears_existing_optional_answer(self):
         questionnaire = Questionnaire.get_or_create_for_scope(self.user, 'day')
         choice_q = QuestionnaireQuestion.objects.create(
             questionnaire=questionnaire,
@@ -279,10 +279,143 @@ class QuestionnaireApiTests(APITestCase):
         self.assertEqual(res.status_code, status.HTTP_200_OK, res.data)
         self.assertEqual(len(res.data['answers']), 1)
         self.assertEqual(res.data['answers'][0]['value'], '2026-07-02')
-        existing = QuestionnaireAnswer.objects.get(
-            question=choice_q, date=date(2026, 7, 18), trading_account=self.account
+        self.assertFalse(
+            QuestionnaireAnswer.objects.filter(
+                question=choice_q, date=date(2026, 7, 18), trading_account=self.account
+            ).exists()
         )
-        self.assertEqual(existing.value, choice.id)
+
+    def test_bulk_omitted_question_preserves_answer(self):
+        questionnaire = Questionnaire.get_or_create_for_scope(self.user, 'day')
+        kept = QuestionnaireQuestion.objects.create(
+            questionnaire=questionnaire,
+            label='Gardée',
+            answer_type='text',
+            required=False,
+            order=0,
+        )
+        updated = QuestionnaireQuestion.objects.create(
+            questionnaire=questionnaire,
+            label='Mise à jour',
+            answer_type='text',
+            required=False,
+            order=1,
+        )
+        QuestionnaireAnswer.objects.create(
+            user=self.user,
+            question=kept,
+            trading_account=self.account,
+            date=date(2026, 7, 19),
+            value='intact',
+            question_label_snapshot=kept.label,
+            answer_type_snapshot=kept.answer_type,
+        )
+        res = self.client.put(
+            '/api/daily-journal/answers/bulk/',
+            {
+                'scope': 'day',
+                'date': '2026-07-19',
+                'trading_account': self.account.id,
+                'answers': [{'question_id': updated.id, 'value': 'nouveau'}],
+            },
+            format='json',
+        )
+        self.assertEqual(res.status_code, status.HTTP_200_OK, res.data)
+        self.assertEqual(
+            QuestionnaireAnswer.objects.get(question=kept, date=date(2026, 7, 19)).value,
+            'intact',
+        )
+
+    def test_bulk_null_on_required_question_is_rejected(self):
+        questionnaire = Questionnaire.get_or_create_for_scope(self.user, 'day')
+        question = QuestionnaireQuestion.objects.create(
+            questionnaire=questionnaire,
+            label='Obligatoire',
+            answer_type='text',
+            required=True,
+            order=0,
+        )
+        QuestionnaireAnswer.objects.create(
+            user=self.user,
+            question=question,
+            trading_account=self.account,
+            date=date(2026, 7, 21),
+            value='déjà là',
+            question_label_snapshot=question.label,
+            answer_type_snapshot=question.answer_type,
+        )
+        res = self.client.put(
+            '/api/daily-journal/answers/bulk/',
+            {
+                'scope': 'day',
+                'date': '2026-07-21',
+                'trading_account': self.account.id,
+                'answers': [{'question_id': question.id, 'value': None}],
+            },
+            format='json',
+        )
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            QuestionnaireAnswer.objects.get(question=question, date=date(2026, 7, 21)).value,
+            'déjà là',
+        )
+
+    def test_bulk_clear_parent_deletes_conditional_child(self):
+        questionnaire = Questionnaire.get_or_create_for_scope(self.user, 'day')
+        parent = QuestionnaireQuestion.objects.create(
+            questionnaire=questionnaire,
+            label='Plan suivi ?',
+            answer_type='boolean',
+            required=False,
+            order=0,
+        )
+        child = QuestionnaireQuestion.objects.create(
+            questionnaire=questionnaire,
+            label='Détail',
+            answer_type='text',
+            required=False,
+            order=1,
+            show_if={
+                'logic': 'and',
+                'conditions': [
+                    {'question_id': parent.id, 'operator': 'eq', 'value': True},
+                ],
+            },
+        )
+        QuestionnaireAnswer.objects.create(
+            user=self.user,
+            question=parent,
+            trading_account=self.account,
+            date=date(2026, 7, 22),
+            value=True,
+            question_label_snapshot=parent.label,
+            answer_type_snapshot=parent.answer_type,
+        )
+        QuestionnaireAnswer.objects.create(
+            user=self.user,
+            question=child,
+            trading_account=self.account,
+            date=date(2026, 7, 22),
+            value='parce que',
+            question_label_snapshot=child.label,
+            answer_type_snapshot=child.answer_type,
+        )
+        res = self.client.put(
+            '/api/daily-journal/answers/bulk/',
+            {
+                'scope': 'day',
+                'date': '2026-07-22',
+                'trading_account': self.account.id,
+                'answers': [{'question_id': parent.id, 'value': None}],
+            },
+            format='json',
+        )
+        self.assertEqual(res.status_code, status.HTTP_200_OK, res.data)
+        self.assertFalse(
+            QuestionnaireAnswer.objects.filter(
+                question__in=[parent, child], date=date(2026, 7, 22)
+            ).exists()
+        )
 
     def test_show_if_create_and_visibility_bulk(self):
         questionnaire = Questionnaire.get_or_create_for_scope(self.user, 'day')

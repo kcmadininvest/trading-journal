@@ -1173,7 +1173,7 @@ function EditorModal({
       onClick={handleBackdropClick}
     >
       <div
-        className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] flex flex-col transform transition-all duration-300 animate-in zoom-in-95 slide-in-from-bottom-4 border border-gray-100 dark:border-gray-700 overflow-hidden"
+        className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col transform transition-all duration-300 animate-in zoom-in-95 slide-in-from-bottom-4 border border-gray-100 dark:border-gray-700 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="relative border-b border-blue-100 dark:border-blue-900/40 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 px-6 py-4 flex-shrink-0">
@@ -1343,16 +1343,24 @@ function EditorModal({
             </div>
           )}
 
-          {editor.mode === 'instance' && (
-            <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-              <span>{t('journalQuestions:required')}</span>
-              <SettingsStyleToggle
-                pressed={editor.required}
-                onPressedChange={(next) => update({ required: next })}
-                disabled={busy}
-              />
-            </div>
-          )}
+          <div className="grid w-fit grid-cols-[max-content_auto] items-center gap-x-3 gap-y-3 text-sm text-gray-700 dark:text-gray-300">
+            {editor.mode === 'instance' && (
+              <>
+                <span>{t('journalQuestions:required')}</span>
+                <SettingsStyleToggle
+                  pressed={editor.required}
+                  onPressedChange={(next) => update({ required: next })}
+                  disabled={busy}
+                />
+              </>
+            )}
+            <span>{t('journalQuestions:active')}</span>
+            <SettingsStyleToggle
+              pressed={editor.is_active}
+              onPressedChange={(next) => update({ is_active: next })}
+              disabled={busy}
+            />
+          </div>
 
           {editor.mode === 'instance' && branchableSources.length > 0 && (
             <div className="rounded-lg border border-gray-200 dark:border-gray-600 p-3 space-y-3">
@@ -1546,14 +1554,6 @@ function EditorModal({
             </div>
           )}
 
-          <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-            <span>{t('journalQuestions:active')}</span>
-            <SettingsStyleToggle
-              pressed={editor.is_active}
-              onPressedChange={(next) => update({ is_active: next })}
-              disabled={busy}
-            />
-          </div>
         </div>
 
         <div className="flex justify-end space-x-3 px-6 py-4 border-t border-gray-100 dark:border-gray-700 flex-shrink-0">

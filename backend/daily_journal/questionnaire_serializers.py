@@ -342,6 +342,13 @@ class AnswersFormSerializer(serializers.Serializer):
     questionnaire_id = serializers.IntegerField(allow_null=True)
 
 
+def _submitted_value_is_empty(value) -> bool:
+    """null, chaîne vide ou liste vide = réponse retirée par l'utilisateur."""
+    if value is None or value == '':
+        return True
+    return isinstance(value, list) and len(value) == 0
+
+
 class BulkAnswerItemSerializer(serializers.Serializer):
     question_id = serializers.IntegerField()
     value = serializers.JSONField(allow_null=True)
@@ -426,10 +433,10 @@ class BulkAnswersSerializer(serializers.Serializer):
             qid: ans.value for qid, ans in existing_by_qid.items()
         }
         for qid, value in submitted.items():
-            # null dans le payload = ne pas écraser pour le calcul de visibilité
-            if value is None or value == '':
-                continue
-            if isinstance(value, list) and len(value) == 0:
+            # Valeur vide = réponse retirée : ne pas la compter pour la visibilité,
+            # sinon les questions conditionnelles resteraient affichées.
+            if _submitted_value_is_empty(value):
+                answers_by_qid.pop(qid, None)
                 continue
             answers_by_qid[qid] = value
 
@@ -443,6 +450,36 @@ class BulkAnswersSerializer(serializers.Serializer):
         results = []
         processed_ids: set[int] = set()
 
+        with transaction.atomic():
+            self._apply_bulk_answers(
+                items=items,
+                questions_by_id=questions_by_id,
+                visible_by_id=visible_by_id,
+                existing_by_qid=existing_by_qid,
+                answers_by_qid=answers_by_qid,
+                all_questions=all_questions,
+                scope=scope,
+                user=user,
+                processed_ids=processed_ids,
+                results=results,
+            )
+
+        return results
+
+    def _apply_bulk_answers(
+        self,
+        *,
+        items,
+        questions_by_id,
+        visible_by_id,
+        existing_by_qid,
+        answers_by_qid,
+        all_questions,
+        scope,
+        user,
+        processed_ids,
+        results,
+    ):
         for item in items:
             qid = item['question_id']
             question = questions_by_id.get(qid)
@@ -476,15 +513,15 @@ class BulkAnswersSerializer(serializers.Serializer):
                 continue
 
             value = item.get('value')
-            # null = question non renseignée dans ce payload → ne pas toucher
-            # à une éventuelle réponse déjà enregistrée (sauf required visible).
-            if value is None or value == '':
-                if question.required and answers_by_qid.get(qid) is None:
+            # Valeur vide sur une question visible : supprimer la réponse.
+            # Une question obligatoire reste une erreur. Absente du payload :
+            # la réponse existante n'est pas touchée (traitée plus bas).
+            if _submitted_value_is_empty(value):
+                if question.required:
                     raise serializers.ValidationError(
                         {'answers': f'Question « {question.label} » obligatoire.'}
                     )
-                continue
-            if isinstance(value, list) and len(value) == 0 and not question.required:
+                QuestionnaireAnswer.objects.filter(**lookup).delete()
                 continue
 
             existing_answer = existing_by_qid.get(qid)

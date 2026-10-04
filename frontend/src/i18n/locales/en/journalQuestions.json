@@ -36,6 +36,7 @@
   "deleted": "Deleted.",
   "deactivated": "Question deactivated (answers exist).",
   "selectOption": "Select…",
+  "clearAnswer": "No answer",
   "selectOptions": "Select…",
   "pageTitle": "Daily questions",
   "pageSubtitle": "Answer the daily questionnaire for the selected account.",

@@ -36,6 +36,7 @@
   "deleted": "削除しました。",
   "deactivated": "質問を無効化しました（回答が存在します）。",
   "selectOption": "選択…",
+  "clearAnswer": "回答なし",
   "selectOptions": "選択…",
   "pageTitle": "当日の質問",
   "pageSubtitle": "選択した口座の当日アンケートに回答してください。",
