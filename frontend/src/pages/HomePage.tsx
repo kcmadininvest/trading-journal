@@ -762,7 +762,9 @@ const HomePage: React.FC = () => {
 
         {/* Footer */}
         <div className="relative flex justify-center items-center mt-12 text-gray-500 px-4">
-          <p className="text-sm text-center">{t('home:footer.copyright')}</p>
+          <p className="text-sm text-center">
+            {t('home:footer.copyright', { year: new Date().getFullYear() })}
+          </p>
           <button
             onClick={() => setShowLegalNotice(true)}
             className="absolute right-4 text-sm text-gray-500 hover:text-blue-600 underline transition-colors duration-200"

@@ -145,7 +145,7 @@
     "button": "Contáctanos"
   },
   "footer": {
-    "copyright": "© 2025 K&C Trading Journal. Todos los derechos reservados.",
+    "copyright": "© {{year}} K&C Trading Journal. Todos los derechos reservados.",
     "legalNotice": "Aviso legal"
   },
   "legalNotice": {

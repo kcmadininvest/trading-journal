@@ -115,7 +115,7 @@
     "button": "Nous contacter"
   },
   "footer": {
-    "copyright": "© 2025 K&C Trading Journal. Tous droits réservés.",
+    "copyright": "© {{year}} K&C Trading Journal. Tous droits réservés.",
     "legalNotice": "Mentions légales"
   },
   "legalNotice": {
