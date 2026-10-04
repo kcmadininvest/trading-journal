@@ -29,6 +29,8 @@
   "clonedIndependent": "Question ajoutée comme copie indépendante.",
   "emptyQuestions": "Aucune question configurée.",
   "emptyTemplates": "Aucun modèle pour le moment.",
+  "searchTemplatesPlaceholder": "Rechercher un modèle par libellé…",
+  "emptyTemplateSearch": "Aucun modèle ne correspond à cette recherche.",
   "confirmDeleteTemplate": "Supprimer ce modèle ?",
   "confirmDeleteQuestion": "Supprimer cette question ? Si des réponses existent, elle sera désactivée.",
   "deleted": "Supprimé.",

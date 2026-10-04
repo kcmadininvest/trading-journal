@@ -29,6 +29,8 @@
   "clonedIndependent": "質問を独立したコピーとして追加しました。",
   "emptyQuestions": "質問が設定されていません。",
   "emptyTemplates": "テンプレートはまだありません。",
+  "searchTemplatesPlaceholder": "ラベルでテンプレートを検索…",
+  "emptyTemplateSearch": "一致するテンプレートがありません。",
   "confirmDeleteTemplate": "このテンプレートを削除しますか？",
   "confirmDeleteQuestion": "この質問を削除しますか？回答がある場合は無効化されます。",
   "deleted": "削除しました。",

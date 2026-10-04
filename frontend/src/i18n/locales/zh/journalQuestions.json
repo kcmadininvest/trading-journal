@@ -29,6 +29,8 @@
   "clonedIndependent": "已添加为独立副本。",
   "emptyQuestions": "尚未配置问题。",
   "emptyTemplates": "暂无模板。",
+  "searchTemplatesPlaceholder": "按标签搜索模板…",
+  "emptyTemplateSearch": "没有匹配的模板。",
   "confirmDeleteTemplate": "删除此模板？",
   "confirmDeleteQuestion": "删除此问题？若已有回答，将被停用。",
   "deleted": "已删除。",

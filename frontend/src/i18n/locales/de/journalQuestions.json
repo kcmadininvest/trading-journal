@@ -29,6 +29,8 @@
   "clonedIndependent": "Frage als unabhängige Kopie hinzugefügt.",
   "emptyQuestions": "Keine Fragen konfiguriert.",
   "emptyTemplates": "Noch keine Vorlagen.",
+  "searchTemplatesPlaceholder": "Vorlage nach Bezeichnung suchen…",
+  "emptyTemplateSearch": "Keine Vorlage entspricht dieser Suche.",
   "confirmDeleteTemplate": "Diese Vorlage löschen?",
   "confirmDeleteQuestion": "Diese Frage löschen? Bei vorhandenen Antworten wird sie deaktiviert.",
   "deleted": "Gelöscht.",

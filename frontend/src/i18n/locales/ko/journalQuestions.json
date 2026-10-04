@@ -29,6 +29,8 @@
   "clonedIndependent": "질문이 독립 복사본으로 추가되었습니다.",
   "emptyQuestions": "구성된 질문이 없습니다.",
   "emptyTemplates": "아직 템플릿이 없습니다.",
+  "searchTemplatesPlaceholder": "라벨로 템플릿 검색…",
+  "emptyTemplateSearch": "검색과 일치하는 템플릿이 없습니다.",
   "confirmDeleteTemplate": "이 템플릿을 삭제할까요?",
   "confirmDeleteQuestion": "이 질문을 삭제할까요? 답변이 있으면 비활성화됩니다.",
   "deleted": "삭제됨.",

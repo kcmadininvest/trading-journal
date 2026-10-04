@@ -29,6 +29,8 @@
   "clonedIndependent": "Question added as an independent copy.",
   "emptyQuestions": "No questions configured.",
   "emptyTemplates": "No templates yet.",
+  "searchTemplatesPlaceholder": "Search a template by label…",
+  "emptyTemplateSearch": "No template matches this search.",
   "confirmDeleteTemplate": "Delete this template?",
   "confirmDeleteQuestion": "Delete this question? If answers exist, it will be deactivated.",
   "deleted": "Deleted.",

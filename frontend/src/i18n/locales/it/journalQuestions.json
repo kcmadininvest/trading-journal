@@ -29,6 +29,8 @@
   "clonedIndependent": "Domanda aggiunta come copia indipendente.",
   "emptyQuestions": "Nessuna domanda configurata.",
   "emptyTemplates": "Nessun modello per ora.",
+  "searchTemplatesPlaceholder": "Cerca un modello per etichetta…",
+  "emptyTemplateSearch": "Nessun modello corrisponde a questa ricerca.",
   "confirmDeleteTemplate": "Eliminare questo modello?",
   "confirmDeleteQuestion": "Eliminare questa domanda? Se esistono risposte, verrà disattivata.",
   "deleted": "Eliminato.",

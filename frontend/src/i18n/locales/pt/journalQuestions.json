@@ -29,6 +29,8 @@
   "clonedIndependent": "Pergunta adicionada como cópia independente.",
   "emptyQuestions": "Nenhuma pergunta configurada.",
   "emptyTemplates": "Ainda sem modelos.",
+  "searchTemplatesPlaceholder": "Pesquisar um modelo por rótulo…",
+  "emptyTemplateSearch": "Nenhum modelo corresponde a esta pesquisa.",
   "confirmDeleteTemplate": "Eliminar este modelo?",
   "confirmDeleteQuestion": "Eliminar esta pergunta? Se existirem respostas, será desativada.",
   "deleted": "Eliminado.",

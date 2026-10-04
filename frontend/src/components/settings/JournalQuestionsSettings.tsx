@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -63,6 +63,20 @@ function normalizeTemplateLabel(label: string): string {
   return label.trim().toLowerCase();
 }
 
+function foldForSearch(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
+function templateMatchesSearch(label: string, query: string): boolean {
+  const folded = foldForSearch(query);
+  if (!folded) return true;
+  return foldForSearch(label).includes(folded);
+}
+
 function duplicateTemplateMessage(err: unknown, fallback: string): string | null {
   const message = err instanceof Error ? err.message : '';
   return message.includes('duplicate_label') ? fallback : null;
@@ -111,6 +125,7 @@ export const JournalQuestionsSettings: React.FC<JournalQuestionsSettingsProps> =
   const { t } = useTranslation(['settings', 'journalQuestions', 'common']);
   const { preferences, loading: preferencesLoading } = usePreferences();
   const [templates, setTemplates] = useState<QuestionTemplate[]>([]);
+  const [templateSearch, setTemplateSearch] = useState('');
   const [templatePage, setTemplatePage] = useState(1);
   const [templatePageSize, setTemplatePageSize] = useState(DEFAULT_ITEMS_PER_PAGE);
   const templatePageSizeRef = useRef(templatePageSize);
@@ -187,10 +202,15 @@ export const JournalQuestionsSettings: React.FC<JournalQuestionsSettingsProps> =
     setTemplatePage(1);
   }, [preferencesLoading, preferences.items_per_page]);
 
+  const filteredTemplates = useMemo(
+    () => templates.filter((tpl) => templateMatchesSearch(tpl.label, templateSearch)),
+    [templates, templateSearch]
+  );
+
   useEffect(() => {
-    const totalPages = Math.max(1, Math.ceil(templates.length / templatePageSize));
+    const totalPages = Math.max(1, Math.ceil(filteredTemplates.length / templatePageSize));
     if (templatePage > totalPages) setTemplatePage(totalPages);
-  }, [templates.length, templatePageSize, templatePage]);
+  }, [filteredTemplates.length, templatePageSize, templatePage]);
 
   const handleTemplatePageChange = (page: number) => {
     setTemplatePage(page);
@@ -343,10 +363,19 @@ export const JournalQuestionsSettings: React.FC<JournalQuestionsSettingsProps> =
           });
         }
       }
+      const creatingTemplate = editor.mode === 'template' && editor.id == null;
+      const savedLabel = editor.label.trim();
       setEditor(null);
       notify('success', t('journalQuestions:saved'));
       const tpls = await reload();
-      if (savedTemplateId) focusTemplatePage(tpls, savedTemplateId);
+      if (savedTemplateId) {
+        const matchesSearch = templateMatchesSearch(savedLabel, templateSearch);
+        const visible = creatingTemplate && !matchesSearch
+          ? tpls
+          : tpls.filter((tpl) => templateMatchesSearch(tpl.label, templateSearch));
+        if (creatingTemplate && !matchesSearch) setTemplateSearch('');
+        focusTemplatePage(visible, savedTemplateId);
+      }
     } catch (err: any) {
       notify(
         'error',
@@ -440,10 +469,10 @@ export const JournalQuestionsSettings: React.FC<JournalQuestionsSettingsProps> =
     { id: 'position', label: t('settings:questionsPosition') },
   ];
 
-  const templateStartIndex = templates.length === 0 ? 0 : (templatePage - 1) * templatePageSize;
-  const templateEndIndex = templates.length === 0 ? 0 : Math.min(templatePage * templatePageSize, templates.length);
-  const pageTemplates = templates.slice(templateStartIndex, templateEndIndex);
-  const templateTotalPages = Math.max(1, Math.ceil(templates.length / templatePageSize));
+  const templateStartIndex = filteredTemplates.length === 0 ? 0 : (templatePage - 1) * templatePageSize;
+  const templateEndIndex = filteredTemplates.length === 0 ? 0 : Math.min(templatePage * templatePageSize, filteredTemplates.length);
+  const pageTemplates = filteredTemplates.slice(templateStartIndex, templateEndIndex);
+  const templateTotalPages = Math.max(1, Math.ceil(filteredTemplates.length / templatePageSize));
 
   return (
     <div ref={listTopRef} className="space-y-6">
@@ -479,14 +508,27 @@ export const JournalQuestionsSettings: React.FC<JournalQuestionsSettingsProps> =
             </svg>
           }
         >
-          <div className="flex justify-end mb-3">
-            <button
-              type="button"
-              onClick={openNewTemplate}
-              className="px-3 py-1.5 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700"
-            >
-              {t('journalQuestions:newTemplate')}
-            </button>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-3">
+            <input
+              type="search"
+              value={templateSearch}
+              onChange={(e) => {
+                setTemplateSearch(e.target.value);
+                setTemplatePage(1);
+              }}
+              placeholder={t('journalQuestions:searchTemplatesPlaceholder')}
+              aria-label={t('journalQuestions:searchTemplatesPlaceholder')}
+              className="w-full sm:max-w-sm px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={openNewTemplate}
+                className="px-3 py-1.5 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700"
+              >
+                {t('journalQuestions:newTemplate')}
+              </button>
+            </div>
           </div>
           <QuestionList
             items={pageTemplates.map((tpl) => ({
@@ -495,6 +537,11 @@ export const JournalQuestionsSettings: React.FC<JournalQuestionsSettingsProps> =
               meta: t(`journalQuestions:types.${tpl.answer_type}`),
               inactive: !tpl.is_active,
             }))}
+            emptyText={
+              templates.length > 0 && filteredTemplates.length === 0
+                ? t('journalQuestions:emptyTemplateSearch')
+                : undefined
+            }
             onEdit={(id) => {
               const tpl = templates.find((x) => x.id === id);
               if (tpl) openEditTemplate(tpl);
@@ -502,12 +549,12 @@ export const JournalQuestionsSettings: React.FC<JournalQuestionsSettingsProps> =
             onDelete={requestDeleteTemplate}
           />
         </SettingsSection>
-        {templates.length > 0 && (
+        {filteredTemplates.length > 0 && (
           <div className="mt-4 sm:mt-6 overflow-hidden rounded-lg border border-gray-200 bg-white shadow dark:border-gray-700 dark:bg-gray-800">
             <PaginationControls
               currentPage={templatePage}
               totalPages={templateTotalPages}
-              totalItems={templates.length}
+              totalItems={filteredTemplates.length}
               itemsPerPage={templatePageSize}
               startIndex={templateStartIndex}
               endIndex={templateEndIndex}
@@ -990,14 +1037,16 @@ function QuestionList({
   items,
   onEdit,
   onDelete,
+  emptyText,
 }: {
   items: Array<{ id: number; label: string; meta: string; inactive?: boolean }>;
   onEdit: (id: number) => void;
   onDelete: (id: number) => void;
+  emptyText?: string;
 }) {
   const { t } = useTranslation('journalQuestions');
   if (items.length === 0) {
-    return <p className="text-sm text-gray-500 dark:text-gray-400">{t('emptyTemplates')}</p>;
+    return <p className="text-sm text-gray-500 dark:text-gray-400">{emptyText ?? t('emptyTemplates')}</p>;
   }
   return (
     <ul className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -1521,6 +1570,9 @@ function ClonePickerModal({
   onClose: () => void;
   t: any;
 }) {
+  const [search, setSearch] = useState('');
+  const visibleTemplates = templates.filter((tpl) => templateMatchesSearch(tpl.label, search));
+
   const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget) {
       onClose();
@@ -1562,11 +1614,23 @@ function ClonePickerModal({
 
         <div className="flex-1 overflow-y-auto p-6 space-y-3">
           <p className="text-sm text-gray-600 dark:text-gray-400">{t('journalQuestions:cloneHint')}</p>
+          {templates.length > 0 && (
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={t('journalQuestions:searchTemplatesPlaceholder')}
+              aria-label={t('journalQuestions:searchTemplatesPlaceholder')}
+              className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          )}
           {templates.length === 0 ? (
             <p className="text-sm text-gray-500 dark:text-gray-400">{t('journalQuestions:emptyTemplates')}</p>
+          ) : visibleTemplates.length === 0 ? (
+            <p className="text-sm text-gray-500 dark:text-gray-400">{t('journalQuestions:emptyTemplateSearch')}</p>
           ) : (
             <ul className="divide-y divide-gray-200 dark:divide-gray-700 max-h-64 overflow-y-auto rounded-lg border border-gray-100 dark:border-gray-700">
-              {templates.map((tpl) => (
+              {visibleTemplates.map((tpl) => (
                 <li key={tpl.id} className="px-3 py-2.5 flex items-center justify-between gap-2">
                   <div className="min-w-0">
                     <div className="text-sm font-medium text-gray-900 dark:text-gray-100 break-words">{tpl.label}</div>

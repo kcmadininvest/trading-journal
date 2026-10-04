@@ -29,6 +29,8 @@
   "clonedIndependent": "Pregunta añadida como copia independiente.",
   "emptyQuestions": "No hay preguntas configuradas.",
   "emptyTemplates": "Aún no hay plantillas.",
+  "searchTemplatesPlaceholder": "Buscar una plantilla por etiqueta…",
+  "emptyTemplateSearch": "Ninguna plantilla coincide con esta búsqueda.",
   "confirmDeleteTemplate": "¿Eliminar esta plantilla?",
   "confirmDeleteQuestion": "¿Eliminar esta pregunta? Si hay respuestas, se desactivará.",
   "deleted": "Eliminado.",
