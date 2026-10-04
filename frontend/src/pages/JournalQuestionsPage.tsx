@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PageShell } from '../components/layout';
-import { replayPrimaryButtonClass, replaySecondaryButtonClass } from '../components/replay/replayStyles';
+import { replaySecondaryButtonClass } from '../components/replay/replayStyles';
 import { AccountSelector } from '../components/accounts/AccountSelector';
 import { DateInput } from '../components/common/DateInput';
 import { useTradingAccount } from '../contexts/useTradingAccount';
@@ -71,10 +71,7 @@ const JournalQuestionsPage: React.FC = () => {
             <a href="#daily-journal" className={`${replaySecondaryButtonClass} box-border`}>
               {t('goToJournal')}
             </a>
-            <a
-              href="#settings?tab=questions&section=day"
-              className={`${replayPrimaryButtonClass} box-border border border-transparent`}
-            >
+            <a href="#settings?tab=questions&section=day" className={`${replaySecondaryButtonClass} box-border`}>
               {t('goToSettings')}
             </a>
           </div>
