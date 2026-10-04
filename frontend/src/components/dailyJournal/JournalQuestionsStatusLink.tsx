@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { journalQuestionsService } from '../../services/journalQuestions';
-import { isQuestionVisible } from '../../utils/questionnaireVisibility';
+import { isAnswered, isQuestionVisible } from '../../utils/questionnaireVisibility';
 
 interface JournalQuestionsStatusLinkProps {
   date: string;
@@ -43,12 +43,7 @@ export const JournalQuestionsStatusLink: React.FC<JournalQuestionsStatusLinkProp
         const activeVisible = payload.questions.filter(
           (q) => q.is_active && isQuestionVisible(q, answersByQid, questionsById)
         );
-        const answeredCount = activeVisible.filter((q) => {
-          const value = answersByQid[q.id];
-          if (value === null || value === undefined || value === '') return false;
-          if (Array.isArray(value) && value.length === 0) return false;
-          return true;
-        }).length;
+        const answeredCount = activeVisible.filter((q) => isAnswered(answersByQid[q.id])).length;
 
         if (activeVisible.length === 0 && payload.answers.length === 0) {
           setVisible(false);

@@ -64,6 +64,13 @@ export interface VisibilityQuestion {
   show_if?: ShowIfRule | null;
 }
 
+/** Valeur considérée comme réponse renseignée (hors null / vide / liste vide). */
+export function isAnswered(value: unknown): boolean {
+  if (value === null || value === undefined || value === '') return false;
+  if (Array.isArray(value) && value.length === 0) return false;
+  return true;
+}
+
 export function isQuestionVisible(
   question: VisibilityQuestion,
   answersByQid: Record<number, unknown>,
