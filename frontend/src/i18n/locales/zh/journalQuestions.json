@@ -20,6 +20,7 @@
   "required": "必填",
   "active": "启用",
   "labelRequired": "标签为必填项。",
+  "duplicateLabel": "已存在相同标签的模板。",
   "choicesRequired": "至少需要一个选项。",
   "newTemplate": "新建模板",
   "newQuestion": "新建问题",

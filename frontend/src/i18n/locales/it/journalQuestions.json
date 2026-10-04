@@ -20,6 +20,7 @@
   "required": "Obbligatorio",
   "active": "Attivo",
   "labelRequired": "L'etichetta è obbligatoria.",
+  "duplicateLabel": "Esiste già un modello con questa etichetta.",
   "choicesRequired": "È richiesta almeno una scelta.",
   "newTemplate": "Nuovo modello",
   "newQuestion": "Nuova domanda",

@@ -27,6 +27,7 @@ from .questionnaire_serializers import (
 class QuestionTemplateViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = QuestionTemplateSerializer
+    pagination_class = None
 
     def get_queryset(self):
         if not self.request.user.is_authenticated:

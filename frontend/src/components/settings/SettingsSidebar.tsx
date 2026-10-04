@@ -21,7 +21,7 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
   return (
     <>
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:block w-72 flex-shrink-0 px-6 py-4">
+      <aside className="hidden lg:block w-72 flex-shrink-0 py-6 pl-3 pr-0 sm:pl-4 md:pl-6 lg:pl-8">
         <div className="rounded-2xl border border-gray-200/70 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-lg shadow-blue-100/40 dark:shadow-black/40 overflow-hidden">
           <nav className="space-y-1">
             {tabs.map((tab) => (

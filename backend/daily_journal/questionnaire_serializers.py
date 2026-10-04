@@ -1,4 +1,4 @@
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.db.models import Max
 from rest_framework import serializers
 
@@ -46,6 +46,8 @@ class QuestionTemplateSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at', 'updated_at']
 
     def validate(self, attrs):
+        if 'label' in attrs:
+            self._reject_duplicate_label(attrs['label'])
         answer_type = attrs.get('answer_type') or getattr(self.instance, 'answer_type', None)
         choices = attrs.get('choices', serializers.empty)
         if choices is serializers.empty and self.instance:
@@ -68,11 +70,30 @@ class QuestionTemplateSerializer(serializers.ModelSerializer):
                 )
         return attrs
 
+    def _reject_duplicate_label(self, label: str):
+        request = self.context.get('request')
+        user = getattr(request, 'user', None)
+        if user is None or not getattr(user, 'is_authenticated', False):
+            return
+        qs = QuestionTemplate.objects.filter(user=user, label__iexact=label)
+        if self.instance is not None:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise serializers.ValidationError({'label': ['duplicate_label']})
+
+    def _reraise_duplicate(self, exc: IntegrityError):
+        if 'uniq_question_template_label_per_user' in str(exc):
+            raise serializers.ValidationError({'label': ['duplicate_label']}) from exc
+        raise exc
+
     @transaction.atomic
     def create(self, validated_data):
         choices_data = validated_data.pop('choices', [])
         user = self.context['request'].user
-        template = QuestionTemplate.objects.create(user=user, **validated_data)
+        try:
+            template = QuestionTemplate.objects.create(user=user, **validated_data)
+        except IntegrityError as exc:
+            self._reraise_duplicate(exc)
         self._replace_choices(template, choices_data)
         return template
 
@@ -81,7 +102,10 @@ class QuestionTemplateSerializer(serializers.ModelSerializer):
         choices_data = validated_data.pop('choices', serializers.empty)
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
-        instance.save()
+        try:
+            instance.save()
+        except IntegrityError as exc:
+            self._reraise_duplicate(exc)
         if choices_data is not serializers.empty:
             instance.choices.all().delete()
             self._replace_choices(instance, choices_data or [])

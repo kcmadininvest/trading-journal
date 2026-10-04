@@ -20,6 +20,7 @@
   "required": "Obligatoire",
   "active": "Actif",
   "labelRequired": "Le libellé est requis.",
+  "duplicateLabel": "Un modèle avec ce libellé existe déjà.",
   "choicesRequired": "Au moins un choix est requis.",
   "newTemplate": "Nouveau modèle",
   "newQuestion": "Nouvelle question",

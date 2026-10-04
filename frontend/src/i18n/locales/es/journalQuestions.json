@@ -20,6 +20,7 @@
   "required": "Obligatorio",
   "active": "Activo",
   "labelRequired": "La etiqueta es obligatoria.",
+  "duplicateLabel": "Ya existe una plantilla con esta etiqueta.",
   "choicesRequired": "Se requiere al menos una opción.",
   "newTemplate": "Nueva plantilla",
   "newQuestion": "Nueva pregunta",

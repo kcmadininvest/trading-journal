@@ -20,6 +20,7 @@
   "required": "必須",
   "active": "有効",
   "labelRequired": "ラベルは必須です。",
+  "duplicateLabel": "このラベルのテンプレートは既に存在します。",
   "choicesRequired": "少なくとも1つの選択肢が必要です。",
   "newTemplate": "新しいテンプレート",
   "newQuestion": "新しい質問",

@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models.functions import Lower
 
 from trades.models import TradingAccount, ImportedTrade
 from .validators import validate_journal_image
@@ -125,6 +126,13 @@ class QuestionTemplate(models.Model):
 
     class Meta:
         ordering = ['label', 'id']
+        constraints = [
+            models.UniqueConstraint(
+                Lower('label'),
+                models.F('user_id'),
+                name='uniq_question_template_label_per_user',
+            ),
+        ]
         indexes = [
             models.Index(fields=['user', 'is_active']),
         ]

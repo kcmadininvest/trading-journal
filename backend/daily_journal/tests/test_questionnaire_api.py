@@ -531,3 +531,106 @@ class QuestionnaireApiTests(APITestCase):
             reverse('daily_journal:question-template-detail', kwargs={'pk': tpl.id})
         )
         self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_template_list_is_not_paginated(self):
+        for index in range(11):
+            QuestionTemplate.objects.create(
+                user=self.user,
+                label=f'Question {index:02d}',
+                answer_type='text',
+            )
+        res = self.client.get(reverse('daily_journal:question-template-list'))
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertIsInstance(res.data, list)
+        self.assertEqual(len(res.data), 11)
+
+    def test_reject_duplicate_template_label(self):
+        payload = {
+            'label': 'Sens du trade ?',
+            'answer_type': 'single_choice',
+            'choices': [{'label': 'Achat.', 'order': 0}, {'label': 'Vente.', 'order': 1}],
+        }
+        first = self.client.post(
+            reverse('daily_journal:question-template-list'),
+            payload,
+            format='json',
+        )
+        self.assertEqual(first.status_code, status.HTTP_201_CREATED)
+        duplicate = self.client.post(
+            reverse('daily_journal:question-template-list'),
+            {**payload, 'label': '  sens du trade ?  '},
+            format='json',
+        )
+        self.assertEqual(duplicate.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('duplicate_label', str(duplicate.data))
+
+        other_client = APIClient()
+        other_client.force_authenticate(user=self.other)
+        other = other_client.post(
+            reverse('daily_journal:question-template-list'),
+            payload,
+            format='json',
+        )
+        self.assertEqual(other.status_code, status.HTTP_201_CREATED)
+
+    def test_rename_template_label_uniqueness(self):
+        keep = QuestionTemplate.objects.create(
+            user=self.user,
+            label='Contexte',
+            answer_type='text',
+        )
+        other = QuestionTemplate.objects.create(
+            user=self.user,
+            label='Sens du trade ?',
+            answer_type='text',
+        )
+        taken = self.client.patch(
+            reverse('daily_journal:question-template-detail', kwargs={'pk': other.id}),
+            {'label': 'contexte'},
+            format='json',
+        )
+        self.assertEqual(taken.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('duplicate_label', str(taken.data))
+
+        same = self.client.patch(
+            reverse('daily_journal:question-template-detail', kwargs={'pk': keep.id}),
+            {'label': 'Contexte', 'help_text': 'Précision'},
+            format='json',
+        )
+        self.assertEqual(same.status_code, status.HTTP_200_OK)
+        self.assertEqual(same.data['help_text'], 'Précision')
+        self.assertEqual(same.data['label'], 'Contexte')
+
+    def test_template_label_dedupe_suffix_collision(self):
+        import importlib
+
+        migration = importlib.import_module(
+            'daily_journal.migrations.0006_unique_question_template_label'
+        )
+        plan_template_label_updates = migration.plan_template_label_updates
+
+        updates = dict(plan_template_label_updates([
+            {'id': 1, 'user_id': 3, 'label': 'Sens du trade ?'},
+            {'id': 2, 'user_id': 3, 'label': 'Sens du trade ? (2)'},
+            {'id': 3, 'user_id': 3, 'label': 'sens du trade ?'},
+            {'id': 4, 'user_id': 9, 'label': 'Sens du trade ?'},
+        ]))
+        self.assertNotIn(1, updates)
+        self.assertNotIn(2, updates)
+        self.assertEqual(updates[3], 'sens du trade ? (3)')
+        self.assertNotIn(4, updates)
+
+        long_label = 'A' * 500
+        truncated = dict(plan_template_label_updates([
+            {'id': 1, 'user_id': 1, 'label': long_label},
+            {'id': 2, 'user_id': 1, 'label': long_label},
+        ]))
+        self.assertEqual(len(truncated[2]), 500)
+        self.assertTrue(truncated[2].endswith(' (2)'))
+
+        trimmed = dict(plan_template_label_updates([
+            {'id': 1, 'user_id': 1, 'label': '  Foo  '},
+            {'id': 2, 'user_id': 1, 'label': 'foo'},
+        ]))
+        self.assertEqual(trimmed[1], 'Foo')
+        self.assertEqual(trimmed[2], 'foo (2)')

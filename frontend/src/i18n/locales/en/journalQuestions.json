@@ -20,6 +20,7 @@
   "required": "Required",
   "active": "Active",
   "labelRequired": "Label is required.",
+  "duplicateLabel": "A template with this label already exists.",
   "choicesRequired": "At least one choice is required.",
   "newTemplate": "New template",
   "newQuestion": "New question",

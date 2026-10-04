@@ -20,6 +20,7 @@
   "required": "Obrigatório",
   "active": "Ativo",
   "labelRequired": "O rótulo é obrigatório.",
+  "duplicateLabel": "Já existe um modelo com este rótulo.",
   "choicesRequired": "É necessária pelo menos uma opção.",
   "newTemplate": "Novo modelo",
   "newQuestion": "Nova pergunta",

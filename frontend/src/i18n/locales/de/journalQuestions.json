@@ -20,6 +20,7 @@
   "required": "Pflichtfeld",
   "active": "Aktiv",
   "labelRequired": "Bezeichnung ist erforderlich.",
+  "duplicateLabel": "Eine Vorlage mit dieser Bezeichnung existiert bereits.",
   "choicesRequired": "Mindestens eine Option ist erforderlich.",
   "newTemplate": "Neue Vorlage",
   "newQuestion": "Neue Frage",

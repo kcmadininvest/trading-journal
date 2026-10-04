@@ -54,7 +54,7 @@ export const SettingsToast: React.FC<SettingsToastProps> = ({
   const { bg, border, text, icon } = config[type];
 
   return (
-    <div className={`fixed top-4 right-4 z-50 max-w-md animate-slide-in-right`}>
+    <div className="fixed top-4 right-4 z-[100] max-w-md animate-slide-in-right">
       <div className={`${bg} ${border} ${text} border rounded-lg shadow-lg p-4`}>
         <div className="flex items-start gap-3">
           <div className="flex-shrink-0">{icon}</div>

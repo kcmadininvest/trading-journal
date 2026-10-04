@@ -23,7 +23,10 @@ import { CSS } from '@dnd-kit/utilities';
 import { CustomSelect } from '../common/CustomSelect';
 import { SettingsSection } from './SettingsSection';
 import { SettingsStyleToggle } from '../ui/SettingsStyleToggle';
-import { Tooltip, DeleteConfirmModal } from '../ui';
+import { Tooltip, DeleteConfirmModal, PaginationControls } from '../ui';
+import { usePreferences } from '../../hooks/usePreferences';
+import { DEFAULT_ITEMS_PER_PAGE } from '../../hooks/preferencesProvider';
+import userService from '../../services/userService';
 import {
   AnswerType,
   QuestionChoice,
@@ -54,6 +57,16 @@ const ANSWER_TYPES: AnswerType[] = [
 ];
 
 const NEEDS_CHOICES = new Set<AnswerType>(['single_choice', 'multiple_choice']);
+const TEMPLATE_PAGE_SIZE_OPTIONS = [5, 10, 25, 50, 100];
+
+function normalizeTemplateLabel(label: string): string {
+  return label.trim().toLowerCase();
+}
+
+function duplicateTemplateMessage(err: unknown, fallback: string): string | null {
+  const message = err instanceof Error ? err.message : '';
+  return message.includes('duplicate_label') ? fallback : null;
+}
 
 type EditorMode = 'template' | 'instance';
 
@@ -96,7 +109,13 @@ export const JournalQuestionsSettings: React.FC<JournalQuestionsSettingsProps> =
   onMessage,
 }) => {
   const { t } = useTranslation(['settings', 'journalQuestions', 'common']);
+  const { preferences, loading: preferencesLoading } = usePreferences();
   const [templates, setTemplates] = useState<QuestionTemplate[]>([]);
+  const [templatePage, setTemplatePage] = useState(1);
+  const [templatePageSize, setTemplatePageSize] = useState(DEFAULT_ITEMS_PER_PAGE);
+  const templatePageSizeRef = useRef(templatePageSize);
+  templatePageSizeRef.current = templatePageSize;
+  const listTopRef = useRef<HTMLDivElement>(null);
   const [dayQ, setDayQ] = useState<Questionnaire | null>(null);
   const [posQ, setPosQ] = useState<Questionnaire | null>(null);
   const [dayQuestions, setDayQuestions] = useState<QuestionnaireQuestion[]>([]);
@@ -122,33 +141,35 @@ export const JournalQuestionsSettings: React.FC<JournalQuestionsSettingsProps> =
   tRef.current = t;
   const initialLoadDone = useRef(false);
 
-  const reload = useCallback(async () => {
+  const reload = useCallback(async (): Promise<QuestionTemplate[]> => {
     // Évite le flash « loading » au changement d'onglet / après clone / après toast parent.
     if (!initialLoadDone.current) setLoading(true);
     try {
       if (section === 'templates') {
         const tpls = await journalQuestionsService.listTemplates();
         setTemplates(tpls);
-      } else if (section === 'day') {
-        const [tpls, day] = await Promise.all([
-          journalQuestionsService.listTemplates(true),
-          journalQuestionsService.getOrCreateQuestionnaire('day'),
-        ]);
-        setTemplates(tpls);
-        setDayQ(day);
-        setDayQuestions(await journalQuestionsService.listQuestionnaireQuestions(day.id));
+        initialLoadDone.current = true;
+        return tpls;
+      }
+      const scope = section === 'day' ? 'day' : 'position';
+      const [tpls, questionnaire] = await Promise.all([
+        journalQuestionsService.listTemplates(),
+        journalQuestionsService.getOrCreateQuestionnaire(scope),
+      ]);
+      setTemplates(tpls);
+      const questions = await journalQuestionsService.listQuestionnaireQuestions(questionnaire.id);
+      if (scope === 'day') {
+        setDayQ(questionnaire);
+        setDayQuestions(questions);
       } else {
-        const [tpls, pos] = await Promise.all([
-          journalQuestionsService.listTemplates(true),
-          journalQuestionsService.getOrCreateQuestionnaire('position'),
-        ]);
-        setTemplates(tpls);
-        setPosQ(pos);
-        setPosQuestions(await journalQuestionsService.listQuestionnaireQuestions(pos.id));
+        setPosQ(questionnaire);
+        setPosQuestions(questions);
       }
       initialLoadDone.current = true;
+      return tpls;
     } catch (err: any) {
       notifyRef.current('error', err?.message || tRef.current('journalQuestions:loadError'));
+      return [];
     } finally {
       setLoading(false);
     }
@@ -157,6 +178,43 @@ export const JournalQuestionsSettings: React.FC<JournalQuestionsSettingsProps> =
   useEffect(() => {
     reload();
   }, [reload]);
+
+  useEffect(() => {
+    if (preferencesLoading) return;
+    const prefSize = preferences.items_per_page ?? DEFAULT_ITEMS_PER_PAGE;
+    if (prefSize === templatePageSizeRef.current) return;
+    setTemplatePageSize(prefSize);
+    setTemplatePage(1);
+  }, [preferencesLoading, preferences.items_per_page]);
+
+  useEffect(() => {
+    const totalPages = Math.max(1, Math.ceil(templates.length / templatePageSize));
+    if (templatePage > totalPages) setTemplatePage(totalPages);
+  }, [templates.length, templatePageSize, templatePage]);
+
+  const handleTemplatePageChange = (page: number) => {
+    setTemplatePage(page);
+    listTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  const focusTemplatePage = (tpls: QuestionTemplate[], templateId: number) => {
+    const index = tpls.findIndex((tpl) => tpl.id === templateId);
+    if (index < 0) return;
+    const size = templatePageSizeRef.current;
+    setTemplatePage(Math.floor(index / size) + 1);
+  };
+
+  const handleTemplatePageSizeChange = async (size: number) => {
+    const sanitized = Number.isFinite(size) && size > 0 ? size : DEFAULT_ITEMS_PER_PAGE;
+    setTemplatePageSize(sanitized);
+    setTemplatePage(1);
+    try {
+      await userService.updatePreferences({ items_per_page: sanitized });
+      window.dispatchEvent(new CustomEvent('preferences:updated'));
+    } catch (error) {
+      console.error('[JournalQuestionsSettings] Failed to persist items_per_page', error);
+    }
+  };
 
   const openNewTemplate = () => {
     setEditorScope(null);
@@ -222,6 +280,16 @@ export const JournalQuestionsSettings: React.FC<JournalQuestionsSettingsProps> =
       notify('error', t('journalQuestions:labelRequired'));
       return;
     }
+    if (editor.mode === 'template') {
+      const normalized = normalizeTemplateLabel(editor.label);
+      const duplicate = templates.some(
+        (tpl) => normalizeTemplateLabel(tpl.label) === normalized && tpl.id !== editor.id
+      );
+      if (duplicate) {
+        notify('error', t('journalQuestions:duplicateLabel'));
+        return;
+      }
+    }
     if (NEEDS_CHOICES.has(editor.answer_type) && editor.choices.filter((c) => c.label.trim()).length === 0) {
       notify('error', t('journalQuestions:choicesRequired'));
       return;
@@ -251,12 +319,12 @@ export const JournalQuestionsSettings: React.FC<JournalQuestionsSettingsProps> =
         choices,
       };
 
+      let savedTemplateId: number | undefined;
       if (editor.mode === 'template') {
-        if (editor.id) {
-          await journalQuestionsService.updateTemplate(editor.id, payload);
-        } else {
-          await journalQuestionsService.createTemplate(payload);
-        }
+        const saved = editor.id
+          ? await journalQuestionsService.updateTemplate(editor.id, payload)
+          : await journalQuestionsService.createTemplate(payload);
+        savedTemplateId = saved.id;
       } else {
         const qId = editorScope === 'day' ? dayQ?.id : posQ?.id;
         if (!qId) throw new Error('Questionnaire missing');
@@ -277,9 +345,15 @@ export const JournalQuestionsSettings: React.FC<JournalQuestionsSettingsProps> =
       }
       setEditor(null);
       notify('success', t('journalQuestions:saved'));
-      await reload();
+      const tpls = await reload();
+      if (savedTemplateId) focusTemplatePage(tpls, savedTemplateId);
     } catch (err: any) {
-      notify('error', err?.message || t('journalQuestions:saveError'));
+      notify(
+        'error',
+        duplicateTemplateMessage(err, t('journalQuestions:duplicateLabel')) ||
+          err?.message ||
+          t('journalQuestions:saveError')
+      );
     } finally {
       setBusy(false);
     }
@@ -366,8 +440,13 @@ export const JournalQuestionsSettings: React.FC<JournalQuestionsSettingsProps> =
     { id: 'position', label: t('settings:questionsPosition') },
   ];
 
+  const templateStartIndex = templates.length === 0 ? 0 : (templatePage - 1) * templatePageSize;
+  const templateEndIndex = templates.length === 0 ? 0 : Math.min(templatePage * templatePageSize, templates.length);
+  const pageTemplates = templates.slice(templateStartIndex, templateEndIndex);
+  const templateTotalPages = Math.max(1, Math.ceil(templates.length / templatePageSize));
+
   return (
-    <div className="space-y-6">
+    <div ref={listTopRef} className="space-y-6">
       <div className="flex flex-wrap gap-1 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-1">
         {sectionTabs.map((tab) => (
           <button
@@ -390,6 +469,7 @@ export const JournalQuestionsSettings: React.FC<JournalQuestionsSettingsProps> =
       ) : (
         <>
       {section === 'templates' && (
+        <>
         <SettingsSection
           title={t('settings:questionsTemplates')}
           description={t('settings:questionsTemplatesDesc')}
@@ -409,7 +489,7 @@ export const JournalQuestionsSettings: React.FC<JournalQuestionsSettingsProps> =
             </button>
           </div>
           <QuestionList
-            items={templates.map((tpl) => ({
+            items={pageTemplates.map((tpl) => ({
               id: tpl.id,
               label: tpl.label,
               meta: t(`journalQuestions:types.${tpl.answer_type}`),
@@ -422,6 +502,23 @@ export const JournalQuestionsSettings: React.FC<JournalQuestionsSettingsProps> =
             onDelete={requestDeleteTemplate}
           />
         </SettingsSection>
+        {templates.length > 0 && (
+          <div className="mt-4 sm:mt-6 overflow-hidden rounded-lg border border-gray-200 bg-white shadow dark:border-gray-700 dark:bg-gray-800">
+            <PaginationControls
+              currentPage={templatePage}
+              totalPages={templateTotalPages}
+              totalItems={templates.length}
+              itemsPerPage={templatePageSize}
+              startIndex={templateStartIndex}
+              endIndex={templateEndIndex}
+              onPageChange={handleTemplatePageChange}
+              onPageSizeChange={handleTemplatePageSizeChange}
+              pageSizeOptions={TEMPLATE_PAGE_SIZE_OPTIONS}
+              className="border-t-0"
+            />
+          </div>
+        )}
+        </>
       )}
 
       {section === 'day' && (
