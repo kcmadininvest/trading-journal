@@ -104,6 +104,83 @@ export function getCurrencySymbolForCode(
   return currencies.find((c) => c.code === currencyCode)?.symbol ?? '';
 }
 
+const VALID_POINT_THOUSANDS = /^[+-]?\d{1,3}(,\d{3})+$/;
+
+/**
+ * Exemple affiché dans l'infobulle des champs numériques (regroupement + décimale).
+ * Suit `formatNumber` : virgule → `1 234,56`, point → `1,234.56`.
+ */
+export function getNumberFormatExample(numberFormat: NumberFormatType = 'comma'): string {
+  return formatNumber(1234.56, 2, numberFormat);
+}
+
+/**
+ * Normalise une saisie en format point (décimale `.`, milliers `,`).
+ * La règle ne s'applique qu'au préfixe numérique ; le reste est conservé
+ * pour que `parseFloat` tolère toujours un suffixe (`12€`).
+ *
+ * - dernier séparateur `.` : les virgules sont des milliers
+ * - dernier séparateur `,` : les points sont des milliers, la virgule est décimale
+ * - virgules seules et regroupement valide (`1,234`, `150,000`) : milliers
+ * - une seule virgule hors regroupement (`1,5`, `0,125`, `1,`) : décimale
+ * - plusieurs virgules hors regroupement : toutes retirées (comportement historique)
+ */
+export function normalizePointFormatInput(raw: string): string {
+  const match = /^([+-]?[\d.,]+)(.*)$/s.exec(raw);
+  if (!match) return raw;
+  return normalizePointPrefix(match[1]) + match[2];
+}
+
+function normalizePointPrefix(prefix: string): string {
+  if (!prefix.includes(',')) return prefix;
+
+  if (prefix.includes('.')) {
+    const lastComma = prefix.lastIndexOf(',');
+    const lastDot = prefix.lastIndexOf('.');
+    if (lastDot > lastComma) {
+      return prefix.replace(/,/g, '');
+    }
+    const withoutDots = prefix.replace(/\./g, '');
+    const decimalAt = withoutDots.lastIndexOf(',');
+    return (
+      withoutDots.slice(0, decimalAt).replace(/,/g, '') +
+      '.' +
+      withoutDots.slice(decimalAt + 1)
+    );
+  }
+
+  // `0,125` a la forme d'un groupe de milliers, mais c'est une décimale.
+  if (VALID_POINT_THOUSANDS.test(prefix) && !/^[+-]?0,\d+$/.test(prefix)) {
+    return prefix.replace(/,/g, '');
+  }
+  if (prefix.split(',').length - 1 === 1) {
+    return prefix.replace(',', '.');
+  }
+  return prefix.replace(/,/g, '');
+}
+
+/**
+ * Nettoyage d'une saisie `NumberInput`, sans bornes min/max.
+ * La branche virgule est inchangée (espaces retirés, virgules → point, puis `parseFloat`).
+ */
+export function cleanNumberInput(
+  displayVal: string,
+  numberFormat: NumberFormatType = 'comma'
+): string {
+  if (!displayVal) return '';
+  let cleaned = displayVal.trim();
+  if (!cleaned) return '';
+  if (numberFormat === 'comma') {
+    cleaned = cleaned.replace(/\s/g, '');
+    cleaned = cleaned.replace(/,/g, '.');
+  } else {
+    cleaned = normalizePointFormatInput(cleaned);
+  }
+  const num = parseFloat(cleaned);
+  if (Number.isNaN(num)) return '';
+  return String(num);
+}
+
 /** Parse une saisie utilisateur selon le format Settings (virgule ou point décimal). */
 export function parseLocalizedNumber(
   value: string | number | null | undefined,
@@ -130,7 +207,7 @@ export function parseLocalizedNumber(
       normalized = normalized.replace(/\./g, '').replace(',', '.');
     }
   } else {
-    normalized = normalized.replace(/,/g, '');
+    normalized = normalizePointFormatInput(normalized);
   }
   const num = Number(normalized);
   return Number.isFinite(num) ? num : null;

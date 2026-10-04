@@ -6,7 +6,12 @@ import { DateTimeInput } from '../common/DateTimeInput';
 import { usePreferences } from '../../hooks/usePreferences';
 import { DEFAULT_ITEMS_PER_PAGE } from '../../hooks/preferencesProvider';
 import { formatDateTimeShort } from '../../utils/dateFormat';
-import { formatNumber, parseLocalizedNumber, type NumberFormatType } from '../../utils/numberFormat';
+import {
+  formatNumber,
+  getNumberFormatExample,
+  parseLocalizedNumber,
+  type NumberFormatType,
+} from '../../utils/numberFormat';
 import {
   backtestJournalService,
   type BacktestCampaign,
@@ -126,15 +131,17 @@ function formatEditableNumber(
 }
 
 /** Ne conserve que les chiffres et un seul séparateur décimal (selon Settings). */
-function sanitizeNumericInput(raw: string, numberFormat: NumberFormatType): string {
-  const decimal = numberFormat === 'comma' ? ',' : '.';
-  const stripped = raw.replace(numberFormat === 'comma' ? /[^0-9,]/g : /[^0-9.]/g, '');
-  const firstSep = stripped.indexOf(decimal);
-  if (firstSep === -1) return stripped;
-  return (
-    stripped.slice(0, firstSep + 1) +
-    stripped.slice(firstSep + 1).replaceAll(decimal, '')
-  );
+export function sanitizeNumericInput(raw: string, numberFormat: NumberFormatType): string {
+  if (numberFormat === 'comma') {
+    const stripped = raw.replace(/[^0-9,]/g, '');
+    const firstSep = stripped.indexOf(',');
+    if (firstSep === -1) return stripped;
+    return stripped.slice(0, firstSep + 1) + stripped.slice(firstSep + 1).replaceAll(',', '');
+  }
+  const stripped = raw.replace(/[^0-9.,]/g, '');
+  const firstDot = stripped.indexOf('.');
+  if (firstDot === -1) return stripped;
+  return stripped.slice(0, firstDot + 1) + stripped.slice(firstDot + 1).replaceAll('.', '');
 }
 
 function fromApi(
@@ -187,8 +194,12 @@ interface Props {
 
 export function ObservationGrid({ campaign, onStatsInvalidate }: Props) {
   const { t } = useTranslation('backtestJournal');
+  const { t: tCommon } = useTranslation('common');
   const { preferences, loading: preferencesLoading } = usePreferences();
   const numberFormat = preferences.number_format;
+  const numberFormatHint = tCommon('numberFormatHint', {
+    example: getNumberFormatExample(numberFormat),
+  });
   const dateFormat = preferences.date_format;
   const timezone = preferences.timezone || 'Europe/Paris';
   const [rows, setRows] = useState<GridRow[]>([]);
@@ -744,6 +755,7 @@ export function ObservationGrid({ campaign, onStatsInvalidate }: Props) {
                   </td>
                   {(['entry_price', 'initial_stop_price', 'exit_price'] as const).map((field) => (
                     <td key={field} className={`${cellClass} min-w-[5.5rem]`}>
+                      <Tooltip content={numberFormatHint} position="top" triggerDisplay="block" className="w-full">
                       <input
                         className={inputClass}
                         inputMode="decimal"
@@ -762,6 +774,7 @@ export function ObservationGrid({ campaign, onStatsInvalidate }: Props) {
                               : 'exit',
                         )}
                       />
+                      </Tooltip>
                       {row.errors[field] && (
                         <div className="text-[11px] text-red-600 dark:text-red-400">{row.errors[field]}</div>
                       )}
@@ -816,6 +829,7 @@ export function ObservationGrid({ campaign, onStatsInvalidate }: Props) {
                     )}
                   </td>
                   <td className={`${cellClass} min-w-[5rem]`}>
+                    <Tooltip content={numberFormatHint} position="top" triggerDisplay="block" className="w-full">
                     <input
                       className={inputClass}
                       value={
@@ -837,6 +851,7 @@ export function ObservationGrid({ campaign, onStatsInvalidate }: Props) {
                       }}
                       aria-label={t('resultR')}
                     />
+                    </Tooltip>
                     {row.warnings.includes('r_divergence') && (
                       <div className="text-[11px] text-amber-700 dark:text-amber-400">{t('rDivergence')}</div>
                     )}
@@ -950,12 +965,14 @@ export function ObservationGrid({ campaign, onStatsInvalidate }: Props) {
             </label>
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
               {t('target')}
+              <Tooltip content={numberFormatHint} position="top" triggerDisplay="block" className="mt-1 w-full">
               <input
-                className="mt-1 w-full rounded-md border border-gray-300 bg-white p-2 text-gray-900 tabular-nums dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                className="w-full rounded-md border border-gray-300 bg-white p-2 text-gray-900 tabular-nums dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                 value={detail.target_price}
                 onChange={(event) => patchRow(detail.key, { target_price: event.target.value })}
                 onBlur={(event) => onNumberBlur(detail.key, 'target_price', event.target.value, 4)}
               />
+              </Tooltip>
             </label>
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
               {t('refusalReason')}
@@ -975,21 +992,25 @@ export function ObservationGrid({ campaign, onStatsInvalidate }: Props) {
             </label>
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
               {t('mfe')}
+              <Tooltip content={numberFormatHint} position="top" triggerDisplay="block" className="mt-1 w-full">
               <input
-                className="mt-1 w-full rounded-md border border-gray-300 bg-white p-2 text-gray-900 tabular-nums dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                className="w-full rounded-md border border-gray-300 bg-white p-2 text-gray-900 tabular-nums dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                 value={detail.mfe}
                 onChange={(event) => patchRow(detail.key, { mfe: event.target.value })}
                 onBlur={(event) => onNumberBlur(detail.key, 'mfe', event.target.value, 4)}
               />
+              </Tooltip>
             </label>
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
               {t('mae')}
+              <Tooltip content={numberFormatHint} position="top" triggerDisplay="block" className="mt-1 w-full">
               <input
-                className="mt-1 w-full rounded-md border border-gray-300 bg-white p-2 text-gray-900 tabular-nums dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                className="w-full rounded-md border border-gray-300 bg-white p-2 text-gray-900 tabular-nums dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                 value={detail.mae}
                 onChange={(event) => patchRow(detail.key, { mae: event.target.value })}
                 onBlur={(event) => onNumberBlur(detail.key, 'mae', event.target.value, 4)}
               />
+              </Tooltip>
             </label>
             {detail.id && (
               <>

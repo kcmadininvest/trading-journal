@@ -28,7 +28,7 @@ import {
 } from '../services/tradingActivity';
 import { normalizeDecimalForApi, parseUserDecimal } from '../utils/normalizeDecimalForApi';
 import { formatDate, formatDateTimeShort, type DateFormatType } from '../utils/dateFormat';
-import { formatNumber, type NumberFormatType } from '../utils/numberFormat';
+import { formatNumber, getNumberFormatExample, type NumberFormatType } from '../utils/numberFormat';
 
 /** Même principe que PageSizeSelector : pas de flèche native du navigateur sur les <select>. */
 const MODAL_SELECT_CLASS =
@@ -554,6 +554,9 @@ const TradingActivityPage: React.FC = () => {
   const { preferences } = usePreferences();
   const defaultCurrency = preferences.default_currency || 'USD';
   const numberFormat: NumberFormatType = preferences.number_format || 'comma';
+  const numberFormatHint = tCommon('numberFormatHint', {
+    example: getNumberFormatExample(numberFormat),
+  });
   const dateFormatPref: DateFormatType = preferences.date_format ?? 'EU';
   const timezonePref = preferences.timezone;
 
@@ -2159,6 +2162,7 @@ const TradingActivityPage: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('form.subtotal')}</label>
+                  <Tooltip content={numberFormatHint} position="top" triggerDisplay="block" className="w-full">
                   <input
                     type="text"
                     inputMode="decimal"
@@ -2166,9 +2170,11 @@ const TradingActivityPage: React.FC = () => {
                     value={expForm.subtotal}
                     onChange={(e) => onExpenseSubtotalChange(e.target.value)}
                   />
+                  </Tooltip>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('form.vat')}</label>
+                  <Tooltip content={numberFormatHint} position="top" triggerDisplay="block" className="w-full">
                   <input
                     type="text"
                     inputMode="decimal"
@@ -2185,15 +2191,18 @@ const TradingActivityPage: React.FC = () => {
                       });
                     }}
                   />
+                  </Tooltip>
                 </div>
                 <div className="sm:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('form.total')}</label>
+                  <Tooltip content={numberFormatHint} position="top" triggerDisplay="block" className="w-full">
                   <input
                     type="text"
                     readOnly
                     className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-800/80 text-gray-900 dark:text-gray-100"
                     value={expForm.total}
                   />
+                  </Tooltip>
                 </div>
                 <div className="sm:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('form.ref')}</label>
@@ -2257,6 +2266,7 @@ const TradingActivityPage: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('form.secondaryAmount')}</label>
+                  <Tooltip content={numberFormatHint} position="top" triggerDisplay="block" className="w-full">
                   <input
                     type="text"
                     inputMode="decimal"
@@ -2264,6 +2274,7 @@ const TradingActivityPage: React.FC = () => {
                     value={expForm.secondary_amount}
                     onChange={(e) => setExpForm({ ...expForm, secondary_amount: e.target.value })}
                   />
+                  </Tooltip>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('form.secondaryCurrency')}</label>
@@ -2415,6 +2426,7 @@ const TradingActivityPage: React.FC = () => {
                 </div>
                 <div className="sm:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('form.amount')}</label>
+                  <Tooltip content={numberFormatHint} position="top" triggerDisplay="block" className="w-full">
                   <input
                     type="text"
                     inputMode="decimal"
@@ -2422,9 +2434,11 @@ const TradingActivityPage: React.FC = () => {
                     value={credForm.amount}
                     onChange={(e) => setCredForm({ ...credForm, amount: e.target.value })}
                   />
+                  </Tooltip>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('form.secondaryAmount')}</label>
+                  <Tooltip content={numberFormatHint} position="top" triggerDisplay="block" className="w-full">
                   <input
                     type="text"
                     inputMode="decimal"
@@ -2432,6 +2446,7 @@ const TradingActivityPage: React.FC = () => {
                     value={credForm.secondary_amount}
                     onChange={(e) => setCredForm({ ...credForm, secondary_amount: e.target.value })}
                   />
+                  </Tooltip>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('form.secondaryCurrency')}</label>
@@ -2492,6 +2507,7 @@ const TradingActivityPage: React.FC = () => {
                           primary: credForm.primary_currency,
                         })}
                   </label>
+                  <Tooltip content={numberFormatHint} position="top" triggerDisplay="block" className="w-full">
                   <input
                     type="text"
                     inputMode="decimal"
@@ -2500,6 +2516,7 @@ const TradingActivityPage: React.FC = () => {
                     onChange={(e) => setCredForm({ ...credForm, fx_rate: e.target.value })}
                     aria-describedby="cred-fx-rate-hint"
                   />
+                  </Tooltip>
                   <p id="cred-fx-rate-hint" className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                     {creditFxRateFormat === 'intermediary'
                       ? t('form.fxRateIntermediaryHint', {
@@ -2544,6 +2561,7 @@ const TradingActivityPage: React.FC = () => {
                           : credForm.secondary_currency) || t('form.fxRateSecondaryPlaceholder'),
                     })}
                   </label>
+                  <Tooltip content={numberFormatHint} position="top" triggerDisplay="block" className="w-full">
                   <input
                     type="text"
                     inputMode="decimal"
@@ -2552,6 +2570,7 @@ const TradingActivityPage: React.FC = () => {
                     onChange={(e) => setCredForm({ ...credForm, transfer_fee_amount: e.target.value })}
                     aria-describedby="cred-transfer-fee-hint"
                   />
+                  </Tooltip>
                   <p id="cred-transfer-fee-hint" className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                     {t('form.transferFeeHint')}
                   </p>

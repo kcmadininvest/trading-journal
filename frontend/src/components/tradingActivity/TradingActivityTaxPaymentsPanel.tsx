@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
+import { usePreferences } from '../../hooks/usePreferences';
 import { DateInput } from '../common/DateInput';
-import { PaginationControls } from '../ui';
+import { PaginationControls, Tooltip } from '../ui';
 import {
   TradingActivityTaxPayment,
   isBuiltinTaxPaymentTypeCode,
@@ -10,7 +12,7 @@ import {
   type TaxPaymentTypeCode,
 } from '../../services/tradingActivity';
 import { formatDate, type DateFormatType } from '../../utils/dateFormat';
-import { formatNumber, type NumberFormatType } from '../../utils/numberFormat';
+import { formatNumber, getNumberFormatExample, type NumberFormatType } from '../../utils/numberFormat';
 import { TradingActivityLedgerDeleteAction } from './TradingActivityLedgerDeleteAction';
 import {
   buildTaxPaymentTypeSelectOptions,
@@ -146,6 +148,11 @@ export function TradingActivityTaxPaymentModal({
   onRenamePaymentType: (id: number, name: string) => Promise<void>;
   onUpsertBuiltinLabel: (code: BuiltinTaxPaymentType, label: string) => Promise<void>;
 }) {
+  const { t: tCommon } = useTranslation('common');
+  const { preferences } = usePreferences();
+  const numberFormatHint = tCommon('numberFormatHint', {
+    example: getNumberFormatExample(preferences.number_format),
+  });
   const selectedCustom = useMemo(
     () => customPaymentTypes.find((row) => row.code === form.payment_type),
     [customPaymentTypes, form.payment_type],
@@ -273,6 +280,7 @@ export function TradingActivityTaxPaymentModal({
             </div>
             <div>
               <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">{t('form.amount')}</label>
+              <Tooltip content={numberFormatHint} position="top" triggerDisplay="block" className="w-full">
               <input
                 type="text"
                 inputMode="decimal"
@@ -280,6 +288,7 @@ export function TradingActivityTaxPaymentModal({
                 value={form.amount}
                 onChange={(e) => onChange({ ...form, amount: e.target.value })}
               />
+              </Tooltip>
             </div>
             <div className="sm:col-span-2">
               <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">{t('form.paymentType')}</label>

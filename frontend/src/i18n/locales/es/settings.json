@@ -43,7 +43,7 @@
   "dateFormatEU": "UE (DD/MM/YYYY)",
   "dateFormatUS": "EE.UU. (MM/DD/YYYY)",
   "numberFormat": "Formato de números",
-  "numberFormatComma": "Coma (1.234,56)",
+  "numberFormatComma": "Coma (1 234,56)",
   "numberFormatPoint": "Punto (1,234.56)",
   "pnlDisplayTitle": "Visualización del PnL",
   "pnlDisplayHelp": "Neto: después de comisiones y tasas. Bruto: solo movimiento del precio. Los gráficos y totales siguen este ajuste.",

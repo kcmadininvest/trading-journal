@@ -11,6 +11,7 @@ import userService, { AppSettings } from './services/userService';
 import { useTheme } from './hooks/useTheme';
 import { goalsService, TradingGoal } from './services/goals';
 import ToastViewport from './components/ui/ToastViewport';
+import { FormValidationTooltip } from './components/ui/Tooltip';
 import { ComplianceRefreshProvider } from './contexts/ComplianceRefreshContext';
 import { ImageLightboxProvider } from './contexts/ImageLightboxContext';
 import { useBootstrap } from './hooks/useBootstrap';
@@ -731,6 +732,7 @@ function App() {
       <OrganizationSchema />
       
       <ToastViewport />
+      <FormValidationTooltip />
       {currentUser && !DETACHED_POPUP_PATHS.has(window.location.pathname) ? (
         <Layout
           currentUser={currentUser}

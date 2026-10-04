@@ -44,7 +44,7 @@
   "dateFormatUS": "US (MM/DD/YYYY)",
   "numberFormat": "Format des nombres",
   "numberFormatComma": "Virgule (1 234,56)",
-  "numberFormatPoint": "Point (1.234,56)",
+  "numberFormatPoint": "Point (1,234.56)",
   "defaultCurrency": "Devise par défaut (rentabilité activité)",
   "defaultCurrencyHelp": "Code ISO utilisé pour préremplir les montants principaux des dépenses et crédits d’activité trading.",
   "pnlDisplayTitle": "Affichage du PnL",

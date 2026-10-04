@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { usePreferences } from '../../hooks/usePreferences';
-import { formatNumber } from '../../utils/numberFormat';
+import { Tooltip } from '../ui';
+import { cleanNumberInput, formatNumber, getNumberFormatExample } from '../../utils/numberFormat';
 
 interface NumberInputProps {
   id?: string;
@@ -40,6 +42,7 @@ export const NumberInput: React.FC<NumberInputProps> = ({
   disabled = false,
   commitOnChange = false,
 }) => {
+  const { t } = useTranslation('common');
   const { preferences } = usePreferences();
   const [displayValue, setDisplayValue] = useState('');
   const [isFocused, setIsFocused] = useState(false);
@@ -58,33 +61,12 @@ export const NumberInput: React.FC<NumberInputProps> = ({
 
   // Convertir format d'affichage vers valeur numérique standard
   const parseToStandard = useCallback((displayVal: string): string => {
-    if (!displayVal) return '';
-    
-    // Remplacer le séparateur de milliers et le séparateur décimal selon le format
-    let cleaned = displayVal.trim();
-    
-    if (preferences.number_format === 'comma') {
-      // Format français: 1 234,56 -> 1234.56
-      // Supprimer les espaces (séparateurs de milliers)
-      cleaned = cleaned.replace(/\s/g, '');
-      // Remplacer la virgule par un point
-      cleaned = cleaned.replace(/,/g, '.');
-    } else {
-      // Format US: 1,234.56 -> 1234.56
-      // Supprimer les virgules (séparateurs de milliers)
-      cleaned = cleaned.replace(/,/g, '');
-      // Le point est déjà le séparateur décimal
-    }
-    
-    // Vérifier que c'est un nombre valide
-    const num = parseFloat(cleaned);
-    if (isNaN(num)) return '';
-    
-    // Valider les limites min/max
+    const cleaned = cleanNumberInput(displayVal, preferences.number_format);
+    if (!cleaned) return '';
+    const num = Number(cleaned);
     if (min !== undefined && num < min) return String(min);
     if (max !== undefined && num > max) return String(max);
-    
-    return String(num);
+    return cleaned;
   }, [preferences.number_format, min, max]);
 
   // Initialiser la valeur d'affichage
@@ -146,7 +128,7 @@ export const NumberInput: React.FC<NumberInputProps> = ({
     }
   };
 
-  return (
+  const input = (
     <input
       ref={inputRef}
       id={id}
@@ -165,6 +147,20 @@ export const NumberInput: React.FC<NumberInputProps> = ({
       max={max}
       step={step}
     />
+  );
+
+  if (padLength) return input;
+
+  return (
+    <Tooltip
+      content={t('numberFormatHint', { example: getNumberFormatExample(preferences.number_format) })}
+      position="top"
+      triggerDisplay="block"
+      className="w-full"
+      disabled={disabled}
+    >
+      {input}
+    </Tooltip>
   );
 };
 

@@ -43,7 +43,7 @@
   "dateFormatEU": "EU (TT.MM.JJJJ)",
   "dateFormatUS": "US (MM/TT/JJJJ)",
   "numberFormat": "Zahlenformat",
-  "numberFormatComma": "Komma (1.234,56)",
+  "numberFormatComma": "Komma (1 234,56)",
   "numberFormatPoint": "Punkt (1,234.56)",
   "pnlDisplayTitle": "PnL-Anzeige",
   "pnlDisplayHelp": "Netto: nach Gebühren und Kommissionen. Brutto: nur Kursbewegung. Diagramme und Summen folgen dieser Einstellung.",
