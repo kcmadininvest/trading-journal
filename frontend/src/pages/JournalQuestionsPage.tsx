@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PageShell } from '../components/layout';
+import { replayPrimaryButtonClass, replaySecondaryButtonClass } from '../components/replay/replayStyles';
 import { AccountSelector } from '../components/accounts/AccountSelector';
 import { DateInput } from '../components/common/DateInput';
 import { useTradingAccount } from '../contexts/useTradingAccount';
@@ -41,17 +42,8 @@ const JournalQuestionsPage: React.FC = () => {
   }, [initial.account, setSelectedAccountId]);
 
   return (
-    <PageShell className="mx-auto w-full max-w-3xl xl:max-w-5xl 2xl:max-w-6xl">
-      <div className="space-y-4">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-            {t('pageTitle')}
-          </h1>
-          <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-            {t('pageSubtitle')}
-          </p>
-        </div>
-
+    <PageShell className="space-y-6">
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
         <div className="flex flex-wrap items-end gap-4">
           <div className="flex-shrink-0 min-w-[200px] max-w-sm">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -75,39 +67,30 @@ const JournalQuestionsPage: React.FC = () => {
               className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-gray-100 px-3 py-2 pr-10 h-10"
             />
           </div>
-        </div>
-
-        <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 sm:p-6">
-          {selectedAccountId == null ? (
-            <p className="text-sm text-gray-500 dark:text-gray-400">{t('emptyQuestions')}</p>
-          ) : (
-            <JournalQuestionsForm
-              scope="day"
-              date={date}
-              tradingAccountId={selectedAccountId}
-            />
-          )}
-          <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex flex-wrap items-center gap-x-4 gap-y-2">
-            <button
-              type="button"
-              className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
-              onClick={() => {
-                window.location.hash = 'daily-journal';
-              }}
-            >
+          <div className="flex flex-wrap items-center gap-2 ml-auto">
+            <a href="#daily-journal" className={`${replaySecondaryButtonClass} box-border`}>
               {t('goToJournal')}
-            </button>
-            <button
-              type="button"
-              className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
-              onClick={() => {
-                window.location.hash = 'settings';
-              }}
+            </a>
+            <a
+              href="#settings?tab=questions&section=day"
+              className={`${replayPrimaryButtonClass} box-border border border-transparent`}
             >
               {t('goToSettings')}
-            </button>
+            </a>
           </div>
         </div>
+      </div>
+
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+        {selectedAccountId == null ? (
+          <p className="text-sm text-gray-500 dark:text-gray-400">{t('emptyQuestions')}</p>
+        ) : (
+          <JournalQuestionsForm
+            scope="day"
+            date={date}
+            tradingAccountId={selectedAccountId}
+          />
+        )}
       </div>
     </PageShell>
   );

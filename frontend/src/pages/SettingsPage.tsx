@@ -148,6 +148,33 @@ type SettingsInitialSnapshot = {
   preferences: UserPreferences;
 };
 
+type SettingsTabId = 'profile' | 'security' | 'trading' | 'display' | 'questions' | 'data';
+type QuestionsSectionId = 'templates' | 'day' | 'position';
+
+const SETTINGS_TABS: readonly SettingsTabId[] = [
+  'profile',
+  'security',
+  'trading',
+  'display',
+  'questions',
+  'data',
+];
+const QUESTIONS_SECTIONS: readonly QuestionsSectionId[] = ['templates', 'day', 'position'];
+
+function readSettingsHash(): { tab: SettingsTabId; section: QuestionsSectionId } {
+  const raw = window.location.hash.replace(/^#/, '');
+  const qIndex = raw.indexOf('?');
+  const params = new URLSearchParams(qIndex >= 0 ? raw.slice(qIndex + 1) : '');
+  const tab = params.get('tab');
+  const section = params.get('section');
+  return {
+    tab: (SETTINGS_TABS as readonly string[]).includes(tab || '') ? (tab as SettingsTabId) : 'profile',
+    section: (QUESTIONS_SECTIONS as readonly string[]).includes(section || '')
+      ? (section as QuestionsSectionId)
+      : 'templates',
+  };
+}
+
 type SettingsPageProps = {
   premiumRestrictionsEnabled: boolean;
   onPremiumRestrictionsChange: (enabled: boolean) => Promise<void>;
@@ -159,8 +186,10 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
 }) => {
   const { t } = useI18nTranslation();
   const { mergePreferences } = usePreferences();
-  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'trading' | 'display' | 'questions' | 'data'>('profile');
-  const [questionsSection, setQuestionsSection] = useState<'templates' | 'day' | 'position'>('templates');
+  const [activeTab, setActiveTab] = useState<SettingsTabId>(() => readSettingsHash().tab);
+  const [questionsSection, setQuestionsSection] = useState<QuestionsSectionId>(
+    () => readSettingsHash().section
+  );
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [initialData, setInitialData] = useState<SettingsInitialSnapshot | null>(null);
