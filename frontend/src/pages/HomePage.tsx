@@ -11,8 +11,13 @@ import {
   CORE_MARKETING_FEATURES,
 } from '../components/marketing/marketingFeatures';
 
+const APP_START_YEAR = 2025;
+
 const HomePage: React.FC = () => {
   const { t, i18n: i18nInstance } = useI18nTranslation();
+  const currentYear = new Date().getFullYear();
+  const copyrightYear =
+    currentYear > APP_START_YEAR ? `${APP_START_YEAR} - ${currentYear}` : String(APP_START_YEAR);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false);
@@ -763,7 +768,7 @@ const HomePage: React.FC = () => {
         {/* Footer */}
         <div className="relative flex justify-center items-center mt-12 text-gray-500 px-4">
           <p className="text-sm text-center">
-            {t('home:footer.copyright', { year: new Date().getFullYear() })}
+            {t('home:footer.copyright', { year: copyrightYear })}
           </p>
           <button
             onClick={() => setShowLegalNotice(true)}

@@ -8,11 +8,15 @@ interface FooterProps {
   onNavigate?: (page: string) => void;
 }
 
+const APP_START_YEAR = 2025;
+
 const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
   const { t } = useI18nTranslation();
   const { status } = useApiStatus();
   const [showLegalModal, setShowLegalModal] = useState(false);
   const currentYear = new Date().getFullYear();
+  const copyrightYear =
+    currentYear > APP_START_YEAR ? `${APP_START_YEAR} - ${currentYear}` : String(APP_START_YEAR);
 
   const handleLegalClick = useCallback(() => {
     setShowLegalModal(true);
@@ -69,7 +73,7 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
 
           {/* Center: Copyright */}
           <span className="text-sm text-gray-500 dark:text-gray-400 text-center">
-            © {currentYear} K&C Trading Journal. {t('common:allRightsReserved', { defaultValue: 'Tous droits réservés.' })}
+            © {copyrightYear} K&C Trading Journal. {t('common:allRightsReserved', { defaultValue: 'Tous droits réservés.' })}
           </span>
 
           {/* Right: mentions légales — pastille cliquable */}
