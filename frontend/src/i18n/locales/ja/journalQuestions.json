@@ -38,6 +38,7 @@
   "selectOption": "選択…",
   "clearAnswer": "回答なし",
   "selectOptions": "選択…",
+  "selectedCount": "{{n}} 件選択",
   "pageTitle": "当日の質問",
   "pageSubtitle": "選択した口座の当日アンケートに回答してください。",
   "goToSettings": "質問を設定",

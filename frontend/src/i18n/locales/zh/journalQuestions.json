@@ -38,6 +38,7 @@
   "selectOption": "选择…",
   "clearAnswer": "无回答",
   "selectOptions": "选择…",
+  "selectedCount": "已选 {{n}} 项",
   "pageTitle": "当日问题",
   "pageSubtitle": "为所选账户回答当日问卷。",
   "goToSettings": "配置问题",

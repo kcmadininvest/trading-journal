@@ -38,6 +38,7 @@
   "selectOption": "선택…",
   "clearAnswer": "답변 없음",
   "selectOptions": "선택…",
+  "selectedCount": "{{n}}개 선택됨",
   "pageTitle": "오늘의 질문",
   "pageSubtitle": "선택한 계정의 일일 설문에 답하세요.",
   "goToSettings": "질문 설정",

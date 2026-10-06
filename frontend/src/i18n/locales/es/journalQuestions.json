@@ -38,6 +38,7 @@
   "selectOption": "Elegir…",
   "clearAnswer": "Sin respuesta",
   "selectOptions": "Elegir…",
+  "selectedCount": "{{n}} seleccionados",
   "pageTitle": "Preguntas del día",
   "pageSubtitle": "Responda el cuestionario del día para la cuenta seleccionada.",
   "goToSettings": "Configurar las preguntas",

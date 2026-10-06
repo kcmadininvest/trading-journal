@@ -38,6 +38,7 @@
   "selectOption": "Auswählen…",
   "clearAnswer": "Keine Antwort",
   "selectOptions": "Auswählen…",
+  "selectedCount": "{{n}} ausgewählt",
   "pageTitle": "Tagesfragen",
   "pageSubtitle": "Beantworten Sie den Tagesfragebogen für das ausgewählte Konto.",
   "goToSettings": "Fragen konfigurieren",

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { forwardRef, useEffect, useId, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { replayPrimaryButtonClass } from '../replay/replayStyles';
 import { CustomSelect } from '../common/CustomSelect';
@@ -29,13 +29,33 @@ interface JournalQuestionsFormProps {
   compact?: boolean;
   title?: string;
   onSaved?: () => void;
+  /** Masque le bouton interne : l'enregistrement est piloté par le parent via la ref. */
+  hideSaveButton?: boolean;
+  onDirtyChange?: (dirty: boolean) => void;
+  /** Mode compact : l'en-tête replie/déplie les questions (replié au départ). */
+  collapsible?: boolean;
 }
 
 const CHOICE_TYPES: AnswerType[] = ['single_choice', 'multiple_choice'];
 const MAX_SCALE_SEGMENT_VALUES = 11;
+const MAX_INLINE_CHOICES = 8;
+
+const CHOICE_PILL_BASE_CLASS =
+  'inline-flex min-h-9 items-center gap-1.5 rounded-md border px-3 py-1.5 text-left text-sm font-medium whitespace-normal transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
+const CHOICE_PILL_SELECTED_CLASS = 'border-blue-600 bg-blue-600 text-white';
+const CHOICE_PILL_IDLE_CLASS =
+  'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600';
+
+export interface JournalQuestionsFormHandle {
+  save: () => Promise<void>;
+  isDirty: () => boolean;
+}
 
 const FIELD_INPUT_CLASS =
   'w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500';
+
+const QUESTION_CARD_CLASS =
+  'rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-900/40 p-4 space-y-3';
 
 const SEGMENT_SHELL_CLASS =
   'inline-flex rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 p-0.5';
@@ -141,7 +161,7 @@ function SegmentedControl<T extends string | number | boolean>({
   );
 }
 
-export const JournalQuestionsForm: React.FC<JournalQuestionsFormProps> = ({
+export const JournalQuestionsForm = forwardRef<JournalQuestionsFormHandle, JournalQuestionsFormProps>(({
   scope,
   date,
   tradingAccountId,
@@ -149,8 +169,13 @@ export const JournalQuestionsForm: React.FC<JournalQuestionsFormProps> = ({
   compact = false,
   title,
   onSaved,
-}) => {
+  hideSaveButton = false,
+  onDirtyChange,
+  collapsible = false,
+}, ref) => {
   const { t } = useTranslation('journalQuestions');
+  const [collapsed, setCollapsed] = useState(collapsible);
+  const questionsPanelId = useId();
   const { preferences } = usePreferences();
   const numberFormat = (preferences.number_format as NumberFormatType) || 'comma';
   const [loading, setLoading] = useState(true);
@@ -191,9 +216,20 @@ export const JournalQuestionsForm: React.FC<JournalQuestionsFormProps> = ({
   );
 
   const isDirty = useMemo(
-    () => visibleValuesSnapshot(questions, values) !== baselineSnapshot,
-    [questions, values, baselineSnapshot]
+    () =>
+      !loading &&
+      questions.length > 0 &&
+      visibleValuesSnapshot(questions, values) !== baselineSnapshot,
+    [loading, questions, values, baselineSnapshot]
   );
+  const isDirtyRef = useRef(isDirty);
+  isDirtyRef.current = isDirty;
+
+  const onDirtyChangeRef = useRef(onDirtyChange);
+  onDirtyChangeRef.current = onDirtyChange;
+  useEffect(() => {
+    onDirtyChangeRef.current?.(isDirty);
+  }, [isDirty]);
 
   useEffect(() => {
     let cancelled = false;
@@ -240,10 +276,7 @@ export const JournalQuestionsForm: React.FC<JournalQuestionsFormProps> = ({
     setSuccess(null);
   };
 
-  const handleSave = async () => {
-    if (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement) {
-      document.activeElement.blur();
-    }
+  const persist = async () => {
     setSaving(true);
     setError(null);
     setSuccess(null);
@@ -295,12 +328,38 @@ export const JournalQuestionsForm: React.FC<JournalQuestionsFormProps> = ({
       valuesRef.current = next;
       initialValuesRef.current = next;
       setBaselineSnapshot(visibleValuesSnapshot(payload.questions, next));
-      setSuccess(t('saved'));
       onSaved?.();
     } catch (err: any) {
       setError(err?.message || t('saveError'));
+      throw err;
     } finally {
       setSaving(false);
+    }
+  };
+
+  const persistRef = useRef(persist);
+  persistRef.current = persist;
+  useImperativeHandle(
+    ref,
+    () => ({
+      save: async () => {
+        if (!isDirtyRef.current) return;
+        await persistRef.current();
+      },
+      isDirty: () => isDirtyRef.current,
+    }),
+    []
+  );
+
+  const handleSave = async () => {
+    if (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+    try {
+      await persist();
+      setSuccess(t('saved'));
+    } catch {
+      // Erreur déjà affichée par persist
     }
   };
 
@@ -321,7 +380,16 @@ export const JournalQuestionsForm: React.FC<JournalQuestionsFormProps> = ({
     );
   }
 
-  const saveButton = (
+  const statusText = (
+    <span className="text-sm text-gray-600 dark:text-gray-400">
+      {t('statusLink', {
+        answered: formatNumber(answeredCount, 0, numberFormat),
+        total: formatNumber(visibleQuestions.length, 0, numberFormat),
+      })}
+    </span>
+  );
+
+  const saveButton = hideSaveButton ? null : (
     <button
       type="button"
       onClick={handleSave}
@@ -334,10 +402,46 @@ export const JournalQuestionsForm: React.FC<JournalQuestionsFormProps> = ({
 
   return (
     <div className={`space-y-4 ${compact ? 'mt-4 pt-4 border-t border-gray-200 dark:border-gray-700' : ''}`}>
-      {title && (
-        <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-          {title}
-        </h4>
+      {compact && collapsible ? (
+        <button
+          type="button"
+          onClick={() => setCollapsed((c) => !c)}
+          aria-expanded={!collapsed}
+          aria-controls={questionsPanelId}
+          className="-mx-2 flex w-[calc(100%+1rem)] flex-wrap items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+        >
+          <span className="flex items-center gap-2">
+            <svg
+              className={`h-4 w-4 shrink-0 text-gray-500 dark:text-gray-400 transition-transform ${collapsed ? '' : 'rotate-90'}`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+              aria-hidden
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+            {title && (
+              <span className="text-base font-semibold text-gray-800 dark:text-gray-200">{title}</span>
+            )}
+          </span>
+          {statusText}
+        </button>
+      ) : compact ? (
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          {title && (
+            <h4 className="text-base font-semibold text-gray-800 dark:text-gray-200">
+              {title}
+            </h4>
+          )}
+          {statusText}
+        </div>
+      ) : (
+        title && (
+          <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+            {title}
+          </h4>
+        )
       )}
       {error && (
         <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-3 py-2 text-sm text-red-700 dark:text-red-300">
@@ -351,7 +455,7 @@ export const JournalQuestionsForm: React.FC<JournalQuestionsFormProps> = ({
       )}
 
       {compact ? (
-        <div className="space-y-3">
+        <div id={questionsPanelId} hidden={collapsed} className="space-y-4">
           {visibleQuestions.map((q) => (
             <QuestionBlock
               key={q.id}
@@ -383,21 +487,18 @@ export const JournalQuestionsForm: React.FC<JournalQuestionsFormProps> = ({
       )}
 
       {compact ? (
-        <div className="flex justify-end">{saveButton}</div>
+        saveButton && !collapsed && <div className="flex justify-end">{saveButton}</div>
       ) : (
         <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-gray-200 dark:border-gray-700">
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            {t('statusLink', {
-              answered: formatNumber(answeredCount, 0, numberFormat),
-              total: formatNumber(visibleQuestions.length, 0, numberFormat),
-            })}
-          </p>
+          {statusText}
           {saveButton}
         </div>
       )}
     </div>
   );
-};
+});
+
+JournalQuestionsForm.displayName = 'JournalQuestionsForm';
 
 interface QuestionBlockProps {
   question: QuestionnaireQuestion;
@@ -451,21 +552,8 @@ const QuestionBlock: React.FC<QuestionBlockProps> = ({
     />
   );
 
-  if (variant === 'card') {
-    return (
-      <div
-        className={`rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-900/40 p-4 space-y-3 ${
-          spanFull ? 'xl:col-span-2' : ''
-        }`}
-      >
-        {header}
-        {field}
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-1.5">
+    <div className={`${QUESTION_CARD_CLASS} ${spanFull ? 'xl:col-span-2' : ''}`}>
       {header}
       {field}
     </div>
@@ -631,6 +719,16 @@ const QuestionField: React.FC<QuestionFieldProps> = ({
     const selectedId = Number.isFinite(choiceId as number) ? (choiceId as number) : null;
     const hasChoice =
       selectedId != null && question.choices.some((c) => c.id === selectedId);
+    if (question.choices.length <= MAX_INLINE_CHOICES) {
+      return (
+        <ChoicePills
+          choices={question.choices}
+          isSelected={(id) => hasChoice && id === selectedId}
+          onToggle={(id) => onChange(hasChoice && id === selectedId ? null : id)}
+          disabled={disabled}
+        />
+      );
+    }
     const options: { value: number | null; label: string }[] = question.choices.map((c) => ({
       value: c.id!,
       label: c.label,
@@ -652,7 +750,24 @@ const QuestionField: React.FC<QuestionFieldProps> = ({
   }
 
   if (CHOICE_TYPES.includes(question.answer_type) && question.answer_type === 'multiple_choice') {
-    const selectedNums = Array.isArray(value) ? (value as number[]) : [];
+    const selectedNums = Array.isArray(value) ? (value as unknown[]).map(Number) : [];
+    if (question.choices.length <= MAX_INLINE_CHOICES) {
+      return (
+        <ChoicePills
+          choices={question.choices}
+          isSelected={(id) => selectedNums.includes(id)}
+          onToggle={(id) =>
+            onChange(
+              selectedNums.includes(id)
+                ? selectedNums.filter((x) => x !== id)
+                : [...selectedNums, id]
+            )
+          }
+          disabled={disabled}
+          showCheck
+        />
+      );
+    }
     const selected = selectedNums.map(String);
     return (
       <CustomMultiSelect
@@ -661,11 +776,54 @@ const QuestionField: React.FC<QuestionFieldProps> = ({
         onChange={(v) => onChange(v.map((x) => Number(x)))}
         options={question.choices.map((c) => ({ value: String(c.id), label: c.label }))}
         placeholder={t('selectOptions')}
+        selectedCountLabel={(count) =>
+          t('selectedCount', { n: formatNumber(count, 0, numberFormat) })
+        }
       />
     );
   }
 
   return null;
 };
+
+function ChoicePills({
+  choices,
+  isSelected,
+  onToggle,
+  disabled,
+  showCheck = false,
+}: {
+  choices: QuestionnaireQuestion['choices'];
+  isSelected: (id: number) => boolean;
+  onToggle: (id: number) => void;
+  disabled?: boolean;
+  showCheck?: boolean;
+}) {
+  return (
+    <div className="flex flex-wrap gap-2" role="group">
+      {choices.map((c) => {
+        const id = c.id as number;
+        const selected = isSelected(id);
+        return (
+          <button
+            key={id}
+            type="button"
+            disabled={disabled}
+            onClick={() => onToggle(id)}
+            aria-pressed={selected}
+            className={`${CHOICE_PILL_BASE_CLASS} ${selected ? CHOICE_PILL_SELECTED_CLASS : CHOICE_PILL_IDLE_CLASS}`}
+          >
+            {showCheck && selected && (
+              <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3} aria-hidden>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            )}
+            {c.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 export default JournalQuestionsForm;

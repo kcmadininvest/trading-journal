@@ -38,6 +38,7 @@
   "selectOption": "Select…",
   "clearAnswer": "No answer",
   "selectOptions": "Select…",
+  "selectedCount": "{{n}} selected",
   "pageTitle": "Daily questions",
   "pageSubtitle": "Answer the daily questionnaire for the selected account.",
   "goToSettings": "Configure questions",

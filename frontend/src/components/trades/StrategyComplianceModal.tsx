@@ -13,7 +13,7 @@ import { formatDateLong, formatTime } from '../../utils/dateFormat';
 import { openMediaUrl, isAppHostedImageUrl } from '../../utils/mediaUrl';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { parsePnlDisplayMode, getTradeDisplayPnlValue } from '../../utils/pnlDisplay';
-import { JournalQuestionsForm } from '../journalQuestions/JournalQuestionsForm';
+import { JournalQuestionsForm, JournalQuestionsFormHandle } from '../journalQuestions/JournalQuestionsForm';
 
 interface StrategyComplianceModalProps {
   open: boolean;
@@ -69,6 +69,8 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Erreur d'enregistrement : affichée en bandeau pour ne pas démonter les formulaires en cours
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteScreenshotModalOpen, setDeleteScreenshotModalOpen] = useState(false);
@@ -76,6 +78,18 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
   const isInitialLoad = useRef(true);
   const serverDataRef = useRef<TradeWithStrategy[]>([]); // Garder une référence aux données du serveur
   const serverDayComplianceRef = useRef<DayStrategyCompliance | null>(null); // Garder une référence à la compliance du serveur
+  const questionFormRefs = useRef(new Map<number, JournalQuestionsFormHandle>());
+  const [dirtyQuestionTradeIds, setDirtyQuestionTradeIds] = useState<Set<number>>(() => new Set());
+
+  const setQuestionsDirty = useCallback((tradeId: number, dirty: boolean) => {
+    setDirtyQuestionTradeIds((prev) => {
+      if (prev.has(tradeId) === dirty) return prev;
+      const next = new Set(prev);
+      if (dirty) next.add(tradeId);
+      else next.delete(tradeId);
+      return next;
+    });
+  }, []);
 
   // Clé pour le localStorage basée sur la date et le compte de trading
   const draftKey = useMemo(() => {
@@ -469,6 +483,8 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
       setIsDayWithoutTrades(false);
       setDayCompliance(null);
       setError(null);
+      setSaveError(null);
+      setDirtyQuestionTradeIds(new Set());
       // Ne pas réinitialiser hasUnsavedChanges ici car les données restent dans localStorage
       // Le message réapparaîtra à la réouverture si un brouillon existe
       isInitialLoad.current = true;
@@ -695,7 +711,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
 
   const handleSave = async () => {
     setIsSaving(true);
-    setError(null);
+    setSaveError(null);
 
     try {
       // Mode jour sans trade
@@ -769,6 +785,9 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
         }));
 
         await tradeStrategiesService.bulkCreateOrUpdate(strategiesToSave);
+        await Promise.all(
+          Array.from(questionFormRefs.current.values()).map((form) => form.save())
+        );
       }
       
       // Nettoyer le localStorage après sauvegarde réussie (AVANT de recharger)
@@ -791,7 +810,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
       await loadData();
       onClose(true);
     } catch (e: any) {
-      setError(e?.message || t('trades:strategyCompliance.error'));
+      setSaveError(e?.message || t('trades:strategyCompliance.error'));
     } finally {
       setIsSaving(false);
     }
@@ -832,7 +851,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
               <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 truncate">{t('trades:strategyCompliance.title')}</h2>
               <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mt-1">
                 <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate">{formatDate(date)}</p>
-                {hasUnsavedChanges && (
+                {(hasUnsavedChanges || dirtyQuestionTradeIds.size > 0) && (
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 flex-shrink-0">
                     <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -857,6 +876,11 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-3 sm:p-6">
+          {saveError && (
+            <div role="alert" className="mb-4 rounded-lg border border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-900/20 p-3 text-sm text-rose-700 dark:text-rose-300">
+              <span className="font-medium">{t('trades:strategyCompliance.error')}</span> — {saveError}
+            </div>
+          )}
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
               <svg className="animate-spin h-8 w-8 text-purple-600 dark:text-purple-400" fill="none" viewBox="0 0 24 24">
@@ -1567,9 +1591,16 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                   </div>
 
                   <JournalQuestionsForm
+                    ref={(form) => {
+                      if (form) questionFormRefs.current.set(trade.id, form);
+                      else questionFormRefs.current.delete(trade.id);
+                    }}
                     scope="position"
                     tradeId={trade.id}
                     compact
+                    collapsible
+                    hideSaveButton
+                    onDirtyChange={(dirty) => setQuestionsDirty(trade.id, dirty)}
                     title={t('journalQuestions:positionTitle', { defaultValue: 'Questions position' })}
                   />
                 </div>
