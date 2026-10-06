@@ -129,7 +129,8 @@
       "losers": "Perdenti",
       "neutral": "Neutrali",
       "percentage": "Percentuale",
-      "tooltip": "Questo grafico mostra la distribuzione delle tue operazioni tra vincenti, perdenti e neutrali. Questo permette di visualizzare rapidamente il rapporto tra operazioni vincenti e perdenti."
+      "tooltip": "Questo grafico mostra la distribuzione delle tue operazioni tra vincenti, perdenti e neutrali. Questo permette di visualizzare rapidamente il rapporto tra operazioni vincenti e perdenti.",
+      "winnersTooltip": "Le operazioni positive senza TP raggiunto (secondo il diario) sono conteggiate qui come Break-even, non come vincenti."
     },
     "riskReward": {
       "title": "Rapporto Rischio/Rendimento nel Tempo",

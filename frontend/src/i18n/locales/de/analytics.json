@@ -161,7 +161,8 @@
       "losers": "Verlierer",
       "neutral": "Neutral",
       "percentage": "Prozentsatz",
-      "tooltip": "Dieses Diagramm zeigt die Verteilung Ihrer Trades zwischen Gewinnern, Verlierern und Neutralen. Dies ermöglicht es, schnell das Verhältnis von gewinnbringenden vs verlustbringenden Trades zu visualisieren."
+      "tooltip": "Dieses Diagramm zeigt die Verteilung Ihrer Trades zwischen Gewinnern, Verlierern und Neutralen. Dies ermöglicht es, schnell das Verhältnis von gewinnbringenden vs verlustbringenden Trades zu visualisieren.",
+      "winnersTooltip": "Positive Trades ohne erreichtes TP (laut Ihrem Journal) werden hier als Break-even gezählt, nicht als Gewinner."
     },
     "riskReward": {
       "title": "Risiko/Ertrags-Verhältnis im Zeitverlauf",

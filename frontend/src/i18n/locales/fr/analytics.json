@@ -164,7 +164,8 @@
       "losers": "Perdants",
       "neutral": "Break-even",
       "percentage": "Pourcentage",
-      "tooltip": "Ce graphique montre la répartition de vos trades entre gagnants, perdants et break-even. Cela permet de visualiser rapidement le ratio de trades gagnants vs perdants."
+      "tooltip": "Ce graphique montre la répartition de vos trades entre gagnants, perdants et break-even. Cela permet de visualiser rapidement le ratio de trades gagnants vs perdants.",
+      "winnersTooltip": "Les trades positifs sans TP atteint (selon votre journal) sont comptés ici en Break-even, pas en gagnants."
     },
     "riskReward": {
       "title": "Ratio Risque/Récompense dans le Temps",

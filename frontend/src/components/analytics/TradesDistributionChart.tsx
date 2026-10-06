@@ -9,6 +9,7 @@ import {
 import { Doughnut as ChartDoughnut } from 'react-chartjs-2';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
+import Tooltip from '../ui/Tooltip';
 import { ChartHelpTooltip } from '../charts/ChartHelpTooltip';
 import { ChartTooltipResetContainer } from '../charts/ChartTooltipResetContainer';
 import { CHART_FONT_FAMILY, buildChartTooltipPlugin } from '../../utils/chartConfig';
@@ -159,6 +160,29 @@ export const TradesDistributionChart: React.FC<TradesDistributionChartProps> = (
                   }}
                 />
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{label}</span>
+                {index === 0 && (
+                  <Tooltip
+                    content={t('analytics:charts.tradesDistribution.winnersTooltip', {
+                      defaultValue:
+                        'Les trades positifs sans TP atteint (selon votre journal) sont comptés ici en Break-even, pas en gagnants.',
+                    })}
+                    position="top"
+                    className="items-center leading-none"
+                    contentClassName="whitespace-pre-line block"
+                  >
+                    <svg
+                      className="block h-3.5 w-3.5 shrink-0 cursor-help text-gray-400 dark:text-gray-500"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </Tooltip>
+                )}
               </div>
               <div className="text-right">
                 <div className="text-sm font-bold text-gray-800 dark:text-gray-200">{data.data[index]}</div>

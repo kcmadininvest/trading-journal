@@ -28,6 +28,10 @@ export const TradeOutcomeStrip: React.FC<TradeOutcomeStripProps> = ({
       value: winningTrades,
       barClass: 'bg-blue-500 dark:bg-blue-400',
       valueClass: 'text-blue-500 dark:text-blue-400',
+      tooltip: t('statistics:tradesAnalysis.winningTradesTooltip', {
+        defaultValue:
+          'Tous les trades à PnL positif, y compris les break-even positifs pour lesquels votre journal indique qu\'aucun TP n\'a été atteint.',
+      }),
     },
     {
       key: 'losers',
@@ -45,7 +49,7 @@ export const TradeOutcomeStrip: React.FC<TradeOutcomeStripProps> = ({
       tooltip:
         t('statistics:tradesAnalysis.breakEvenInlineExplanation', {
           defaultValue:
-            'Les BE à PnL > 0 restent comptés dans les gagnants. Seuls les BE stricts (PnL = 0) sont exclus du total.',
+            'Les BE à PnL > 0 restent comptés dans les gagnants. Seuls les BE stricts (PnL = 0) sont exclus du total. Le graphique « Répartition des trades par résultat » les classe en revanche en Break-even, d\'où un nombre de gagnants plus faible.',
         }) + ` | = 0 : ${breakEvenZeroTrades}`,
     },
   ];

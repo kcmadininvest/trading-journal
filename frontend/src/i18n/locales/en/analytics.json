@@ -164,7 +164,8 @@
       "losers": "Losers",
       "neutral": "Neutral",
       "percentage": "Percentage",
-      "tooltip": "This chart shows the distribution of your trades between winners, losers and neutral. This allows you to quickly visualize the ratio of winning vs losing trades."
+      "tooltip": "This chart shows the distribution of your trades between winners, losers and neutral. This allows you to quickly visualize the ratio of winning vs losing trades.",
+      "winnersTooltip": "Positive trades with no TP reached (per your journal) are counted here as Break-even, not winners."
     },
     "riskReward": {
       "title": "Risk/Reward Ratio Over Time",

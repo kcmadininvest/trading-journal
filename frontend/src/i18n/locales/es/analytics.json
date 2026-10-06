@@ -161,7 +161,8 @@
       "losers": "Perdedoras",
       "neutral": "Neutras",
       "percentage": "Porcentaje",
-      "tooltip": "Este gráfico muestra la distribución de tus operaciones entre ganadoras, perdedoras y neutras. Esto permite visualizar rápidamente la proporción de operaciones ganadoras vs perdedoras."
+      "tooltip": "Este gráfico muestra la distribución de tus operaciones entre ganadoras, perdedoras y neutras. Esto permite visualizar rápidamente la proporción de operaciones ganadoras vs perdedoras.",
+      "winnersTooltip": "Las operaciones positivas sin TP alcanzado (según tu diario) se cuentan aquí como Break-even, no como ganadoras."
     },
     "riskReward": {
       "title": "Ratio Riesgo/Recompensa en el Tiempo",
