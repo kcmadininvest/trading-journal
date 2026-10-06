@@ -115,7 +115,7 @@
     "breakEvenTrades": "ブレークイーブントレード",
     "breakEvenTradesTooltip": "ブレークイーブントレード数：P/L = 0のトレード、またはテイクプロフィット未達成（TP1およびTP2+未達成）の勝ちトレード（P/L > 0）",
     "breakEven": "ブレークイーブン",
-    "breakEvenInlineExplanation": "PnL > 0のブレークイーブントレードは引き続き勝ちとしてカウントされます。厳密なブレークイーブン（PnL = 0）のみ合計から除外されます。一方、「結果別トレード分布」グラフではそれらをブレークイーブンに分類するため、勝ちトレード数は少なく表示されます。",
+    "breakEvenInlineExplanation": "PnL = 0のトレード、またはジャーナルでブレークイーブンと記録されたプラスのトレード（TP未達成）。",
     "breakEvenZeroLabel": "厳密 (PnL = 0)",
     "breakEvenPositiveLabel": "プラス (PnL > 0)",
     "averageAndMedianTradeCost": "平均および中央値トレードコスト",

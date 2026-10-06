@@ -27,7 +27,6 @@ import { PnlBasisToggle } from '../components/common/PnlBasisToggle';
 import { parsePnlDisplayMode } from '../utils/pnlDisplay';
 import { useTheme } from '../hooks/useTheme';
 import { getChartColors } from '../utils/chartConfig';
-import { buildTradesDistributionData } from '../utils/buildTradesDistributionData';
 import { StatisticsTabNav } from '../components/statistics/StatisticsTabNav';
 import { StatisticsHeroStrip } from '../components/statistics/StatisticsHeroStrip';
 import { StatisticsOverviewTab } from '../components/statistics/StatisticsOverviewTab';
@@ -296,14 +295,6 @@ function StatisticsPage() {
 
   const chartColors = useMemo(() => getChartColors(theme === 'dark'), [theme]);
 
-  const tradesDistributionData = useMemo(
-    () =>
-      statisticsData
-        ? buildTradesDistributionData(filteredTrades, statisticsData, t, pnlDisplayMode)
-        : null,
-    [filteredTrades, statisticsData, t, pnlDisplayMode],
-  );
-
   const tabSharedProps = useMemo(
     () => ({
       statisticsData: statisticsData!,
@@ -445,11 +436,7 @@ function StatisticsPage() {
         <StatisticsTabNav activeTab={activeTab} onTabChange={setActiveTab} />
 
         {statisticsData && activeTab === 'overview' && (
-          <StatisticsOverviewTab
-            {...tabSharedProps}
-            tradesDistributionData={tradesDistributionData}
-            chartColors={chartColors}
-          />
+          <StatisticsOverviewTab {...tabSharedProps} />
         )}
 
         {statisticsData && activeTab === 'performance' && (

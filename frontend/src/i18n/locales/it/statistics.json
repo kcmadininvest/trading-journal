@@ -114,7 +114,7 @@
     "breakEvenTrades": "Operazioni Break-even",
     "breakEvenTradesTooltip": "Numero di operazioni break-even: operazioni con P/L = 0 o operazioni vincenti (P/L > 0) senza Take Profit raggiunto (TP1 e TP2+ non raggiunti)",
     "breakEven": "Breakeven",
-    "breakEvenInlineExplanation": "Le operazioni BE con PnL > 0 continuano a essere conteggiate come vincite. Solo i breakeven stretti (PnL = 0) sono esclusi dal totale. Il grafico «Distribuzione delle operazioni per risultato» le classifica invece come Break-even, quindi il numero di vincenti è inferiore.",
+    "breakEvenInlineExplanation": "Operazioni con PnL = 0, oppure operazioni positive contrassegnate come break-even nel diario (nessun TP raggiunto).",
     "breakEvenZeroLabel": "Stretto (PnL = 0)",
     "breakEvenPositiveLabel": "Positivo (PnL > 0)",
     "averageAndMedianTradeCost": "Costo Medio e Mediano di un'Operazione",

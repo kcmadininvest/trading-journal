@@ -115,7 +115,7 @@
     "breakEvenTrades": "손익분기 거래",
     "breakEvenTradesTooltip": "손익분기 거래 수: P/L = 0인 거래 또는 테이크 프로핏 미달성(TP1 및 TP2+ 미달성)인 승리 거래(P/L > 0)",
     "breakEven": "손익분기",
-    "breakEvenInlineExplanation": "PnL > 0인 손익분기 거래는 계속 승리로 집계됩니다. 엄격한 손익분기(PnL = 0)만 총계에서 제외됩니다. 반면 '결과별 거래 분포' 차트에서는 이를 손익분기로 분류하므로 승리 수가 더 적게 표시됩니다.",
+    "breakEvenInlineExplanation": "PnL = 0인 거래 또는 저널에서 손익분기로 표시된 양수 거래(TP 미달성).",
     "breakEvenZeroLabel": "엄격 (PnL = 0)",
     "breakEvenPositiveLabel": "양수 (PnL > 0)",
     "averageAndMedianTradeCost": "평균 및 중앙값 거래 비용",

@@ -118,7 +118,7 @@
     "breakEvenTrades": "Trades Break-even",
     "breakEvenTradesTooltip": "Nombre de trades break-even : trades avec P/L = 0 ou trades gagnants (P/L > 0) sans Take Profit atteint (TP1 et TP2+ non atteints)",
     "breakEven": "Breakeven",
-    "breakEvenInlineExplanation": "Les BE à PnL > 0 restent comptés dans les gagnants. Seuls les BE stricts (PnL = 0) sont exclus du total. Le graphique « Répartition des trades par résultat » les classe en revanche en Break-even, d'où un nombre de gagnants plus faible.",
+    "breakEvenInlineExplanation": "Trades à PnL = 0, ou trades positifs notés comme break-even dans votre journal (aucun TP atteint).",
     "breakEvenZeroLabel": "Strict (PnL = 0)",
     "breakEvenPositiveLabel": "Positif (PnL > 0)",
     "averageAndMedianTradeCost": "Coût Moyen et Médian d'un Trade",
