@@ -47,6 +47,8 @@
   "statusLinkEmpty": "Perguntas do dia",
   "statusLinkCta": "Responder",
   "positionTitle": "Perguntas de posição",
+  "positionDayTitle": "Perguntas das posições",
+  "notAnsweredYet": "Ainda sem resposta",
   "types": {
     "boolean": "Sim / Não",
     "text": "Texto",

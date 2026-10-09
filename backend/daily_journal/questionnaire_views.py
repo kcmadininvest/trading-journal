@@ -1,12 +1,13 @@
 from django.db import transaction
 from django.db.models import Max, Prefetch
 from django.shortcuts import get_object_or_404
+from django.utils.dateparse import parse_date
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from trades.models import ImportedTrade
+from trades.models import ImportedTrade, TradingAccount
 
 from .models import (
     QuestionTemplate,
@@ -217,6 +218,15 @@ class QuestionnaireQuestionViewSet(viewsets.ModelViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+def _questions_with_answers(questionnaire, answers_qs):
+    """Questions actives, plus les questions inactives qui ont déjà une réponse."""
+    answered_question_ids = list(answers_qs.values_list('question_id', flat=True))
+    return (
+        questionnaire.questions.filter(is_active=True)
+        | questionnaire.questions.filter(id__in=answered_question_ids)
+    ).prefetch_related('choices').distinct().order_by('order', 'id')
+
+
 class QuestionnaireAnswersView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -255,35 +265,24 @@ class QuestionnaireAnswersView(APIView):
             else:
                 answers_qs = answers_qs.filter(trading_account__isnull=True)
 
-            # Inclure aussi les questions inactives qui ont déjà une réponse ce jour-là
-            answered_question_ids = list(answers_qs.values_list('question_id', flat=True))
-            questions_qs = (
-                questionnaire.questions.filter(is_active=True)
-                | questionnaire.questions.filter(id__in=answered_question_ids)
-            ).prefetch_related('choices').distinct().order_by('order', 'id')
+            questions_qs = _questions_with_answers(questionnaire, answers_qs)
         else:
             trade_id = request.query_params.get('trade')
-            if not trade_id:
-                return Response(
-                    {'trade': 'Paramètre trade requis pour scope=position.'},
-                    status=status.HTTP_400_BAD_REQUEST,
+            if trade_id:
+                trade = ImportedTrade.objects.filter(pk=trade_id, user=request.user).first()
+                if not trade:
+                    return Response(
+                        {'trade': 'Trade introuvable.'},
+                        status=status.HTTP_404_NOT_FOUND,
+                    )
+                answers_qs = QuestionnaireAnswer.objects.filter(
+                    user=request.user,
+                    question__questionnaire=questionnaire,
+                    trade=trade,
                 )
-            trade = ImportedTrade.objects.filter(pk=trade_id, user=request.user).first()
-            if not trade:
-                return Response(
-                    {'trade': 'Trade introuvable.'},
-                    status=status.HTTP_404_NOT_FOUND,
-                )
-            answers_qs = QuestionnaireAnswer.objects.filter(
-                user=request.user,
-                question__questionnaire=questionnaire,
-                trade=trade,
-            )
-            answered_question_ids = list(answers_qs.values_list('question_id', flat=True))
-            questions_qs = (
-                questionnaire.questions.filter(is_active=True)
-                | questionnaire.questions.filter(id__in=answered_question_ids)
-            ).prefetch_related('choices').distinct().order_by('order', 'id')
+                questions_qs = _questions_with_answers(questionnaire, answers_qs)
+            else:
+                return self._position_answers_for_day(request, questionnaire)
 
         return Response(
             {
@@ -291,6 +290,70 @@ class QuestionnaireAnswersView(APIView):
                 'questionnaire_id': questionnaire.id,
                 'questions': QuestionnaireQuestionSerializer(questions_qs, many=True).data,
                 'answers': QuestionnaireAnswerSerializer(answers_qs, many=True).data,
+            }
+        )
+
+    def _position_answers_for_day(self, request, questionnaire):
+        """Toutes les réponses position des trades d'un jour et d'un compte."""
+        date_raw = request.query_params.get('date')
+        if not date_raw:
+            return Response(
+                {'trade': 'Paramètre trade requis pour scope=position.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        parsed_date = parse_date(date_raw)
+        if parsed_date is None:
+            return Response(
+                {'date': 'Date invalide.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        account_raw = request.query_params.get('trading_account')
+        if not account_raw:
+            return Response(
+                {'trading_account': 'Paramètre trading_account requis.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            account_id = int(account_raw)
+        except (TypeError, ValueError):
+            return Response(
+                {'trading_account': 'Compte introuvable.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        if not TradingAccount.objects.filter(pk=account_id, user=request.user).exists():
+            return Response(
+                {'trading_account': 'Compte introuvable.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        trades = list(
+            ImportedTrade.objects.filter(
+                user=request.user,
+                trade_day=parsed_date,
+                trading_account_id=account_id,
+            ).order_by('entered_at', 'id')
+        )
+        answers_qs = QuestionnaireAnswer.objects.filter(
+            user=request.user,
+            question__questionnaire=questionnaire,
+            trade__in=trades,
+        )
+        questions_qs = _questions_with_answers(questionnaire, answers_qs)
+        return Response(
+            {
+                'scope': 'position',
+                'questionnaire_id': questionnaire.id,
+                'questions': QuestionnaireQuestionSerializer(questions_qs, many=True).data,
+                'answers': QuestionnaireAnswerSerializer(answers_qs, many=True).data,
+                'trades': [
+                    {
+                        'id': trade.id,
+                        'contract_name': trade.contract_name,
+                        'trade_type': trade.trade_type,
+                        'entered_at': trade.entered_at,
+                    }
+                    for trade in trades
+                ],
             }
         )
 

@@ -472,6 +472,7 @@ class UserPreferencesSerializer(serializers.ModelSerializer):
             'show_pre_market', 'journal_period', 'journal_position_strategies',
             'market_replay_logarithmic', 'market_replay_autofit',
             'daily_journal_table_editor', 'daily_journal_view_mode',
+            'journal_questions_positions_collapsed',
             'created_at', 'updated_at',
         )
         read_only_fields = ('created_at', 'updated_at')

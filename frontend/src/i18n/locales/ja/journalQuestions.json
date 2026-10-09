@@ -47,6 +47,8 @@
   "statusLinkEmpty": "当日の質問",
   "statusLinkCta": "回答する",
   "positionTitle": "ポジションの質問",
+  "positionDayTitle": "ポジションの質問",
+  "notAnsweredYet": "まだ未回答",
   "types": {
     "boolean": "はい / いいえ",
     "text": "テキスト",

@@ -47,6 +47,8 @@
   "statusLinkEmpty": "Daily questions",
   "statusLinkCta": "Answer",
   "positionTitle": "Position questions",
+  "positionDayTitle": "Position questions",
+  "notAnsweredYet": "Not answered yet",
   "types": {
     "boolean": "Yes / No",
     "text": "Text",

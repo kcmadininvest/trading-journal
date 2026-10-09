@@ -103,6 +103,7 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
     market_replay_autofit: false,
     daily_journal_table_editor: true,
     daily_journal_view_mode: 'grid',
+    journal_questions_positions_collapsed: false,
   });
   const [loading, setLoading] = useState(true);
   const { data: bootstrap, isError: bootstrapError, isLoading: bootstrapLoading } = useBootstrap(
@@ -120,6 +121,7 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
       market_replay_autofit: !!prefs.market_replay_autofit,
       daily_journal_table_editor: prefs.daily_journal_table_editor !== false,
       daily_journal_view_mode: prefs.daily_journal_view_mode === 'list' ? 'list' : 'grid',
+      journal_questions_positions_collapsed: !!prefs.journal_questions_positions_collapsed,
     });
     const effectiveTheme: ThemePreference = isThemePreference(prefs.theme) ? prefs.theme : 'light';
     applyThemePreference(effectiveTheme);

@@ -80,6 +80,21 @@ export interface AnswersFormPayload {
   answers: QuestionnaireAnswer[];
 }
 
+export interface DayPositionTrade {
+  id: number;
+  contract_name: string;
+  trade_type: 'Long' | 'Short';
+  entered_at: string;
+}
+
+export interface DayPositionAnswersPayload {
+  scope: 'position';
+  questionnaire_id: number | null;
+  questions: QuestionnaireQuestion[];
+  answers: QuestionnaireAnswer[];
+  trades: DayPositionTrade[];
+}
+
 export interface BulkAnswersPayload {
   scope: QuestionnaireScope;
   date?: string | null;
@@ -260,6 +275,21 @@ class JournalQuestionsService {
     if (params.date) search.set('date', params.date);
     if (params.trading_account != null) search.set('trading_account', String(params.trading_account));
     if (params.trade != null) search.set('trade', String(params.trade));
+    const res = await this.fetchWithAuth(
+      `${this.BASE_URL}/api/daily-journal/answers/?${search.toString()}`
+    );
+    if (!res.ok) throw new Error(await this.parseError(res));
+    return res.json();
+  }
+
+  async getDayPositionAnswers(params: {
+    date: string;
+    trading_account: number;
+  }): Promise<DayPositionAnswersPayload> {
+    const search = new URLSearchParams();
+    search.set('scope', 'position');
+    search.set('date', params.date);
+    search.set('trading_account', String(params.trading_account));
     const res = await this.fetchWithAuth(
       `${this.BASE_URL}/api/daily-journal/answers/?${search.toString()}`
     );

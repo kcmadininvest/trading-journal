@@ -43,6 +43,7 @@ export const usePreferences = (): PreferencesContextType => {
         market_replay_autofit: false,
         daily_journal_table_editor: true,
         daily_journal_view_mode: 'grid',
+        journal_questions_positions_collapsed: false,
       },
       loading: false,
       refreshPreferences: async () => {},

@@ -1,13 +1,17 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PageShell } from '../components/layout';
-import { addCalendarDays } from '../components/replay/replayDateNav';
+import { addCalendarDays, getTodayDateInTimezone } from '../components/replay/replayDateNav';
 import { replayDateInputClass, replaySecondaryButtonClass } from '../components/replay/replayStyles';
 import { AccountSelector } from '../components/accounts/AccountSelector';
 import { DateInput } from '../components/common/DateInput';
 import { useTradingAccount } from '../contexts/useTradingAccount';
+import { usePreferences } from '../hooks/usePreferences';
 import { useAccountNumberVisibility } from '../hooks/useAccountNumberVisibility';
+import { DayPositionAnswersSummary } from '../components/journalQuestions/DayPositionAnswersSummary';
 import { JournalQuestionsForm } from '../components/journalQuestions/JournalQuestionsForm';
+import { StrategyComplianceModal } from '../components/trades/StrategyComplianceModal';
+import { journalQuestionsService, type DayPositionAnswersPayload } from '../services/journalQuestions';
 
 function parseHashQuery(): { date?: string; account?: string } {
   const raw = window.location.hash.replace(/^#/, '');
@@ -30,10 +34,19 @@ function todayISO(): string {
 
 const JournalQuestionsPage: React.FC = () => {
   const { t } = useTranslation(['journalQuestions', 'common']);
+  const { preferences } = usePreferences();
   const { selectedAccountId, setSelectedAccountId } = useTradingAccount();
   const hideAccountNumber = useAccountNumberVisibility();
   const initial = useMemo(() => parseHashQuery(), []);
+  const today = useMemo(
+    () => getTodayDateInTimezone(preferences.timezone || 'Europe/Paris'),
+    [preferences.timezone]
+  );
   const [date, setDate] = useState(initial.date || todayISO());
+  const canGoNextDay = date < today;
+  const [positionAnswers, setPositionAnswers] = useState<DayPositionAnswersPayload | null>(null);
+  const [positionReload, setPositionReload] = useState(0);
+  const [complianceOpen, setComplianceOpen] = useState(false);
 
   useEffect(() => {
     if (initial.account) {
@@ -41,6 +54,26 @@ const JournalQuestionsPage: React.FC = () => {
       if (!Number.isNaN(id)) setSelectedAccountId(id);
     }
   }, [initial.account, setSelectedAccountId]);
+
+  useEffect(() => {
+    if (selectedAccountId == null) {
+      setPositionAnswers(null);
+      return undefined;
+    }
+    let cancelled = false;
+    setPositionAnswers(null);
+    journalQuestionsService
+      .getDayPositionAnswers({ date, trading_account: selectedAccountId })
+      .then((payload) => {
+        if (!cancelled) setPositionAnswers(payload);
+      })
+      .catch(() => {
+        if (!cancelled) setPositionAnswers(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [date, selectedAccountId, positionReload]);
 
   return (
     <PageShell className="space-y-6">
@@ -75,12 +108,20 @@ const JournalQuestionsPage: React.FC = () => {
                 <DateInput
                   value={date}
                   onChange={setDate}
+                  max={today}
                   className={replayDateInputClass}
                 />
               </div>
               <button
                 type="button"
-                onClick={() => setDate((current) => addCalendarDays(current, 1))}
+                onClick={() => {
+                  if (!canGoNextDay) return;
+                  setDate((current) => {
+                    const next = addCalendarDays(current, 1);
+                    return next > today ? current : next;
+                  });
+                }}
+                disabled={!canGoNextDay}
                 title={t('nextDay')}
                 aria-label={t('nextDay')}
                 className={`${replaySecondaryButtonClass} !min-w-[2.25rem] !px-2.5 shrink-0 text-lg leading-none`}
@@ -111,6 +152,27 @@ const JournalQuestionsPage: React.FC = () => {
           />
         )}
       </div>
+
+      {positionAnswers && (
+        <DayPositionAnswersSummary
+          questions={positionAnswers.questions}
+          answers={positionAnswers.answers}
+          trades={positionAnswers.trades}
+          onEdit={() => setComplianceOpen(true)}
+        />
+      )}
+
+      {selectedAccountId != null && (
+        <StrategyComplianceModal
+          open={complianceOpen}
+          date={date}
+          tradingAccount={selectedAccountId}
+          onClose={(saved) => {
+            setComplianceOpen(false);
+            if (saved) setPositionReload((current) => current + 1);
+          }}
+        />
+      )}
     </PageShell>
   );
 };

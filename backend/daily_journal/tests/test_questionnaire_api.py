@@ -165,6 +165,120 @@ class QuestionnaireApiTests(APITestCase):
         self.assertEqual(answer.value, True)
         self.assertIsNone(answer.date)
 
+    def _create_position_trade(
+        self,
+        external_trade_id: str,
+        *,
+        account=None,
+        trade_day=date(2026, 7, 10),
+        hour: int = 10,
+        contract_name: str = 'ES',
+        trade_type: str = 'Long',
+    ) -> ImportedTrade:
+        entered = timezone.make_aware(datetime(trade_day.year, trade_day.month, trade_day.day, hour, 0, 0))
+        return ImportedTrade.objects.create(
+            user=self.user,
+            trading_account=account or self.account,
+            external_trade_id=external_trade_id,
+            contract_name=contract_name,
+            trade_type=trade_type,
+            entered_at=entered,
+            exited_at=entered + timedelta(hours=1),
+            entry_price=Decimal('100.000000000'),
+            exit_price=Decimal('101.000000000'),
+            size=Decimal('1.0000'),
+            trade_day=trade_day,
+            net_pnl=Decimal('50'),
+        )
+
+    def test_position_answers_for_day_groups_trades(self):
+        morning = self._create_position_trade('Q-AM', hour=10, contract_name='ES')
+        afternoon = self._create_position_trade(
+            'Q-PM', hour=14, contract_name='NQ', trade_type='Short'
+        )
+        other_day = self._create_position_trade('Q-NEXT', trade_day=date(2026, 7, 11))
+        other_account = TradingAccount.objects.create(
+            user=self.user,
+            name='Other account',
+            initial_capital=Decimal('5000'),
+            account_type='other',
+        )
+        other_account_trade = self._create_position_trade(
+            'Q-OTHER-ACC', account=other_account, contract_name='CL'
+        )
+
+        questionnaire = Questionnaire.get_or_create_for_scope(self.user, 'position')
+        active = QuestionnaireQuestion.objects.create(
+            questionnaire=questionnaire,
+            label='Setup clair ?',
+            answer_type='boolean',
+            order=0,
+            is_active=True,
+        )
+        inactive = QuestionnaireQuestion.objects.create(
+            questionnaire=questionnaire,
+            label='Ancienne question',
+            answer_type='text',
+            order=1,
+            is_active=False,
+        )
+        for trade, value in ((morning, True), (afternoon, False), (other_day, True), (other_account_trade, True)):
+            QuestionnaireAnswer.objects.create(
+                user=self.user,
+                question=active,
+                trade=trade,
+                trading_account=trade.trading_account,
+                value=value,
+                question_label_snapshot=active.label,
+                answer_type_snapshot='boolean',
+            )
+        QuestionnaireAnswer.objects.create(
+            user=self.user,
+            question=inactive,
+            trade=morning,
+            trading_account=self.account,
+            value='historique',
+            question_label_snapshot=inactive.label,
+            answer_type_snapshot='text',
+        )
+
+        res = self.client.get(
+            '/api/daily-journal/answers/',
+            {
+                'scope': 'position',
+                'date': '2026-07-10',
+                'trading_account': self.account.id,
+            },
+        )
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual([trade['id'] for trade in res.data['trades']], [morning.id, afternoon.id])
+        self.assertEqual(res.data['trades'][0]['contract_name'], 'ES')
+        self.assertEqual(res.data['trades'][1]['trade_type'], 'Short')
+        answered_trade_ids = {answer['trade'] for answer in res.data['answers']}
+        self.assertEqual(answered_trade_ids, {morning.id, afternoon.id})
+        question_ids = {question['id'] for question in res.data['questions']}
+        self.assertIn(active.id, question_ids)
+        self.assertIn(inactive.id, question_ids)
+
+        missing = self.client.get('/api/daily-journal/answers/', {'scope': 'position'})
+        self.assertEqual(missing.status_code, status.HTTP_400_BAD_REQUEST)
+
+        foreign_account = TradingAccount.objects.create(
+            user=self.other,
+            name='Foreign',
+            initial_capital=Decimal('1000'),
+            account_type='other',
+        )
+        forbidden = self.client.get(
+            '/api/daily-journal/answers/',
+            {
+                'scope': 'position',
+                'date': '2026-07-10',
+                'trading_account': foreign_account.id,
+            },
+        )
+        self.assertEqual(forbidden.status_code, status.HTTP_404_NOT_FOUND)
+
     def test_delete_question_with_answers_deactivates(self):
         questionnaire = Questionnaire.get_or_create_for_scope(self.user, 'day')
         question = QuestionnaireQuestion.objects.create(

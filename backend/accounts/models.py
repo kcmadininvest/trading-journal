@@ -294,6 +294,11 @@ class UserPreferences(models.Model):
         verbose_name=_('Journal — mode d’affichage'),
         help_text=str(_('Vue grille ou liste des entrées du journal quotidien.')),
     )
+    journal_questions_positions_collapsed = models.BooleanField(
+        default=False,
+        verbose_name=_('Questions des positions repliées'),
+        help_text=str(_('Replier la section des réponses par position sur la page Questions du jour.')),
+    )
 
     # Métadonnées
     created_at = models.DateTimeField(

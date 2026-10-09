@@ -99,6 +99,8 @@ export interface UserPreferences {
   daily_journal_table_editor?: boolean;
   /** Journal quotidien : vue grille ou liste. */
   daily_journal_view_mode?: 'grid' | 'list';
+  /** Questions du jour : section des positions repliée. */
+  journal_questions_positions_collapsed?: boolean;
   created_at?: string;
   updated_at?: string;
 }

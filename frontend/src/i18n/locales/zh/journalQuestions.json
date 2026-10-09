@@ -47,6 +47,8 @@
   "statusLinkEmpty": "当日问题",
   "statusLinkCta": "回答",
   "positionTitle": "持仓问题",
+  "positionDayTitle": "持仓问题",
+  "notAnsweredYet": "尚未作答",
   "types": {
     "boolean": "是 / 否",
     "text": "文本",
