@@ -42,39 +42,6 @@
   100% { transform: translateX(200%); }
 }
 
-/* Couleurs pour la matrice de corrélation - CSP compliant */
-/* Corrélation positive (bleu) - mode clair */
-.correlation-pos-very-low { background-color: #dbeafe; }
-.correlation-pos-low { background-color: #93c5fd; }
-.correlation-pos-medium { background-color: #60a5fa; }
-.correlation-pos-high { background-color: #3b82f6; }
-.correlation-pos-very-high { background-color: #2563eb; }
-
-/* Corrélation positive (bleu) - mode sombre */
-.dark .correlation-pos-very-low { background-color: #1e3a8a; }
-.dark .correlation-pos-low { background-color: #1e40af; }
-.dark .correlation-pos-medium { background-color: #2563eb; }
-.dark .correlation-pos-high { background-color: #3b82f6; }
-.dark .correlation-pos-very-high { background-color: #60a5fa; }
-
-/* Corrélation négative (rose) - mode clair */
-.correlation-neg-very-low { background-color: #fce7f3; }
-.correlation-neg-low { background-color: #f9a8d4; }
-.correlation-neg-medium { background-color: #f472b6; }
-.correlation-neg-high { background-color: #ec4899; }
-.correlation-neg-very-high { background-color: #db2777; }
-
-/* Corrélation négative (rose) - mode sombre */
-.dark .correlation-neg-very-low { background-color: #831843; }
-.dark .correlation-neg-low { background-color: #9f1239; }
-.dark .correlation-neg-medium { background-color: #be185d; }
-.dark .correlation-neg-high { background-color: #db2777; }
-.dark .correlation-neg-very-high { background-color: #ec4899; }
-
-/* Corrélation neutre (gris) */
-.correlation-neutral { background-color: #e5e7eb; }
-.dark .correlation-neutral { background-color: #4b5563; }
-
 /* Couleurs de texte pour les cellules de corrélation */
 .correlation-text-light { color: #1f2937; }
 .correlation-text-dark { color: #ffffff; }

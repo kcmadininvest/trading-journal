@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PageShell } from '../components/layout';
-import { replaySecondaryButtonClass } from '../components/replay/replayStyles';
+import { addCalendarDays } from '../components/replay/replayDateNav';
+import { replayDateInputClass, replaySecondaryButtonClass } from '../components/replay/replayStyles';
 import { AccountSelector } from '../components/accounts/AccountSelector';
 import { DateInput } from '../components/common/DateInput';
 import { useTradingAccount } from '../contexts/useTradingAccount';
@@ -56,16 +57,37 @@ const JournalQuestionsPage: React.FC = () => {
               hideAccountNumber={hideAccountNumber}
             />
           </div>
-          <div className="w-[180px]">
+          <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               {t('types.date')}
             </label>
-            <DateInput
-              value={date}
-              onChange={setDate}
-              size="sm"
-              className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-gray-100 px-3 py-2 pr-10 h-10"
-            />
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setDate((current) => addCalendarDays(current, -1))}
+                title={t('previousDay')}
+                aria-label={t('previousDay')}
+                className={`${replaySecondaryButtonClass} !min-w-[2.25rem] !px-2.5 shrink-0 text-lg leading-none`}
+              >
+                ‹
+              </button>
+              <div className="w-[11.5rem] min-w-0 sm:w-[180px]">
+                <DateInput
+                  value={date}
+                  onChange={setDate}
+                  className={replayDateInputClass}
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => setDate((current) => addCalendarDays(current, 1))}
+                title={t('nextDay')}
+                aria-label={t('nextDay')}
+                className={`${replaySecondaryButtonClass} !min-w-[2.25rem] !px-2.5 shrink-0 text-lg leading-none`}
+              >
+                ›
+              </button>
+            </div>
           </div>
           <div className="flex flex-wrap items-center gap-2 ml-auto">
             <a href="#daily-journal" className={`${replaySecondaryButtonClass} box-border`}>

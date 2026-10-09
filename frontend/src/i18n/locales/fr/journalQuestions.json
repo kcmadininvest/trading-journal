@@ -87,5 +87,7 @@
   "showIfHint": "Par défaut elle est toujours visible. Vous pouvez la masquer sauf si une autre question a une certaine réponse.",
   "showIfWhen": "Visible seulement si :",
   "conditionIf": "Si",
-  "logicExplain": "Comment combiner plusieurs conditions :"
+  "logicExplain": "Comment combiner plusieurs conditions :",
+  "previousDay": "Jour précédent",
+  "nextDay": "Jour suivant"
 }

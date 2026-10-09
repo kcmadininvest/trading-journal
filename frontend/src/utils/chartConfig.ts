@@ -366,6 +366,42 @@ export const getChartColors = (isDark: boolean): ChartColors => ({
   tooltipBorder: isDark ? '#4b5563' : '#e5e7eb',
 });
 
+const DIVERGING_BLUE = '59, 130, 246';
+const DIVERGING_PINK = '236, 72, 153';
+
+function lightDivergingStep(intensity: number, positive: boolean): string {
+  if (positive) {
+    if (intensity < 0.2) return '#dbeafe';
+    if (intensity < 0.4) return '#93c5fd';
+    if (intensity < 0.6) return '#60a5fa';
+    if (intensity < 0.8) return '#3b82f6';
+    return '#2563eb';
+  }
+  if (intensity < 0.2) return '#fce7f3';
+  if (intensity < 0.4) return '#f9a8d4';
+  if (intensity < 0.6) return '#f472b6';
+  if (intensity < 0.8) return '#ec4899';
+  return '#db2777';
+}
+
+/**
+ * Couleur d'une cellule divergente (matrice de corrélation, heatmap).
+ * `normalized` est borné à [-1, 1]. Le mode clair garde les paliers opaques
+ * historiques ; le mode sombre reprend le bleu et le rose des barres Analytics,
+ * avec une opacité qui monte avec la valeur absolue.
+ */
+export function getDivergingCellColor(normalized: number, isDark: boolean): string {
+  const clamped = Math.max(-1, Math.min(1, normalized));
+  if (clamped === 0) return isDark ? '#4b5563' : '#e5e7eb';
+
+  const intensity = Math.abs(clamped);
+  if (!isDark) return lightDivergingStep(intensity, clamped > 0);
+
+  const alpha = (0.2 + 0.65 * intensity).toFixed(2);
+  const rgb = clamped > 0 ? DIVERGING_BLUE : DIVERGING_PINK;
+  return `rgba(${rgb}, ${alpha})`;
+}
+
 interface BaseChartOptionsParams {
   chartColors: ChartColors;
   isMobile: boolean;

@@ -65,6 +65,7 @@ import {
   createRadarGradientPlugin,
 } from '../components/analytics';
 import { resolveAccountChartConfig } from '../utils/accountChartConfig';
+import { getDivergingCellColor } from '../utils/chartConfig';
 import { parsePnlDisplayMode, getTradeDisplayPnlValue } from '../utils/pnlDisplay';
 import { aggregateDurationPerformance } from '../utils/tradeDurationBuckets';
 import { aggregatePositionSizePerformance } from '../utils/positionSizePerformance';
@@ -1321,50 +1322,9 @@ const AnalyticsPage: React.FC = () => {
   // Le graphique radar gère maintenant sa propre normalisation en interne
   // Pas besoin de calculer radarChartData ici
 
-  // Fonction pour obtenir la couleur de la heatmap (améliorée avec support dark mode)
   const getHeatmapColor = (value: number, maxAbs: number): string => {
-    if (maxAbs === 0) return isDark ? '#4b5563' : '#f3f4f6'; // Gris adapté au thème pour les valeurs nulles
-    
-    const normalized = value / maxAbs; // -1 à 1
-    
-    if (normalized > 0) {
-      // Bleu pour les gains avec gradient amélioré
-      const intensity = Math.min(Math.abs(normalized), 1);
-      if (isDark) {
-        // Mode dark : couleurs plus foncées mais visibles
-        if (intensity < 0.2) return '#1e3a8a'; // Bleu très foncé
-        if (intensity < 0.4) return '#1e40af'; // Bleu foncé
-        if (intensity < 0.6) return '#2563eb'; // Bleu moyen-foncé
-        if (intensity < 0.8) return '#3b82f6'; // Bleu
-        return '#60a5fa'; // Bleu clair
-      } else {
-        // Mode clair : couleurs claires
-      if (intensity < 0.2) return '#dbeafe'; // Bleu très clair
-      if (intensity < 0.4) return '#93c5fd'; // Bleu clair
-      if (intensity < 0.6) return '#60a5fa'; // Bleu moyen
-      if (intensity < 0.8) return '#3b82f6'; // Bleu
-      return '#2563eb'; // Bleu foncé
-      }
-    } else if (normalized < 0) {
-      // Rose pour les pertes avec gradient amélioré
-      const intensity = Math.min(Math.abs(normalized), 1);
-      if (isDark) {
-        // Mode dark : couleurs plus foncées mais visibles
-        if (intensity < 0.2) return '#831843'; // Rose très foncé
-        if (intensity < 0.4) return '#9f1239'; // Rose foncé
-        if (intensity < 0.6) return '#be185d'; // Rose moyen-foncé
-        if (intensity < 0.8) return '#db2777'; // Rose
-        return '#ec4899'; // Rose clair
-      } else {
-        // Mode clair : couleurs claires
-      if (intensity < 0.2) return '#fce7f3'; // Rose très clair
-      if (intensity < 0.4) return '#f9a8d4'; // Rose clair
-      if (intensity < 0.6) return '#f472b6'; // Rose moyen
-      if (intensity < 0.8) return '#ec4899'; // Rose
-      return '#db2777'; // Rose foncé
-    }
-    }
-    return isDark ? '#4b5563' : '#f3f4f6'; // Gris adapté au thème pour zéro
+    if (maxAbs === 0) return isDark ? '#4b5563' : '#f3f4f6';
+    return getDivergingCellColor(value / maxAbs, isDark);
   };
 
   // État pour l'onglet actif avec mémorisation dans localStorage

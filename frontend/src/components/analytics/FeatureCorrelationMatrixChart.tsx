@@ -1,6 +1,9 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import TooltipComponent from '../ui/Tooltip';
+import { usePreferences } from '../../hooks/usePreferences';
+import { ANALYTICS_CHART_CARD_CLASS, getDivergingCellColor } from '../../utils/chartConfig';
+import { formatNumber, type NumberFormatType } from '../../utils/numberFormat';
 
 interface FeatureCorrelationMatrixChartProps {
   data: {
@@ -17,39 +20,23 @@ export const FeatureCorrelationMatrixChart: React.FC<FeatureCorrelationMatrixCha
   isDark,
 }) => {
   const { t } = useTranslation();
-
-  const getCellColorClass = (value: number): string => {
-    const clamped = Math.max(-1, Math.min(1, value));
-    const intensity = Math.abs(clamped);
-
-    if (clamped > 0) {
-      if (intensity < 0.2) return 'correlation-pos-very-low';
-      if (intensity < 0.4) return 'correlation-pos-low';
-      if (intensity < 0.6) return 'correlation-pos-medium';
-      if (intensity < 0.8) return 'correlation-pos-high';
-      return 'correlation-pos-very-high';
-    }
-
-    if (clamped < 0) {
-      if (intensity < 0.2) return 'correlation-neg-very-low';
-      if (intensity < 0.4) return 'correlation-neg-low';
-      if (intensity < 0.6) return 'correlation-neg-medium';
-      if (intensity < 0.8) return 'correlation-neg-high';
-      return 'correlation-neg-very-high';
-    }
-
-    return 'correlation-neutral';
-  };
+  const { preferences } = usePreferences();
+  const numberFormat = (preferences.number_format as NumberFormatType) || 'comma';
 
   const getCellTextClass = (value: number): string => {
     const intensity = Math.abs(value);
     return (intensity >= 0.45 || isDark) ? 'correlation-text-dark' : 'correlation-text-light';
   };
 
+  const formatCoefficient = (value: number): string => {
+    const formatted = formatNumber(value, 2, numberFormat);
+    return value >= 0 ? `+${formatted}` : formatted;
+  };
+
   if (!data.labels.length || !data.matrix.length) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 min-h-[450px]">
-        <div className="flex items-center justify-center h-[320px]">
+      <div className={ANALYTICS_CHART_CARD_CLASS}>
+        <div className="flex flex-1 items-center justify-center">
           <p className="text-sm text-gray-600 dark:text-gray-400">
             {t('analytics:noData')}
           </p>
@@ -59,7 +46,7 @@ export const FeatureCorrelationMatrixChart: React.FC<FeatureCorrelationMatrixCha
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300">
+    <div className={ANALYTICS_CHART_CARD_CLASS}>
       <div className="flex items-center mb-6">
         <div className="w-1 h-6 bg-gradient-to-b from-orange-500 to-orange-600 rounded-full mr-3"></div>
         <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">
@@ -92,16 +79,19 @@ export const FeatureCorrelationMatrixChart: React.FC<FeatureCorrelationMatrixCha
                 <div className="p-2 text-sm font-semibold text-chart-secondary">
                   {rowLabel}
                 </div>
-                {data.matrix[rowIndex].map((value, colIndex) => (
-                  <div
-                    key={`${rowLabel}-${colIndex}`}
-                    className={`m-1 rounded-md flex items-center justify-center h-12 text-xs font-semibold ${getCellColorClass(value)} ${getCellTextClass(value)}`}
-                    title={`${rowLabel} / ${data.labels[colIndex]}: ${value.toFixed(2)}`}
-                  >
-                    {value >= 0 ? '+' : ''}
-                    {value.toFixed(2)}
-                  </div>
-                ))}
+                {data.matrix[rowIndex].map((value, colIndex) => {
+                  const coefficient = formatCoefficient(value);
+                  return (
+                    <div
+                      key={`${rowLabel}-${colIndex}`}
+                      className={`m-1 rounded-md flex items-center justify-center h-12 text-xs font-semibold ${getCellTextClass(value)}`}
+                      style={{ backgroundColor: getDivergingCellColor(value, isDark) }}
+                      title={`${rowLabel} / ${data.labels[colIndex]}: ${coefficient}`}
+                    >
+                      {coefficient}
+                    </div>
+                  );
+                })}
               </React.Fragment>
             ))}
           </div>

@@ -87,5 +87,7 @@
   "showIfHint": "By default it is always visible. You can hide it unless another question has a specific answer.",
   "showIfWhen": "Visible only if:",
   "conditionIf": "If",
-  "logicExplain": "How to combine multiple conditions:"
+  "logicExplain": "How to combine multiple conditions:",
+  "previousDay": "Previous day",
+  "nextDay": "Next day"
 }

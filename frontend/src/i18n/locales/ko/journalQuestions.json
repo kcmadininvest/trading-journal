@@ -87,5 +87,7 @@
   "showIfHint": "기본적으로 항상 표시됩니다. 다른 질문이 특정 답변일 때만 보이게 할 수 있습니다.",
   "showIfWhen": "다음에만 표시:",
   "conditionIf": "만약",
-  "logicExplain": "여러 조건 결합 방식:"
+  "logicExplain": "여러 조건 결합 방식:",
+  "previousDay": "이전 날",
+  "nextDay": "다음 날"
 }

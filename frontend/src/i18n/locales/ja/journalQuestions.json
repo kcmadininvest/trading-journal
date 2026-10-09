@@ -87,5 +87,7 @@
   "showIfHint": "通常は常に表示されます。他の質問が特定の回答のときだけ表示することもできます。",
   "showIfWhen": "次の場合のみ表示：",
   "conditionIf": "もし",
-  "logicExplain": "複数条件の組み合わせ方："
+  "logicExplain": "複数条件の組み合わせ方：",
+  "previousDay": "前日",
+  "nextDay": "翌日"
 }
