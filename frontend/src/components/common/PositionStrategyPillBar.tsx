@@ -35,8 +35,10 @@ export const PositionStrategyPillBar: React.FC<PositionStrategyPillBarProps> = (
   const displayLabel = useMemo(() => {
     if (value === null) return allLabel;
     const s = strategies.find((x) => x.id === value);
-    return s?.title ?? t('strategies:positionStrategy');
-  }, [value, strategies, allLabel, t]);
+    if (s) return s.title;
+    if (disabled) return '…';
+    return t('strategies:positionStrategy');
+  }, [value, strategies, allLabel, t, disabled]);
 
   const updatePosition = useCallback(() => {
     if (!buttonRef.current) return;

@@ -187,7 +187,8 @@ const StrategiesPage: React.FC = () => {
   const [statistics, setStatistics] = useState<any>(null);
   const [selectedAccount, setSelectedAccount] = useState<TradingAccount | null>(null);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
-  const { strategies: positionStrategies, loading: loadingStrategies } = usePositionStrategiesForFilter();
+  const { strategies: positionStrategies, loading: loadingStrategies, displayStrategyId } =
+    usePositionStrategiesForFilter(selectedPositionStrategy);
   
   // Utiliser le hook optimisé pour charger les trades filtrés (allTrades n'est plus chargé)
   const { filteredTrades, reload: reloadTrades } = useStrategyTrades({
@@ -721,7 +722,7 @@ const StrategiesPage: React.FC = () => {
             <PositionStrategyFilterField
               className="w-full lg:min-w-0 lg:flex-1 lg:max-w-sm"
               label={t('strategies:positionStrategy', { defaultValue: 'Stratégie de position' })}
-              value={selectedPositionStrategy}
+              value={displayStrategyId}
               onChange={setSelectedPositionStrategy}
               strategies={positionStrategies}
               loading={loadingStrategies}

@@ -97,7 +97,8 @@ const BehaviorPage: React.FC = () => {
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [filteredTrades, setFilteredTrades] = useState<TradeListItem[]>([]);
 
-  const { strategies: positionStrategies, loading: loadingStrategies } = usePositionStrategiesForFilter();
+  const { strategies: positionStrategies, loading: loadingStrategies, displayStrategyId } =
+    usePositionStrategiesForFilter(selectedPositionStrategy);
 
   const financialAggregation = useFinancialAggregationMode(
     accountId,
@@ -459,7 +460,7 @@ const BehaviorPage: React.FC = () => {
 
           <PositionStrategyFilterField
             className="w-full lg:min-w-0 lg:flex-1 lg:max-w-sm"
-            value={selectedPositionStrategy}
+            value={displayStrategyId}
             onChange={setSelectedPositionStrategy}
             strategies={positionStrategies}
             loading={loadingStrategies}

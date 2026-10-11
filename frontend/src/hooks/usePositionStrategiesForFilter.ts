@@ -1,24 +1,32 @@
 import { useEffect, useState } from 'react';
 import { positionStrategiesService, PositionStrategy } from '../services/positionStrategies';
+import { resolveVisibleStrategyId } from '../utils/journalPositionStrategiesMap';
 
 /**
- * Charge toutes les stratégies de position pour les filtres (même jeu que le dashboard).
+ * Charge les stratégies visibles du filtre.
+ * Si l'identifiant mémorisé n'y figure plus, lit cette seule version pour retrouver
+ * la version visible de la même famille. Cet identifiant d'affichage ne remplace pas
+ * celui envoyé aux statistiques.
  */
-export function usePositionStrategiesForFilter() {
+export function usePositionStrategiesForFilter(selectedStrategyId?: number | null) {
   const [strategies, setStrategies] = useState<PositionStrategy[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [listLoading, setListLoading] = useState(true);
+  const [resolvedLookup, setResolvedLookup] = useState<{
+    id: number;
+    strategy: PositionStrategy | null;
+  } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     const run = async () => {
-      setLoading(true);
+      setListLoading(true);
       try {
         const result = await positionStrategiesService.list();
         if (!cancelled) setStrategies(result);
       } catch {
         if (!cancelled) setStrategies([]);
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) setListLoading(false);
       }
     };
     run();
@@ -27,5 +35,49 @@ export function usePositionStrategiesForFilter() {
     };
   }, []);
 
-  return { strategies, loading };
+  useEffect(() => {
+    if (listLoading) return;
+    if (
+      selectedStrategyId == null
+      || strategies.some((strategy) => strategy.id === selectedStrategyId)
+    ) {
+      return;
+    }
+
+    let cancelled = false;
+    positionStrategiesService.get(selectedStrategyId)
+      .then((strategy) => {
+        if (!cancelled) setResolvedLookup({ id: selectedStrategyId, strategy });
+      })
+      .catch(() => {
+        if (!cancelled) setResolvedLookup({ id: selectedStrategyId, strategy: null });
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [listLoading, selectedStrategyId, strategies]);
+
+  const listed = selectedStrategyId != null
+    && strategies.some((strategy) => strategy.id === selectedStrategyId);
+  const awaitingLookup = !listLoading
+    && selectedStrategyId != null
+    && !listed
+    && resolvedLookup?.id !== selectedStrategyId;
+
+  const knownStrategy = resolvedLookup != null && resolvedLookup.id === selectedStrategyId
+    ? resolvedLookup.strategy
+    : undefined;
+
+  const displayStrategyId = resolveVisibleStrategyId(
+    selectedStrategyId ?? null,
+    strategies,
+    knownStrategy,
+  );
+
+  return {
+    strategies,
+    loading: listLoading || awaitingLookup,
+    displayStrategyId,
+  };
 }

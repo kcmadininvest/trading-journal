@@ -62,7 +62,8 @@ function StatisticsPage() {
     return isStatisticsTabId(saved) ? saved : 'overview';
   });
 
-  const { strategies: positionStrategies, loading: loadingStrategies } = usePositionStrategiesForFilter();
+  const { strategies: positionStrategies, loading: loadingStrategies, displayStrategyId } =
+    usePositionStrategiesForFilter(selectedPositionStrategy);
   const { data: accounts, isLoading: accountsLoading } = useTradingAccounts();
   const {
     statistics: statisticsData,
@@ -389,7 +390,7 @@ function StatisticsPage() {
 
             <PositionStrategyFilterField
               className="w-full lg:min-w-0 lg:flex-1 lg:max-w-sm"
-              value={selectedPositionStrategy}
+              value={displayStrategyId}
               onChange={setSelectedPositionStrategy}
               strategies={positionStrategies}
               loading={loadingStrategies}

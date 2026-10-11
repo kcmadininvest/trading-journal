@@ -275,7 +275,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   const formatNumber = (value: number, digits: number = 2): string => {
     return formatNumberUtil(value, digits, preferences.number_format);
   };
-  const { strategies: positionStrategies, loading: loadingStrategies } = usePositionStrategiesForFilter();
+  const { strategies: positionStrategies, loading: loadingStrategies, displayStrategyId } =
+    usePositionStrategiesForFilter(selectedPositionStrategy);
   
   const windowWidth = useWindowWidth();
   const shouldLoadGlobalStats = windowWidth >= 1536; // 2xl breakpoint
@@ -1592,7 +1593,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
         hideAccountNumber={privacySettings.hideAccountNumber}
         selectedPeriod={selectedPeriod}
         onPeriodChange={setSelectedPeriod}
-        selectedPositionStrategy={selectedPositionStrategy}
+        selectedPositionStrategy={displayStrategyId}
         onPositionStrategyChange={setSelectedPositionStrategy}
         positionStrategies={positionStrategies}
         loadingStrategies={loadingStrategies}

@@ -129,7 +129,8 @@ const AnalyticsPage: React.FC = () => {
   const [selectedAccount, setSelectedAccount] = useState<TradingAccount | null>(null);
   // accountId vient maintenant du contexte global
   const [currencies, setCurrencies] = useState<Currency[]>([]);
-  const { strategies: positionStrategies, loading: loadingStrategies } = usePositionStrategiesForFilter();
+  const { strategies: positionStrategies, loading: loadingStrategies, displayStrategyId } =
+    usePositionStrategiesForFilter(selectedPositionStrategy);
   const windowWidth = useWindowWidth();
 
   const { startDate: summaryStartDate, endDate: summaryEndDate } = usePeriodDateRange({
@@ -1456,7 +1457,7 @@ const AnalyticsPage: React.FC = () => {
 
           <PositionStrategyFilterField
             className="w-full lg:min-w-0 lg:flex-1 lg:max-w-sm"
-            value={selectedPositionStrategy}
+            value={displayStrategyId}
             onChange={setSelectedPositionStrategy}
             strategies={positionStrategies}
             loading={loadingStrategies}
