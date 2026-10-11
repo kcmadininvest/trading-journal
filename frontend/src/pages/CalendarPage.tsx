@@ -11,7 +11,6 @@ import {
   CalendarYearlyResponse,
   CalendarWeeklyYearlyResponse,
 } from '../services/calendar';
-import { tradingAccountsService, TradingAccount } from '../services/tradingAccounts';
 import { currenciesService, Currency } from '../services/currencies';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { PageShell } from '../components/layout';
@@ -19,6 +18,7 @@ import { PnlBasisToggle } from '../components/common/PnlBasisToggle';
 import { TopStepSyncControls } from '../components/accounts/TopStepSyncControls';
 import { usePreferences } from '../hooks/usePreferences';
 import { parsePnlDisplayMode } from '../utils/pnlDisplay';
+import { getCurrencySymbolForCode } from '../utils/numberFormat';
 
 type ViewType = 'daily' | 'monthly';
 
@@ -28,9 +28,14 @@ const CalendarPage: React.FC = () => {
   const pnlDisplayMode = parsePnlDisplayMode(preferences.pnl_display);
   const [viewType, setViewType] = useState<ViewType>('daily');
   const [isLoading, setIsLoading] = useState(true);
-  const { selectedAccountId: selectedAccount, setSelectedAccountId: setSelectedAccount, loading: accountLoading } = useTradingAccount();
+  const {
+    selectedAccountId: selectedAccount,
+    setSelectedAccountId: setSelectedAccount,
+    loading: accountLoading,
+    selectedAccount: selectedAccountData,
+    accounts: tradingAccounts,
+  } = useTradingAccount();
   const hideAccountNumber = useAccountNumberVisibility();
-  const [selectedAccountData, setSelectedAccountData] = useState<TradingAccount | null>(null);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [showImport, setShowImport] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -98,30 +103,35 @@ const CalendarPage: React.FC = () => {
     loadCurrencies();
   }, []);
 
-  // Récupérer le compte sélectionné pour obtenir sa devise
-  useEffect(() => {
-    const loadAccount = async () => {
-      if (!selectedAccount || selectedAccount === 0) {
-        setSelectedAccountData(null);
-        return;
-      }
-      try {
-        const account = await tradingAccountsService.get(selectedAccount);
-        setSelectedAccountData(account);
-      } catch (err) {
-        console.error('Erreur lors du chargement du compte', err);
-        setSelectedAccountData(null);
-      }
-    };
-    loadAccount();
-  }, [selectedAccount]);
-
-  // Obtenir le symbole de devise
-  const currencySymbol = useMemo(() => {
-    if (!selectedAccountData || !currencies.length) return '';
-    const currency = currencies.find(c => c.code === selectedAccountData.currency);
-    return currency?.symbol || '';
+  // Symbole du compte sélectionné : repli si la devise des paramètres est absente du catalogue
+  const accountCurrencySymbol = useMemo(() => {
+    if (!selectedAccountData?.currency || !currencies.length) return '';
+    return getCurrencySymbolForCode(selectedAccountData.currency, currencies);
   }, [selectedAccountData, currencies]);
+
+  // Même règle que les cartes de période du dashboard : devise des paramètres,
+  // sauf agrégat « tous les comptes » mélangeant plusieurs devises.
+  const currencySymbol = useMemo(() => {
+    const specificAccount = selectedAccount != null && selectedAccount > 0;
+    if (!specificAccount) {
+      const activeCodes = Array.from(
+        new Set(
+          tradingAccounts
+            .filter((account) => account.status === 'active' && account.currency)
+            .map((account) => account.currency)
+        )
+      );
+      if (activeCodes.length > 1) return '';
+    }
+    const code = preferences.default_currency || 'USD';
+    return getCurrencySymbolForCode(code, currencies) || accountCurrencySymbol;
+  }, [
+    selectedAccount,
+    tradingAccounts,
+    preferences.default_currency,
+    currencies,
+    accountCurrencySymbol,
+  ]);
 
   // Charger les données quand la vue change ou quand les dates changent
   useEffect(() => {

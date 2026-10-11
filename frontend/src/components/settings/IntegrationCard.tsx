@@ -138,6 +138,8 @@ export const IntegrationCard: React.FC<IntegrationCardProps> = ({
 
   const apiKeyHint = integration.secrets_hint?.api_key;
   const apiKeyLabel = t(`${providerKey}.apiKey`, { defaultValue: t('integrations.apiKey') });
+  const hasPersistedChanges =
+    username.trim() !== (integration.external_username || '').trim() || apiKey.trim().length > 0;
   const showMaskedApiKey =
     integration.configured && !apiKey.trim() && !isEditingApiKey;
   const maskedApiKeyDisplay =
@@ -255,7 +257,7 @@ export const IntegrationCard: React.FC<IntegrationCardProps> = ({
           <button
             type="button"
             onClick={handleSave}
-            disabled={saving || testing || deleting}
+            disabled={saving || testing || deleting || !hasPersistedChanges}
             className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
           >
             {saving ? t('integrations.saving') : t('integrations.save')}
