@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.db.models import Sum, Count, Avg, Max, Min, F, Value, CharField, Q, Case, When, DecimalField, ExpressionWrapper
 from django.db.models.functions import TruncDate, Cast, Coalesce
-from django.db import models
+from django.db import models, transaction
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
 from django.http import Http404
@@ -85,6 +85,7 @@ def get_user_timezone(request):
 
 
 from .models import ImportedTrade, TopStepImportLog, TradeStrategy, DayStrategyCompliance, PositionStrategy, TradingAccount, Currency, TradingGoal, AccountTransaction, AccountDailyMetrics
+from .strategy_family_title import propagate_current_title
 from .pnl_basis import (
     get_trade_pnl_field,
     get_trade_pnl_field_for_request,
@@ -3815,47 +3816,52 @@ class PositionStrategyViewSet(viewsets.ModelViewSet):
     
     def perform_update(self, serializer):
         """Gère la mise à jour avec création de nouvelle version si nécessaire."""
-        current_strategy = self.get_object()
-        create_new_version = serializer.validated_data.pop('create_new_version', True)
-        
-        # Ne créer une nouvelle version que si :
-        # 1. create_new_version est True
-        # 2. La stratégie est actuelle
-        # 3. La stratégie n'est PAS en brouillon (les brouillons se mettent à jour directement)
-        if (create_new_version and 
-            current_strategy.is_current and 
-            current_strategy.status != 'draft'):
-            
-            # Mettre à jour les champs de la stratégie actuelle AVANT de créer la nouvelle version
-            # pour que create_new_version() copie les bonnes valeurs
-            for field, value in serializer.validated_data.items():
-                if field not in ['strategy_content', 'version_notes', 'is_current', 'create_new_version']:
-                    setattr(current_strategy, field, value)
-            
-            # Créer une nouvelle version (qui copiera les champs mis à jour)
-            new_strategy = current_strategy.create_new_version(
-                new_content=serializer.validated_data.get('strategy_content', current_strategy.strategy_content),
-                version_notes=serializer.validated_data.get('version_notes', '')
-            )
-            
-            # Mettre à jour explicitement les champs modifiés sur la nouvelle version
-            # car create_new_version() copie depuis self qui a été refresh_from_db(), écrasant
-            # les modifications en mémoire (description, titre...) faites avant la création de version.
-            update_fields = []
-            for field, value in serializer.validated_data.items():
-                if field not in ['strategy_content', 'version_notes', 'is_current', 'create_new_version']:
-                    if getattr(new_strategy, field) != value:
-                        setattr(new_strategy, field, value)
-                        update_fields.append(field)
-            
-            if update_fields:
-                new_strategy.save(update_fields=update_fields)
-            
-            # Retourner la nouvelle stratégie au lieu de l'ancienne
-            serializer.instance = new_strategy
-        else:
-            # Mise à jour directe (pour les brouillons ou si create_new_version=False)
-            serializer.save()
+        with transaction.atomic():
+            current_strategy = self.get_object()
+            create_new_version = serializer.validated_data.pop('create_new_version', True)
+
+            # Ne créer une nouvelle version que si :
+            # 1. create_new_version est True
+            # 2. La stratégie est actuelle
+            # 3. La stratégie n'est PAS en brouillon (les brouillons se mettent à jour directement)
+            if (create_new_version and
+                current_strategy.is_current and
+                current_strategy.status != 'draft'):
+
+                # Mettre à jour les champs de la stratégie actuelle AVANT de créer la nouvelle version
+                # pour que create_new_version() copie les bonnes valeurs
+                for field, value in serializer.validated_data.items():
+                    if field not in ['strategy_content', 'version_notes', 'is_current', 'create_new_version']:
+                        setattr(current_strategy, field, value)
+
+                # Créer une nouvelle version (qui copiera les champs mis à jour)
+                new_strategy = current_strategy.create_new_version(
+                    new_content=serializer.validated_data.get('strategy_content', current_strategy.strategy_content),
+                    version_notes=serializer.validated_data.get('version_notes', '')
+                )
+
+                # Mettre à jour explicitement les champs modifiés sur la nouvelle version
+                # car create_new_version() copie depuis self qui a été refresh_from_db(), écrasant
+                # les modifications en mémoire (description, titre...) faites avant la création de version.
+                update_fields = []
+                for field, value in serializer.validated_data.items():
+                    if field not in ['strategy_content', 'version_notes', 'is_current', 'create_new_version']:
+                        if getattr(new_strategy, field) != value:
+                            setattr(new_strategy, field, value)
+                            update_fields.append(field)
+
+                if update_fields:
+                    new_strategy.save(update_fields=update_fields)
+
+                # Retourner la nouvelle stratégie au lieu de l'ancienne
+                serializer.instance = new_strategy
+            else:
+                # Mise à jour directe (pour les brouillons ou si create_new_version=False)
+                serializer.save()
+
+            # Le titre est l'identité de la famille. On le recopie depuis la version
+            # courante enregistrée, pas depuis l'objet rechargé avant création de version.
+            propagate_current_title(serializer.instance)
     
     def destroy(self, request, *args, **kwargs):
         """
