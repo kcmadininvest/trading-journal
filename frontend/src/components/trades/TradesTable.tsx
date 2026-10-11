@@ -554,14 +554,20 @@ export const TradesTable: React.FC<TradesTableProps> = ({
                   </td>
                   <td className="px-1 sm:px-2 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm max-w-[180px]">
                     {trade.position_strategy ? (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300" title={trade.position_strategy_title || ''}>
-                        <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                        </svg>
-                        {trade.position_strategy_title && trade.position_strategy_title.length > 20 
-                          ? trade.position_strategy_title.substring(0, 20) + '...' 
-                          : trade.position_strategy_title || t('trades:strategyAssigned', { defaultValue: 'Stratégie' })}
-                      </span>
+                      <Tooltip
+                        content={trade.position_strategy_title || ''}
+                        position="top"
+                        disabled={!trade.position_strategy_title}
+                      >
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300">
+                          <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                          </svg>
+                          {trade.position_strategy_title && trade.position_strategy_title.length > 20
+                            ? trade.position_strategy_title.substring(0, 20) + '...'
+                            : trade.position_strategy_title || t('trades:strategyAssigned', { defaultValue: 'Stratégie' })}
+                        </span>
+                      </Tooltip>
                     ) : (
                       <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300">
                         <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
