@@ -14,12 +14,18 @@ import { openMediaUrl, isAppHostedImageUrl } from '../../utils/mediaUrl';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { parsePnlDisplayMode, getTradeDisplayPnlValue } from '../../utils/pnlDisplay';
 import { JournalQuestionsForm, JournalQuestionsFormHandle } from '../journalQuestions/JournalQuestionsForm';
+import { tradeDayFilters, TradeDayBasis } from '../../utils/tradeDayFilters';
 
 interface StrategyComplianceModalProps {
   open: boolean;
   date: string; // YYYY-MM-DD
   onClose: (saved?: boolean) => void;
   tradingAccount?: number;
+  /**
+   * Rattachement d'un trade au jour : `trade_day` (défaut, pages Stratégies / Questions)
+   * ou `entered_at` = date d'entrée dans le fuseau utilisateur (calendrier).
+   */
+  dayBasis?: TradeDayBasis;
 }
 
 // Liste des clés d'émotions pour le trading
@@ -50,6 +56,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
   date,
   onClose,
   tradingAccount,
+  dayBasis = 'trade_day',
 }) => {
   const { preferences } = usePreferences();
   const pnlMode = parsePnlDisplayMode(preferences.pnl_display);
@@ -105,7 +112,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
     try {
       // Charger les trades
       const tradesResponse = await tradesService.list({
-        trade_day: date,
+        ...tradeDayFilters(date, dayBasis),
         trading_account: tradingAccount ?? undefined,
         page_size: 100,
       });
@@ -205,7 +212,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
       // Charger les stratégies existantes
       let strategies: TradeStrategy[] = [];
       try {
-        strategies = await tradeStrategiesService.byDate(date, tradingAccount ?? undefined);
+        strategies = await tradeStrategiesService.byDate(date, tradingAccount ?? undefined, dayBasis);
       } catch {
         // Pas de stratégies existantes, ce n'est pas grave
       }
@@ -325,7 +332,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
     } finally {
       setIsLoading(false);
     }
-  }, [date, tradingAccount, t, draftKey]);
+  }, [date, tradingAccount, t, draftKey, dayBasis]);
 
   // Sauvegarder automatiquement dans localStorage à chaque modification
   useEffect(() => {

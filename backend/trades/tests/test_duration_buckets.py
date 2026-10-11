@@ -44,7 +44,7 @@ class DurationBucketAggregationTests(APITestCase):
             trade_day=now.date(),
             trade_duration=timedelta(minutes=3),
             pnl=Decimal('100'),
-            net_pnl=Decimal('80'),
+            fees=Decimal('20'),  # net_pnl = pnl - fees (recalculé par save())
         )
         ImportedTrade.objects.create(
             user=self.user,
@@ -60,7 +60,7 @@ class DurationBucketAggregationTests(APITestCase):
             trade_day=now.date(),
             trade_duration=timedelta(minutes=3),
             pnl=Decimal('-50'),
-            net_pnl=Decimal('-60'),
+            fees=Decimal('10'),  # net_pnl = pnl - fees (recalculé par save())
         )
         ImportedTrade.objects.create(
             user=self.user,
@@ -76,7 +76,7 @@ class DurationBucketAggregationTests(APITestCase):
             trade_day=now.date(),
             trade_duration=timedelta(minutes=3),
             pnl=Decimal('0'),
-            net_pnl=Decimal('0'),
+            fees=Decimal('0'),  # net_pnl = pnl - fees (recalculé par save())
         )
         ImportedTrade.objects.create(
             user=self.user,
@@ -92,14 +92,14 @@ class DurationBucketAggregationTests(APITestCase):
             trade_day=now.date(),
             trade_duration=timedelta(minutes=8),
             pnl=Decimal('200'),
-            net_pnl=Decimal('150'),
+            fees=Decimal('50'),  # net_pnl = pnl - fees (recalculé par save())
         )
 
     def test_net_pnl_aggregation_matches_database(self) -> None:
         trades = ImportedTrade.objects.filter(trading_account=self.account).order_by('external_trade_id')
         rows = aggregate_duration_performance(trades, 'net_pnl')
 
-        bucket_5m = next(r for r in rows if r['label'] == '5m')
+        bucket_5m = next(r for r in rows if r['label'] == '< 5m')
         self.assertEqual(bucket_5m['trade_count'], 3)
         self.assertEqual(bucket_5m['winning_count'], 1)
         self.assertEqual(bucket_5m['losing_count'], 1)
@@ -117,8 +117,8 @@ class DurationBucketAggregationTests(APITestCase):
         net_rows = aggregate_duration_performance(trades, 'net_pnl')
         gross_rows = aggregate_duration_performance(trades, 'pnl')
 
-        net_5m = next(r for r in net_rows if r['label'] == '5m')
-        gross_5m = next(r for r in gross_rows if r['label'] == '5m')
+        net_5m = next(r for r in net_rows if r['label'] == '< 5m')
+        gross_5m = next(r for r in gross_rows if r['label'] == '< 5m')
         self.assertAlmostEqual(net_5m['avg_pnl'], (80 - 60 + 0) / 3, places=5)
         self.assertAlmostEqual(gross_5m['avg_pnl'], (100 - 50 + 0) / 3, places=5)
 

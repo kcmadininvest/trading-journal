@@ -31,9 +31,9 @@ class IntegrationsApiTests(TestCase):
         )
         self.client = APIClient()
         self.client.force_authenticate(user=self.user)
-        self.list_url = reverse('integrations:integration_list')
-        self.detail_url = lambda slug: reverse('integrations:integration_detail', kwargs={'provider': slug})
-        self.test_url = lambda slug: reverse('integrations:integration_test_connection', kwargs={'provider': slug})
+        self.list_url = reverse('accounts:integrations:integration_list')
+        self.detail_url = lambda slug: reverse('accounts:integrations:integration_detail', kwargs={'provider': slug})
+        self.test_url = lambda slug: reverse('accounts:integrations:integration_test_connection', kwargs={'provider': slug})
 
     def test_list_includes_topstepx_provider(self) -> None:
         res = self.client.get(self.list_url)
@@ -63,9 +63,10 @@ class IntegrationsApiTests(TestCase):
                 {'external_username': 'trader42', 'api_key': 'new-key-after-rotate'},
                 format='json',
             )
-        self.assertEqual(res.status_code, status.HTTP_200_OK)
-        integration = UserApiIntegration.objects.get(user=self.user, provider='topstepx')
-        secrets = decrypt_json(integration.secrets_encrypted)
+            self.assertEqual(res.status_code, status.HTTP_200_OK)
+            # Les secrets sont rechiffrés avec la nouvelle clé : les relire avec celle-ci
+            integration = UserApiIntegration.objects.get(user=self.user, provider='topstepx')
+            secrets = decrypt_json(integration.secrets_encrypted)
         self.assertEqual(secrets['api_key'], 'new-key-after-rotate')
 
     def test_put_creates_encrypted_integration(self) -> None:

@@ -7,6 +7,8 @@
   "monthly": "Mensuelle",
   "previousMonth": "Mois précédent",
   "nextMonth": "Mois suivant",
+  "goToMonth": "前往{{year}}年{{month}}",
+  "monthTotalExcludesAdjacent": "仅限当前显示的月份：灰色显示的相邻月份日期不计入",
   "previousYear": "Année précédente",
   "nextYear": "Année suivante",
   "today": "今天",

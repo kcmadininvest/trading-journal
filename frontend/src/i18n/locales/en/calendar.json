@@ -7,6 +7,8 @@
   "monthly": "Monthly",
   "previousMonth": "Previous Month",
   "nextMonth": "Next Month",
+  "goToMonth": "Go to {{month}} {{year}}",
+  "monthTotalExcludesAdjacent": "Displayed month only: greyed-out days from adjacent months are not included",
   "previousYear": "Previous Year",
   "nextYear": "Next Year",
   "today": "Today",

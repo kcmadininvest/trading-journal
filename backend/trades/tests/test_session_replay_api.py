@@ -75,7 +75,7 @@ class SessionReplayApiTests(TestCase):
         )
         client = APIClient()
         client.force_authenticate(user=free_user)
-        res = client.get(reverse('session-replay-list'))
+        res = client.get(reverse('trades:session-replay-list'))
         self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_active_dates(self) -> None:
@@ -98,18 +98,18 @@ class SessionReplayApiTests(TestCase):
             trade_day=date(2025, 8, 9),
             pnl=Decimal('10'),
         )
-        url = reverse('session-replay-active-dates')
+        url = reverse('trades:session-replay-active-dates')
         res = self.client.get(url, {'trading_account': self.account.pk})
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertIn('2025-08-09', res.data['dates'])
 
     def test_active_dates_requires_account(self) -> None:
-        url = reverse('session-replay-active-dates')
+        url = reverse('trades:session-replay-active-dates')
         res = self.client.get(url)
         self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_list_sessions(self) -> None:
-        url = reverse('session-replay-list')
+        url = reverse('trades:session-replay-list')
         res = self.client.get(url)
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertGreaterEqual(len(res.data), 1)
@@ -120,20 +120,21 @@ class SessionReplayApiTests(TestCase):
             'contracts': [{'contract_id': 'CON.F.US.GC.Z25', 'label': 'GC', 'bars': []}],
         }
         self.session.save(update_fields=['market_data'])
-        url = reverse('session-replay-detail', kwargs={'pk': self.session.pk})
+        url = reverse('trades:session-replay-detail', kwargs={'pk': self.session.pk})
         res = self.client.get(url)
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(res.data['market_data']['status'], 'ok')
         self.assertEqual(res.data['market_data']['contracts'][0]['label'], 'GC')
 
+    @patch('trades.replay.views.get_valid_session_token', return_value='test-token')
     @patch('trades.replay.views.refresh_session_market_data')
-    def test_refresh_market_data(self, mock_refresh) -> None:
+    def test_refresh_market_data(self, mock_refresh, _mock_token) -> None:
         mock_refresh.return_value = {
             'status': 'ok',
             'fetched_at': timezone.now().isoformat(),
             'contracts': [],
         }
-        url = reverse('session-replay-refresh-market-data', kwargs={'pk': self.session.pk})
+        url = reverse('trades:session-replay-refresh-market-data', kwargs={'pk': self.session.pk})
         res = self.client.post(url, {}, format='json')
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(res.data['market_data']['status'], 'ok')
@@ -146,7 +147,7 @@ class SessionReplayApiTests(TestCase):
             event_count=5,
             insight_count=1,
         )
-        url = reverse('session-replay-build')
+        url = reverse('trades:session-replay-build')
         res = self.client.post(
             url,
             {'trading_account': self.account.pk, 'session_date': '2025-08-10'},
@@ -155,13 +156,13 @@ class SessionReplayApiTests(TestCase):
         self.assertEqual(res.status_code, status.HTTP_200_OK)
 
     def test_apply_journal_creates_entry(self) -> None:
-        url = reverse('session-replay-apply-journal', kwargs={'pk': self.session.pk})
+        url = reverse('trades:session-replay-apply-journal', kwargs={'pk': self.session.pk})
         res = self.client.post(url, {}, format='json')
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertTrue(res.data.get('created'))
 
     def test_apply_journal_uses_client_content_when_provided(self) -> None:
-        url = reverse('session-replay-apply-journal', kwargs={'pk': self.session.pk})
+        url = reverse('trades:session-replay-apply-journal', kwargs={'pk': self.session.pk})
         custom = '# Custom draft\n\n**Account** : TopStep'
         res = self.client.post(url, {'content': custom}, format='json')
         self.assertEqual(res.status_code, status.HTTP_200_OK)

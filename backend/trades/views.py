@@ -879,11 +879,11 @@ class ImportedTradeViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
         if end_date:
             # Convertir la date de fin en datetime timezone-aware
             try:
-                end_datetime = datetime.strptime(end_date, '%Y-%m-%d')  # type: ignore
-                # Utiliser le timezone de l'utilisateur pour la date de fin (23:59:59)
+                end_datetime = datetime.strptime(end_date, '%Y-%m-%d') + timedelta(days=1)  # type: ignore
+                # Utiliser le timezone de l'utilisateur pour la date de fin (00:00:00 du lendemain, exclusif)
                 user_tz = get_user_timezone(self.request)
-                end_datetime = user_tz.localize(end_datetime.replace(hour=23, minute=59, second=59))
-                queryset = queryset.filter(entered_at__lte=end_datetime)
+                end_datetime = user_tz.localize(end_datetime)
+                queryset = queryset.filter(entered_at__lt=end_datetime)
             except ValueError:
                 pass  # Ignorer les dates mal formatées
         if profitable is not None:
@@ -1585,14 +1585,14 @@ class ImportedTradeViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
             else:
                 compliances_by_day[day] = 'unknown'
         
-        # Créer une map des stratégies par jour
+        # Créer une map des stratégies par jour (dans le fuseau de l'utilisateur)
         strategies_by_day = defaultdict(lambda: {'total': 0, 'respected': 0, 'non_respected': 0, 'unknown': 0})
         for strategy in month_strategies:
             try:
-                trade_day = strategy.trade.trade_day
-                if trade_day:
-                    # trade_day est un objet date, on peut accéder directement à .day
-                    day = trade_day.day
+                entered_at = strategy.trade.entered_at
+                if entered_at:
+                    trade_date = entered_at.astimezone(user_tz).date()
+                    day = trade_date.day
                     strategies_by_day[day]['total'] += 1
                     if strategy.strategy_respected is True:
                         strategies_by_day[day]['respected'] += 1
@@ -1603,12 +1603,13 @@ class ImportedTradeViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
             except (AttributeError, TypeError, ValueError):
                 # Ignorer les stratégies avec des données invalides
                 continue
-        
-        # Agréger par jour
+
+        # Agréger par jour (dans le fuseau de l'utilisateur)
         daily_data = defaultdict(lambda: {'pnl': 0.0, 'trade_count': 0})
         for trade in month_trades:
             try:
-                day = trade.entered_at.day
+                trade_date = trade.entered_at.astimezone(user_tz).date()
+                day = trade_date.day
                 daily_data[day]['pnl'] += trade_pnl_as_float(trade, pf)
                 daily_data[day]['trade_count'] += 1
             except (AttributeError, TypeError, ValueError):
@@ -1682,33 +1683,62 @@ class ImportedTradeViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
                     **_tx_fields_for_day(day),
                 })
         
+        # Jours adjacents affichés dans la grille dimanche-samedi (hors du mois demandé)
+        first_day = start_date.astimezone(user_tz).date()
+        last_day = (end_date.astimezone(user_tz).date() - timedelta(days=1))
+        lead = (first_day.weekday() + 1) % 7  # jours du mois précédent dans la première ligne
+        trail = (5 - last_day.weekday()) % 7  # jours du mois suivant dans la dernière ligne
+        adjacent_start = user_tz.localize(datetime.combine(first_day - timedelta(days=lead), datetime.min.time()))
+        adjacent_end = user_tz.localize(datetime.combine(last_day + timedelta(days=trail) + timedelta(days=1), datetime.min.time()))
+        adjacent_trades = trades.filter(
+            entered_at__gte=adjacent_start,
+            entered_at__lt=adjacent_end
+        ).exclude(
+            entered_at__gte=start_date,
+            entered_at__lt=end_date
+        )
+        adjacent_daily = defaultdict(lambda: {'pnl': 0.0, 'trade_count': 0})
+        for trade in adjacent_trades:
+            try:
+                trade_date = trade.entered_at.astimezone(user_tz).date()
+                adjacent_daily[trade_date]['pnl'] += trade_pnl_as_float(trade, pf)
+                adjacent_daily[trade_date]['trade_count'] += 1
+            except (AttributeError, TypeError, ValueError):
+                continue
+        adjacent_result = []
+        for trade_date in sorted(adjacent_daily.keys()):
+            adjacent_result.append({
+                'date': trade_date.isoformat(),
+                'pnl': adjacent_daily[trade_date]['pnl'],
+                'trade_count': adjacent_daily[trade_date]['trade_count'],
+            })
+
         # Agréger par semaine (vraies semaines du calendrier - dimanche à samedi)
         weekly_data = defaultdict(lambda: {'pnl': 0.0, 'trade_count': 0})
-        
+
         # Calculer le premier jour du mois et son jour de la semaine
-        first_day = start_date.astimezone(user_tz).date()
         first_weekday = first_day.weekday()  # 0 = Lundi, 6 = Dimanche
-        
+
         for trade in month_trades:
             # Convertir au timezone utilisateur avant d'extraire la date
             trade_date = trade.entered_at.astimezone(user_tz).date()
             day_of_month = trade_date.day
-            
+
             # Calculer dans quelle semaine du calendrier ce jour tombe
             # Le calendrier commence par dimanche (weekday = 6)
             # Semaine 1: du dimanche précédent le 1er jour jusqu'au samedi suivant
             # Semaine 2: du dimanche suivant jusqu'au samedi suivant, etc.
-            
+
             # Ajuster pour que dimanche soit le début de la semaine
             # Si le 1er jour est dimanche (weekday=6), c'est la semaine 1
             # Si le 1er jour est lundi (weekday=0), on remonte au dimanche précédent
             days_from_start = (trade_date - first_day).days
             adjusted_days = days_from_start + (6 - first_weekday)  # Ajuster pour commencer par dimanche
             week_number = adjusted_days // 7 + 1
-            
+
             weekly_data[week_number]['pnl'] += trade_pnl_as_float(trade, pf)
             weekly_data[week_number]['trade_count'] += 1
-        
+
         # Convertir en format pour le frontend
         weekly_result = []
         for week in range(1, 7):  # Maximum 6 semaines
@@ -1724,12 +1754,13 @@ class ImportedTradeViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
                     'pnl': 0.0,
                     'trade_count': 0
                 })
-        
+
         # Calculer le total mensuel
         monthly_total = sum(trade_pnl_as_float(trade, pf) for trade in month_trades)
-        
+
         return Response({
             'daily_data': daily_result,
+            'adjacent_days': adjacent_result,
             'weekly_data': weekly_result,
             'monthly_total': monthly_total,
             'year': year,
@@ -2386,8 +2417,16 @@ class TradeStrategyViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
             # 🔒 SÉCURITÉ : Filtrer par utilisateur connecté
             strategies = TradeStrategy.objects.filter(  # type: ignore
                 user=self.request.user,  # ✅ Filtre par utilisateur
-                trade__trade_day=date
             ).select_related('trade', 'trade__trading_account')
+            if request.query_params.get('day_basis') == 'entered_at':
+                # Jour = date d'entrée dans le fuseau utilisateur (aligné sur le calendrier PnL)
+                user_tz = get_user_timezone(self.request)
+                trade_date = datetime.strptime(date, '%Y-%m-%d').date()  # type: ignore
+                start_dt = user_tz.localize(datetime.combine(trade_date, datetime.min.time()))
+                end_dt = user_tz.localize(datetime.combine(trade_date + timedelta(days=1), datetime.min.time()))
+                strategies = strategies.filter(trade__entered_at__gte=start_dt, trade__entered_at__lt=end_dt)
+            else:
+                strategies = strategies.filter(trade__trade_day=date)
             
             # Filtrer par compte de trading si spécifié
             trading_account_id = request.query_params.get('trading_account')

@@ -757,8 +757,12 @@ class ImportedTrade(models.Model):
             self.trade_duration = self.exited_at - self.entered_at  # type: ignore
         
         # Calculer le trade_day à partir de entered_at (recalculer à chaque fois pour gérer les modifications)
+        # Jour = date d'entrée dans le fuseau du propriétaire (Paramètres), quel que soit le fuseau
+        # porté par entered_at (UTC à l'import, local en saisie) : cohérent avec le calendrier PnL.
         if self.entered_at:
-            self.trade_day = self.entered_at.date()  # type: ignore
+            from .timezone_utils import get_timezone_for_user, local_trade_day
+            owner = self.user if self.user_id else None  # type: ignore[attr-defined]
+            self.trade_day = local_trade_day(self.entered_at, get_timezone_for_user(owner))  # type: ignore
         
         # Calculer le R:R prévu si stop loss et take profit sont fournis
         if (self.entry_price and self.planned_stop_loss and self.planned_take_profit and self.trade_type):

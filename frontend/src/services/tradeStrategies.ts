@@ -1,6 +1,7 @@
 import { getApiBaseUrl } from '../utils/apiConfig';
 import { authService } from './auth';
 import type { PnlDisplayMode } from '../utils/pnlDisplay';
+import type { TradeDayBasis } from '../utils/tradeDayFilters';
 import { STRATEGY_DRILL_DOWN_PAGE_SIZE } from '../utils/strategyDrillDown';
 
 export interface TradeStrategy {
@@ -200,10 +201,17 @@ class TradeStrategiesService {
   /**
    * Récupère les stratégies pour les trades d'une date spécifique
    */
-  async byDate(date: string, tradingAccount?: number): Promise<TradeStrategy[]> {
+  async byDate(
+    date: string,
+    tradingAccount?: number,
+    dayBasis: TradeDayBasis = 'trade_day'
+  ): Promise<TradeStrategy[]> {
     const params = new URLSearchParams({ date });
     if (tradingAccount) {
       params.append('trading_account', String(tradingAccount));
+    }
+    if (dayBasis === 'entered_at') {
+      params.append('day_basis', 'entered_at');
     }
     const res = await this.fetchWithAuth(
       `${this.BASE_URL}/api/trades/trade-strategies/by_date/?${params}`

@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { DailyCalendarData, WeeklyCalendarData } from '../../services/calendar';
+import { DailyCalendarData, WeeklyCalendarData, AdjacentDayCalendarData } from '../../services/calendar';
 import { Tooltip } from '../ui';
 import { DayTradesModal } from '../trades/DayTradesModal';
 import { StrategyComplianceModal } from '../trades/StrategyComplianceModal';
@@ -7,13 +7,18 @@ import { DailyJournalModal } from '../dailyJournal/DailyJournalModal';
 import { usePreferences } from '../../hooks/usePreferences';
 import { formatCurrencyWithSign } from '../../utils/numberFormat';
 import { getMonthNames, getDayNames, LanguageType } from '../../utils/dateFormat';
+import { buildCalendarWeeks, AdjacentCell } from './calendarGrid';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
+
+// Référence stable pour ne pas invalider le useMemo des semaines à chaque rendu
+const NO_ADJACENT_DAYS: AdjacentDayCalendarData[] = [];
 
 interface DailyViewProps {
   year: number;
   month: number;
   dailyData: DailyCalendarData[];
   weeklyData: WeeklyCalendarData[];
+  adjacentDays?: AdjacentDayCalendarData[];
   monthlyTotal: number;
   onMonthChange: (year: number, month: number) => void;
   viewType?: 'daily' | 'monthly';
@@ -28,6 +33,7 @@ const DailyView: React.FC<DailyViewProps> = ({
   month,
   dailyData,
   weeklyData,
+  adjacentDays = NO_ADJACENT_DAYS,
   monthlyTotal,
   onMonthChange,
   viewType,
@@ -60,21 +66,17 @@ const DailyView: React.FC<DailyViewProps> = ({
   const currentMonth = currentDate.getMonth() + 1;
   const currentDay = currentDate.getDate();
 
-  // Créer un map pour accéder rapidement aux données par jour
-  const dailyDataMap = new Map<number, DailyCalendarData>();
-  dailyData.forEach(day => {
-    const dayNum = parseInt(day.date);
-    dailyDataMap.set(dayNum, day);
-  });
+  // Semaines construites à partir des données du mois et des jours adjacents
+  const weeks = useMemo(
+    () => buildCalendarWeeks({ year, month, dailyData, adjacentDays }),
+    [year, month, dailyData, adjacentDays]
+  );
 
-  // Calculer le premier jour du mois et le nombre de jours
-  const firstDay = new Date(year, month - 1, 1);
-  const lastDay = new Date(year, month, 0);
-  const daysInMonth = lastDay.getDate();
-  const startingDayOfWeek = firstDay.getDay(); // 0 = Dimanche, 6 = Samedi
-
-  // Calculer le PnL total mensuel pour la colonne Samedi
-  const monthlyPnlForSaturday = monthlyTotal;
+  // Nombre de trades du mois affiché (hors jours adjacents)
+  const monthlyTradeCount = useMemo(
+    () => dailyData.reduce((acc, day) => acc + (day.trade_count || 0), 0),
+    [dailyData]
+  );
 
   const formatPnl = (pnl: number): string => {
     if (pnl === 0) return '';
@@ -298,42 +300,103 @@ const DailyView: React.FC<DailyViewProps> = ({
     onMonthChange(currentYear, currentMonth);
   };
 
-  // Fonction pour déterminer si une position dans la grille appartient au mois en cours
-  // Grille fixe : 7 colonnes (jours de la semaine), jusqu'à 6 lignes (semaines)
-  const isDayInCurrentMonth = (gridIndex: number): boolean => {
-    // Le premier jour du mois commence à l'index startingDayOfWeek
-    // Les jours valides vont de startingDayOfWeek à startingDayOfWeek + daysInMonth - 1
-    return gridIndex >= startingDayOfWeek && gridIndex < startingDayOfWeek + daysInMonth;
+  const goToAdjacentMonth = (cellYear: number, cellMonth: number) => {
+    onMonthChange(cellYear, cellMonth);
   };
 
-  // Fonction pour obtenir le numéro du jour à partir de l'index de la grille
-  const getDayNumber = (gridIndex: number): number | null => {
-    if (isDayInCurrentMonth(gridIndex)) {
-      // Le numéro du jour = index - startingDayOfWeek + 1
-      return gridIndex - startingDayOfWeek + 1;
-    }
-    return null;
+  const getAdjacentMonthLabel = (cellYear: number, cellMonth: number): string => {
+    return t('calendar:goToMonth', { month: monthNames[cellMonth - 1], year: cellYear });
   };
 
-  // Calculer le nombre de lignes nécessaires (max 6 semaines)
-  const totalCells = startingDayOfWeek + daysInMonth;
-  const rows = Math.ceil(totalCells / 7);
-  const maxCells = rows * 7; // Nombre total de cellules dans la grille
+  const getAdjacentCellProps = (cell: AdjacentCell) => {
+    const label = getAdjacentMonthLabel(cell.year, cell.month);
+    return {
+      role: 'button' as const,
+      tabIndex: 0,
+      title: label,
+      'aria-label': label,
+      onClick: () => goToAdjacentMonth(cell.year, cell.month),
+      onKeyDown: (e: React.KeyboardEvent<HTMLDivElement>) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          goToAdjacentMonth(cell.year, cell.month);
+        }
+      },
+    };
+  };
 
-  // Créer le tableau final de cellules pour la grille
-  // Chaque cellule contient soit le numéro du jour (si dans le mois), soit null
-  const finalCalendarCells: (number | null)[] = [];
-  for (let i = 0; i < maxCells; i++) {
-    finalCalendarCells.push(getDayNumber(i));
-  }
+  const renderTradeCountBadge = (tradeCount: number, className: string) => (
+    <Tooltip content={`${tradeCount} ${tradeCount > 1 ? t('calendar:trades') : t('calendar:trade')}`} position="top">
+      <span className={className}>{tradeCount}</span>
+    </Tooltip>
+  );
+
+  // Jour du mois précédent/suivant (desktop) : grisé, PnL + badge, clic = navigation vers ce mois
+  const renderDesktopAdjacentCell = (cell: AdjacentCell, colIndex: number) => (
+    <div
+      key={colIndex}
+      {...getAdjacentCellProps(cell)}
+      className={`h-24 sm:h-32 p-1 sm:p-2 cursor-pointer bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors ${
+        colIndex < 6 ? 'border-r border-gray-300 dark:border-gray-600' :
+        colIndex === 6 ? 'border-r-2 border-gray-400 dark:border-gray-500' : ''
+      }`}
+    >
+      <div className="flex flex-col h-full">
+        <div className="flex items-center justify-between mb-1 gap-0.5 sm:gap-1">
+          <span className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400">{cell.day}</span>
+          {cell.tradeCount > 0 && renderTradeCountBadge(
+            cell.tradeCount,
+            'text-[10px] sm:text-xs bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 px-1 sm:px-1.5 py-0.5 rounded-full cursor-help flex-shrink-0'
+          )}
+        </div>
+        {cell.pnl !== 0 && (
+          <div className={`text-xs sm:text-base font-semibold mt-auto ${getPnlColor(cell.pnl)} break-words`}>
+            {formatPnl(cell.pnl)}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  const renderMobileAdjacentDay = (cell: AdjacentCell) => {
+    const date = new Date(cell.year, cell.month - 1, cell.day);
+    const dayOfWeek = date.getDay();
+    const dayName = dayNames[dayOfWeek];
+    const pnl = cell.pnl;
+    const tradeCount = cell.tradeCount;
+
+    return (
+      <div
+        key={cell.date}
+        {...getAdjacentCellProps(cell)}
+        className="px-4 py-3 rounded-lg bg-gray-100 dark:bg-gray-700/50 opacity-70 hover:opacity-100 cursor-pointer"
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <div className="flex flex-col items-center min-w-[50px]">
+              <span className="text-lg font-bold text-gray-500 dark:text-gray-400">{cell.day}</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400 uppercase">{dayName}</span>
+            </div>
+            {pnl !== 0 && (
+              <div className={`text-base font-semibold ${getPnlColor(pnl)} flex-1`}>{formatPnl(pnl)}</div>
+            )}
+            {tradeCount > 0 && renderTradeCountBadge(
+              tradeCount,
+              'text-xs bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 px-2 py-1 rounded-full'
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-6">
       {/* Navigation */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+      <div className="flex flex-col gap-4">
         {/* Sélecteur de vue à gauche */}
         {onViewTypeChange && (
-          <div className="inline-flex rounded-md shadow-sm" role="group">
+          <div className="inline-flex self-start rounded-md shadow-sm" role="group">
             <button
               type="button"
               onClick={() => onViewTypeChange('daily')}
@@ -359,8 +422,10 @@ const DailyView: React.FC<DailyViewProps> = ({
           </div>
         )}
 
+        {/* Bandeau : navigation de période + total du mois (sous le sélecteur de vue) */}
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-6 rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-sm dark:border-gray-700 dark:bg-gray-800">
         {/* Navigation de période centrée */}
-        <div className="flex items-center justify-center flex-1 space-x-2 sm:space-x-4">
+        <div className="flex items-center justify-center space-x-2 sm:space-x-4">
           <button
             onClick={() => navigateMonth('prev')}
             className="p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-400"
@@ -384,15 +449,34 @@ const DailyView: React.FC<DailyViewProps> = ({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </button>
+        </div>
 
-          {(year !== currentYear || month !== currentMonth) && (
-            <button
-              onClick={goToToday}
-              className="ml-2 sm:ml-4 px-3 sm:px-4 py-2 text-xs sm:text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
-            >
-              {t('calendar:today')}
-            </button>
-          )}
+        <div className="hidden sm:block h-8 w-px bg-gray-200 dark:bg-gray-700" aria-hidden />
+
+        {/* Total du mois : hors colonne hebdo, car les semaines incluent les jours des mois voisins */}
+        <div
+          className="flex flex-wrap items-baseline justify-center gap-x-3 gap-y-1"
+          title={t('calendar:monthTotalExcludesAdjacent')}
+        >
+          <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+            {t('calendar:total')}
+          </span>
+          <span className={`text-lg sm:text-xl font-bold ${getPnlColor(monthlyTotal)}`}>
+            {formatCurrencyWithSign(monthlyTotal, currencySymbol, preferences.number_format, 2)}
+          </span>
+          <span className="text-sm text-gray-500 dark:text-gray-400">
+            {monthlyTradeCount} {monthlyTradeCount > 1 ? t('calendar:trades') : t('calendar:trade')}
+          </span>
+        </div>
+
+        {(year !== currentYear || month !== currentMonth) && (
+          <button
+            onClick={goToToday}
+            className="px-3 sm:px-4 py-2 text-xs sm:text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
+          >
+            {t('calendar:today')}
+          </button>
+        )}
         </div>
       </div>
 
@@ -419,39 +503,19 @@ const DailyView: React.FC<DailyViewProps> = ({
 
           {/* Grille du calendrier */}
           <div className="min-w-[640px]">
-            {Array.from({ length: rows }).map((_, rowIndex) => {
-            // Utiliser finalCalendarCells qui garantit que les jours hors du mois sont null
-            const weekCells = finalCalendarCells.slice(rowIndex * 7, (rowIndex + 1) * 7);
-            
-            // Calculer le PnL total pour cette semaine (ligne)
-            // Ne compter que les jours qui font partie du mois en cours (day !== null)
-            const weeklyPnl = weekCells.reduce((acc: number, day) => {
-              if (day !== null) {
-                const dayData = dailyDataMap.get(day);
-                return acc + (dayData?.pnl || 0);
-              }
-              return acc;
-            }, 0);
+            {weeks.map(({ cells: weekCells, weeklyPnl }, rowIndex) => {
+            // weeklyPnl inclut les jours adjacents (mois précédent/suivant) affichés sur la ligne
 
             return (
               <div key={rowIndex} className={`grid grid-cols-8 ${rowIndex > 0 ? 'border-t border-gray-200 dark:border-gray-700' : ''}`}>
-                {weekCells.map((day, colIndex) => {
-                  // Si le jour est null (hors mois), afficher une cellule grisée vide
-                  if (day === null) {
-                    return (
-                      <div
-                        key={colIndex}
-                        className={`h-24 sm:h-32 bg-gray-200 dark:bg-gray-700 ${
-                          colIndex < 6 ? 'border-r border-gray-300 dark:border-gray-600' : 
-                          colIndex === 6 ? 'border-r-2 border-gray-400 dark:border-gray-500' : ''
-                        }`}
-                      />
-                    );
+                {weekCells.map((cell, colIndex) => {
+                  // Jour hors mois : cellule grisée avec PnL/trades, clic = navigation
+                  if (cell.kind === 'adjacent') {
+                    return renderDesktopAdjacentCell(cell, colIndex);
                   }
 
-                  // À ce point, on sait que day n'est pas null et est dans les limites du mois
-                  const dayNumber = day as number;
-                  const dayData = dailyDataMap.get(dayNumber);
+                  const dayNumber = cell.day;
+                  const dayData = cell.data;
                   const pnl = dayData?.pnl || 0;
                   const tradeCount = dayData?.trade_count || 0;
                   const isToday = year === currentYear && month === currentMonth && dayNumber === currentDay;
@@ -587,38 +651,12 @@ const DailyView: React.FC<DailyViewProps> = ({
               </div>
             );
           })}
-
-            {/* Ligne supplémentaire avec le total mensuel */}
-            <div className="grid grid-cols-8 bg-gray-100 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600">
-              <div className="col-span-7 px-2 sm:px-4 py-2 sm:py-3 text-sm sm:text-base font-semibold text-gray-900 dark:text-gray-100 border-r-2 border-gray-400 dark:border-gray-500">
-                {t('calendar:total')} {monthNames[month - 1]} {year}
-              </div>
-              <div className={`px-2 sm:px-4 py-2 sm:py-3 text-sm sm:text-base font-bold text-center ${getPnlColor(monthlyPnlForSaturday)}`}>
-                {formatPnl(monthlyPnlForSaturday)}
-              </div>
-            </div>
           </div>
         </div>
 
         {/* Vue liste pour mobile (moins de md) */}
         <div className="md:hidden space-y-3">
-            {Array.from({ length: rows }).map((_, rowIndex) => {
-              const weekCells = finalCalendarCells.slice(rowIndex * 7, (rowIndex + 1) * 7);
-              
-              // Calculer le PnL total pour cette semaine
-              const weeklyPnl = weekCells.reduce((acc: number, day) => {
-                if (day !== null) {
-                  const dayData = dailyDataMap.get(day);
-                  return acc + (dayData?.pnl || 0);
-                }
-                return acc;
-              }, 0);
-
-              // Filtrer les jours valides (non null) pour cette semaine
-              const validDays = weekCells.filter(day => day !== null) as number[];
-
-              if (validDays.length === 0) return null;
-
+            {weeks.map(({ cells: weekCells, weeklyPnl }, rowIndex) => {
               return (
               <div key={rowIndex} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
                   {/* En-tête de semaine */}
@@ -637,8 +675,13 @@ const DailyView: React.FC<DailyViewProps> = ({
 
                   {/* Liste des jours de la semaine */}
                 <div className="space-y-1 p-2">
-                    {validDays.map((dayNumber) => {
-                      const dayData = dailyDataMap.get(dayNumber);
+                    {weekCells.map((cell) => {
+                      // Liste mobile : jours adjacents affichés seulement s'ils portent des trades
+                      if (cell.kind === 'adjacent') {
+                        return cell.tradeCount > 0 ? renderMobileAdjacentDay(cell) : null;
+                      }
+                      const dayNumber = cell.day;
+                      const dayData = cell.data;
                       const pnl = dayData?.pnl || 0;
                       const tradeCount = dayData?.trade_count || 0;
                       const isToday = year === currentYear && month === currentMonth && dayNumber === currentDay;
@@ -772,20 +815,6 @@ const DailyView: React.FC<DailyViewProps> = ({
                 </div>
               );
             })}
-
-            {/* Total mensuel */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 mt-3">
-            <div className="px-4 py-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                  {t('calendar:total')} {monthNames[month - 1]} {year}
-                </span>
-                <span className={`text-lg font-bold ${getPnlColor(monthlyPnlForSaturday)}`}>
-                  {formatPnl(monthlyPnlForSaturday)}
-                </span>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -807,6 +836,7 @@ const DailyView: React.FC<DailyViewProps> = ({
           date={selectedDateForStrategy}
           onClose={handleCloseStrategyModal}
           tradingAccount={tradingAccount}
+          dayBasis="entered_at"
         />
       )}
 

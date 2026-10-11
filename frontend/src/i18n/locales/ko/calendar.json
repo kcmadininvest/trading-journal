@@ -7,6 +7,8 @@
   "monthly": "Mensuelle",
   "previousMonth": "Mois précédent",
   "nextMonth": "Mois suivant",
+  "goToMonth": "{{year}}년 {{month}}(으)로 이동",
+  "monthTotalExcludesAdjacent": "표시된 월만 해당: 회색으로 표시된 인접 월의 날짜는 포함되지 않습니다",
   "previousYear": "Année précédente",
   "nextYear": "Année suivante",
   "today": "오늘",

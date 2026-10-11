@@ -87,12 +87,13 @@ class BehaviorDisciplineServiceTests(APITestCase):
         daily_data[d7] = {'pnl': 10.0, 'trade_count': 2}
 
         result = compute_revenge_trading(daily_data)
-        # after d1(-), d3(-), d6(-): trade counts 5, 4, 2 -> avg (5+4+2)/3 = 3.67
+        # 7 jours → 6 transitions (jour J-1 → jour J).
+        # Après un jour perdant : d1(-)→d2 = 5, d3(-)→d4 = 2, d6(-)→d7 = 2 → moyenne 9/3 = 3.0
         self.assertEqual(result['days_after_negative'], 3)
-        # after d2(+), d4(+), d5(+), d7(+): 2, 3, 2 -> avg 2.25
-        self.assertEqual(result['days_after_positive'], 4)
-        self.assertAlmostEqual(result['avg_trades_after_negative_day'], 3.67, places=1)
-        self.assertAlmostEqual(result['avg_trades_after_positive_day'], 2.25, places=1)
+        # Après un jour gagnant : d2(+)→d3 = 4, d4(+)→d5 = 3, d5(+)→d6 = 1 → moyenne 8/3 ≈ 2.67
+        self.assertEqual(result['days_after_positive'], 3)
+        self.assertAlmostEqual(result['avg_trades_after_negative_day'], 3.0, places=2)
+        self.assertAlmostEqual(result['avg_trades_after_positive_day'], 2.67, places=2)
         self.assertTrue(result['has_sufficient_data'])
         self.assertIsNotNone(result['pct_increase'])
         self.assertGreater(result['pct_increase'], 0)

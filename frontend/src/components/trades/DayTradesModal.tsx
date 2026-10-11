@@ -8,6 +8,7 @@ import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { DailyJournalEditor } from '../dailyJournal/DailyJournalEditor';
 import { parsePnlDisplayMode, getTradeDisplayPnlValue } from '../../utils/pnlDisplay';
 import { useTopStepSyncEligibility } from '../../hooks/useTopStepSyncEligibility';
+import { tradeDayFilters } from '../../utils/tradeDayFilters';
 
 interface DayTradesModalProps {
   open: boolean;
@@ -39,8 +40,9 @@ export const DayTradesModal: React.FC<DayTradesModalProps> = ({
     setIsLoading(true);
     setError(null);
     try {
+      // Jour = date d'entrée dans le fuseau utilisateur (aligné sur les cases du calendrier)
       const response = await tradesService.list({
-        trade_day: date,
+        ...tradeDayFilters(date, 'entered_at'),
         trading_account: tradingAccount ?? undefined,
         page_size: 100,
       });

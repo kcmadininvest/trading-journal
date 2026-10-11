@@ -220,6 +220,7 @@ const CalendarPage: React.FC = () => {
             month={currentMonth}
             dailyData={dailyData.daily_data}
             weeklyData={dailyData.weekly_data}
+            adjacentDays={dailyData.adjacent_days}
             monthlyTotal={dailyData.monthly_total}
             onMonthChange={handleMonthChange}
             viewType={viewType}

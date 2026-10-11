@@ -2,8 +2,10 @@
 Signaux Django pour la gestion automatique des fichiers media et des métriques.
 """
 
+from django.db import transaction
 from django.db.models.signals import pre_delete, pre_save, post_save, post_delete
 from django.dispatch import receiver
+from accounts.models import UserPreferences
 from .models import TradeStrategy, DayStrategyCompliance, PositionStrategy, ImportedTrade, AccountTransaction
 from .account_balance import refresh_trading_account_balance_after_mutation
 from .image_processor import image_processor
@@ -313,6 +315,38 @@ def refresh_balance_cache_after_transaction_save(sender, instance, **kwargs):
 def refresh_balance_cache_after_transaction_delete(sender, instance, **kwargs):
     if instance.trading_account_id:
         _refresh_balance_cache_for_account(instance.trading_account_id)
+
+
+@receiver(pre_save, sender=UserPreferences)
+def capture_old_timezone(sender, instance, **kwargs):
+    """Mémorise le fuseau précédent pour détecter un changement dans les Paramètres."""
+    instance._old_timezone = (  # type: ignore[attr-defined]
+        UserPreferences.objects.filter(pk=instance.pk).values_list('timezone', flat=True).first()
+        if instance.pk
+        else None
+    )
+
+
+@receiver(post_save, sender=UserPreferences)
+def recalculate_trade_days_after_timezone_change(sender, instance, created, **kwargs):
+    """trade_day suit le fuseau de l'utilisateur : le recalculer quand celui-ci change."""
+    update_fields = kwargs.get('update_fields')
+    if update_fields is not None and 'timezone' not in update_fields:
+        return
+    old_timezone = getattr(instance, '_old_timezone', None)
+    if created or old_timezone is None or old_timezone == instance.timezone:
+        return
+    user_id = instance.user_id
+
+    def _recalculate():
+        from .services.trade_day_service import recalculate_trade_days_for_user
+
+        try:
+            recalculate_trade_days_for_user(user_id)
+        except Exception as e:
+            logger.error('Erreur recalcul trade_day après changement de fuseau (user %s): %s', user_id, e)
+
+    transaction.on_commit(_recalculate)
 
 
 def _invalidate_stats_cache_after_compliance_mutation(user_id: int) -> None:

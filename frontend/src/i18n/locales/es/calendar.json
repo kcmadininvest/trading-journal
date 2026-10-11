@@ -7,6 +7,8 @@
   "monthly": "Mensual",
   "previousMonth": "Mes anterior",
   "nextMonth": "Mes siguiente",
+  "goToMonth": "Ir a {{month}} de {{year}}",
+  "monthTotalExcludesAdjacent": "Solo el mes mostrado: los días en gris de los meses contiguos no se cuentan",
   "previousYear": "Año anterior",
   "nextYear": "Año siguiente",
   "today": "Hoy",

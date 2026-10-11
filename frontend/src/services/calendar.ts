@@ -24,6 +24,12 @@ export interface WeeklyCalendarData {
   trade_count: number;
 }
 
+export interface AdjacentDayCalendarData {
+  date: string; // YYYY-MM-DD
+  pnl: number;
+  trade_count: number;
+}
+
 export interface MonthlyCalendarData {
   month: number;
   pnl: number;
@@ -32,6 +38,7 @@ export interface MonthlyCalendarData {
 
 export interface CalendarMonthResponse {
   daily_data: DailyCalendarData[];
+  adjacent_days?: AdjacentDayCalendarData[];
   weekly_data: WeeklyCalendarData[];
   monthly_total: number;
   year: number;

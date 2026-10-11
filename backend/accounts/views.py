@@ -122,12 +122,10 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                     except Exception as e:  # User.DoesNotExist ou autre exception
                         # Logger l'erreur pour debug mais ne pas faire échouer la connexion
                         import logging
-                        logger = logging.getLogger(__name__)
                         logger.warning(f"Erreur lors de l'enregistrement de l'historique de connexion: {str(e)}")
             except Exception as e:
                 # Ne pas faire échouer la connexion si l'enregistrement de l'historique échoue
                 import logging
-                logger = logging.getLogger(__name__)
                 logger.warning(f"Erreur lors de l'enregistrement de l'historique de connexion: {str(e)}")
         else:
             # Enregistrer les tentatives de connexion échouées avec logging détaillé
@@ -243,7 +241,6 @@ class UserRegistrationView(APIView):
                 except Exception as e:
                     # Logger l'erreur pour le debugging
                     import logging
-                    logger = logging.getLogger(__name__)
                     logger.error(f"Erreur lors de la création du token d'activation ou de l'envoi de l'email: {str(e)}")
                     
                     # Retourner quand même un succès si l'utilisateur a été créé
@@ -259,7 +256,6 @@ class UserRegistrationView(APIView):
         except Exception as e:
             # Logger l'erreur détaillée côté serveur pour le debugging
             import logging
-            logger = logging.getLogger(__name__)
             logger.error(f"Erreur lors de l'inscription: {str(e)}", exc_info=True)
             
             # Retourner une réponse d'erreur JSON générique (ne jamais exposer les détails)
@@ -344,7 +340,6 @@ class AccountActivationView(APIView):
             
         except Exception as e:  # EmailActivationToken.DoesNotExist ou autre exception
             import logging
-            logger = logging.getLogger(__name__)
             # Si c'est DoesNotExist, retourner 404, sinon 500
             if 'DoesNotExist' in str(type(e).__name__):
                 return Response(
@@ -477,7 +472,6 @@ class ResendActivationEmailView(APIView):
                     'message': 'Si ce compte existe et n\'est pas activé, un email d\'activation a été envoyé.'
                 }, status=status.HTTP_200_OK)
             import logging
-            logger = logging.getLogger(__name__)
             logger.error(f"Erreur lors du renvoi de l'email d'activation: {str(e)}")
             return Response(
                 {'error': 'Une erreur est survenue. Veuillez réessayer plus tard.'},
@@ -549,7 +543,6 @@ class UserProfileView(APIView):
         except Exception as e:
             # Logger l'erreur détaillée côté serveur
             import logging
-            logger = logging.getLogger(__name__)
             logger.error(f"Erreur lors de la suppression du compte: {str(e)}", exc_info=True)
             
             # Retourner une erreur générique (ne jamais exposer les détails)
@@ -789,7 +782,6 @@ class AdminUserDetailView(generics.RetrieveUpdateDestroyAPIView):
         except Exception as e:
             # Logger l'erreur détaillée côté serveur
             import logging
-            logger = logging.getLogger(__name__)
             logger.error(f"Erreur lors de la suppression: {str(e)}", exc_info=True)
             
             # Retourner une erreur générique (ne jamais exposer les détails)
@@ -909,7 +901,6 @@ class AdminBulkDeleteUsersView(APIView):
             except Exception as e:
                 # Logger l'erreur détaillée côté serveur
                 import logging
-                logger = logging.getLogger(__name__)
                 logger.error(f"Erreur lors de la suppression de l'utilisateur {user_id}: {str(e)}", exc_info=True)
                 
                 # Ajouter une erreur générique (ne jamais exposer les détails)
@@ -1154,7 +1145,6 @@ class SystemStatsView(APIView):
         except Exception as e:
             # Logger l'erreur détaillée côté serveur
             import logging
-            logger = logging.getLogger(__name__)
             logger.error(f"Erreur lors de la récupération des statistiques: {str(e)}", exc_info=True)
             
             # Retourner une erreur générique (ne jamais exposer les détails)
@@ -1191,7 +1181,6 @@ def create_system_backup(request):
     except Exception as e:
         # Logger l'erreur détaillée côté serveur
         import logging
-        logger = logging.getLogger(__name__)
         logger.error(f"Erreur lors de la création de la sauvegarde: {str(e)}", exc_info=True)
         
         # Retourner une erreur générique (ne jamais exposer les détails)
@@ -1227,7 +1216,6 @@ def clean_system_logs(request):
     except Exception as e:
         # Logger l'erreur détaillée côté serveur
         import logging
-        logger = logging.getLogger(__name__)
         logger.error(f"Erreur lors du nettoyage des logs: {str(e)}", exc_info=True)
         
         # Retourner une erreur générique (ne jamais exposer les détails)
@@ -1263,7 +1251,6 @@ def check_system_integrity(request):
     except Exception as e:
         # Logger l'erreur détaillée côté serveur
         import logging
-        logger = logging.getLogger(__name__)
         logger.error(f"Erreur lors de la vérification d'intégrité: {str(e)}", exc_info=True)
         
         # Retourner une erreur générique (ne jamais exposer les détails)
@@ -1479,7 +1466,6 @@ class ActiveSessionsView(APIView):
         except Exception as e:
             # Logger l'erreur détaillée côté serveur
             import logging
-            logger = logging.getLogger(__name__)
             logger.error(f"Erreur lors de la récupération des sessions: {str(e)}", exc_info=True)
             
             # Retourner une erreur générique (ne jamais exposer les détails)
@@ -1528,7 +1514,6 @@ class ActiveSessionsView(APIView):
         except Exception as e:
             # Logger l'erreur détaillée côté serveur
             import logging
-            logger = logging.getLogger(__name__)
             logger.error(f"Erreur lors de la déconnexion: {str(e)}", exc_info=True)
             
             # Retourner une erreur générique (ne jamais exposer les détails)
@@ -1553,7 +1538,6 @@ class LoginHistoryView(APIView):
         except Exception as e:
             # Logger l'erreur détaillée côté serveur
             import logging
-            logger = logging.getLogger(__name__)
             logger.error(f"Erreur lors de la récupération de l'historique: {str(e)}", exc_info=True)
             
             # Retourner une erreur générique (ne jamais exposer les détails)
@@ -1625,7 +1609,6 @@ class DataExportView(APIView):
             except Exception as e:
                 # Logger l'erreur détaillée côté serveur
                 import logging
-                logger = logging.getLogger(__name__)
                 logger.error(f"Erreur lors de l'export des comptes de trading: {str(e)}", exc_info=True)
                 # Ne pas exposer les détails dans l'export
                 export_data['trading_accounts_error'] = 'Erreur lors de l\'export des comptes de trading'
@@ -1658,7 +1641,6 @@ class DataExportView(APIView):
             except Exception as e:
                 # Logger l'erreur détaillée côté serveur
                 import logging
-                logger = logging.getLogger(__name__)
                 logger.error(f"Erreur lors de l'export des trades: {str(e)}", exc_info=True)
                 # Ne pas exposer les détails dans l'export
                 export_data['trades_error'] = 'Erreur lors de l\'export des trades'
@@ -1690,7 +1672,6 @@ class DataExportView(APIView):
             except Exception as e:
                 # Logger l'erreur détaillée côté serveur
                 import logging
-                logger = logging.getLogger(__name__)
                 logger.error(f"Erreur lors de l'export des stratégies: {str(e)}", exc_info=True)
                 # Ne pas exposer les détails dans l'export
                 export_data['strategies_error'] = 'Erreur lors de l\'export des stratégies'
@@ -1708,7 +1689,6 @@ class DataExportView(APIView):
             except Exception as e:
                 # Logger l'erreur détaillée côté serveur
                 import logging
-                logger = logging.getLogger(__name__)
                 logger.error(f"Erreur lors de l'export de l'historique de connexion: {str(e)}", exc_info=True)
                 # Ne pas exposer les détails dans l'export
                 export_data['login_history_error'] = 'Erreur lors de l\'export de l\'historique de connexion'
@@ -1722,7 +1702,6 @@ class DataExportView(APIView):
         except Exception as e:
             # Logger l'erreur détaillée côté serveur
             import logging
-            logger = logging.getLogger(__name__)
             logger.error(f"Erreur lors de l'export des données: {str(e)}", exc_info=True)
             
             # Retourner une erreur générique (ne jamais exposer les détails)

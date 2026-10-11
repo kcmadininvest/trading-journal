@@ -144,39 +144,45 @@ class PeriodPerformanceComputationTests(APITestCase):
         self.assertEqual(result['year']['prior_calendar_year'], 2025)
         self.assertIsNotNone(result['year']['change_pct'])
 
-    def test_year_counts_trade_day_when_entered_at_differs(self) -> None:
-        """Les imports peuvent avoir entered_at récent mais trade_day historique."""
-        trade_day_2025 = date(2025, 4, 10)
-        entered_2026 = self.tz.localize(datetime(2026, 1, 15, 10, 0, 0))
-        ImportedTrade.objects.create(
+    def test_year_uses_trade_day_in_user_timezone(self) -> None:
+        """
+        trade_day = jour d'entrée dans le fuseau de l'utilisateur (calculé par save()),
+        même si entered_at est fourni en UTC : un trade du 01/01 00:30 heure de Paris
+        (31/12 23:30 UTC) compte dans l'année en cours, pas dans l'année précédente.
+        """
+        prefs = self.user.preferences
+        prefs.timezone = 'Europe/Paris'
+        prefs.save(update_fields=['timezone'])
+        paris = pytz.timezone('Europe/Paris')
+
+        entered_utc = pytz.UTC.localize(datetime(2025, 12, 31, 23, 30, 0))
+        trade = ImportedTrade.objects.create(
             user=self.user,
             trading_account=self.account,
-            external_trade_id='period-import-2025',
+            external_trade_id='period-new-year-midnight',
             contract_name='NQ',
-            entered_at=entered_2026,
-            exited_at=entered_2026 + timedelta(hours=1),
+            entered_at=entered_utc,
+            exited_at=entered_utc + timedelta(minutes=10),
             entry_price=Decimal('100.000000000'),
             exit_price=Decimal('101.000000000'),
             size=Decimal('1.0000'),
             trade_type='Long',
-            trade_day=trade_day_2025,
+            trade_day=date(2025, 12, 31),  # valeur importée (date UTC), recalculée par save()
             pnl=Decimal('200.00'),
-            net_pnl=Decimal('200.00'),
         )
+        self.assertEqual(trade.trade_day, date(2026, 1, 1))
         self._create_trade_on_date(date(2026, 4, 10), '50.00')
 
         qs = ImportedTrade.objects.filter(user=self.user, trading_account=self.account)
         result = compute_period_performance(
             qs,
-            self.tz,
+            paris,
             Decimal('10000'),
             'net_pnl',
-            reference_now=self.ref,
+            reference_now=paris.localize(datetime(2026, 5, 16, 12, 0, 0)),
         )
 
-        self.assertEqual(result['year']['pnl'], 50.0)
-        self.assertEqual(result['year']['previous_pnl'], 200.0)
-        self.assertIsNotNone(result['year']['change_pct'])
+        self.assertEqual(result['year']['pnl'], 250.0)
 
     def test_change_pct_none_when_previous_zero(self) -> None:
         self._create_trade(0, '25.00')
