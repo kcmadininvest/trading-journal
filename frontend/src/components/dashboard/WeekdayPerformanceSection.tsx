@@ -110,6 +110,8 @@ export function WeekdayPerformanceSection({
   const zeroAxisGridColor = isDark ? 'rgba(255, 255, 255, 0.35)' : chartColors.textSecondary;
 
   const hasTrades = weekdayPerformanceData.some((d) => d.trade_count > 0);
+  const winRateLabelNeedsHeadroom =
+    windowWidth >= 640 && weekdayPerformanceData.some((d) => d.win_rate >= 92);
 
   const weekdayChartData = useMemo(() => {
     if (weekdayPerformanceData.length === 0) return null;
@@ -412,6 +414,7 @@ export function WeekdayPerformanceSection({
           options={{
             responsive: true,
             maintainAspectRatio: false,
+            ...(winRateLabelNeedsHeadroom ? { layout: { padding: { top: 24 } } } : {}),
             plugins: {
               legend: { display: false },
               tooltip: {
@@ -443,7 +446,8 @@ export function WeekdayPerformanceSection({
                   const actualValue = context.dataset.data[context.dataIndex] ?? 0;
                   return `${formatNumber(actualValue, 1)}%`;
                 },
-                clamp: true,
+                clamp: !winRateLabelNeedsHeadroom,
+                ...(winRateLabelNeedsHeadroom ? { clip: false } : {}),
               },
             },
             scales: {
