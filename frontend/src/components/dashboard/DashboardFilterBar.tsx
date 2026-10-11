@@ -119,7 +119,7 @@ export const DashboardFilterBar: React.FC<DashboardFilterBarProps> = ({
               />
             </div>
 
-            <div className={`min-w-0 ${PILL_WIDTH}`}>
+            <div className="shrink-0">
               <PnlBasisToggle variant="default" />
             </div>
           </div>

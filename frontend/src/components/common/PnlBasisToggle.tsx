@@ -31,7 +31,7 @@ export interface PnlBasisToggleProps {
  * Cadre unique (titre in-field par défaut) : aligné sur PeriodSelector / PositionStrategyPillBar.
  */
 const filterRowFrameClass =
-  'h-10 w-full min-w-0 inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 text-sm font-medium shadow-sm dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100';
+  'h-10 w-max max-w-full min-w-0 inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 text-sm font-medium shadow-sm dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100';
 
 export const PnlBasisToggle: React.FC<PnlBasisToggleProps> = ({
   persistImmediately = true,
@@ -74,7 +74,7 @@ export const PnlBasisToggle: React.FC<PnlBasisToggleProps> = ({
   const isBand = variant === 'band';
   const isOnDarkBand = isHeader || isBand;
   const help = t('settings:pnlDisplayHelp');
-  const title = t('settings:pnlDisplayTitle');
+  const title = t(isGross ? 'common:pnlFilterGross' : 'common:pnlFilterNet');
 
   const trackClass = isOnDarkBand
     ? `relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-blue-950 disabled:opacity-50 disabled:cursor-not-allowed ${
@@ -122,16 +122,16 @@ export const PnlBasisToggle: React.FC<PnlBasisToggleProps> = ({
 
   if (isBand && labelPosition === 'inside') {
     return (
-      <div className={`min-w-0 ${className}`.trim()}>
+      <div className={`w-max max-w-full shrink-0 ${className}`.trim()}>
         <div
-          className={`${bandFrameClass} ${hideLabel ? 'justify-end' : 'justify-between sm:justify-start'}`}
+          className={`${bandFrameClass} !w-max max-w-full ${hideLabel ? 'justify-end' : 'justify-start'}`}
           role="group"
           aria-label={title}
         >
           {!hideLabel && (
             <TruncatingTooltipText
               text={title}
-              wrapperClassName="min-w-0 flex-1"
+              wrapperClassName="min-w-0 shrink"
               className="block min-w-0 max-w-full truncate pr-2 text-white/80"
             />
           )}
@@ -143,16 +143,16 @@ export const PnlBasisToggle: React.FC<PnlBasisToggleProps> = ({
 
   if (labelPosition === 'inside') {
     return (
-      <div className={`min-w-0 ${className}`.trim()}>
+      <div className={`w-max max-w-full shrink-0 ${className}`.trim()}>
         <div
-          className={`${filterRowFrameClass} ${hideLabel ? 'justify-end' : 'justify-between sm:justify-start'}`}
+          className={`${filterRowFrameClass} ${hideLabel ? 'justify-end' : 'justify-start'}`}
           role="group"
           aria-label={title}
         >
           {!hideLabel && (
             <TruncatingTooltipText
               text={title}
-              wrapperClassName="min-w-0 flex-1"
+              wrapperClassName="min-w-0 shrink"
               className="block min-w-0 max-w-full truncate pr-2 text-gray-900 dark:text-gray-100"
             />
           )}

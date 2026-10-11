@@ -157,5 +157,7 @@
   },
   "pnlNetShort": "순",
   "pnlGrossShort": "총",
+  "pnlFilterNet": "순손익",
+  "pnlFilterGross": "총손익",
   "pnlBasisToggleAria": "손익 표시: 순 또는 총"
 }

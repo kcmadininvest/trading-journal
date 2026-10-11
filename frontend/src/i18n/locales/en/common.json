@@ -189,6 +189,8 @@
   },
   "pnlNetShort": "Net",
   "pnlGrossShort": "Gross",
+  "pnlFilterNet": "Net PnL",
+  "pnlFilterGross": "Gross PnL",
   "pnlBasisToggleAria": "PnL amount display: net or gross",
   "dstChange": {
     "spring": "Daylight Saving Time",

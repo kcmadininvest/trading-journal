@@ -184,6 +184,8 @@
   },
   "pnlNetShort": "Neto",
   "pnlGrossShort": "Bruto",
+  "pnlFilterNet": "PnL neto",
+  "pnlFilterGross": "PnL bruto",
   "pnlBasisToggleAria": "Visualización del PnL: neto o bruto",
   "dstChange": {
     "spring": "Horario de verano",

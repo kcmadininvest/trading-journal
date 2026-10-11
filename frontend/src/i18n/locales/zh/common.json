@@ -157,5 +157,7 @@
   },
   "pnlNetShort": "净",
   "pnlGrossShort": "毛",
+  "pnlFilterNet": "净盈亏",
+  "pnlFilterGross": "毛盈亏",
   "pnlBasisToggleAria": "盈亏显示：净或毛"
 }

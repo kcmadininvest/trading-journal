@@ -157,5 +157,7 @@
   },
   "pnlNetShort": "純",
   "pnlGrossShort": "総",
+  "pnlFilterNet": "純損益",
+  "pnlFilterGross": "総損益",
   "pnlBasisToggleAria": "損益の表示：純損益または総損益"
 }

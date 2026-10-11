@@ -188,6 +188,8 @@
   },
   "pnlNetShort": "Net",
   "pnlGrossShort": "Brut",
+  "pnlFilterNet": "PnL net",
+  "pnlFilterGross": "PnL brut",
   "pnlBasisToggleAria": "Affichage des montants PnL : net ou brut",
   "dstChange": {
     "spring": "Heure d'été",

@@ -186,6 +186,8 @@
   },
   "pnlNetShort": "Netto",
   "pnlGrossShort": "Brutto",
+  "pnlFilterNet": "PnL netto",
+  "pnlFilterGross": "PnL brutto",
   "pnlBasisToggleAria": "PnL-Anzeige: netto oder brutto",
   "dstChange": {
     "spring": "Sommerzeit",
