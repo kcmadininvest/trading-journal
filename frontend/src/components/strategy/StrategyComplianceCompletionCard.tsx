@@ -8,8 +8,7 @@ import { MemoizedDoughnut as Doughnut } from './charts/MemoizedCharts';
 import {
   CHART_FONT_FAMILY,
   buildChartTooltipPlugin,
-  STRATEGY_INSIGHTS_COMPACT_SHELL_CLASS,
-  STRATEGY_INSIGHTS_STACKED_CARD_CLASS,
+  STRATEGY_CHART_SECTION_SHELL_CLASS,
   type ChartColors,
 } from '../../utils/chartConfig';
 import type { ComplianceCompletionStats } from '../../hooks/useStrategyDisciplineInsights';
@@ -49,7 +48,7 @@ export const StrategyComplianceCompletionCard: React.FC<StrategyComplianceComple
       () => ({
         responsive: true,
         maintainAspectRatio: false,
-        cutout: '62%',
+        cutout: '58%',
         plugins: {
           legend: {
             display: false,
@@ -111,7 +110,7 @@ export const StrategyComplianceCompletionCard: React.FC<StrategyComplianceComple
 
     return (
       <div
-        className={`${STRATEGY_INSIGHTS_COMPACT_SHELL_CLASS} ${STRATEGY_INSIGHTS_STACKED_CARD_CLASS} ${className}`}
+        className={`${STRATEGY_CHART_SECTION_SHELL_CLASS} flex h-full min-h-0 flex-col ${className}`}
       >
         <div className="flex items-center gap-1.5 mb-0.5 shrink-0">
           <h3 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-gray-100">
@@ -124,31 +123,11 @@ export const StrategyComplianceCompletionCard: React.FC<StrategyComplianceComple
         </p>
 
         {chartData ? (
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden justify-center">
-            <div className="flex min-h-0 flex-1 items-center gap-2 sm:gap-3">
-              <div
-                className={`flex min-w-0 flex-1 flex-col items-start justify-center gap-1 sm:gap-1.5 ${textSizeClass}`}
-              >
-                <span className="text-left text-gray-500 dark:text-gray-400">
-                  {t('strategies:insights.completionTradeRate')}
-                </span>
-                <span className="text-left text-gray-500 dark:text-gray-400">
-                  {t('strategies:insights.completionDayRate')}
-                </span>
-                <span className="text-left text-gray-500 dark:text-gray-400">
-                  {t('strategies:insights.completionTradeCounts')}
-                </span>
-                <span className="text-left text-gray-500 dark:text-gray-400">
-                  {t('strategies:insights.completionDayCounts')}
-                </span>
-              </div>
-              <div className="flex shrink-0 items-center justify-center">
-                <div
-                  className={`relative ${
-                    isMobile ? 'h-[6.25rem] w-[6.25rem]' : 'h-[6.75rem] w-[6.75rem] sm:h-[7.75rem] sm:w-[7.75rem]'
-                  }`}
-                >
-                  <LazyChart height="h-full">
+          <>
+            <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_minmax(8rem,1.1fr)_minmax(0,1fr)] grid-rows-4 items-center gap-x-2 sm:gap-x-3 lg:grid-cols-[minmax(0,1fr)_minmax(11rem,1.35fr)_minmax(0,1fr)]">
+              <div className="col-start-2 row-span-4 row-start-1 flex h-full min-h-0 w-full min-w-0 items-center justify-center [container-type:size]">
+                <div className="relative aspect-square h-[min(100cqw,100cqh)] w-[min(100cqw,100cqh)]">
+                  <LazyChart height="absolute inset-0 h-full w-full">
                     <Doughnut
                       data={{
                         labels: chartData.labels,
@@ -172,45 +151,62 @@ export const StrategyComplianceCompletionCard: React.FC<StrategyComplianceComple
                   </LazyChart>
                 </div>
               </div>
-              <div
-                className={`flex min-w-0 flex-1 flex-col items-end justify-center gap-1 sm:gap-1.5 tabular-nums ${textSizeClass}`}
+
+              <span className={`col-start-1 row-start-1 text-left text-gray-500 dark:text-gray-400 ${textSizeClass}`}>
+                {t('strategies:insights.completionTradeRate')}
+              </span>
+              <span className={`col-start-1 row-start-2 text-left text-gray-500 dark:text-gray-400 ${textSizeClass}`}>
+                {t('strategies:insights.completionDayRate')}
+              </span>
+              <span className={`col-start-1 row-start-3 text-left text-gray-500 dark:text-gray-400 ${textSizeClass}`}>
+                {t('strategies:insights.completionTradeCounts')}
+              </span>
+              <span className={`col-start-1 row-start-4 text-left text-gray-500 dark:text-gray-400 ${textSizeClass}`}>
+                {t('strategies:insights.completionDayCounts')}
+              </span>
+
+              <span
+                className={`col-start-3 row-start-1 text-right font-semibold tabular-nums text-gray-900 dark:text-gray-100 ${textSizeClass}`}
               >
-                <span className="text-right font-semibold text-gray-900 dark:text-gray-100">
-                  {tradeRate != null ? `${formatNumber(tradeRate, 1)}%` : '—'}
+                {tradeRate != null ? `${formatNumber(tradeRate, 1)}%` : '—'}
+              </span>
+              <span
+                className={`col-start-3 row-start-2 text-right font-semibold tabular-nums text-gray-900 dark:text-gray-100 ${textSizeClass}`}
+              >
+                {dayRate != null ? `${formatNumber(dayRate, 1)}%` : '—'}
+              </span>
+              {onDrillDown ? (
+                <button
+                  type="button"
+                  className={`col-start-3 row-start-3 text-right text-gray-700 hover:underline cursor-pointer tabular-nums dark:text-gray-300 ${textSizeClass}`}
+                  onClick={() =>
+                    openDrill(
+                      { strategy_respected__isnull: false },
+                      'strategies:drillDown.evaluatedTrades'
+                    )
+                  }
+                >
+                  {formatNumber(stats.evaluated_trades, 0)} / {formatNumber(stats.total_trades, 0)}
+                </button>
+              ) : (
+                <span
+                  className={`col-start-3 row-start-3 text-right tabular-nums text-gray-700 dark:text-gray-300 ${textSizeClass}`}
+                >
+                  {formatNumber(stats.evaluated_trades, 0)} / {formatNumber(stats.total_trades, 0)}
                 </span>
-                <span className="text-right font-semibold text-gray-900 dark:text-gray-100">
-                  {dayRate != null ? `${formatNumber(dayRate, 1)}%` : '—'}
-                </span>
-                {onDrillDown ? (
-                  <button
-                    type="button"
-                    className="text-right text-gray-700 dark:text-gray-300 hover:underline cursor-pointer tabular-nums"
-                    onClick={() =>
-                      openDrill(
-                        { strategy_respected__isnull: false },
-                        'strategies:drillDown.evaluatedTrades'
-                      )
-                    }
-                  >
-                    {formatNumber(stats.evaluated_trades, 0)} / {formatNumber(stats.total_trades, 0)}
-                  </button>
-                ) : (
-                  <span className="text-right text-gray-700 dark:text-gray-300">
-                    {formatNumber(stats.evaluated_trades, 0)} / {formatNumber(stats.total_trades, 0)}
-                  </span>
-                )}
-                <span className="text-right text-gray-700 dark:text-gray-300">
-                  {formatNumber(stats.days_fully_evaluated, 0)} /{' '}
-                  {formatNumber(stats.total_trading_days, 0)}
-                </span>
-              </div>
+              )}
+              <span
+                className={`col-start-3 row-start-4 text-right tabular-nums text-gray-700 dark:text-gray-300 ${textSizeClass}`}
+              >
+                {formatNumber(stats.days_fully_evaluated, 0)} / {formatNumber(stats.total_trading_days, 0)}
+              </span>
             </div>
 
             {showWarning && (
               onDrillDown && stats.unevaluated_trades > 0 ? (
                 <button
                   type="button"
-                  className="mt-1 pt-1 border-t border-gray-200 dark:border-gray-700 w-full text-left text-xs leading-snug text-amber-700 dark:text-amber-400 shrink-0 line-clamp-2 hover:underline"
+                  className="mt-1 shrink-0 border-t border-gray-200 pt-1 text-left text-xs leading-snug text-amber-700 hover:underline dark:border-gray-700 dark:text-amber-400"
                   onClick={() =>
                     openDrill(
                       { strategy_respected__isnull: true },
@@ -223,14 +219,14 @@ export const StrategyComplianceCompletionCard: React.FC<StrategyComplianceComple
                     .replace('__DAYS__', formatNumber(stats.days_partially_unevaluated, 0))}
                 </button>
               ) : (
-                <p className="mt-1 pt-1 border-t border-gray-200 dark:border-gray-700 text-xs leading-snug text-amber-700 dark:text-amber-400 shrink-0 line-clamp-2">
+                <p className="mt-1 shrink-0 border-t border-gray-200 pt-1 text-xs leading-snug text-amber-700 dark:border-gray-700 dark:text-amber-400">
                   {t('strategies:insights.completionWarning')
                     .replace('__UNEVALUATED__', formatNumber(stats.unevaluated_trades, 0))
                     .replace('__DAYS__', formatNumber(stats.days_partially_unevaluated, 0))}
                 </p>
               )
             )}
-          </div>
+          </>
         ) : (
           <p className="text-xs text-gray-600 dark:text-gray-400 flex-1 flex items-center justify-center">
             {t('strategies:insights.completionNoTrades')}

@@ -613,10 +613,13 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
           return trade;
         }
         // Dupliquer les données sur les autres trades
+        const displayPnl = getTradeDisplayPnlValue(trade, pnlMode);
+        const copyGainIf =
+          dataToDuplicate.strategyRespected === false && displayPnl != null && displayPnl <= 0;
         return {
           ...trade,
           strategyRespected: dataToDuplicate.strategyRespected,
-          gainIfStrategyRespected: dataToDuplicate.gainIfStrategyRespected,
+          gainIfStrategyRespected: copyGainIf ? dataToDuplicate.gainIfStrategyRespected : null,
           dominantEmotions: [...dataToDuplicate.dominantEmotions],
           screenshotUrl: dataToDuplicate.screenshotUrl,
           screenshotThumbnailUrl: dataToDuplicate.screenshotThumbnailUrl,

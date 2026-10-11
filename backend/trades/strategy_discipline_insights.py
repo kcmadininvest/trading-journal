@@ -2,7 +2,10 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from decimal import Decimal
 from typing import Any, Dict, Iterable, List
+
+from django.db.models import Q, Sum
 
 
 def aggregate_compliance_completion_stats(queryset) -> Dict[str, Any]:
@@ -63,17 +66,70 @@ def _emotion_distribution(strategies: Iterable[Any]) -> List[Dict[str, Any]]:
     ]
 
 
-def aggregate_gain_if_strategy_stats(queryset) -> Dict[str, Any]:
+def aggregate_gain_if_strategy_stats(queryset, tjf: str = "trade__net_pnl") -> Dict[str, Any]:
     """
-    Statistiques « gain si stratégie respectée » pour les trades non respectés.
+    Statistiques et coût financier des écarts de stratégie (trades non respectés).
     """
+    total_trades_in_period = queryset.count()
     not_respected = queryset.filter(strategy_respected=False)
     total_not_respected = not_respected.count()
-    answered = not_respected.exclude(gain_if_strategy_respected__isnull=True)
-    would_have_won = answered.filter(gain_if_strategy_respected=True).count()
-    would_have_lost = answered.filter(gain_if_strategy_respected=False).count()
+    not_respected_rate_pct = (
+        round(total_not_respected / total_trades_in_period * 100, 2)
+        if total_trades_in_period > 0
+        else 0.0
+    )
+
+    if hasattr(queryset, "aggregate") and hasattr(queryset, "model"):
+        pnl_agg = not_respected.aggregate(
+            total=Sum(tjf),
+            losing_pnl=Sum(tjf, filter=Q(**{f"{tjf}__lte": 0})),
+            winning_pnl=Sum(tjf, filter=Q(**{f"{tjf}__gt": 0})),
+            would_have_won_pnl=Sum(tjf, filter=Q(**{f"{tjf}__lte": 0, "gain_if_strategy_respected": True})),
+            would_have_lost_pnl=Sum(tjf, filter=Q(**{f"{tjf}__lte": 0, "gain_if_strategy_respected": False})),
+        )
+        total_pnl = float(pnl_agg["total"] or Decimal("0"))
+        losing_trades_pnl = float(pnl_agg["losing_pnl"] or Decimal("0"))
+        winning_trades_pnl = float(pnl_agg["winning_pnl"] or Decimal("0"))
+        would_have_won_pnl = float(pnl_agg["would_have_won_pnl"] or Decimal("0"))
+        would_have_lost_pnl = float(pnl_agg["would_have_lost_pnl"] or Decimal("0"))
+
+        losing_trades_count = not_respected.filter(**{f"{tjf}__lte": 0}).count()
+        winning_trades_count = not_respected.filter(**{f"{tjf}__gt": 0}).count()
+        would_have_won = not_respected.filter(**{f"{tjf}__lte": 0, "gain_if_strategy_respected": True}).count()
+        would_have_lost = not_respected.filter(**{f"{tjf}__lte": 0, "gain_if_strategy_respected": False}).count()
+    else:
+        total_pnl = 0.0
+        losing_trades_pnl = 0.0
+        winning_trades_pnl = 0.0
+        would_have_won_pnl = 0.0
+        would_have_lost_pnl = 0.0
+        losing_trades_count = 0
+        winning_trades_count = 0
+        would_have_won = 0
+        would_have_lost = 0
+
+        for item in not_respected:
+            val = getattr(item, "pnl", None)
+            if val is None and hasattr(item, "trade"):
+                val = getattr(item.trade, "net_pnl", getattr(item.trade, "pnl", 0.0))
+            pnl = float(val or 0.0)
+            total_pnl += pnl
+            if pnl <= 0:
+                losing_trades_count += 1
+                losing_trades_pnl += pnl
+                if item.gain_if_strategy_respected is True:
+                    would_have_won += 1
+                    would_have_won_pnl += pnl
+                elif item.gain_if_strategy_respected is False:
+                    would_have_lost += 1
+                    would_have_lost_pnl += pnl
+            else:
+                winning_trades_count += 1
+                winning_trades_pnl += pnl
+
+    avg_pnl = round(total_pnl / total_not_respected, 2) if total_not_respected > 0 else 0.0
     total_answered = would_have_won + would_have_lost
-    unanswered = total_not_respected - total_answered
+    unanswered = max(0, losing_trades_count - total_answered)
 
     would_have_won_pct = (
         round(would_have_won / total_answered * 100, 2) if total_answered > 0 else None
@@ -83,11 +139,21 @@ def aggregate_gain_if_strategy_stats(queryset) -> Dict[str, Any]:
     )
 
     return {
+        "total_trades_in_period": total_trades_in_period,
         "total_not_respected": total_not_respected,
+        "not_respected_rate_pct": not_respected_rate_pct,
+        "total_pnl_not_respected": round(total_pnl, 2),
+        "avg_pnl_not_respected": avg_pnl,
+        "losing_trades_count": losing_trades_count,
+        "losing_trades_pnl": round(losing_trades_pnl, 2),
+        "winning_trades_count": winning_trades_count,
+        "winning_trades_pnl": round(winning_trades_pnl, 2),
         "total_answered": total_answered,
         "unanswered": unanswered,
         "would_have_won": would_have_won,
+        "would_have_won_pnl": round(would_have_won_pnl, 2),
         "would_have_lost": would_have_lost,
+        "would_have_lost_pnl": round(would_have_lost_pnl, 2),
         "would_have_won_pct": would_have_won_pct,
         "would_have_lost_pct": would_have_lost_pct,
     }

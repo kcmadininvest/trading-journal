@@ -18,6 +18,8 @@ export interface StrategyDrillDownFilters {
   end_date?: string;
   trade_weekday?: number;
   winning_session?: 'tp1' | 'tp2_plus' | 'no_tp';
+  /** Signe du PnL affiché (perte = ≤ 0, gain = > 0), aligné sur les stats d'écarts. */
+  pnl_outcome?: 'loss' | 'win';
 }
 
 export type StrategyChartDrillDownPayload =
@@ -108,6 +110,9 @@ export function mergeDrillDownQuery(
   }
   if (filters.winning_session) {
     params.winning_session = filters.winning_session;
+  }
+  if (filters.pnl_outcome) {
+    params.pnl_outcome = filters.pnl_outcome;
   }
   return params;
 }

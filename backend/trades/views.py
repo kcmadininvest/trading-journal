@@ -2300,6 +2300,7 @@ class TradeStrategyViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
         dominant_emotion = self.request.query_params.get('dominant_emotion', None)
         trade_weekday = self.request.query_params.get('trade_weekday', None)
         winning_session = self.request.query_params.get('winning_session', None)
+        pnl_outcome = self.request.query_params.get('pnl_outcome', None)
         trading_account_id = self.request.query_params.get('trading_account', None)
         position_strategy_id = self.request.query_params.get('position_strategy', None)
         
@@ -2340,6 +2341,12 @@ class TradeStrategyViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
                 queryset = queryset.filter(gain_if_strategy_respected__isnull=True)
             elif gain_if_isnull.lower() == 'false':
                 queryset = queryset.filter(gain_if_strategy_respected__isnull=False)
+        if pnl_outcome in ('loss', 'win'):
+            pnl_field = f"trade__{self.get_pnl_field()}"
+            if pnl_outcome == 'loss':
+                queryset = queryset.filter(**{f"{pnl_field}__lte": 0})
+            else:
+                queryset = queryset.filter(**{f"{pnl_field}__gt": 0})
         if dominant_emotion:
             queryset = queryset.filter(dominant_emotions__contains=[dominant_emotion])
         if trade_weekday is not None:
@@ -2883,7 +2890,7 @@ class TradeStrategyViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
             for emotion, count in sorted(emotion_counts.items(), key=lambda x: x[1], reverse=True)
         ]
 
-        gain_if_strategy_stats = aggregate_gain_if_strategy_stats(queryset)
+        gain_if_strategy_stats = aggregate_gain_if_strategy_stats(queryset, tjf=tjf)
         emotions_by_respect = aggregate_emotions_by_respect(queryset)
         compliance_completion_stats = aggregate_compliance_completion_stats(queryset)
         

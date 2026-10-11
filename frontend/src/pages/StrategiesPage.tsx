@@ -10,11 +10,15 @@ import { StrategyStatsTradingMetricsCard } from '../components/strategy/Strategy
 import { StrategyStatsDisciplineOverviewCard } from '../components/strategy/StrategyStatsDisciplineOverviewCard';
 import { StrategyComplianceTrendCard } from '../components/strategy/StrategyComplianceTrendCard';
 import { StrategyGainIfRespectedCard } from '../components/strategy/StrategyGainIfRespectedCard';
+import { StrategyDeviationLossMixCard } from '../components/strategy/StrategyDeviationLossMixCard';
 import { StrategyComplianceCompletionCard } from '../components/strategy/StrategyComplianceCompletionCard';
 import { StrategyEmotionsByRespectChart } from '../components/strategy/StrategyEmotionsByRespectChart';
 import { StrategyDrillDownModal } from '../components/strategy/StrategyDrillDownModal';
 import { StrategyComplianceModal } from '../components/trades/StrategyComplianceModal';
-import { useStrategyDisciplineInsights } from '../hooks/useStrategyDisciplineInsights';
+import {
+  hasDeviationLossMix,
+  useStrategyDisciplineInsights,
+} from '../hooks/useStrategyDisciplineInsights';
 import { TabsFilter } from '../components/common/TabsFilter';
 import { tradeStrategiesService } from '../services/tradeStrategies';
 import { tradingAccountsService, TradingAccount } from '../services/tradingAccounts';
@@ -43,7 +47,7 @@ import { AccountSummaryCard } from '../components/common/AccountSummaryCard';
 import { dashboardService } from '../services/dashboard';
 import { useGlobalAllAccountsActivity } from '../hooks/useGlobalAllAccountsActivity';
 import { parsePnlDisplayMode } from '../utils/pnlDisplay';
-import { getChartColors, STRATEGY_CHART_LAZY_HEIGHT, STRATEGY_CHART_TILE_MIN_HEIGHT_CLASS, STRATEGY_INSIGHTS_LEFT_COLUMN_CLASS } from '../utils/chartConfig';
+import { getChartColors, STRATEGY_CHART_LAZY_HEIGHT, STRATEGY_CHART_TILE_MIN_HEIGHT_CLASS } from '../utils/chartConfig';
 import {
   resolveStrategiesPeriodDates,
   type StrategyChartDrillDownPayload,
@@ -451,28 +455,21 @@ const StrategiesPage: React.FC = () => {
     t,
   });
 
-  const emotionBarClickRef = useRef<(emotion: string, respected: boolean) => void>(() => {});
-
   const {
     gainStats,
     completionStats,
-    emotionsByRespectChart,
-    emotionsByRespectOptions,
+    emotionsByRespectShares,
     hasAnyInsight,
   } = useStrategyDisciplineInsights({
     statistics,
     isLoading,
     getEmotionLabel,
-    t,
-    chartColors,
-    formatNumber,
-    isMobile: windowSize.isMobile,
-    onEmotionBarClickRef: emotionBarClickRef,
   });
 
   const showInsightsCompletionPanel =
     completionStats != null && completionStats.total_trades > 0;
-  const insightsGridClass = `grid grid-cols-1 gap-4 sm:gap-6 ${STRATEGY_CHART_TILE_MIN_HEIGHT_CLASS} lg:grid-cols-2`;
+  const showLossMix = hasDeviationLossMix(gainStats);
+  const insightsGridClass = 'grid grid-cols-1 items-stretch gap-4 sm:gap-6 lg:grid-cols-2';
 
   const drillDownPeriod = useMemo<StrategyPeriodContext>(() => {
     const dates = resolveStrategiesPeriodDates({
@@ -496,18 +493,21 @@ const StrategiesPage: React.FC = () => {
     setComplianceModalDate(date);
   }, []);
 
-  emotionBarClickRef.current = (emotion: string, respected: boolean) => {
-    openDrillDown({
-      title: t('strategies:drillDown.emotionTitle', {
-        emotion: getEmotionLabel(emotion),
-        respect: respected ? t('strategies:respected') : t('strategies:notRespected'),
-      }),
-      filters: {
-        dominant_emotion: emotion,
-        strategy_respected: respected,
-      },
-    });
-  };
+  const openEmotionDrillDown = useCallback(
+    (emotion: string, respected: boolean) => {
+      openDrillDown({
+        title: t('strategies:drillDown.emotionTitle', {
+          emotion: getEmotionLabel(emotion),
+          respect: respected ? t('strategies:respected') : t('strategies:notRespected'),
+        }),
+        filters: {
+          dominant_emotion: emotion,
+          strategy_respected: respected,
+        },
+      });
+    },
+    [getEmotionLabel, openDrillDown, t]
+  );
 
   const chartDrillDownRef = useRef<(payload: StrategyChartDrillDownPayload) => void>(() => {});
   chartDrillDownRef.current = (payload) => {
@@ -952,14 +952,11 @@ const StrategiesPage: React.FC = () => {
               content: (
                 <div className="flex flex-col gap-4 sm:gap-6">
                   {isLoading ? (
-                    <div
-                      className={`grid grid-cols-1 gap-4 sm:gap-6 ${STRATEGY_CHART_TILE_MIN_HEIGHT_CLASS} lg:grid-cols-2`}
-                    >
-                      <div className={`${STRATEGY_INSIGHTS_LEFT_COLUMN_CLASS} min-h-0`}>
-                        <div className="min-h-0 flex-1 animate-pulse rounded-lg border border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-700/50" />
-                        <div className="min-h-0 flex-1 animate-pulse rounded-lg border border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-700/50" />
-                      </div>
-                      <div className="min-h-0 h-full">
+                    <div className={insightsGridClass}>
+                      <div
+                        className={`${STRATEGY_CHART_TILE_MIN_HEIGHT_CLASS} animate-pulse rounded-lg border border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-700/50`}
+                      />
+                      <div className={`${STRATEGY_CHART_TILE_MIN_HEIGHT_CLASS} min-h-0`}>
                         <ChartSkeleton
                           title={t('strategies:insights.emotionsByRespectTitle')}
                           className="h-full min-h-0"
@@ -967,46 +964,74 @@ const StrategiesPage: React.FC = () => {
                           fillHeight
                         />
                       </div>
+                      <div className="min-h-48 animate-pulse rounded-lg border border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-700/50" />
                     </div>
                   ) : hasAnyInsight ? (
                     <div className={insightsGridClass}>
-                      <div
-                        className={`${STRATEGY_INSIGHTS_LEFT_COLUMN_CLASS} min-h-0 ${
-                          showInsightsCompletionPanel ? '' : 'lg:col-start-1'
-                        }`}
-                      >
-                        <StrategyGainIfRespectedCard
-                          stats={gainStats}
-                          stacked={showInsightsCompletionPanel}
-                          className={showInsightsCompletionPanel ? '' : 'h-full min-h-0'}
-                          onDrillDown={openDrillDown}
-                        />
-                        {showInsightsCompletionPanel && (
+                      {showInsightsCompletionPanel && completionStats && (
+                        <div className={`${STRATEGY_CHART_TILE_MIN_HEIGHT_CLASS} flex h-full min-h-0 flex-col lg:col-start-1 lg:row-start-1`}>
                           <StrategyComplianceCompletionCard
                             stats={completionStats}
                             chartColors={chartColors}
                             formatNumber={formatNumber}
                             isMobile={windowSize.isMobile}
+                            className="h-full min-h-0"
                             onDrillDown={openDrillDown}
                           />
-                        )}
-                      </div>
-                      {emotionsByRespectChart ? (
-                        <div className="h-full min-h-0 lg:col-start-2">
+                        </div>
+                      )}
+                      {emotionsByRespectShares ? (
+                        <div
+                          className={`${STRATEGY_CHART_TILE_MIN_HEIGHT_CLASS} flex h-full min-h-0 flex-col lg:col-start-2 ${
+                            !showInsightsCompletionPanel && showLossMix ? 'lg:row-start-2' : 'lg:row-start-1'
+                          }`}
+                        >
                           <StrategyEmotionsByRespectChart
-                            data={emotionsByRespectChart}
-                            options={emotionsByRespectOptions}
+                            data={emotionsByRespectShares}
                             title={t('strategies:insights.emotionsByRespectTitle')}
                             tooltip={t('strategies:insights.emotionsByRespectTooltip')}
-                            totalLabel={t('strategies:insights.emotionsTotalOccurrences')}
                             formatNumber={formatNumber}
+                            onSelect={openEmotionDrillDown}
+                            className="h-full min-h-0"
                           />
                         </div>
-                      ) : (
-                        <div className="flex h-full min-h-0 items-center justify-center rounded-lg border border-gray-200 bg-white p-6 shadow dark:border-gray-700 dark:bg-gray-800 lg:col-start-2">
+                      ) : showLossMix && !showInsightsCompletionPanel ? null : (
+                        <div
+                          className={`${STRATEGY_CHART_TILE_MIN_HEIGHT_CLASS} flex h-full min-h-0 items-center justify-center rounded-lg border border-gray-200 bg-white p-6 shadow dark:border-gray-700 dark:bg-gray-800 lg:col-start-2 lg:row-start-1`}
+                        >
                           <p className="text-center text-sm text-gray-600 dark:text-gray-400">
                             {t('strategies:insights.noInsightsData')}
                           </p>
+                        </div>
+                      )}
+                      <div
+                        className={`${STRATEGY_CHART_TILE_MIN_HEIGHT_CLASS} flex h-full min-h-0 flex-col lg:col-start-1 ${
+                          showInsightsCompletionPanel ? 'lg:row-start-2' : 'lg:row-start-1'
+                        }`}
+                      >
+                        <StrategyGainIfRespectedCard
+                          stats={gainStats}
+                          currencySymbol={currencySymbol}
+                          hideProfitLoss={privacySettings.hideProfitLoss}
+                          className="h-full min-h-0"
+                          onDrillDown={openDrillDown}
+                        />
+                      </div>
+                      {showLossMix && gainStats && (
+                        <div
+                          className={`${STRATEGY_CHART_TILE_MIN_HEIGHT_CLASS} flex h-full min-h-0 flex-col lg:col-start-2 ${
+                            showInsightsCompletionPanel ? 'lg:row-start-2' : 'lg:row-start-1'
+                          }`}
+                        >
+                          <StrategyDeviationLossMixCard
+                            stats={gainStats}
+                            currencySymbol={currencySymbol}
+                            chartColors={chartColors}
+                            hideProfitLoss={privacySettings.hideProfitLoss}
+                            isMobile={windowSize.isMobile}
+                            className="h-full min-h-0"
+                            onDrillDown={openDrillDown}
+                          />
                         </div>
                       )}
                     </div>

@@ -159,6 +159,24 @@ class TradeStrategyDrilldownFiltersTests(TestCase):
     def test_filter_winning_session_tp1(self):
         self.assertEqual(self._ids({'winning_session': 'tp1'}), {'R4'})
 
+    def test_filter_pnl_outcome_loss_and_win(self):
+        self.assertEqual(
+            self._ids({'strategy_respected': 'false', 'pnl_outcome': 'loss'}),
+            {'R2'},
+        )
+        self.assertEqual(
+            self._ids({'strategy_respected': 'false', 'pnl_outcome': 'win'}),
+            {'R4'},
+        )
+        self.assertEqual(
+            self._ids({
+                'strategy_respected': 'false',
+                'pnl_outcome': 'loss',
+                'gain_if_strategy_respected': 'true',
+            }),
+            {'R2'},
+        )
+
     def _paginated(self, params):
         response = self.client.get('/api/trades/trade-strategies/', params)
         self.assertEqual(response.status_code, 200, response.content)
