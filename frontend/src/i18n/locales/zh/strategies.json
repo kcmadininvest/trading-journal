@@ -93,6 +93,7 @@
     "lossMixTitle": "亏损从何而来",
     "lossMixTooltip": "在所选时期内，未遵守策略的交易亏损构成。\n\n三部分合计为这些亏损的 100%：按日志本可避免、即使遵守计划仍会亏损、以及未作答。计划外盈利仍显示在成本卡片上。",
     "lossMixSubtitle": "策略外亏损的 100%",
+    "lossMixNoLosses": "此期间无策略外亏损。",
     "lossMixConfirmed": "已确认亏损",
     "preventableLosses": "日记记录的可避免亏损",
     "preventableLossesDetail": "{{formatted}} 笔交易 ({{pct}}%) 若遵守计划本会盈利",

@@ -1,11 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React from 'react';
 import clsx from 'clsx';
 import { useTranslation } from 'react-i18next';
 import Tooltip from '../ui/Tooltip';
 import { maskValue } from '../../hooks/usePrivacySettings';
-import { formatCurrency, formatNumber, getCurrencySymbolForCode } from '../../utils/numberFormat';
+import { formatCurrency, formatNumber } from '../../utils/numberFormat';
 import { usePreferences } from '../../hooks/usePreferences';
-import { currenciesService, type Currency } from '../../services/currencies';
 import type { PeriodPerformance, PeriodPerformanceEntry } from '../../services/dashboard';
 import type { PnlDisplayMode } from '../../utils/pnlDisplay';
 import type { DateFormatType } from '../../utils/dateFormat';
@@ -421,30 +420,7 @@ export const PeriodPerformanceKpis: React.FC<PeriodPerformanceKpisProps> = ({
   numberFormat = 'comma',
 }) => {
   const { t } = useTranslation();
-  const { preferences } = usePreferences();
-  const [currencies, setCurrencies] = useState<Currency[]>([]);
-
-  useEffect(() => {
-    let cancelled = false;
-    currenciesService
-      .list()
-      .then((list) => {
-        if (!cancelled) setCurrencies(list);
-      })
-      .catch(() => {
-        if (!cancelled) setCurrencies([]);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const displayCurrencySymbol = useMemo(() => {
-    if (pnlCurrencyMode === 'mixed') return '';
-    const code = preferences.default_currency || 'USD';
-    const fromSettings = getCurrencySymbolForCode(code, currencies);
-    return fromSettings || currencySymbol;
-  }, [pnlCurrencyMode, preferences.default_currency, currencies, currencySymbol]);
+  const displayCurrencySymbol = pnlCurrencyMode === 'mixed' ? '' : currencySymbol;
 
   if (loading) {
     return (

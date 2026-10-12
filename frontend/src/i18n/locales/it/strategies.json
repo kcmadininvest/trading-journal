@@ -93,6 +93,7 @@
     "lossMixTitle": "Da dove arrivano le perdite",
     "lossMixTooltip": "Ripartizione delle perdite dei trade in cui la strategia non è stata rispettata, nel periodo filtrato.\n\nLe tre quote fanno il 100 % di queste perdite: evitabili secondo il diario, confermate come perdite anche col piano, e senza risposta. I guadagni fuori piano restano sulla scheda del costo.",
     "lossMixSubtitle": "100 % delle perdite fuori strategia",
+    "lossMixNoLosses": "Nessuna perdita fuori strategia in questo periodo.",
     "lossMixConfirmed": "Perdite confermate",
     "preventableLosses": "Perdite evitabili secondo il diario",
     "preventableLossesDetail": "{{formatted}} trade ({{pct}}%) sarebbero stati vincenti seguendo il piano",

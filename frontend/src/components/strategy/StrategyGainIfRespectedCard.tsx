@@ -101,9 +101,13 @@ export const StrategyGainIfRespectedCard: React.FC<StrategyGainIfRespectedCardPr
             <h3 className={titleClass}>{t('strategies:insights.gainIfTitle')}</h3>
             <ChartHelpTooltip content={t('strategies:insights.gainIfTooltip')} />
           </div>
-          <p className={stacked ? 'text-xs text-gray-600 dark:text-gray-400' : 'text-sm text-gray-600 dark:text-gray-400'}>
-            {t('strategies:insights.gainIfNoDeviations')}
-          </p>
+          <div className="flex min-h-0 flex-1 items-center justify-center">
+            <p
+              className={`text-center text-gray-600 dark:text-gray-400 ${stacked ? 'text-xs' : 'text-sm'}`}
+            >
+              {t('strategies:insights.gainIfNoDeviations')}
+            </p>
+          </div>
         </div>
       );
     }

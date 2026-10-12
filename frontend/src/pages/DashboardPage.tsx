@@ -19,7 +19,12 @@ import { GAUGE_CONFIGS } from '../components/statistics/gaugeConfigs';
 import Tooltip from '../components/ui/Tooltip';
 import { usePreferences } from '../hooks/usePreferences';
 import { useTheme } from '../hooks/useTheme';
-import { formatCurrency as formatCurrencyUtil, formatNumber as formatNumberUtil } from '../utils/numberFormat';
+import {
+  formatCurrency as formatCurrencyUtil,
+  formatNumber as formatNumberUtil,
+  getCurrencySymbolForCode,
+  resolveDisplayCurrencyCode,
+} from '../utils/numberFormat';
 import { formatDate, toIsoCalendarDateInTimezone } from '../utils/dateFormat';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { useTradingAccount } from '../contexts/useTradingAccount';
@@ -565,6 +570,19 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     const currency = currencies.find(c => c.code === selectedAccount.currency);
     return currency?.symbol || '';
   }, [selectedAccount, currencies]);
+
+  // KPIs de période : montants non convertis → devise du compte, sinon devise commune des comptes actifs
+  const periodCurrencySymbol = useMemo(
+    () =>
+      getCurrencySymbolForCode(
+        resolveDisplayCurrencyCode({
+          accountCurrency: accountId ? selectedAccount?.currency : null,
+          accountCurrencyCodes: activeAccountCurrencyCodes,
+        }),
+        currencies,
+      ),
+    [accountId, selectedAccount?.currency, activeAccountCurrencyCodes, currencies],
+  );
 
   // Strategies are not needed for dashboard display - compliance stats come from consolidated endpoint
   // Removed strategy loading to eliminate hundreds of unnecessary API calls
@@ -1632,7 +1650,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       <PeriodPerformanceKpis
         className="mb-6"
         data={dashboardData?.period_performance}
-        currencySymbol={currencySymbol}
+        currencySymbol={periodCurrencySymbol}
         pnlCurrencyMode={accountId ? 'single' : globalPnlCurrencyMode}
         hideMoney={hideWeekdayChartMoneyValues}
         loading={dashboardLoading && !dashboardData}

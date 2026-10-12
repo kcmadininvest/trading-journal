@@ -93,6 +93,7 @@
     "lossMixTitle": "損失の内訳",
     "lossMixTooltip": "戦略を守らなかったトレードの損失を、選択した期間で分けたものです。\n\n3つの割合を合わせると損失の100%になります。日記上は避けられた損失、計画を守っても損失だったもの、未回答です。計画外の利益はコストのカードに残します。",
     "lossMixSubtitle": "戦略外の損失の100%",
+    "lossMixNoLosses": "この期間に戦略外の損失はありません。",
     "lossMixConfirmed": "確定した損失",
     "preventableLosses": "ジャーナル記載の回避可能損失",
     "preventableLossesDetail": "{{formatted}} 件 ({{pct}}%) は計画遵守で勝ちトレードだったと推定",

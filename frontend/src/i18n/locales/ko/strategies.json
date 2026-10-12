@@ -93,6 +93,7 @@
     "lossMixTitle": "손실의 구성",
     "lossMixTooltip": "선택한 기간에 전략을 지키지 않은 트레이드의 손실 구성입니다.\n\n세 비중의 합은 이 손실의 100%입니다. 저널 기준 피할 수 있었던 손실, 계획을 지켜도 손실이었던 것, 미응답입니다. 계획 외 이익은 비용 카드에 남습니다.",
     "lossMixSubtitle": "전략 외 손실의 100%",
+    "lossMixNoLosses": "이 기간에 전략 외 손실이 없습니다.",
     "lossMixConfirmed": "확인된 손실",
     "preventableLosses": "저널 기준 피할 수 있었던 손실",
     "preventableLossesDetail": "{{formatted}}건 ({{pct}}%)은 계획을 따랐다면 이익이었을 것입니다",

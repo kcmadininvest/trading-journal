@@ -105,6 +105,7 @@
     "lossMixTitle": "D'où viennent les pertes",
     "lossMixTooltip": "Répartition des pertes des trades où la stratégie n'a pas été respectée, sur la période filtrée.\n\nLes trois parts totalisent 100 % de ces pertes : évitables selon le journal, confirmées comme pertes même avec le plan, et sans réponse. Les gains hors plan restent sur la carte du coût.",
     "lossMixSubtitle": "100 % des pertes hors stratégie",
+    "lossMixNoLosses": "Aucune perte hors stratégie sur cette période.",
     "lossMixConfirmed": "Pertes confirmées",
     "preventableLosses": "Pertes évitables selon le journal",
     "preventableLossesDetail": "{{formatted}} trades ({{pct}} %) auraient été gagnants selon le plan",

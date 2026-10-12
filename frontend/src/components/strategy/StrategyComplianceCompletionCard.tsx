@@ -3,7 +3,7 @@ import type { ChartOptions } from 'chart.js';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
 import { ChartHelpTooltip } from '../charts/ChartHelpTooltip';
-import { LazyChart } from './charts/LazyChart';
+import { ChartTooltipResetContainer } from '../charts/ChartTooltipResetContainer';
 import { MemoizedDoughnut as Doughnut } from './charts/MemoizedCharts';
 import {
   CHART_FONT_FAMILY,
@@ -127,7 +127,7 @@ export const StrategyComplianceCompletionCard: React.FC<StrategyComplianceComple
             <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_minmax(8rem,1.1fr)_minmax(0,1fr)] grid-rows-4 items-center gap-x-2 sm:gap-x-3 lg:grid-cols-[minmax(0,1fr)_minmax(11rem,1.35fr)_minmax(0,1fr)]">
               <div className="col-start-2 row-span-4 row-start-1 flex h-full min-h-0 w-full min-w-0 items-center justify-center [container-type:size]">
                 <div className="relative aspect-square h-[min(100cqw,100cqh)] w-[min(100cqw,100cqh)]">
-                  <LazyChart height="absolute inset-0 h-full w-full">
+                  <ChartTooltipResetContainer className="absolute inset-0 h-full w-full">
                     <Doughnut
                       data={{
                         labels: chartData.labels,
@@ -148,7 +148,7 @@ export const StrategyComplianceCompletionCard: React.FC<StrategyComplianceComple
                       }}
                       options={chartOptions}
                     />
-                  </LazyChart>
+                  </ChartTooltipResetContainer>
                 </div>
               </div>
 

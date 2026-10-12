@@ -6,7 +6,7 @@ import { maskValue } from '../../hooks/usePrivacySettings';
 import { useTheme } from '../../hooks/useTheme';
 import { formatCurrency as formatCurrencyUtil, formatNumber as formatNumberUtil } from '../../utils/numberFormat';
 import { ChartHelpTooltip } from '../charts/ChartHelpTooltip';
-import { LazyChart } from './charts/LazyChart';
+import { ChartTooltipResetContainer } from '../charts/ChartTooltipResetContainer';
 import { MemoizedDoughnut as Doughnut } from './charts/MemoizedCharts';
 import {
   CHART_FONT_FAMILY,
@@ -14,7 +14,7 @@ import {
   STRATEGY_CHART_SECTION_SHELL_CLASS,
   type ChartColors,
 } from '../../utils/chartConfig';
-import type { GainIfStrategyStats } from '../../hooks/useStrategyDisciplineInsights';
+import { hasDeviationLossMix, type GainIfStrategyStats } from '../../hooks/useStrategyDisciplineInsights';
 import type { StrategyDrillDownFilters, StrategyDrillDownRequest } from '../../utils/strategyDrillDown';
 
 const RESIDUE_EPSILON = 0.01;
@@ -26,7 +26,7 @@ const SLICE_COLORS = {
 } as const;
 
 interface StrategyDeviationLossMixCardProps {
-  stats: GainIfStrategyStats;
+  stats: GainIfStrategyStats | null | undefined;
   currencySymbol: string;
   chartColors: ChartColors;
   hideProfitLoss?: boolean;
@@ -76,10 +76,10 @@ export const StrategyDeviationLossMixCard: React.FC<StrategyDeviationLossMixCard
       [preferences.number_format]
     );
 
-    const total = stats.losing_trades_pnl ?? 0;
-    const preventable = clampResidue(stats.would_have_won_pnl ?? 0);
-    const confirmed = clampResidue(stats.would_have_lost_pnl ?? 0);
-    const unanswered = clampResidue(total - (stats.would_have_won_pnl ?? 0) - (stats.would_have_lost_pnl ?? 0));
+    const total = stats?.losing_trades_pnl ?? 0;
+    const preventable = clampResidue(stats?.would_have_won_pnl ?? 0);
+    const confirmed = clampResidue(stats?.would_have_lost_pnl ?? 0);
+    const unanswered = clampResidue(total - (stats?.would_have_won_pnl ?? 0) - (stats?.would_have_lost_pnl ?? 0));
 
     const parts: LossPart[] = useMemo(() => {
       const shareOfLoss = (amount: number) => {
@@ -182,14 +182,31 @@ export const StrategyDeviationLossMixCard: React.FC<StrategyDeviationLossMixCard
 
     const sliceColor = (key: LossPart['key']) => (isDark ? SLICE_COLORS[key].dark : SLICE_COLORS[key].light);
 
+    const header = (
+      <div className="mb-1 flex shrink-0 items-center gap-1.5">
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 sm:text-base">
+          {t('strategies:insights.lossMixTitle')}
+        </h3>
+        <ChartHelpTooltip content={t('strategies:insights.lossMixTooltip')} />
+      </div>
+    );
+
+    if (!hasDeviationLossMix(stats)) {
+      return (
+        <div className={`${STRATEGY_CHART_SECTION_SHELL_CLASS} flex h-full min-h-0 flex-col ${className}`}>
+          {header}
+          <div className="flex min-h-0 flex-1 items-center justify-center">
+            <p className="text-center text-sm text-gray-600 dark:text-gray-400">
+              {t('strategies:insights.lossMixNoLosses')}
+            </p>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className={`${STRATEGY_CHART_SECTION_SHELL_CLASS} flex h-full min-h-0 flex-col ${className}`}>
-        <div className="mb-1 flex shrink-0 items-center gap-1.5">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 sm:text-base">
-            {t('strategies:insights.lossMixTitle')}
-          </h3>
-          <ChartHelpTooltip content={t('strategies:insights.lossMixTooltip')} />
-        </div>
+        {header}
         <p className="mb-2 shrink-0 text-xs text-gray-500 dark:text-gray-400 sm:text-sm">
           {t('strategies:insights.lossMixSubtitle')}
         </p>
@@ -197,7 +214,7 @@ export const StrategyDeviationLossMixCard: React.FC<StrategyDeviationLossMixCard
           <div className="relative min-h-[9rem] w-full min-w-0 flex-1 [container-type:size] sm:h-full sm:min-h-0">
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="relative aspect-square h-[min(100cqw,100cqh)] w-[min(100cqw,100cqh)] max-w-full">
-                <LazyChart height="absolute inset-0 h-full w-full">
+                <ChartTooltipResetContainer className="absolute inset-0 h-full w-full">
                   <Doughnut
                     data={{
                       labels: ringParts.map((part) => t(part.labelKey)),
@@ -214,7 +231,7 @@ export const StrategyDeviationLossMixCard: React.FC<StrategyDeviationLossMixCard
                     }}
                     options={chartOptions}
                   />
-                </LazyChart>
+                </ChartTooltipResetContainer>
                 <div className="pointer-events-none absolute inset-[22%] flex items-center justify-center px-1 text-center">
                   <span className="text-xs font-semibold tabular-nums leading-tight text-gray-900 dark:text-gray-100 sm:text-sm">
                     {formatMoney(total)}

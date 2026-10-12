@@ -105,6 +105,7 @@
     "lossMixTitle": "Where the losses come from",
     "lossMixTooltip": "Breakdown of losses on trades where the strategy was not followed, for the filtered period.\n\nThe three shares add up to 100% of those losses: preventable per the journal, confirmed as losses even with the plan, and unanswered. Off-plan gains stay on the cost card.",
     "lossMixSubtitle": "100% of off-strategy losses",
+    "lossMixNoLosses": "No off-strategy losses in this period.",
     "lossMixConfirmed": "Confirmed losses",
     "preventableLosses": "Preventable losses per journal",
     "preventableLossesDetail": "{{formatted}} trades ({{pct}}%) would have won following plan",

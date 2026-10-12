@@ -104,6 +104,22 @@ export function getCurrencySymbolForCode(
   return currencies.find((c) => c.code === currencyCode)?.symbol ?? '';
 }
 
+/**
+ * Devise réelle de montants non convertis : celle du compte sélectionné, sinon la devise
+ * commune des comptes agrégés, sinon '' (devises mixtes ou aucun compte).
+ */
+export function resolveDisplayCurrencyCode({
+  accountCurrency,
+  accountCurrencyCodes,
+}: {
+  accountCurrency?: string | null;
+  accountCurrencyCodes: ReadonlyArray<string | null | undefined>;
+}): string {
+  if (accountCurrency) return accountCurrency;
+  const codes = new Set(accountCurrencyCodes.filter((code): code is string => Boolean(code)));
+  return codes.size === 1 ? [...codes][0] : '';
+}
+
 const VALID_POINT_THOUSANDS = /^[+-]?\d{1,3}(,\d{3})+$/;
 
 /**

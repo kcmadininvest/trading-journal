@@ -15,10 +15,7 @@ import { StrategyComplianceCompletionCard } from '../components/strategy/Strateg
 import { StrategyEmotionsByRespectChart } from '../components/strategy/StrategyEmotionsByRespectChart';
 import { StrategyDrillDownModal } from '../components/strategy/StrategyDrillDownModal';
 import { StrategyComplianceModal } from '../components/trades/StrategyComplianceModal';
-import {
-  hasDeviationLossMix,
-  useStrategyDisciplineInsights,
-} from '../hooks/useStrategyDisciplineInsights';
+import { useStrategyDisciplineInsights } from '../hooks/useStrategyDisciplineInsights';
 import { TabsFilter } from '../components/common/TabsFilter';
 import { tradeStrategiesService } from '../services/tradeStrategies';
 import { tradingAccountsService, TradingAccount } from '../services/tradingAccounts';
@@ -36,7 +33,11 @@ import { useWeekdayCompliance } from '../hooks/useWeekdayCompliance';
 import { useChartOptions } from '../hooks/useChartOptions';
 import { PageShell } from '../components/layout';
 import { PnlBasisToggle } from '../components/common/PnlBasisToggle';
-import { formatNumber as formatNumberUtil } from '../utils/numberFormat';
+import {
+  formatNumber as formatNumberUtil,
+  getCurrencySymbolForCode,
+  resolveDisplayCurrencyCode,
+} from '../utils/numberFormat';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { formatDate, getMonthName } from '../utils/dateFormat';
 import { useTradingAccount } from '../contexts/useTradingAccount';
@@ -100,6 +101,14 @@ type StrategyRespectRateSnapshot = {
   total_trades_in_days?: number;
 };
 
+/** Squelette de l'onglet Analyse des écarts : mêmes tuiles que le contenu final. */
+const INSIGHTS_SKELETON_TITLE_KEYS = [
+  'strategies:insights.completionTitle',
+  'strategies:insights.emotionsByRespectTitle',
+  'strategies:insights.gainIfTitle',
+  'strategies:insights.lossMixTitle',
+] as const;
+
 /** Même agrégat affiché (%, jours, trades) entre toutes périodes et période filtrée. */
 function strategyRespectSnapshotsEqual(
   allPeriods: StrategyRespectRateSnapshot | null | undefined,
@@ -122,7 +131,12 @@ const StrategiesPage: React.FC = () => {
   const { t, i18n } = useI18nTranslation();
   const privacySettings = usePrivacySettings('strategies');
   const isDark = theme === 'dark';
-  const { selectedAccountId: accountId, setSelectedAccountId: setAccountId, loading: accountLoading } = useTradingAccount();
+  const {
+    selectedAccountId: accountId,
+    setSelectedAccountId: setAccountId,
+    loading: accountLoading,
+    accounts: tradingAccounts,
+  } = useTradingAccount();
   const { selectedPeriod, setSelectedPeriod, selectedPositionStrategy, setSelectedPositionStrategy } =
     usePersistedPeriodAndStrategyFilters(accountId);
   const hideAccountNumber = useAccountNumberVisibility();
@@ -182,7 +196,7 @@ const StrategiesPage: React.FC = () => {
   // Garder pour compatibilité
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [statistics, setStatistics] = useState<any>(null);
   const [selectedAccount, setSelectedAccount] = useState<TradingAccount | null>(null);
@@ -201,12 +215,12 @@ const StrategiesPage: React.FC = () => {
   });
   const [allAccountsCompliance, setAllAccountsCompliance] = useState<any>(null);
   const [selectedAccountCompliance, setSelectedAccountCompliance] = useState<any>(null);
-  const [loadingAllAccountsCompliance, setLoadingAllAccountsCompliance] = useState(false);
-  const [loadingSelectedAccountCompliance, setLoadingSelectedAccountCompliance] = useState(false);
+  const [loadingAllAccountsCompliance, setLoadingAllAccountsCompliance] = useState(true);
+  const [loadingSelectedAccountCompliance, setLoadingSelectedAccountCompliance] = useState(true);
 
   // État pour le dashboard summary (intégré dans loadAllData)
   const [dashboardSummary, setDashboardSummary] = useState<any>(null);
-  const [summaryLoading, setSummaryLoading] = useState(false);
+  const [summaryLoading, setSummaryLoading] = useState(true);
 
   const { startDate: summaryStartDate, endDate: summaryEndDate } = usePeriodDateRange({
     selectedPeriod,
@@ -419,12 +433,16 @@ const StrategiesPage: React.FC = () => {
   const complianceSectionLoading = loadingSelectedAccountCompliance || loadingAllAccountsCompliance;
 
 
-  // Obtenir le symbole de la devise du compte sélectionné
+  // Devise réelle des montants (non convertis) : compte sélectionné, sinon devise commune des comptes non archivés
   const currencySymbol = useMemo(() => {
-    if (!selectedAccount?.currency) return '';
-    const currency = currencies.find(c => c.code === selectedAccount.currency);
-    return currency?.symbol || '';
-  }, [selectedAccount, currencies]);
+    const code = resolveDisplayCurrencyCode({
+      accountCurrency: selectedAccount?.currency,
+      accountCurrencyCodes: tradingAccounts
+        .filter((account) => account.status !== 'archived')
+        .map((account) => account.currency),
+    });
+    return getCurrencySymbolForCode(code, currencies);
+  }, [selectedAccount?.currency, tradingAccounts, currencies]);
 
 
   const {
@@ -469,8 +487,8 @@ const StrategiesPage: React.FC = () => {
 
   const showInsightsCompletionPanel =
     completionStats != null && completionStats.total_trades > 0;
-  const showLossMix = hasDeviationLossMix(gainStats);
   const insightsGridClass = 'grid grid-cols-1 items-stretch gap-4 sm:gap-6 lg:grid-cols-2';
+  const insightsTileClass = `${STRATEGY_CHART_TILE_MIN_HEIGHT_CLASS} flex h-full min-h-0 flex-col`;
 
   const drillDownPeriod = useMemo<StrategyPeriodContext>(() => {
     const dates = resolveStrategiesPeriodDates({
@@ -508,6 +526,27 @@ const StrategiesPage: React.FC = () => {
       });
     },
     [getEmotionLabel, openDrillDown, t]
+  );
+
+  const emotionsTile = emotionsByRespectShares ? (
+    <div className={insightsTileClass}>
+      <StrategyEmotionsByRespectChart
+        data={emotionsByRespectShares}
+        title={t('strategies:insights.emotionsByRespectTitle')}
+        tooltip={t('strategies:insights.emotionsByRespectTooltip')}
+        formatNumber={formatNumber}
+        onSelect={openEmotionDrillDown}
+        className="h-full min-h-0"
+      />
+    </div>
+  ) : (
+    <div
+      className={`${STRATEGY_CHART_TILE_MIN_HEIGHT_CLASS} flex h-full min-h-0 items-center justify-center rounded-lg border border-gray-200 bg-white p-6 shadow dark:border-gray-700 dark:bg-gray-800`}
+    >
+      <p className="text-center text-sm text-gray-600 dark:text-gray-400">
+        {t('strategies:insights.noInsightsData')}
+      </p>
+    </div>
   );
 
   const chartDrillDownRef = useRef<(payload: StrategyChartDrillDownPayload) => void>(() => {});
@@ -954,62 +993,35 @@ const StrategiesPage: React.FC = () => {
                 <div className="flex flex-col gap-4 sm:gap-6">
                   {isLoading ? (
                     <div className={insightsGridClass}>
-                      <div
-                        className={`${STRATEGY_CHART_TILE_MIN_HEIGHT_CLASS} animate-pulse rounded-lg border border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-700/50`}
-                      />
-                      <div className={`${STRATEGY_CHART_TILE_MIN_HEIGHT_CLASS} min-h-0`}>
-                        <ChartSkeleton
-                          title={t('strategies:insights.emotionsByRespectTitle')}
-                          className="h-full min-h-0"
-                          height="h-full min-h-0"
-                          fillHeight
-                        />
-                      </div>
-                      <div className="min-h-48 animate-pulse rounded-lg border border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-700/50" />
+                      {INSIGHTS_SKELETON_TITLE_KEYS.map((titleKey) => (
+                        <div key={titleKey} className={insightsTileClass}>
+                          <ChartSkeleton
+                            title={t(titleKey)}
+                            className="h-full min-h-0"
+                            height="h-full min-h-0"
+                            fillHeight
+                          />
+                        </div>
+                      ))}
                     </div>
                   ) : hasAnyInsight ? (
                     <div className={insightsGridClass}>
                       {showInsightsCompletionPanel && completionStats && (
-                        <div className={`${STRATEGY_CHART_TILE_MIN_HEIGHT_CLASS} flex h-full min-h-0 flex-col lg:col-start-1 lg:row-start-1`}>
-                          <StrategyComplianceCompletionCard
-                            stats={completionStats}
-                            chartColors={chartColors}
-                            formatNumber={formatNumber}
-                            isMobile={windowSize.isMobile}
-                            className="h-full min-h-0"
-                            onDrillDown={openDrillDown}
-                          />
-                        </div>
+                        <>
+                          <div className={insightsTileClass}>
+                            <StrategyComplianceCompletionCard
+                              stats={completionStats}
+                              chartColors={chartColors}
+                              formatNumber={formatNumber}
+                              isMobile={windowSize.isMobile}
+                              className="h-full min-h-0"
+                              onDrillDown={openDrillDown}
+                            />
+                          </div>
+                          {emotionsTile}
+                        </>
                       )}
-                      {emotionsByRespectShares ? (
-                        <div
-                          className={`${STRATEGY_CHART_TILE_MIN_HEIGHT_CLASS} flex h-full min-h-0 flex-col lg:col-start-2 ${
-                            !showInsightsCompletionPanel && showLossMix ? 'lg:row-start-2' : 'lg:row-start-1'
-                          }`}
-                        >
-                          <StrategyEmotionsByRespectChart
-                            data={emotionsByRespectShares}
-                            title={t('strategies:insights.emotionsByRespectTitle')}
-                            tooltip={t('strategies:insights.emotionsByRespectTooltip')}
-                            formatNumber={formatNumber}
-                            onSelect={openEmotionDrillDown}
-                            className="h-full min-h-0"
-                          />
-                        </div>
-                      ) : showLossMix && !showInsightsCompletionPanel ? null : (
-                        <div
-                          className={`${STRATEGY_CHART_TILE_MIN_HEIGHT_CLASS} flex h-full min-h-0 items-center justify-center rounded-lg border border-gray-200 bg-white p-6 shadow dark:border-gray-700 dark:bg-gray-800 lg:col-start-2 lg:row-start-1`}
-                        >
-                          <p className="text-center text-sm text-gray-600 dark:text-gray-400">
-                            {t('strategies:insights.noInsightsData')}
-                          </p>
-                        </div>
-                      )}
-                      <div
-                        className={`${STRATEGY_CHART_TILE_MIN_HEIGHT_CLASS} flex h-full min-h-0 flex-col lg:col-start-1 ${
-                          showInsightsCompletionPanel ? 'lg:row-start-2' : 'lg:row-start-1'
-                        }`}
-                      >
+                      <div className={insightsTileClass}>
                         <StrategyGainIfRespectedCard
                           stats={gainStats}
                           currencySymbol={currencySymbol}
@@ -1018,23 +1030,18 @@ const StrategiesPage: React.FC = () => {
                           onDrillDown={openDrillDown}
                         />
                       </div>
-                      {showLossMix && gainStats && (
-                        <div
-                          className={`${STRATEGY_CHART_TILE_MIN_HEIGHT_CLASS} flex h-full min-h-0 flex-col lg:col-start-2 ${
-                            showInsightsCompletionPanel ? 'lg:row-start-2' : 'lg:row-start-1'
-                          }`}
-                        >
-                          <StrategyDeviationLossMixCard
-                            stats={gainStats}
-                            currencySymbol={currencySymbol}
-                            chartColors={chartColors}
-                            hideProfitLoss={privacySettings.hideProfitLoss}
-                            isMobile={windowSize.isMobile}
-                            className="h-full min-h-0"
-                            onDrillDown={openDrillDown}
-                          />
-                        </div>
-                      )}
+                      <div className={insightsTileClass}>
+                        <StrategyDeviationLossMixCard
+                          stats={gainStats}
+                          currencySymbol={currencySymbol}
+                          chartColors={chartColors}
+                          hideProfitLoss={privacySettings.hideProfitLoss}
+                          isMobile={windowSize.isMobile}
+                          className="h-full min-h-0"
+                          onDrillDown={openDrillDown}
+                        />
+                      </div>
+                      {!showInsightsCompletionPanel && emotionsByRespectShares && emotionsTile}
                     </div>
                   ) : (
                     <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6 text-center text-gray-600 dark:text-gray-400">

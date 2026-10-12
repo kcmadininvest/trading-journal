@@ -5,8 +5,10 @@ import { normalizeDecimalForApi, parseUserDecimal } from './normalizeDecimalForA
 import {
   cleanNumberInput,
   formatNumber,
+  getCurrencySymbolForCode,
   getNumberFormatExample,
   parseLocalizedNumber,
+  resolveDisplayCurrencyCode,
   type NumberFormatType,
 } from './numberFormat';
 import {
@@ -30,6 +32,27 @@ describe('parseLocalizedNumber', () => {
 
   it('returns null for empty', () => {
     expect(parseLocalizedNumber('', 'comma')).toBeNull();
+  });
+});
+
+describe('resolveDisplayCurrencyCode', () => {
+  it('uses the selected account currency even when other accounts differ', () => {
+    expect(resolveDisplayCurrencyCode({ accountCurrency: 'BRL', accountCurrencyCodes: ['USD', 'EUR'] })).toBe('BRL');
+  });
+
+  it('uses the shared currency of aggregated accounts', () => {
+    expect(resolveDisplayCurrencyCode({ accountCurrency: null, accountCurrencyCodes: ['USD', 'USD', null] })).toBe('USD');
+  });
+
+  it('returns no currency for mixed or empty aggregates', () => {
+    expect(resolveDisplayCurrencyCode({ accountCurrencyCodes: ['USD', 'EUR'] })).toBe('');
+    expect(resolveDisplayCurrencyCode({ accountCurrencyCodes: [] })).toBe('');
+  });
+
+  it('yields no symbol when the code is missing from the catalog', () => {
+    const catalog = [{ code: 'USD', symbol: '$' }];
+    expect(getCurrencySymbolForCode(resolveDisplayCurrencyCode({ accountCurrency: 'BRL', accountCurrencyCodes: [] }), catalog)).toBe('');
+    expect(getCurrencySymbolForCode(resolveDisplayCurrencyCode({ accountCurrencyCodes: ['USD'] }), catalog)).toBe('$');
   });
 });
 

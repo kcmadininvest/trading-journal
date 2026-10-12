@@ -105,6 +105,7 @@
     "lossMixTitle": "Woher die Verluste kommen",
     "lossMixTooltip": "Aufteilung der Verluste aus Trades, bei denen die Strategie nicht eingehalten wurde, im gefilterten Zeitraum.\n\nDie drei Anteile ergeben 100 % dieser Verluste: laut Journal vermeidbar, auch mit Plan Verluste, und ohne Antwort. Ungeplante Gewinne bleiben auf der Kostenkarte.",
     "lossMixSubtitle": "100 % der Verluste außerhalb der Strategie",
+    "lossMixNoLosses": "Keine Verluste außerhalb der Strategie in dieser Periode.",
     "lossMixConfirmed": "Bestätigte Verluste",
     "preventableLosses": "Vermeidbare Verluste laut Journal",
     "preventableLossesDetail": "{{formatted}} Trades ({{pct}}%) wären bei Planbefolgung profitabel gewesen",

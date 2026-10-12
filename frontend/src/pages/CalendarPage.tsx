@@ -18,7 +18,7 @@ import { PnlBasisToggle } from '../components/common/PnlBasisToggle';
 import { TopStepSyncControls } from '../components/accounts/TopStepSyncControls';
 import { usePreferences } from '../hooks/usePreferences';
 import { parsePnlDisplayMode } from '../utils/pnlDisplay';
-import { getCurrencySymbolForCode } from '../utils/numberFormat';
+import { getCurrencySymbolForCode, resolveDisplayCurrencyCode } from '../utils/numberFormat';
 
 type ViewType = 'daily' | 'monthly';
 
@@ -103,35 +103,17 @@ const CalendarPage: React.FC = () => {
     loadCurrencies();
   }, []);
 
-  // Symbole du compte sélectionné : repli si la devise des paramètres est absente du catalogue
-  const accountCurrencySymbol = useMemo(() => {
-    if (!selectedAccountData?.currency || !currencies.length) return '';
-    return getCurrencySymbolForCode(selectedAccountData.currency, currencies);
-  }, [selectedAccountData, currencies]);
-
-  // Même règle que les cartes de période du dashboard : devise des paramètres,
-  // sauf agrégat « tous les comptes » mélangeant plusieurs devises.
+  // Devise réelle des montants (non convertis) : compte sélectionné, sinon devise commune des comptes non archivés
   const currencySymbol = useMemo(() => {
     const specificAccount = selectedAccount != null && selectedAccount > 0;
-    if (!specificAccount) {
-      const activeCodes = Array.from(
-        new Set(
-          tradingAccounts
-            .filter((account) => account.status === 'active' && account.currency)
-            .map((account) => account.currency)
-        )
-      );
-      if (activeCodes.length > 1) return '';
-    }
-    const code = preferences.default_currency || 'USD';
-    return getCurrencySymbolForCode(code, currencies) || accountCurrencySymbol;
-  }, [
-    selectedAccount,
-    tradingAccounts,
-    preferences.default_currency,
-    currencies,
-    accountCurrencySymbol,
-  ]);
+    const code = resolveDisplayCurrencyCode({
+      accountCurrency: specificAccount ? selectedAccountData?.currency : null,
+      accountCurrencyCodes: tradingAccounts
+        .filter((account) => account.status !== 'archived')
+        .map((account) => account.currency),
+    });
+    return getCurrencySymbolForCode(code, currencies);
+  }, [selectedAccount, selectedAccountData?.currency, tradingAccounts, currencies]);
 
   // Charger les données quand la vue change ou quand les dates changent
   useEffect(() => {
