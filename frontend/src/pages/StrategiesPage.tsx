@@ -17,9 +17,9 @@ import { StrategyDrillDownModal } from '../components/strategy/StrategyDrillDown
 import { StrategyComplianceModal } from '../components/trades/StrategyComplianceModal';
 import { useStrategyDisciplineInsights } from '../hooks/useStrategyDisciplineInsights';
 import { TabsFilter } from '../components/common/TabsFilter';
-import { tradeStrategiesService } from '../services/tradeStrategies';
-import { tradingAccountsService, TradingAccount } from '../services/tradingAccounts';
-import { currenciesService, Currency } from '../services/currencies';
+import { useQueryClient } from '@tanstack/react-query';
+import { combineQueryLoadingStates } from '../hooks/useQueryLoadingState';
+import { useStrategiesPageData, useTradesUpdateInvalidation } from '../hooks/useStatistics';
 import { PositionStrategyFilterField } from '../components/common/PositionStrategyPillBar';
 import { usePositionStrategiesForFilter } from '../hooks/usePositionStrategiesForFilter';
 import { useTheme } from '../hooks/useTheme';
@@ -45,7 +45,6 @@ import { usePersistedPeriodAndStrategyFilters } from '../hooks/usePersistedPerio
 import { useComplianceRefresh } from '../contexts/useComplianceRefresh';
 import { useAccountIndicators } from '../hooks/useAccountIndicators';
 import { AccountSummaryCard } from '../components/common/AccountSummaryCard';
-import { dashboardService } from '../services/dashboard';
 import { useGlobalAllAccountsActivity } from '../hooks/useGlobalAllAccountsActivity';
 import { parsePnlDisplayMode } from '../utils/pnlDisplay';
 import { getChartColors, STRATEGY_CHART_LAZY_HEIGHT, STRATEGY_CHART_TILE_MIN_HEIGHT_CLASS } from '../utils/chartConfig';
@@ -56,7 +55,6 @@ import {
   type StrategyPeriodContext,
 } from '../utils/strategyDrillDown';
 import { ChartSkeleton } from '../components/strategy/charts/ChartSkeleton';
-import { LazyChart } from '../components/strategy/charts/LazyChart';
 import { ChartSection } from '../components/common/ChartSection';
 import {
   Chart as ChartJS,
@@ -126,7 +124,7 @@ function strategyRespectSnapshotsEqual(
 
 const StrategiesPage: React.FC = () => {
   const { theme } = useTheme();
-  const { preferences } = usePreferences();
+  const { preferences, loading: preferencesLoading } = usePreferences();
   const pnlDisplayMode = parsePnlDisplayMode(preferences.pnl_display);
   const { t, i18n } = useI18nTranslation();
   const privacySettings = usePrivacySettings('strategies');
@@ -196,16 +194,49 @@ const StrategiesPage: React.FC = () => {
   // Garder pour compatibilité
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [statistics, setStatistics] = useState<any>(null);
-  const [selectedAccount, setSelectedAccount] = useState<TradingAccount | null>(null);
-  const [currencies, setCurrencies] = useState<Currency[]>([]);
   const { strategies: positionStrategies, loading: loadingStrategies, displayStrategyId } =
     usePositionStrategiesForFilter(selectedPositionStrategy);
-  
+
+  const { startDate: summaryStartDate, endDate: summaryEndDate } = usePeriodDateRange({
+    selectedPeriod,
+    selectedYear,
+    selectedMonth,
+  });
+
+  const queryClient = useQueryClient();
+  useTradesUpdateInvalidation();
+
+  const {
+    statistics,
+    allAccountsCompliance,
+    selectedAccountCompliance,
+    currencies,
+    selectedAccount,
+    dashboardSummary,
+    isLoading: bundleLoading,
+    isFetching: bundleFetching,
+    error: bundleError,
+  } = useStrategiesPageData({
+    accountId,
+    year: selectedPeriod ? null : selectedYear,
+    month: selectedPeriod ? null : selectedMonth,
+    startDate: selectedPeriod?.start ?? null,
+    endDate: selectedPeriod?.end ?? null,
+    summaryStartDate,
+    summaryEndDate,
+    positionStrategy: selectedPositionStrategy,
+    pnlDisplay: pnlDisplayMode,
+    enabled: !accountLoading && !preferencesLoading,
+  });
+
+  const filtersReady = !accountLoading && !preferencesLoading;
+  const { isInitialLoading, isRefreshing } = combineQueryLoadingStates([
+    { isLoading: !filtersReady, isFetching: false, data: filtersReady ? true : null },
+    { isLoading: bundleLoading, isFetching: bundleFetching, data: statistics },
+  ]);
+
   // Utiliser le hook optimisé pour charger les trades filtrés (allTrades n'est plus chargé)
-  const { filteredTrades, reload: reloadTrades } = useStrategyTrades({
+  const { filteredTrades, loading: tradesLoading, reload: reloadTrades } = useStrategyTrades({
     accountId,
     accountLoading,
     selectedPeriod,
@@ -213,20 +244,13 @@ const StrategiesPage: React.FC = () => {
     selectedMonth,
     skipAllTrades: true,
   });
-  const [allAccountsCompliance, setAllAccountsCompliance] = useState<any>(null);
-  const [selectedAccountCompliance, setSelectedAccountCompliance] = useState<any>(null);
-  const [loadingAllAccountsCompliance, setLoadingAllAccountsCompliance] = useState(true);
-  const [loadingSelectedAccountCompliance, setLoadingSelectedAccountCompliance] = useState(true);
-
-  // État pour le dashboard summary (intégré dans loadAllData)
-  const [dashboardSummary, setDashboardSummary] = useState<any>(null);
-  const [summaryLoading, setSummaryLoading] = useState(true);
-
-  const { startDate: summaryStartDate, endDate: summaryEndDate } = usePeriodDateRange({
-    selectedPeriod,
-    selectedYear,
-    selectedMonth,
-  });
+  const tradesFetchStartedRef = useRef(false);
+  if (tradesLoading) {
+    tradesFetchStartedRef.current = true;
+  }
+  const tradesSettled = tradesFetchStartedRef.current && !tradesLoading;
+  const detailsLoading =
+    selectedAccount != null && filteredTrades.length === 0 && !tradesSettled;
 
   // Générer les années disponibles (année en cours et 5 ans précédents)
 
@@ -235,202 +259,17 @@ const StrategiesPage: React.FC = () => {
     return t(`strategies:emotions.${emotion}` as any, { defaultValue: emotion });
   }, [t]);
 
-  /** Dernier mode net/brut — le chargement « filtres » lit toujours la valeur à jour sans recréer le callback quand seul le toggle change */
-  const pnlDisplayModeRef = useRef(pnlDisplayMode);
-  pnlDisplayModeRef.current = pnlDisplayMode;
-
-  /** Snapshot filtres pour rechargement silencieux au toggle PnL uniquement */
-  const strategiesFetchContextRef = useRef({
-    selectedPeriod,
-    selectedYear,
-    selectedMonth,
-    accountId,
-    summaryStartDate,
-    summaryEndDate,
-    selectedPositionStrategy,
-  });
-  strategiesFetchContextRef.current = {
-    selectedPeriod,
-    selectedYear,
-    selectedMonth,
-    accountId,
-    summaryStartDate,
-    summaryEndDate,
-    selectedPositionStrategy,
-  };
-
-  const tRef = useRef(t);
-  tRef.current = t;
-
-  const buildStrategiesParams = (
-    mode: ReturnType<typeof parsePnlDisplayMode>,
-    ctx: typeof strategiesFetchContextRef.current
-  ) => {
-    const params: {
-      year?: number;
-      month?: number;
-      start_date?: string;
-      end_date?: string;
-      tradingAccount?: number;
-      positionStrategy?: number;
-      pnlDisplay: ReturnType<typeof parsePnlDisplayMode>;
-    } = { pnlDisplay: mode };
-
-    if (ctx.selectedPeriod) {
-      params.start_date = ctx.selectedPeriod.start;
-      params.end_date = ctx.selectedPeriod.end;
-    } else if (ctx.selectedYear) {
-      params.year = ctx.selectedYear;
-      if (ctx.selectedMonth) {
-        params.month = ctx.selectedMonth;
-      }
-    }
-
-    if (ctx.accountId) {
-      params.tradingAccount = ctx.accountId;
-    }
-
-    if (ctx.selectedPositionStrategy) {
-      params.positionStrategy = ctx.selectedPositionStrategy;
-    }
-
-    return params;
-  };
-
-  const buildDashboardFilters = (
-    mode: ReturnType<typeof parsePnlDisplayMode>,
-    ctx: typeof strategiesFetchContextRef.current
-  ) => {
-    const dashboardFilters: Record<string, unknown> = { pnl_display: mode };
-    if (ctx.accountId) dashboardFilters.trading_account = ctx.accountId;
-    if (ctx.summaryStartDate) dashboardFilters.start_date = ctx.summaryStartDate;
-    if (ctx.summaryEndDate) dashboardFilters.end_date = ctx.summaryEndDate;
-    if (ctx.selectedPositionStrategy) dashboardFilters.position_strategy = ctx.selectedPositionStrategy;
-    return dashboardFilters;
-  };
-
-  // Chargement complet (filtres, compte, devises) — skeleton / loaders actifs
-  const loadAllDataFull = useCallback(async () => {
-    setIsLoading(true);
-    setLoadingAllAccountsCompliance(true);
-    setLoadingSelectedAccountCompliance(true);
-    setSummaryLoading(true);
-    setError(null);
-
-    const mode = pnlDisplayModeRef.current;
-    const ctx = strategiesFetchContextRef.current;
-
-    try {
-      const params = buildStrategiesParams(mode, ctx);
-      const dashboardFilters = buildDashboardFilters(mode, ctx);
-
-      const [statisticsData, allAccountsComplianceData, selectedAccountComplianceData, currenciesData, accountData, dashboardData] =
-        await Promise.all([
-          tradeStrategiesService.statistics(params),
-          tradeStrategiesService.strategyComplianceStats(undefined, params),
-          ctx.accountId
-            ? tradeStrategiesService.strategyComplianceStats(ctx.accountId, params)
-            : Promise.resolve(null),
-          currenciesService.list(),
-          ctx.accountId ? tradingAccountsService.get(ctx.accountId) : Promise.resolve(null),
-          dashboardService.getSummary(dashboardFilters as Parameters<typeof dashboardService.getSummary>[0]).catch(() => null),
-        ]);
-
-      setStatistics(statisticsData);
-      setAllAccountsCompliance(allAccountsComplianceData);
-      setSelectedAccountCompliance(selectedAccountComplianceData);
-      setCurrencies(currenciesData);
-      setSelectedAccount(accountData);
-      setDashboardSummary(dashboardData);
-    } catch (err: any) {
-      setError(err.message || tRef.current('strategies:errorLoadingStatistics'));
-      console.error('Erreur lors du chargement des données:', err);
-    } finally {
-      setIsLoading(false);
-      setLoadingAllAccountsCompliance(false);
-      setLoadingSelectedAccountCompliance(false);
-      setSummaryLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (accountLoading) {
-      return;
-    }
-    void loadAllDataFull();
-  }, [
-    loadAllDataFull,
-    accountLoading,
-    selectedPeriod,
-    selectedYear,
-    selectedMonth,
-    accountId,
-    summaryStartDate,
-    summaryEndDate,
-    selectedPositionStrategy,
-  ]);
-
-  // Toggle net/brut : mise à jour des agrégats uniquement, sans skeleton ni rechargement du bandeau carte compte
-  const silentPnlBootstrapRef = useRef(false);
-  useEffect(() => {
-    if (accountLoading) {
-      return;
-    }
-    if (!silentPnlBootstrapRef.current) {
-      silentPnlBootstrapRef.current = true;
-      return;
-    }
-
-    const mode = pnlDisplayMode;
-    const ctx = strategiesFetchContextRef.current;
-    let cancelled = false;
-
-    void (async () => {
-      setError(null);
-      try {
-        const params = buildStrategiesParams(mode, ctx);
-        const dashboardFilters = buildDashboardFilters(mode, ctx);
-
-        const [statisticsData, allAccountsComplianceData, selectedAccountComplianceData, dashboardData] = await Promise.all([
-          tradeStrategiesService.statistics(params),
-          tradeStrategiesService.strategyComplianceStats(undefined, params),
-          ctx.accountId
-            ? tradeStrategiesService.strategyComplianceStats(ctx.accountId, params)
-            : Promise.resolve(null),
-          dashboardService.getSummary(dashboardFilters as Parameters<typeof dashboardService.getSummary>[0]).catch(() => null),
-        ]);
-
-        if (cancelled) {
-          return;
-        }
-        setStatistics(statisticsData);
-        setAllAccountsCompliance(allAccountsComplianceData);
-        setSelectedAccountCompliance(selectedAccountComplianceData);
-        setDashboardSummary(dashboardData);
-      } catch (err: any) {
-        if (!cancelled) {
-          setError(err.message || tRef.current('strategies:errorLoadingStatistics'));
-          console.error('Erreur lors du rechargement PnL (stratégies):', err);
-        }
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [pnlDisplayMode, accountLoading]);
-
   // Se mettre à jour quand une compliance est sauvegardée/supprimée (via ComplianceRefreshContext)
   const mountedRefreshCount = useRef(refreshCount);
   useEffect(() => {
     if (refreshCount === mountedRefreshCount.current) return;
-    void loadAllDataFull();
-    reloadTrades();
-  }, [refreshCount, loadAllDataFull, reloadTrades]);
+    mountedRefreshCount.current = refreshCount;
+    void queryClient.invalidateQueries({ queryKey: ['strategiesPage'] });
+    void reloadTrades();
+  }, [refreshCount, queryClient, reloadTrades]);
 
 
   const complianceSectionData = useMemo(() => selectedAccountCompliance || allAccountsCompliance, [selectedAccountCompliance, allAccountsCompliance]);
-  const complianceSectionLoading = loadingSelectedAccountCompliance || loadingAllAccountsCompliance;
 
 
   // Devise réelle des montants (non convertis) : compte sélectionné, sinon devise commune des comptes non archivés
@@ -467,7 +306,7 @@ const StrategiesPage: React.FC = () => {
   // Utiliser le hook optimisé pour les graphiques de stratégie
   const { respectChartData, successRateData, winningSessionsData, emotionsData } = useStrategyCharts({
     statistics,
-    isLoading,
+    isLoading: isInitialLoading,
     formatStrategyChartPeriod,
     formatNumber,
     getEmotionLabel,
@@ -481,7 +320,7 @@ const StrategiesPage: React.FC = () => {
     hasAnyInsight,
   } = useStrategyDisciplineInsights({
     statistics,
-    isLoading,
+    isLoading: isInitialLoading,
     getEmotionLabel,
   });
 
@@ -638,7 +477,7 @@ const StrategiesPage: React.FC = () => {
   // Graphique 5: Évolution du taux de compliance (prend en compte le sélecteur de compte)
   const complianceAggregation = useComplianceAggregation({
     complianceData: selectedAccountCompliance || allAccountsCompliance,
-    isLoading,
+    isLoading: isInitialLoading,
   });
 
   const evolutionData = useEvolutionData({
@@ -649,7 +488,7 @@ const StrategiesPage: React.FC = () => {
   // Graphique 7: Compliance par jour de la semaine (prend en compte le sélecteur de compte)
   const weekdayComplianceData = useWeekdayCompliance({
     complianceData: selectedAccountCompliance || allAccountsCompliance,
-    isLoading,
+    isLoading: isInitialLoading,
     t,
   });
 
@@ -728,9 +567,18 @@ const StrategiesPage: React.FC = () => {
     [t]
   );
 
+  const loadErrorMessage = bundleError
+    ? bundleError.message || t('strategies:errorLoadingStatistics')
+    : null;
+
   return (
     <PageShell>
-      <div className="flex flex-col">
+      {isRefreshing && (
+        <div className="mb-2 h-1 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+          <div className="h-full w-1/3 animate-pulse rounded-full bg-sky-500" />
+        </div>
+      )}
+      <div className={`flex flex-col${isRefreshing ? ' opacity-80 transition-opacity' : ''}`}>
         {/* Filtres */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 mb-4 sm:mb-6">
           <div className="flex min-w-0 flex-col lg:flex-row lg:items-end gap-4">
@@ -784,15 +632,15 @@ const StrategiesPage: React.FC = () => {
             hideConsistencyTarget={privacySettings.hideConsistencyTarget}
             balanceLoading={balanceLoading}
             peakLoading={peakLoading}
-            detailsLoading={isLoading || summaryLoading}
-            error={balanceError || error || null}
+            detailsLoading={detailsLoading}
+            error={balanceError || loadErrorMessage}
           />
         )}
 
         {/* Message d'erreur */}
-        {error && (
+        {loadErrorMessage && (
           <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
-            <p className="text-sm sm:text-base text-red-800 dark:text-red-300 break-words">{error}</p>
+            <p className="text-sm sm:text-base text-red-800 dark:text-red-300 break-words">{loadErrorMessage}</p>
           </div>
         )}
 
@@ -931,7 +779,7 @@ const StrategiesPage: React.FC = () => {
                   )}
 
                   {/* Tendance glissante + taux au niveau trade (filtres actifs) */}
-                  {(complianceSectionData || complianceSectionLoading) && (
+                  {(complianceSectionData || isInitialLoading) && (
                     <div>
                       {complianceSectionData ? (
                         <StrategyComplianceTrendCard compliance={complianceSectionData} />
@@ -942,7 +790,7 @@ const StrategiesPage: React.FC = () => {
                   )}
 
                   {/* Discipline & Stratégie — grille 2×2 alignée (Impact, Badges, métriques, discipline) */}
-                  {(complianceSectionData || complianceSectionLoading) && (
+                  {(complianceSectionData || isInitialLoading) && (
                     <div>
                       {complianceSectionData ? (
                         <div className="grid grid-cols-1 items-stretch gap-4 sm:gap-6 md:grid-cols-2">
@@ -991,7 +839,7 @@ const StrategiesPage: React.FC = () => {
               ),
               content: (
                 <div className="flex flex-col gap-4 sm:gap-6">
-                  {isLoading ? (
+                  {isInitialLoading ? (
                     <div className={insightsGridClass}>
                       {INSIGHTS_SKELETON_TITLE_KEYS.map((titleKey) => (
                         <div key={titleKey} className={insightsTileClass}>
@@ -1064,7 +912,7 @@ const StrategiesPage: React.FC = () => {
               content: (
                 <div className="flex flex-col gap-4 sm:gap-6">
                   {/* Graphiques principaux */}
-                  {isLoading ? (
+                  {isInitialLoading ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                       <ChartSkeleton title={t('strategies:strategyRespectPercentage')} />
                       <ChartSkeleton title={t('strategies:successRateByStrategyRespect')} />
@@ -1076,27 +924,27 @@ const StrategiesPage: React.FC = () => {
                       {/* Graphique 1: Respect de la stratégie en % */}
                       {respectChartData && (
                         <ChartSection title={t('strategies:strategyRespectPercentage')} tooltip={t('strategies:strategyRespectPercentageTooltip')}>
-                          <LazyChart height={STRATEGY_CHART_LAZY_HEIGHT}>
+                          <div className={STRATEGY_CHART_LAZY_HEIGHT}>
                             <Bar data={respectChartData} options={respectChartOptions} />
-                          </LazyChart>
+                          </div>
                         </ChartSection>
                       )}
 
                       {/* Graphique 2: Taux de réussite si respect de la stratégie */}
                       {successRateData && (
                         <ChartSection title={t('strategies:successRateByStrategyRespect')} tooltip={t('strategies:successRateByStrategyRespectTooltip')}>
-                          <LazyChart height={STRATEGY_CHART_LAZY_HEIGHT}>
+                          <div className={STRATEGY_CHART_LAZY_HEIGHT}>
                             <Bar data={successRateData} options={successRateOptions} />
-                          </LazyChart>
+                          </div>
                         </ChartSection>
                       )}
 
                       {/* Graphique 3: Distribution des sessions gagnantes */}
                       {winningSessionsData && (
                         <ChartSection title={t('strategies:winningSessionsDistribution')} tooltip={t('strategies:winningSessionsDistributionTooltip')}>
-                          <LazyChart height={STRATEGY_CHART_LAZY_HEIGHT}>
+                          <div className={STRATEGY_CHART_LAZY_HEIGHT}>
                             <Bar data={winningSessionsData} options={winningSessionsOptions} />
-                          </LazyChart>
+                          </div>
                         </ChartSection>
                       )}
 
@@ -1118,7 +966,7 @@ const StrategiesPage: React.FC = () => {
 
                   {/* Graphiques de compliance et évolution */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-                    {(isLoading || complianceSectionLoading) ? (
+                    {isInitialLoading ? (
                       <>
                         <ChartSkeleton 
                           height="h-64 sm:h-80 md:h-96" 
@@ -1137,13 +985,13 @@ const StrategiesPage: React.FC = () => {
                             title={t('strategies:complianceByWeekday', { defaultValue: 'Respect de la stratégie par jour de la semaine' })}
                             tooltip={t('strategies:complianceByWeekdayTooltip', { defaultValue: 'Taux de respect moyen pour chaque jour de la semaine. Les jours en bleu sont ceux où vous respectez le mieux votre stratégie, les jours en rose sont ceux à améliorer.' })}
                           >
-                            <LazyChart height="h-64 sm:h-80 md:h-96">
+                            <div className="h-64 sm:h-80 md:h-96">
                               <MixedChart
                                 type="bar"
                                 data={weekdayComplianceData}
                                 options={weekdayComplianceOptions}
                               />
-                            </LazyChart>
+                            </div>
                           </ChartSection>
                         ) : null}
 
@@ -1169,10 +1017,8 @@ const StrategiesPage: React.FC = () => {
       <ImportTradesModal open={showImport} onClose={(done) => {
         setShowImport(false);
         if (done) {
-          // Recharger toutes les données après un import réussi
-          void loadAllDataFull();
-          // Recharger aussi les trades pour mettre à jour les soldes et les graphiques
-          reloadTrades();
+          void queryClient.invalidateQueries({ queryKey: ['strategiesPage'] });
+          void reloadTrades();
         }
       }} />
 

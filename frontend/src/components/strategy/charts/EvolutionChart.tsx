@@ -1,6 +1,5 @@
 import React from 'react';
 import { ChartSection } from '../../common/ChartSection';
-import { LazyChart } from './LazyChart';
 import { MemoizedMixedChart as MixedChart } from './MemoizedCharts';
 import { TradingAccount } from '../../../services/tradingAccounts';
 
@@ -25,9 +24,9 @@ export const EvolutionChart: React.FC<EvolutionChartProps> = React.memo(({
           ? t('strategies:complianceEvolutionSelectedAccountTooltip', { defaultValue: 'Évolution du taux de respect de la stratégie pour le compte sélectionné' })
           : t('strategies:complianceEvolutionAllAccountsTooltip', { defaultValue: 'Évolution du taux de respect de la stratégie pour tous vos comptes actifs' })}
       >
-        <LazyChart height="h-64 sm:h-80 md:h-96">
+        <div className="h-64 sm:h-80 md:h-96">
           <MixedChart type="bar" data={data} options={options} />
-        </LazyChart>
+        </div>
       </ChartSection>
     );
   }

@@ -1,8 +1,10 @@
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { tradesService } from '../services/trades';
 import { tradingAccountsService, TradingAccount } from '../services/tradingAccounts';
 import { tradeStrategiesService } from '../services/tradeStrategies';
+import { currenciesService, Currency } from '../services/currencies';
+import { dashboardService, DashboardSummary } from '../services/dashboard';
 import type { PnlDisplayMode } from '../utils/pnlDisplay';
 import { queryKeys } from '../lib/queryKeys';
 import { queryClient } from '../lib/queryClient';
@@ -340,6 +342,7 @@ export function useTradesUpdateInvalidation() {
       queryClient.invalidateQueries({ queryKey: ['statistics'] });
       queryClient.invalidateQueries({ queryKey: ['analytics'] });
       queryClient.invalidateQueries({ queryKey: ['statsBundle'] });
+      queryClient.invalidateQueries({ queryKey: ['strategiesPage'] });
     };
 
     window.addEventListener('trade:created', invalidateAll);
@@ -356,4 +359,142 @@ export function useTradesUpdateInvalidation() {
 
 export function useSelectedAccountCurrency(account: TradingAccount | null): string {
   return account?.currency || '';
+}
+
+export interface StrategiesPageData {
+  statistics: any;
+  allAccountsCompliance: any;
+  selectedAccountCompliance: any | null;
+  currencies: Currency[];
+  selectedAccount: TradingAccount | null;
+  dashboardSummary: DashboardSummary | null;
+}
+
+export interface StrategiesPageParams {
+  accountId: number | null;
+  year: number | null;
+  month: number | null;
+  startDate: string | null;
+  endDate: string | null;
+  summaryStartDate?: string;
+  summaryEndDate?: string;
+  positionStrategy: number | null;
+  pnlDisplay: PnlDisplayMode;
+  enabled?: boolean;
+}
+
+export function useStrategiesPageData({
+  accountId,
+  year,
+  month,
+  startDate,
+  endDate,
+  summaryStartDate,
+  summaryEndDate,
+  positionStrategy,
+  pnlDisplay,
+  enabled = true,
+}: StrategiesPageParams) {
+  const params = {
+    accountId,
+    year,
+    month,
+    startDate,
+    endDate,
+    summaryStartDate: summaryStartDate ?? null,
+    summaryEndDate: summaryEndDate ?? null,
+    positionStrategy,
+    pnlDisplay,
+  };
+
+  const query = useQuery<StrategiesPageData>({
+    queryKey: queryKeys.strategiesPage(params),
+    queryFn: async () => {
+      const strategyParams: {
+        year?: number;
+        month?: number;
+        start_date?: string;
+        end_date?: string;
+        tradingAccount?: number;
+        positionStrategy?: number;
+        pnlDisplay: PnlDisplayMode;
+      } = { pnlDisplay };
+
+      if (startDate && endDate) {
+        strategyParams.start_date = startDate;
+        strategyParams.end_date = endDate;
+      } else if (year) {
+        strategyParams.year = year;
+        if (month) {
+          strategyParams.month = month;
+        }
+      }
+
+      if (accountId) {
+        strategyParams.tradingAccount = accountId;
+      }
+      if (positionStrategy) {
+        strategyParams.positionStrategy = positionStrategy;
+      }
+
+      try {
+        const [
+          statisticsData,
+          allAccountsComplianceData,
+          selectedAccountComplianceData,
+          currenciesData,
+          accountData,
+          dashboardData,
+        ] = await Promise.all([
+          tradeStrategiesService.statistics(strategyParams),
+          tradeStrategiesService.strategyComplianceStats(undefined, strategyParams),
+          accountId
+            ? tradeStrategiesService.strategyComplianceStats(accountId, strategyParams)
+            : Promise.resolve(null),
+          currenciesService.list(),
+          accountId ? tradingAccountsService.get(accountId) : Promise.resolve(null),
+          dashboardService.getSummary({
+            pnl_display: pnlDisplay,
+            ...(accountId ? { trading_account: accountId } : {}),
+            ...(summaryStartDate ? { start_date: summaryStartDate } : {}),
+            ...(summaryEndDate ? { end_date: summaryEndDate } : {}),
+            ...(positionStrategy ? { position_strategy: positionStrategy } : {}),
+          }).catch(() => null),
+        ]);
+
+        return {
+          statistics: statisticsData,
+          allAccountsCompliance: allAccountsComplianceData,
+          selectedAccountCompliance: selectedAccountComplianceData,
+          currencies: currenciesData,
+          selectedAccount: accountData,
+          dashboardSummary: dashboardData,
+        };
+      } catch (err) {
+        console.error('Erreur lors du chargement des données:', err);
+        throw err;
+      }
+    },
+    enabled,
+    placeholderData: keepPreviousData,
+  });
+
+  const lastSuccessRef = useRef<StrategiesPageData | null>(null);
+  if (query.data) {
+    lastSuccessRef.current = query.data;
+  }
+  const data = query.data ?? lastSuccessRef.current;
+
+  return {
+    data,
+    statistics: data?.statistics ?? null,
+    allAccountsCompliance: data?.allAccountsCompliance ?? null,
+    selectedAccountCompliance: data?.selectedAccountCompliance ?? null,
+    currencies: data?.currencies ?? [],
+    selectedAccount: data?.selectedAccount ?? null,
+    dashboardSummary: data?.dashboardSummary ?? null,
+    isLoading: query.isLoading,
+    isFetching: query.isFetching,
+    error: query.error instanceof Error ? query.error : null,
+  };
 }

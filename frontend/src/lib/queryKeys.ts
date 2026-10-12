@@ -58,4 +58,15 @@ export const queryKeys = {
     convertTo?: string | null;
     pnlDisplay?: PnlDisplayMode;
   }) => ['statsBundle', params] as const,
+  strategiesPage: (params: {
+    accountId: number | null;
+    year: number | null;
+    month: number | null;
+    startDate: string | null;
+    endDate: string | null;
+    summaryStartDate: string | null;
+    summaryEndDate: string | null;
+    positionStrategy: number | null;
+    pnlDisplay: PnlDisplayMode;
+  }) => ['strategiesPage', params] as const,
 };
