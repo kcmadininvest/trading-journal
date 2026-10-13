@@ -6,9 +6,20 @@ import { useTheme } from '../../hooks/useTheme';
 import { usePreferences } from '../../hooks/usePreferences';
 import { SessionEventItem, SessionMarketData } from '../../services/sessionReplay';
 import { getStopLossLineTooltipText, getTapeMarkerTooltipText } from './eventDetail';
-import { buildTapeRenderModel, TapeMarker, TapePriceLine, TapeRenderModel } from './marketTapeData';
+import {
+  buildTapeRenderModel,
+  TapeMarker,
+  TapePriceLine,
+  TapeRenderModel,
+  TapeTradeSpan,
+  tapePricesEqual,
+} from './marketTapeData';
 import { formatCurrencyWithSign, NumberFormatType } from '../../utils/numberFormat';
 import {
+  TAPE_BROKER_STOP_DASH,
+  TAPE_BROKER_STOP_WIDTH,
+  TAPE_PLANNED_STOP_DASH,
+  TAPE_PLANNED_STOP_WIDTH,
   TAPE_VIEW_H,
   TAPE_VIEW_W,
   tapeSlotWidth,
@@ -347,7 +358,12 @@ const TapeChart: React.FC<{
           height: meetSize.height > 0 ? meetSize.height : '100%',
         }}
       >
-        <TapeSvg model={model} theme={theme} isDark={isDark} />
+        <TapeSvg
+          model={model}
+          theme={theme}
+          isDark={isDark}
+          stopLabel={t('marketTapeStopLabel', { defaultValue: 'SL' })}
+        />
         <div className="pointer-events-none absolute inset-0 z-10">
           <TapeStopLossHitLayer model={model} barCount={barCount} t={t} numberFormat={numberFormat} />
           <TapeMarkerHitLayer
@@ -365,10 +381,33 @@ const TapeChart: React.FC<{
   );
 };
 
-const TapeSvg: React.FC<{ model: TapeRenderModel; theme: MarketTapeTheme; isDark: boolean }> = ({
+const OPEN_ZONE_OPACITY = 0.14;
+const CLOSED_ZONE_OPACITY = 0.06;
+
+function spanHorizontalBounds(
+  span: Pick<TapeTradeSpan, 'entryBar' | 'endBar'>,
+  model: TapeRenderModel,
+  barCount: number,
+): { x: number; width: number } {
+  const xStart = xForBarIndex(span.entryBar, barCount);
+  const xEnd = xForBarIndex(span.endBar, barCount);
+  const halfStart = barSlotWidth(span.entryBar, model) / 2;
+  const halfEnd = barSlotWidth(span.endBar, model) / 2;
+  const x1 = xStart - halfStart;
+  const x2 = xEnd + halfEnd;
+  return { x: Math.min(x1, x2), width: Math.max(Math.abs(x2 - x1), 1) };
+}
+
+const TapeSvg: React.FC<{
+  model: TapeRenderModel;
+  theme: MarketTapeTheme;
+  isDark: boolean;
+  stopLabel: string;
+}> = ({
   model,
   theme,
   isDark,
+  stopLabel,
 }) => {
   const barCount = model.bars.length;
   const bandStartSlot = model.openPositionBand
@@ -391,6 +430,31 @@ const TapeSvg: React.FC<{ model: TapeRenderModel; theme: MarketTapeTheme; isDark
       </defs>
 
       <rect x={0} y={0} width={TAPE_VIEW_W} height={TAPE_VIEW_H} fill="url(#tapeChartBg)" />
+
+      {(model.tradeSpans ?? []).map((span) => {
+        const { x, width } = spanHorizontalBounds(span, model, barCount);
+        const yEntry = yForPrice(span.entryPrice, model);
+        const yStop = yForPrice(span.stopPrice, model);
+        const fill = resolveTapeTripStrokeColor(
+          span.tripIndex,
+          span.side,
+          isDark,
+          theme,
+          theme.stopLossBrokerLine,
+        );
+        return (
+          <rect
+            key={`zone-${span.tripIndex}-${span.entryBar}`}
+            x={x}
+            y={Math.min(yEntry, yStop)}
+            width={width}
+            height={Math.max(Math.abs(yStop - yEntry), 1)}
+            fill={fill}
+            fillOpacity={span.open ? OPEN_ZONE_OPACITY : CLOSED_ZONE_OPACITY}
+            pointerEvents="none"
+          />
+        );
+      })}
 
       {model.openPositionBand && (
         <rect
@@ -451,19 +515,38 @@ const TapeSvg: React.FC<{ model: TapeRenderModel; theme: MarketTapeTheme; isDark
           theme,
           theme.stopLossBrokerLine,
         );
+        const planned = line.kind === 'planned_stop_loss';
+        const showLabel = (model.tradeSpans ?? []).some(
+          (span) => span.open
+            && span.tripIndex === line.tripIndex
+            && tapePricesEqual(span.stopPrice, line.price),
+        );
         return (
-          <line
-            key={`sl-line-${line.kind}-${line.barStart}-${line.barEnd}-${i}`}
-            x1={x1}
-            y1={y}
-            x2={x2}
-            y2={y}
-            stroke={stroke}
-            strokeWidth={2}
-            strokeDasharray="4 3"
-            strokeLinecap="round"
-            strokeOpacity={1}
-          />
+          <g key={`sl-line-${line.kind}-${line.barStart}-${line.barEnd}-${i}`}>
+            <line
+              x1={x1}
+              y1={y}
+              x2={x2}
+              y2={y}
+              stroke={stroke}
+              strokeWidth={planned ? TAPE_PLANNED_STOP_WIDTH : TAPE_BROKER_STOP_WIDTH}
+              strokeDasharray={planned ? TAPE_PLANNED_STOP_DASH : TAPE_BROKER_STOP_DASH}
+              strokeLinecap="round"
+              strokeOpacity={1}
+            />
+            {showLabel && (
+              <text
+                x={Math.max(x1 + 2, x2 - 2)}
+                y={Math.max(9, y - 3)}
+                textAnchor="end"
+                fontSize={8}
+                fill={stroke}
+                pointerEvents="none"
+              >
+                {stopLabel}
+              </text>
+            )}
+          </g>
         );
       })}
 
@@ -483,6 +566,7 @@ const TapeSvg: React.FC<{ model: TapeRenderModel; theme: MarketTapeTheme; isDark
             <TapeExitMarkerGraphic
               key={m.markerKey || `exit-${m.occurredAt}-${i}`}
               layout={layout}
+              viaStop={m.exitViaStopLoss}
             />
           );
         })}
@@ -617,11 +701,14 @@ export const SessionMarketTape: React.FC<SessionMarketTapeProps> = ({
         <MarketTapeLegend
           theme={tapeTheme}
           isDark={isDark}
+          showPlannedStop={model.priceLines.some((line) => line.kind === 'planned_stop_loss')}
           labels={{
             entryLong: t('marketTapeLegendEntryLong'),
             entryShort: t('marketTapeLegendEntryShort'),
             exit: t('marketTapeLegendExit'),
+            exitStop: t('marketTapeLegendExitStop'),
             stopLossBroker: t('marketTapeLegendStopLossBroker'),
+            stopLossPlanned: t('marketTapeLegendStopLossPlanned'),
             help: t('marketTapeLegendTripColorHelp'),
           }}
         />

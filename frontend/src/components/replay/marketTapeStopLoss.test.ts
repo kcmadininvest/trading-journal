@@ -1,10 +1,11 @@
 import {
   buildMarkersForContract,
   buildStopLossLines,
+  buildTapeRenderModel,
   getContractRoundTrips,
 } from './marketTapeData';
 import { getTripColor } from './marketTapeTripColors';
-import type { SessionEventItem, SessionMarketBar } from '../../services/sessionReplay';
+import type { SessionEventItem, SessionMarketBar, SessionMarketContract } from '../../services/sessionReplay';
 
 const bars: SessionMarketBar[] = [
   { t: '2024-01-01T10:00:00Z', o: 100, h: 110, l: 95, c: 105 },
@@ -134,7 +135,7 @@ describe('trip index on markers and stop lines', () => {
     );
   });
 
-  it('hides broker SL line when exit price equals stop and flags exit tooltip', () => {
+  it('keeps broker SL line when exit price equals stop and flags exit tooltip', () => {
     const stopEvents: SessionEventItem[] = [
       evt(1, 'position_open', '2024-01-01T10:01:00Z', {
         contract_name: label,
@@ -155,10 +156,149 @@ describe('trip index on markers and stop lines', () => {
       }),
     ];
     const lines = buildStopLossLines(stopEvents, 3, contractId, label, bars, 2);
-    expect(lines.filter((l) => l.kind === 'broker_stop')).toHaveLength(0);
+    expect(lines.filter((l) => l.kind === 'broker_stop')).toHaveLength(1);
+    expect(lines[0].price).toBe(98);
 
     const markers = buildMarkersForContract(stopEvents, 3, contractId, label, bars);
     const exit = markers.find((m) => m.kind === 'exit')!;
     expect(exit.exitViaStopLoss).toBe(true);
+  });
+});
+
+describe('trade spans on the tape', () => {
+  const contractId = 'CON.NQ';
+  const label = 'NQ';
+  const contract: SessionMarketContract = {
+    contract_id: contractId,
+    label,
+    bars,
+  };
+
+  function tape(events: SessionEventItem[], currentIndex = events.length - 1) {
+    return buildTapeRenderModel(contract, events, currentIndex)!;
+  }
+
+  it('extends an open risk zone to the cursor bar', () => {
+    const events: SessionEventItem[] = [
+      evt(1, 'position_open', '2024-01-01T10:01:00Z', {
+        contract_name: label,
+        trade_type: 'Long',
+        entry_price: '100',
+        planned_stop_loss: '98',
+      }),
+      evt(2, 'pnl_tick', '2024-01-01T10:10:00Z', { contract_name: label }),
+    ];
+    const span = tape(events).tradeSpans?.[0];
+    expect(span).toBeDefined();
+    expect(span!.open).toBe(true);
+    expect(span!.endBar).toBe(2);
+    expect(span!.stopPrice).toBe(98);
+    expect(span!.entryPrice).toBe(100);
+  });
+
+  it('ends a closed risk zone on the last exit bar', () => {
+    const events: SessionEventItem[] = [
+      evt(1, 'position_open', '2024-01-01T10:01:00Z', {
+        contract_name: label,
+        trade_type: 'Long',
+        entry_price: '100',
+        planned_stop_loss: '98',
+      }),
+      evt(2, 'position_close', '2024-01-01T10:02:00Z', {
+        contract_name: label,
+        exit_price: '102',
+        pnl: '20',
+      }),
+      evt(3, 'position_close', '2024-01-01T10:08:00Z', {
+        contract_name: label,
+        exit_price: '104',
+        pnl: '40',
+      }),
+    ];
+    const span = tape(events).tradeSpans?.[0];
+    expect(span!.open).toBe(false);
+    expect(span!.endBar).toBe(1);
+    expect(span!.endBar).toBeLessThan(bars.length - 1);
+  });
+
+  it('uses the planned stop as the zone boundary when there is no broker stop', () => {
+    const events: SessionEventItem[] = [
+      evt(1, 'position_open', '2024-01-01T10:01:00Z', {
+        contract_name: label,
+        trade_type: 'Long',
+        entry_price: '100',
+        planned_stop_loss: '98',
+      }),
+    ];
+    const model = tape(events);
+    expect(model.priceLines.map((line) => line.kind)).toEqual(['planned_stop_loss']);
+    expect(model.tradeSpans?.[0].stopPrice).toBe(98);
+  });
+
+  it('draws broker then a different planned stop, and bounds the zone on the broker', () => {
+    const events: SessionEventItem[] = [
+      evt(1, 'position_open', '2024-01-01T10:01:00Z', {
+        contract_name: label,
+        trade_type: 'Long',
+        entry_price: '100',
+        planned_stop_loss: '98',
+      }),
+      evt(2, 'order_created', '2024-01-01T10:01:30Z', {
+        contract_name: label,
+        order_type: 'stop',
+        stop_price: '97.5',
+        order: { orderType: 'stop', stopPrice: 97.5 },
+      }),
+    ];
+    const model = tape(events);
+    expect(model.priceLines.map((line) => line.kind)).toEqual(['broker_stop', 'planned_stop_loss']);
+    expect(model.priceLines[0].price).toBe(97.5);
+    expect(model.tradeSpans?.[0].stopPrice).toBe(97.5);
+  });
+
+  it('drops a far planned stop and leaves the price scale unchanged', () => {
+    const open = evt(1, 'position_open', '2024-01-01T10:01:00Z', {
+      contract_name: label,
+      trade_type: 'Long',
+      entry_price: '100',
+    });
+    const far = evt(1, 'position_open', '2024-01-01T10:01:00Z', {
+      contract_name: label,
+      trade_type: 'Long',
+      entry_price: '100',
+      planned_stop_loss: '1000',
+    });
+    const plain = tape([open]);
+    const distant = tape([far]);
+    expect(distant.priceLines.some((line) => line.kind === 'planned_stop_loss')).toBe(false);
+    expect(distant.tradeSpans ?? []).toHaveLength(0);
+    expect(distant.yMin).toBe(plain.yMin);
+    expect(distant.yMax).toBe(plain.yMax);
+  });
+
+  it('links each partial exit back to the entry', () => {
+    const events: SessionEventItem[] = [
+      evt(1, 'position_open', '2024-01-01T10:01:00Z', {
+        contract_name: label,
+        trade_type: 'Long',
+        entry_price: '100',
+        planned_stop_loss: '98',
+      }),
+      evt(2, 'position_close', '2024-01-01T10:02:00Z', {
+        contract_name: label,
+        exit_price: '102',
+        pnl: '50',
+      }),
+      evt(3, 'position_close', '2024-01-01T10:08:00Z', {
+        contract_name: label,
+        exit_price: '104',
+        pnl: '80',
+      }),
+    ];
+    const span = tape(events).tradeSpans?.[0];
+    expect(span!.exits).toEqual([
+      { barIndex: 0, price: 102 },
+      { barIndex: 1, price: 104 },
+    ]);
   });
 });

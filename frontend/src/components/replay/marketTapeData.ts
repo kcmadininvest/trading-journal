@@ -34,7 +34,7 @@ export interface TapeMarker {
   stackSlot?: number;
   /** Index du trade (position_open) pour la teinte unique. */
   tripIndex?: number;
-  /** Sortie exécutée au prix du stop broker (ligne SL masquée). */
+  /** Sortie exécutée au prix du stop broker. */
   exitViaStopLoss?: boolean;
   /** Taille réelle de la position à l'entrée (lots du fill d'entrée). */
   positionSize?: number;
@@ -50,6 +50,28 @@ export interface TapeRenderBar {
   isFuture: boolean;
 }
 
+/** Point de sortie réel (prix sur la bougie), pour le trait entrée → sortie. */
+export interface TapeTradeExitAnchor {
+  barIndex: number;
+  price: number;
+}
+
+/**
+ * Un round-trip lisible comme un objet : zone entre l'entrée et le stop.
+ * Absent des modèles construits à la main dans les tests.
+ */
+export interface TapeTradeSpan {
+  tripIndex?: number;
+  side?: string;
+  entryPrice: number;
+  entryBar: number;
+  endBar: number;
+  stopPrice: number;
+  /** Vrai tant que le round-trip n'est pas entièrement clos au curseur. */
+  open: boolean;
+  exits: TapeTradeExitAnchor[];
+}
+
 export interface TapeRenderModel {
   contractId: string;
   label: string;
@@ -61,6 +83,8 @@ export interface TapeRenderModel {
   yMax: number;
   cursorTime: string | null;
   openPositionBand: { entryPrice: number; topPrice: number; bottomPrice: number; barStart: number; barEnd: number } | null;
+  /** Optionnel : les fixtures de layout n'ont pas à le remplir. */
+  tradeSpans?: TapeTradeSpan[];
 }
 
 function parseTimeMs(iso: string): number {
@@ -188,11 +212,29 @@ function closeDetailsForTrip(
   return details;
 }
 
-function brokerStopTriggeredByClose(
-  brokerSl: number,
-  closes: TripCloseDetail[],
+/**
+ * Un stop planifié trop loin de la plage (bougies, marques, stops broker)
+ * écraserait le bandeau. On le dessine seulement s'il est dans la plage,
+ * ou au plus à une hauteur de plage de celle-ci.
+ */
+export function plannedStopFitsTapeRange(price: number, yMin: number, yMax: number): boolean {
+  const span = yMax - yMin;
+  if (!(span > 0) || !Number.isFinite(price)) return false;
+  if (price >= yMin && price <= yMax) return true;
+  const distance = price < yMin ? yMin - price : price - yMax;
+  return distance <= span;
+}
+
+function tripFullyClosed(
+  events: SessionEventItem[],
+  trip: ContractRoundTrip,
+  currentIndex: number,
+  contractId: string,
+  label: string,
 ): boolean {
-  return closes.some((c) => tapePricesEqual(c.price, brokerSl));
+  const allCloseIndices = closeIndicesForOpen(events, trip.openIndex, contractId, label);
+  const visibleCloseIndices = allCloseIndices.filter((idx) => idx <= currentIndex);
+  return allCloseIndices.length > 0 && visibleCloseIndices.length === allCloseIndices.length;
 }
 
 /** Indices des position_close liées à un position_open (jusqu'à la prochaine ouverture). */
@@ -355,30 +397,84 @@ export function buildStopLossLines(
   for (const trip of trips) {
     if (trip.openIndex > currentIndex) continue;
 
-    const allCloseIndices = closeIndicesForOpen(events, trip.openIndex, contractId, label);
-    const visibleCloseIndices = allCloseIndices.filter((idx) => idx <= currentIndex);
-    const fullyClosed =
-      allCloseIndices.length > 0
-      && visibleCloseIndices.length === allCloseIndices.length;
+    const fullyClosed = tripFullyClosed(events, trip, currentIndex, contractId, label);
     const barEnd = fullyClosed && trip.closeBar != null ? trip.closeBar : cursorBarIndex;
     const lineMeta = { tripIndex: trip.tripIndex, side: trip.tradeSide };
-    const closes = closeDetailsForTrip(events, trip, currentIndex);
-    const hideBrokerLine =
-      trip.brokerSl != null && brokerStopTriggeredByClose(trip.brokerSl, closes);
+    const segment = {
+      barStart: trip.openBar,
+      barEnd,
+      sourceEventId: trip.openEventId,
+      ...lineMeta,
+    };
 
-    if (trip.brokerSl != null && !hideBrokerLine) {
+    if (trip.brokerSl != null) {
       lines.push({
         price: trip.brokerSl,
-        barStart: trip.openBar,
-        barEnd,
         kind: 'broker_stop',
-        sourceEventId: trip.openEventId,
-        ...lineMeta,
+        ...segment,
+      });
+    }
+
+    const plannedDiffers =
+      trip.plannedSl != null
+      && (trip.brokerSl == null || !tapePricesEqual(trip.plannedSl, trip.brokerSl));
+    if (plannedDiffers && trip.plannedSl != null) {
+      lines.push({
+        price: trip.plannedSl,
+        kind: 'planned_stop_loss',
+        ...segment,
       });
     }
   }
 
   return lines;
+}
+
+/** Zone d'un round-trip, à partir des lignes de stop réellement conservées. */
+export function buildTradeSpans(
+  events: SessionEventItem[],
+  currentIndex: number,
+  contractId: string,
+  label: string,
+  bars: SessionMarketBar[],
+  priceLines: TapePriceLine[],
+): TapeTradeSpan[] {
+  const trips = collectContractRoundTrips(events, contractId, label, bars, currentIndex);
+  const spans: TapeTradeSpan[] = [];
+
+  for (const trip of trips) {
+    if (trip.openIndex > currentIndex) continue;
+
+    const lines = priceLines.filter((line) => line.tripIndex === trip.tripIndex);
+    const broker = lines.find((line) => line.kind === 'broker_stop');
+    const planned = lines.find((line) => line.kind === 'planned_stop_loss');
+    const boundary = broker ?? planned;
+    if (!boundary) continue;
+
+    const openEvt = events[trip.openIndex];
+    const entryPrice = openEvt
+      ? priceFromPayload(openEvt.payload || {}, ['entry_price'])
+      : null;
+    if (entryPrice == null) continue;
+
+    const exits = closeDetailsForTrip(events, trip, currentIndex).map((close) => ({
+      barIndex: barIndexAtOrBefore(bars, events[close.eventIndex].occurred_at),
+      price: close.price,
+    }));
+
+    spans.push({
+      tripIndex: trip.tripIndex,
+      side: trip.tradeSide,
+      entryPrice,
+      entryBar: trip.openBar,
+      endBar: boundary.barEnd,
+      stopPrice: boundary.price,
+      open: !tripFullyClosed(events, trip, currentIndex, contractId, label),
+      exits,
+    });
+  }
+
+  return spans;
 }
 
 export function buildMarkersForContract(
@@ -652,7 +748,7 @@ export function buildTapeRenderModel(
     cursorBarIndex,
   );
 
-  const priceLines = buildStopLossLines(
+  const rawLines = buildStopLossLines(
     events,
     currentIndex,
     contract.contract_id,
@@ -661,10 +757,31 @@ export function buildTapeRenderModel(
     cursorBarIndex,
   );
 
-  for (const line of priceLines) {
+  for (const line of rawLines) {
+    if (line.kind !== 'broker_stop') continue;
     yMin = Math.min(yMin, line.price);
     yMax = Math.max(yMax, line.price);
   }
+
+  const priceLines = rawLines.filter((line) => (
+    line.kind !== 'planned_stop_loss'
+    || plannedStopFitsTapeRange(line.price, yMin, yMax)
+  ));
+
+  for (const line of priceLines) {
+    if (line.kind !== 'planned_stop_loss') continue;
+    yMin = Math.min(yMin, line.price);
+    yMax = Math.max(yMax, line.price);
+  }
+
+  const tradeSpans = buildTradeSpans(
+    events,
+    currentIndex,
+    contract.contract_id,
+    contract.label,
+    bars,
+    priceLines,
+  );
 
   const markersStacked = applyMarkerVerticalStackOffsets(markers);
 
@@ -687,6 +804,7 @@ export function buildTapeRenderModel(
           barEnd: openPositionBand.barEnd,
         }
       : null,
+    tradeSpans,
   };
 }
 

@@ -11,6 +11,13 @@ export const TAPE_CHART_H = TAPE_VIEW_H - TAPE_PAD_TOP - TAPE_PAD_BOTTOM;
 export const TAPE_EXIT_DOT_R = 4.5;
 export const TAPE_EXIT_TICK_R = 2.25;
 
+/** Tirets du stop broker, partagés par le bandeau et la légende. */
+export const TAPE_BROKER_STOP_DASH = '4 3';
+export const TAPE_BROKER_STOP_WIDTH = 2;
+/** Pointillé du stop planifié, plus fin que le stop broker. */
+export const TAPE_PLANNED_STOP_DASH = '1.5 2';
+export const TAPE_PLANNED_STOP_WIDTH = 1.5;
+
 export function tapeYForPrice(
   price: number,
   yMin: number,

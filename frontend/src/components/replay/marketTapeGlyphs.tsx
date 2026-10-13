@@ -1,9 +1,16 @@
 import React from 'react';
 import { ChartHelpTooltip } from '../charts/ChartHelpTooltip';
-import { TAPE_EXIT_DOT_R, TAPE_EXIT_TICK_R } from './marketTapeChartMetrics';
+import {
+  TAPE_BROKER_STOP_DASH,
+  TAPE_BROKER_STOP_WIDTH,
+  TAPE_EXIT_DOT_R,
+  TAPE_EXIT_TICK_R,
+  TAPE_PLANNED_STOP_DASH,
+  TAPE_PLANNED_STOP_WIDTH,
+} from './marketTapeChartMetrics';
 import type { TapeExitMarkerLayout } from './marketTapeMarkerLayout';
 import type { TapeMarker } from './marketTapeData';
-import { getLegendTripColor, getTripColor, getTripLegendSampleColors } from './marketTapeTripColors';
+import { getLegendTripColor, getTripColor } from './marketTapeTripColors';
 import { MarketTapeTheme } from './replayStyles';
 
 const ICON = 22;
@@ -97,14 +104,59 @@ const TapeExitLegendGraphic: React.FC<{ fill: string }> = ({ fill }) => (
   </>
 );
 
+/** Croix à la place de la pastille, même centre, quand la sortie est au stop. */
+const TapeExitStopCross: React.FC<{ cx: number; cy: number; r: number; stroke: string }> = ({
+  cx,
+  cy,
+  r,
+  stroke,
+}) => (
+  <g stroke={stroke} strokeWidth={1.4} strokeLinecap="round">
+    <line x1={cx - r} y1={cy - r} x2={cx + r} y2={cy + r} />
+    <line x1={cx - r} y1={cy + r} x2={cx + r} y2={cy - r} />
+  </g>
+);
+
 export const TapeGlyphExit: React.FC<GlyphProps> = ({ theme, isDark = true, size = ICON }) => (
   <svg width={size} height={size} viewBox="0 0 22 22" aria-hidden>
     <TapeExitLegendGraphic fill={getLegendTripColor('long', isDark) ?? theme.exitWin} />
   </svg>
 );
 
+export const TapeGlyphExitStop: React.FC<GlyphProps> = ({ theme, isDark = true, size = ICON }) => (
+  <svg width={size} height={size} viewBox="0 0 22 22" aria-hidden>
+    <g>
+      <circle
+        cx={LEGEND_EXIT_BAR_X}
+        cy={LEGEND_EXIT_Y}
+        r={2}
+        fill={getLegendTripColor('long', isDark) ?? theme.exitWin}
+      />
+      <line
+        x1={LEGEND_EXIT_BAR_X}
+        y1={LEGEND_EXIT_Y}
+        x2={LEGEND_EXIT_DOT_X}
+        y2={LEGEND_EXIT_Y}
+        stroke={getLegendTripColor('long', isDark) ?? theme.exitWin}
+        strokeWidth={1.25}
+        strokeLinecap="round"
+        opacity={0.9}
+      />
+      <TapeExitStopCross
+        cx={LEGEND_EXIT_DOT_X}
+        cy={LEGEND_EXIT_Y}
+        r={4}
+        stroke={getLegendTripColor('long', isDark) ?? theme.exitWin}
+      />
+    </g>
+  </svg>
+);
+
 /** Sortie sur le bandeau : tick au prix sur la bougie + trait + pastille décalée. */
-export const TapeExitMarkerGraphic: React.FC<{ layout: TapeExitMarkerLayout }> = ({ layout }) => (
+export const TapeExitMarkerGraphic: React.FC<{
+  layout: TapeExitMarkerLayout;
+  viaStop?: boolean;
+}> = ({ layout, viaStop = false }) => (
   <g>
     <line
       x1={layout.barX}
@@ -117,7 +169,16 @@ export const TapeExitMarkerGraphic: React.FC<{ layout: TapeExitMarkerLayout }> =
       opacity={0.9}
     />
     <circle cx={layout.barX} cy={layout.tickY} r={TAPE_EXIT_TICK_R} fill={layout.fill} />
-    <circle cx={layout.dotX} cy={layout.dotY} r={TAPE_EXIT_DOT_R} fill={layout.fill} />
+    {viaStop ? (
+      <TapeExitStopCross
+        cx={layout.dotX}
+        cy={layout.dotY}
+        r={TAPE_EXIT_DOT_R}
+        stroke={layout.fill}
+      />
+    ) : (
+      <circle cx={layout.dotX} cy={layout.dotY} r={TAPE_EXIT_DOT_R} fill={layout.fill} />
+    )}
   </g>
 );
 
@@ -137,55 +198,49 @@ export const TapeChartEntryMarkerGlyph: React.FC<{
   );
 };
 
-const TapeMultiColorStopLine: React.FC<{
-  colors: string[];
+/** Un seul trait, même teinte : le motif distingue le stop broker du stop planifié. */
+const TapeStopLegendLine: React.FC<{
+  isDark: boolean;
+  size: number;
   dasharray: string;
   strokeWidth: number;
-}> = ({ colors, dasharray, strokeWidth }) => {
-  const segmentW = 16 / colors.length;
-  return (
-    <>
-      {colors.map((color, i) => (
-        <line
-          key={`${color}-${i}`}
-          x1={3 + i * segmentW}
-          y1={11}
-          x2={3 + (i + 1) * segmentW}
-          y2={11}
-          stroke={color}
-          strokeWidth={strokeWidth}
-          strokeDasharray={dasharray}
-          strokeLinecap="round"
-        />
-      ))}
-    </>
-  );
-};
+}> = ({ isDark, size, dasharray, strokeWidth }) => (
+  <svg width={size} height={size} viewBox="0 0 22 22" aria-hidden>
+    <line
+      x1={1.5}
+      y1={11}
+      x2={20.5}
+      y2={11}
+      stroke={getLegendTripColor('long', isDark)}
+      strokeWidth={strokeWidth}
+      strokeDasharray={dasharray}
+      strokeLinecap="round"
+    />
+  </svg>
+);
 
 export const TapeGlyphStopLossPlanned: React.FC<GlyphProps & { isDark?: boolean }> = ({
   isDark = true,
   size = ICON,
 }) => (
-  <svg width={size} height={size} viewBox="0 0 22 22" aria-hidden>
-    <TapeMultiColorStopLine
-      colors={getTripLegendSampleColors(isDark)}
-      dasharray="5 2"
-      strokeWidth={2.5}
-    />
-  </svg>
+  <TapeStopLegendLine
+    isDark={isDark}
+    size={size}
+    dasharray={TAPE_PLANNED_STOP_DASH}
+    strokeWidth={TAPE_PLANNED_STOP_WIDTH}
+  />
 );
 
 export const TapeGlyphStopLossBroker: React.FC<GlyphProps & { isDark?: boolean }> = ({
   isDark = true,
   size = ICON,
 }) => (
-  <svg width={size} height={size} viewBox="0 0 22 22" aria-hidden>
-    <TapeMultiColorStopLine
-      colors={getTripLegendSampleColors(isDark)}
-      dasharray="4 2"
-      strokeWidth={2.25}
-    />
-  </svg>
+  <TapeStopLegendLine
+    isDark={isDark}
+    size={size}
+    dasharray={TAPE_BROKER_STOP_DASH}
+    strokeWidth={TAPE_BROKER_STOP_WIDTH}
+  />
 );
 
 interface LegendItemProps {
@@ -215,7 +270,7 @@ export const MarketTapeLegendItem: React.FC<LegendItemProps> = ({
     <span className="hidden md:inline-flex flex-shrink-0 leading-none">
       <Glyph theme={theme} isDark={isDark} size={22} />
     </span>
-    <span className="hidden md:inline text-[11px] text-gray-600 dark:text-gray-300 whitespace-nowrap">{label}</span>
+    <span className="text-[11px] text-gray-600 dark:text-gray-300 whitespace-nowrap">{label}</span>
     {trailing}
   </span>
 );
@@ -223,18 +278,26 @@ export const MarketTapeLegendItem: React.FC<LegendItemProps> = ({
 interface MarketTapeLegendProps {
   theme: MarketTapeTheme;
   isDark: boolean;
+  showPlannedStop?: boolean;
   labels: {
     entryLong: string;
     entryShort: string;
     exit: string;
+    exitStop: string;
     stopLossBroker: string;
+    stopLossPlanned: string;
     help: string;
   };
 }
 
-export const MarketTapeLegend: React.FC<MarketTapeLegendProps> = ({ theme, isDark, labels }) => (
+export const MarketTapeLegend: React.FC<MarketTapeLegendProps> = ({
+  theme,
+  isDark,
+  showPlannedStop = false,
+  labels,
+}) => (
   <div
-    className="shrink-0 flex flex-nowrap md:flex-wrap justify-start md:justify-center gap-x-2 md:gap-x-3 gap-y-0 md:gap-y-2 overflow-x-auto md:overflow-visible border-t border-gray-100 bg-gray-50 px-1 py-1 md:py-2 -mx-1 md:mx-0 dark:border-gray-700/80 dark:bg-gray-900/40"
+    className="shrink-0 flex flex-wrap justify-start md:justify-center gap-x-2 md:gap-x-3 gap-y-1 md:gap-y-2 border-t border-gray-100 bg-gray-50 px-1 py-1 md:py-2 -mx-1 md:mx-0 dark:border-gray-700/80 dark:bg-gray-900/40"
     role="list"
     aria-label="Légende du bandeau marché"
   >
@@ -257,11 +320,25 @@ export const MarketTapeLegend: React.FC<MarketTapeLegendProps> = ({ theme, isDar
       label={labels.exit}
     />
     <MarketTapeLegendItem
+      Glyph={TapeGlyphExitStop}
+      theme={theme}
+      isDark={isDark}
+      label={labels.exitStop}
+    />
+    <MarketTapeLegendItem
       Glyph={TapeGlyphStopLossBroker}
       theme={theme}
       isDark={isDark}
       label={labels.stopLossBroker}
       trailing={<ChartHelpTooltip content={labels.help} position="top" delay={200} />}
     />
+    {showPlannedStop && (
+      <MarketTapeLegendItem
+        Glyph={TapeGlyphStopLossPlanned}
+        theme={theme}
+        isDark={isDark}
+        label={labels.stopLossPlanned}
+      />
+    )}
   </div>
 );
