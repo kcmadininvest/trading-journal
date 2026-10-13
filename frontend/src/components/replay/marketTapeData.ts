@@ -475,6 +475,7 @@ function applyExitStackOffsetX(exitSlot: number): number | undefined {
 /**
  * Sur une même bougie, empile les marqueurs du même type (entrées entre elles, sorties entre elles).
  * Une entrée et une sortie sur la même bougie ne sont pas décalées l'une par rapport à l'autre.
+ * Une entrée n'est décalée en Y que si son prix est identique à la première entrée de la bougie.
  */
 export function applyMarkerVerticalStackOffsets(markers: TapeMarker[]): TapeMarker[] {
   if (markers.length <= 1) return markers;
@@ -523,8 +524,10 @@ export function applyMarkerVerticalStackOffsets(markers: TapeMarker[]): TapeMark
         continue;
       }
 
+      const anchorPrice = markers[kindIndices[0]].price;
       kindIndices.forEach((markerIdx, slot) => {
         if (slot === 0) return;
+        if (!tapePricesEqual(anchorPrice, markers[markerIdx].price)) return;
         result[markerIdx] = {
           ...result[markerIdx],
           offsetY: -slot * MARKER_VERTICAL_STACK_STEP_PX,

@@ -72,6 +72,8 @@ def bulk_insert_bars(
     """
     if user is None:
         raise ValueError('user est requis pour stocker des bougies historiques.')
+    from market_data.e2e_access import reject_market_data_write
+    reject_market_data_write(user)
     instances = bars_to_model_instances(
         bars,
         user=user,

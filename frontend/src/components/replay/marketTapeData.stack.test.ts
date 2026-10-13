@@ -71,7 +71,7 @@ describe('applyMarkerVerticalStackOffsets', () => {
     expect(Math.abs(first.dotY - second.dotY)).toBeGreaterThan(5);
   });
 
-  it('empile verticalement les sorties au même prix sur la même bougie', () => {
+  it('garde le trait horizontal pour les sorties au même prix sur la même bougie', () => {
     const model: TapeRenderModel = {
       contractId: 'c1',
       label: 'NQ',
@@ -93,7 +93,53 @@ describe('applyMarkerVerticalStackOffsets', () => {
     const first = computeTapeExitMarkerLayout(markers[0], model, 1, theme, true)!;
     const second = computeTapeExitMarkerLayout(markers[1], model, 1, theme, true)!;
 
-    expect(first.dotY).toBeGreaterThan(second.dotY);
+    expect(first.dotY).toBe(first.tickY);
+    expect(second.dotY).toBe(second.tickY);
     expect(first.tickY).toBe(second.tickY);
+    expect(second.dotX).not.toBe(first.dotX);
+  });
+
+  it('ne décale pas une entrée dont le prix diffère sur la même bougie', () => {
+    const markers: TapeMarker[] = [
+      {
+        kind: 'entry',
+        barIndex: 0,
+        price: 30878,
+        occurredAt: '2026-10-12T18:10:00Z',
+        side: 'Short',
+      },
+      {
+        kind: 'entry',
+        barIndex: 0,
+        price: 30887.5,
+        occurredAt: '2026-10-12T18:12:00Z',
+        side: 'Long',
+      },
+    ];
+    const stacked = applyMarkerVerticalStackOffsets(markers);
+    expect(stacked[0].offsetY).toBeUndefined();
+    expect(stacked[1].offsetY).toBeUndefined();
+  });
+
+  it('décale verticalement les entrées au même prix sur la même bougie', () => {
+    const markers: TapeMarker[] = [
+      {
+        kind: 'entry',
+        barIndex: 0,
+        price: 30887.5,
+        occurredAt: '2026-10-12T18:10:00Z',
+        side: 'Long',
+      },
+      {
+        kind: 'entry',
+        barIndex: 0,
+        price: 30887.5,
+        occurredAt: '2026-10-12T18:12:00Z',
+        side: 'Long',
+      },
+    ];
+    const stacked = applyMarkerVerticalStackOffsets(markers);
+    expect(stacked[0].offsetY).toBeUndefined();
+    expect(stacked[1].offsetY).toBe(-22);
   });
 });

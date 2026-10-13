@@ -35,6 +35,8 @@ def list_available_timeframes(instrument: str, *, user) -> list[dict[str, Any]]:
     """
     if user is None:
         raise ValueError('user requis')
+    from market_data.e2e_access import market_read_user
+    user = market_read_user(user)
     instrument = (instrument or '').upper().strip()
     if not instrument:
         return []
@@ -79,6 +81,8 @@ def latest_replay_coverage(instrument: str, *, user) -> dict[str, str | None]:
     """
     if user is None:
         raise ValueError('user requis')
+    from market_data.e2e_access import market_read_user
+    user = market_read_user(user)
     instrument = (instrument or '').upper().strip()
     if not instrument:
         return {'last_bar_at': None, 'latest_session_date': None}
@@ -103,6 +107,8 @@ def list_instruments_with_stored_bars(*, user) -> list[str]:
     """Instruments racines ayant au moins une couverture ou une bougie pour ce user."""
     if user is None:
         raise ValueError('user requis')
+    from market_data.e2e_access import market_read_user
+    user = market_read_user(user)
     from_cov = set(
         BarCoverage.objects.filter(user=user)
         .exclude(status=BarCoverage.Status.EMPTY)

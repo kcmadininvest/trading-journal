@@ -169,7 +169,10 @@ export const ReplayControls: React.FC<ReplayControlsProps> = ({
           replayTimestamp > 0 ? '' : 'hidden'
         }`}
       >
-        <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 tabular-nums whitespace-nowrap">
+        <span
+          className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 tabular-nums whitespace-nowrap"
+          data-testid="market-replay-clock"
+        >
           {clockLabel}
         </span>
         <span

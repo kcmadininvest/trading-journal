@@ -68,7 +68,10 @@ export const PlaybackControls: React.FC<PlaybackControlsProps> = ({
             </button>
           ))}
         </div>
-        <span className="text-sm text-gray-500 dark:text-gray-400 ml-auto">
+        <span
+          className="text-sm text-gray-500 dark:text-gray-400 ml-auto"
+          data-testid="session-replay-counter"
+        >
           {currentIndex + 1} / {Math.max(maxIndex + 1, 1)}
         </span>
       </div>
@@ -79,6 +82,7 @@ export const PlaybackControls: React.FC<PlaybackControlsProps> = ({
         value={currentIndex}
         onChange={(e) => onSeek(Number(e.target.value))}
         className="w-full accent-blue-600 dark:accent-blue-500"
+        data-testid="session-replay-cursor"
         disabled={maxIndex <= 0}
       />
       <p className="text-xs text-gray-500 dark:text-gray-400">{t('shortcutsHint')}</p>

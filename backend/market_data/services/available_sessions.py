@@ -68,6 +68,8 @@ def list_available_sessions(
     """
     if user is None:
         raise ValueError('user requis')
+    from market_data.e2e_access import market_read_user
+    user = market_read_user(user)
     instrument = (instrument or '').upper().strip()
     if not instrument:
         return {'sessions': [], 'earliest': None, 'latest': None}
@@ -135,6 +137,8 @@ def list_session_timeframes(
     """
     if user is None:
         raise ValueError('user requis')
+    from market_data.e2e_access import market_read_user
+    user = market_read_user(user)
     instrument = (instrument or '').upper().strip()
     if not instrument:
         return []

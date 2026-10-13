@@ -66,6 +66,16 @@ from market_data.services.timeframes import UnknownTimeframe, parse_timeframe
 
 logger = logging.getLogger(__name__)
 
+
+def _market_write_response(user):
+    from market_data.e2e_access import market_writes_blocked
+    if market_writes_blocked(user):
+        return Response(
+            {'detail': 'Écriture des données marché interdite pour le compte de test.'},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+    return None
+
 CSV_EXPORT_COLUMNS = (
     'timestamp',
     'open',
@@ -467,6 +477,9 @@ class DownloadJobListCreateView(APIView):
         return Response(DownloadJobSerializer(jobs, many=True).data)
 
     def post(self, request):
+        blocked = _market_write_response(request.user)
+        if blocked:
+            return blocked
         integration, err = _require_topstepx(request.user)
         if err:
             return err
@@ -569,6 +582,9 @@ class SyncSettingsView(APIView):
         return Response(SyncSettingsSerializer().to_representation(settings_obj))
 
     def put(self, request):
+        blocked = _market_write_response(request.user)
+        if blocked:
+            return blocked
         settings_obj = _get_or_create_sync_settings(request.user)
         ser = SyncSettingsSerializer(data=request.data)
         ser.is_valid(raise_exception=True)
@@ -581,6 +597,9 @@ class SyncSettingsRunNowView(APIView):
     throttle_classes = [HistoricalDownloadThrottle]
 
     def post(self, request):
+        blocked = _market_write_response(request.user)
+        if blocked:
+            return blocked
         integration, err = _require_topstepx(request.user)
         if err:
             return err

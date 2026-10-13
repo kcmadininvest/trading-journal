@@ -601,6 +601,7 @@ export const SessionMarketTape: React.FC<SessionMarketTapeProps> = ({
       )}
 
       <div
+        data-testid="session-market-tape"
         className={`flex flex-col overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 lg:min-h-0 lg:flex-1 ${replayCardClass}`}
       >
         <div className="h-[220px] shrink-0 sm:h-[240px] lg:h-auto lg:flex-1 lg:min-h-[240px]">

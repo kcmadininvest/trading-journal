@@ -1,5 +1,4 @@
 import type { TapeMarker, TapeRenderModel } from './marketTapeData';
-import { MARKER_VERTICAL_STACK_STEP_PX, tapePricesEqual } from './marketTapeData';
 import { getTripColor } from './marketTapeTripColors';
 import {
   TAPE_EXIT_DOT_R,
@@ -77,17 +76,7 @@ export function computeTapeExitMarkerLayout(
   const stackY = marker.offsetY ?? 0;
   const stackX = marker.offsetX ?? 0;
   const tickY = tapeYForPrice(marker.price, model.yMin, model.yMax) + stackY;
-
-  let dotY = tickY;
-  if (
-    marker.stackAnchorPrice != null
-    && marker.stackSlot != null
-    && marker.stackSlot > 0
-    && tapePricesEqual(marker.stackAnchorPrice, marker.price)
-  ) {
-    const anchorY = tapeYForPrice(marker.stackAnchorPrice, model.yMin, model.yMax);
-    dotY = anchorY - marker.stackSlot * MARKER_VERTICAL_STACK_STEP_PX;
-  }
+  const dotY = tickY;
 
   const candleHalfW = tapeCandleHalfWidth(marker.barIndex, barCount, isFuture);
   const dotX = computeExitDotX(barX, barCount, candleHalfW, stackX);

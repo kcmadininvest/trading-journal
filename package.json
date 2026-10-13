@@ -8,6 +8,7 @@
     "frontend": "cd frontend && npm start",
     "test:backend": "cd backend && source venv/bin/activate && python manage.py test",
     "test:frontend": "cd frontend && npm test",
+    "test:e2e": "npm test --prefix e2e",
     "build:frontend": "cd frontend && npm run build"
   },
   "repository": {

@@ -1,10 +1,10 @@
 /** Palettes de teintes distinctes par trade (replay bandeau marché). */
 
-const TRIP_PALETTE_LONG_DARK = ['#4ade80', '#2dd4bf', '#22d3ee', '#60a5fa', '#34d399', '#a3e635', '#38bdf8', '#86efac'];
-const TRIP_PALETTE_SHORT_DARK = ['#fb923c', '#fbbf24', '#f87171', '#f472b6', '#fb7185', '#fdba74', '#f97316', '#ea580c'];
+const TRIP_PALETTE_LONG_DARK = ['#16a34a', '#4e6d06', '#067247', '#0868a0', '#5044f5', '#75a309', '#139cec', '#8b85e5'];
+const TRIP_PALETTE_SHORT_DARK = ['#fb923c', '#9219e8', '#be1377', '#c2410c', '#b96af0', '#ee4fab', '#0f7000', '#249c11'];
 
-const TRIP_PALETTE_LONG_LIGHT = ['#16a34a', '#0d9488', '#0891b2', '#2563eb', '#059669', '#65a30d', '#0284c7', '#15803d'];
-const TRIP_PALETTE_SHORT_LIGHT = ['#ea580c', '#d97706', '#dc2626', '#db2777', '#e11d48', '#f59e0b', '#c2410c', '#b45309'];
+const TRIP_PALETTE_LONG_LIGHT = ['#16a34a', '#0891b2', '#1d4ed8', '#166534', '#65a30d', '#3f6212', '#172554', '#1a2e05'];
+const TRIP_PALETTE_SHORT_LIGHT = ['#ea580c', '#4c1d95', '#be185d', '#451a03', '#7e22ce', '#881337', '#92400e', '#d946ef'];
 
 const TRIP_PALETTE_NEUTRAL_DARK = ['#fbbf24', '#c084fc'];
 const TRIP_PALETTE_NEUTRAL_LIGHT = ['#ea580c', '#7c3aed'];

@@ -1,3 +1,4 @@
+import { getTripColor } from './marketTapeTripColors';
 import { computeTapeExitMarkerLayout } from './marketTapeMarkerLayout';
 import { tapeYForPrice } from './marketTapeChartMetrics';
 import type { TapeMarker, TapeRenderModel } from './marketTapeData';
@@ -82,7 +83,7 @@ describe('computeTapeExitMarkerLayout', () => {
     const marker = exitMarker({ tripIndex: 1, side: 'Long', pnl: -10 });
     const layout = computeTapeExitMarkerLayout(marker, model, 2, theme, true);
     expect(layout!.fill).not.toBe(theme.exitLoss);
-    expect(layout!.fill).toBe('#2dd4bf');
+    expect(layout!.fill).toBe(getTripColor(1, 'Long', true));
   });
 
   it('applies stack offsetX further left', () => {

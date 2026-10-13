@@ -29,10 +29,11 @@ const EVENT_DOT_COLORS: Record<string, string> = {
   pnl_tick: 'bg-blue-600 dark:bg-blue-400',
 };
 
+/** `!` : ces pastilles réutilisent replaySecondaryButtonClass (texte gris, fond blanc). Sans priorité, le mode clair garde le gris sur le bleu. */
 const filterChipActiveClass =
-  'bg-blue-600 text-white border-blue-600 dark:bg-blue-500 dark:border-blue-500';
+  '!bg-blue-600 !text-white !border-blue-600 hover:!bg-blue-700 dark:!bg-blue-500 dark:!text-white dark:!border-blue-500 dark:hover:!bg-blue-600';
 const filterChipInactiveClass =
-  'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700';
+  '!bg-white !text-gray-800 !border-gray-400 hover:!bg-gray-100 hover:!text-gray-900 dark:!bg-gray-800 dark:!text-gray-300 dark:!border-gray-600 dark:hover:!bg-gray-700 dark:hover:!text-gray-200';
 
 function eventPnlHint(evt: SessionEventItem): number {
   if (evt.event_type === 'position_close') {
