@@ -62,10 +62,8 @@ describe('marketTapeTripColors', () => {
       expect(longs[0]).toBe('#16a34a');
       longs.forEach((color) => {
         expect(contrastRatio(color, background)).toBeGreaterThanOrEqual(3);
-        if (isDark) {
-          expect(contrastRatio(color, '#ffffff')).toBeGreaterThanOrEqual(2.2);
-          expect(forbidden.has(color)).toBe(false);
-        }
+        expect(isDark ? contrastRatio(color, '#ffffff') : 2.2).toBeGreaterThanOrEqual(2.2);
+        expect(!isDark || !forbidden.has(color)).toBe(true);
       });
       for (let i = 0; i < longs.length; i += 1) {
         for (let j = i + 1; j < longs.length; j += 1) {
@@ -85,12 +83,8 @@ describe('marketTapeTripColors', () => {
       const background = isDark ? '#0B1020' : '#ffffff';
       colors.forEach((color, index) => {
         expect(contrastRatio(color, background)).toBeGreaterThanOrEqual(3);
-        if (isDark) {
-          expect(contrastRatio(color, '#ffffff')).toBeGreaterThanOrEqual(2.2);
-        }
-        if (index !== 0) {
-          expect(reserved.has(color)).toBe(false);
-        }
+        expect(isDark ? contrastRatio(color, '#ffffff') : 2.2).toBeGreaterThanOrEqual(2.2);
+        expect(index === 0 || !reserved.has(color)).toBe(true);
       });
       for (let i = 0; i < colors.length; i += 1) {
         for (let j = i + 1; j < colors.length; j += 1) {
