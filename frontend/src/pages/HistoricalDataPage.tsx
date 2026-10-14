@@ -954,7 +954,7 @@ const HistoricalDataPage: React.FC = () => {
             </div>
           </div>
         ) : (
-          <>
+          <div className="flex flex-col gap-4 sm:gap-6">
           <div className={`${replayCardClass} p-4 sm:p-5`}>
             <div className="flex min-w-0 flex-col gap-4">
               <div>
@@ -1409,16 +1409,55 @@ const HistoricalDataPage: React.FC = () => {
               </div>
             </div>
           </div>
-          <details className={`${replayCardClass} p-4 sm:p-5`}>
-            <summary className="cursor-pointer list-none text-base font-semibold text-gray-900 dark:text-white">
-              {t('backfillSectionTitle')}
-              <span className="mt-1 block text-sm font-normal text-gray-600 dark:text-gray-400">
-                {t('backfillSectionSubtitle')}
-              </span>
+          <details className="group">
+            <summary
+              className={`${replayCardClass} flex cursor-pointer list-none items-center justify-between gap-3 p-4 text-left transition-colors hover:bg-gray-50 sm:p-5 dark:hover:bg-gray-700/40`}
+            >
+              <div className="flex min-w-0 items-center gap-1.5">
+                <span className="min-w-0 text-base font-semibold text-gray-900 dark:text-white">
+                  {t('backfillSectionTitle')}
+                </span>
+                <span
+                  className="inline-flex shrink-0"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                  }}
+                >
+                  <Tooltip
+                    content={t('backfillSectionSubtitle')}
+                    position="top"
+                    className="shrink-0 items-center leading-none"
+                  >
+                    <svg
+                      className="block h-3.5 w-3.5 shrink-0 cursor-help text-gray-400 dark:text-gray-500 sm:h-4 sm:w-4"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                      aria-label={t('backfillSectionSubtitle')}
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </Tooltip>
+                </span>
+              </div>
+              <svg
+                className="h-5 w-5 shrink-0 text-gray-500 transition-transform duration-200 group-open:rotate-180 dark:text-gray-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+                aria-hidden
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
             </summary>
-            <div className="mt-4 space-y-4">
-          <>
-          <div className={`${replayCardClass} p-3 sm:p-4 mb-4 sm:mb-6`}>
+          <div className="mt-4 sm:mt-6">
+          <div className="flex flex-col gap-4 sm:gap-6">
+          <div className={`${replayCardClass} p-3 sm:p-4`}>
             <div className="flex min-w-0 flex-col gap-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
                 <div className="min-w-0 sm:col-span-2 xl:col-span-1">
@@ -1730,10 +1769,10 @@ const HistoricalDataPage: React.FC = () => {
               ) : null}
             </div>
           )}
-        </>
-            </div>
+          </div>
+          </div>
           </details>
-          </>
+          </div>
         )}
       {exportDialogOpen ? (
         <div
