@@ -1387,7 +1387,7 @@ const TradingActivityPage: React.FC = () => {
                   <Tooltip
                     content={t('summary.primaryHint')}
                     position="bottom"
-                    contentClassName="block max-w-[18rem] text-left leading-snug"
+                    contentClassName="block max-w-[18rem] leading-snug"
                   >
                     <span className="inline-flex cursor-help items-center gap-1 underline decoration-dotted underline-offset-2">
                       {t('summary.primaryTitle')}
@@ -1398,7 +1398,7 @@ const TradingActivityPage: React.FC = () => {
                   <Tooltip
                     content={t('summary.secondaryHint')}
                     position="bottom"
-                    contentClassName="block max-w-[18rem] text-left leading-snug"
+                    contentClassName="block max-w-[18rem] leading-snug"
                   >
                     <span className="inline-flex cursor-help items-center gap-1 underline decoration-dotted underline-offset-2">
                       {t('summary.secondaryTitle')}

@@ -1732,7 +1732,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                     >
                       <h3 className="mb-3 flex items-center justify-center gap-1.5 text-center text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300 sm:mb-4">
                         <span>{t('dashboard:winRate')}</span>
-                        {showRingExtras ? (
+                        {showPeakExtras ? (
                           <Tooltip
                             content={winRateRingTooltip}
                             position="bottom"
@@ -1797,9 +1797,24 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                             />
                           </svg>
                           <div className="relative z-10 flex flex-col items-center justify-center px-0.5">
-                            <div className="text-sm font-bold text-gray-900 dark:text-gray-100 sm:text-xl xl:text-2xl">
-                              {formatNumber(tradingMetrics.winRate, 2)}%
-                            </div>
+                            {showRecentExtras ? (
+                              <Tooltip
+                                content={t('dashboard:winRatePeriodFigureTooltip', {
+                                  defaultValue: 'Win rate over the full selected period.',
+                                })}
+                                position="top"
+                                triggerDisplay="block"
+                                className="cursor-help"
+                              >
+                                <div className="text-sm font-bold text-gray-900 dark:text-gray-100 sm:text-xl xl:text-2xl">
+                                  {formatNumber(tradingMetrics.winRate, 2)}%
+                                </div>
+                              </Tooltip>
+                            ) : (
+                              <div className="text-sm font-bold text-gray-900 dark:text-gray-100 sm:text-xl xl:text-2xl">
+                                {formatNumber(tradingMetrics.winRate, 2)}%
+                              </div>
+                            )}
                             {showRingExtras ? (
                               <div className="mt-0.5 text-[10px] font-semibold leading-none text-amber-600 dark:text-amber-400 sm:text-xs">
                                 {formatNumber(secondaryVal!, 2)}%
@@ -1807,14 +1822,15 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                             ) : null}
                           </div>
                         </div>
-                        <div className="mb-2 min-h-[2rem] text-center text-[10px] leading-snug text-gray-500 dark:text-gray-400 sm:mb-3 sm:min-h-[2.25rem] sm:text-xs">
-                          {isRecentRing && secondaryVal != null
-                            ? t('dashboard:winRateRecentLegend', {
+                        <div className="mb-2 min-h-[2rem] text-center text-[10px] leading-snug sm:mb-3 sm:min-h-[2.25rem] sm:text-xs">
+                          {isRecentRing && secondaryVal != null ? (
+                            <span className="font-semibold text-amber-600 dark:text-amber-400">
+                              {t('dashboard:winRateRecentLegendRecent', {
                                 count: WIN_RATE_ROLLING_WINDOW,
-                                defaultValue:
-                                  'Black = period · Orange = last {{count}} trades',
-                              })
-                            : null}
+                                defaultValue: 'Orange = last {{count}} trades',
+                              })}
+                            </span>
+                          ) : null}
                         </div>
                         <div className="mb-3 text-center text-xs leading-relaxed text-gray-500 dark:text-gray-400">
                           {t('dashboard:objective')}: {gaugeObjectives?.winRate}%
