@@ -3,6 +3,7 @@ import {
   buildStopLossLines,
   buildTapeRenderModel,
   getContractRoundTrips,
+  tapeBarIntervalLabel,
 } from './marketTapeData';
 import { getTripColor } from './marketTapeTripColors';
 import type { SessionEventItem, SessionMarketBar, SessionMarketContract } from '../../services/sessionReplay';
@@ -300,5 +301,28 @@ describe('trade spans on the tape', () => {
       { barIndex: 0, price: 102 },
       { barIndex: 1, price: 104 },
     ]);
+  });
+});
+
+describe('tape bar interval label', () => {
+  const bars = [
+    { t: '2024-01-01T10:00:00Z' },
+    { t: '2024-01-01T10:05:00Z' },
+    { t: '2024-01-01T10:10:00Z' },
+    { t: '2024-01-01T10:25:00Z' },
+  ];
+
+  it('reads 1, 5 and 15 minute intervals from the contract', () => {
+    expect(tapeBarIntervalLabel({ unit: 2, unit_number: 1 }, [])).toEqual({ unit: 'minutes', count: 1 });
+    expect(tapeBarIntervalLabel({ unit: 2, unit_number: 5 }, [])).toEqual({ unit: 'minutes', count: 5 });
+    expect(tapeBarIntervalLabel({ unit: 2, unit_number: 15 }, [])).toEqual({ unit: 'minutes', count: 15 });
+  });
+
+  it('falls back to the most common gap when a bar is missing', () => {
+    expect(tapeBarIntervalLabel(undefined, bars)).toEqual({ unit: 'minutes', count: 5 });
+  });
+
+  it('returns nothing when the duration is unknown', () => {
+    expect(tapeBarIntervalLabel(undefined, [{ t: '2024-01-01T10:00:00Z' }])).toBeNull();
   });
 });

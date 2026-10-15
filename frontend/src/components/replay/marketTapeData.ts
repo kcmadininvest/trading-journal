@@ -808,6 +808,75 @@ export function buildTapeRenderModel(
   };
 }
 
+export type TapeBarIntervalUnit = 'seconds' | 'minutes' | 'hours' | 'days';
+
+export interface TapeBarIntervalLabel {
+  unit: TapeBarIntervalUnit;
+  count: number;
+}
+
+const BAR_UNIT_SECONDS: Record<number, number> = {
+  1: 1,
+  2: 60,
+  3: 3600,
+  4: 86400,
+};
+
+function barIntervalToSeconds(
+  interval: { unit: number; unit_number: number } | null | undefined,
+): number | null {
+  if (!interval) return null;
+  const unitSeconds = BAR_UNIT_SECONDS[interval.unit];
+  if (!unitSeconds || !Number.isFinite(interval.unit_number) || interval.unit_number <= 0) {
+    return null;
+  }
+  return unitSeconds * interval.unit_number;
+}
+
+/** Écart le plus fréquent entre bougies consécutives, en secondes. */
+export function mostCommonBarGapSeconds(bars: { t: string }[]): number | null {
+  const counts = new Map<number, number>();
+  for (let i = 1; i < bars.length; i++) {
+    const deltaMs = Date.parse(bars[i].t) - Date.parse(bars[i - 1].t);
+    if (!Number.isFinite(deltaMs) || deltaMs <= 0) continue;
+    const seconds = Math.round(deltaMs / 1000);
+    if (seconds <= 0) continue;
+    counts.set(seconds, (counts.get(seconds) ?? 0) + 1);
+  }
+  let bestSeconds: number | null = null;
+  let bestCount = 0;
+  for (const [seconds, count] of counts) {
+    if (
+      count > bestCount
+      || (count === bestCount && (bestSeconds == null || seconds < bestSeconds))
+    ) {
+      bestSeconds = seconds;
+      bestCount = count;
+    }
+  }
+  return bestSeconds;
+}
+
+function secondsToBarIntervalLabel(seconds: number): TapeBarIntervalLabel | null {
+  if (!Number.isFinite(seconds) || seconds <= 0) return null;
+  const rounded = Math.round(seconds);
+  if (rounded <= 0) return null;
+  if (rounded % 86400 === 0) return { unit: 'days', count: rounded / 86400 };
+  if (rounded % 3600 === 0) return { unit: 'hours', count: rounded / 3600 };
+  if (rounded % 60 === 0) return { unit: 'minutes', count: rounded / 60 };
+  return { unit: 'seconds', count: rounded };
+}
+
+/** Durée de bougie affichée : intervalle du contrat, sinon écart le plus fréquent. */
+export function tapeBarIntervalLabel(
+  interval: { unit: number; unit_number: number } | null | undefined,
+  bars: { t: string }[],
+): TapeBarIntervalLabel | null {
+  const seconds = barIntervalToSeconds(interval) ?? mostCommonBarGapSeconds(bars);
+  if (seconds == null) return null;
+  return secondsToBarIntervalLabel(seconds);
+}
+
 export function needsMarketDataRefresh(marketData: SessionMarketData | null | undefined): boolean {
   if (!marketData || typeof marketData !== 'object') return true;
   const status = marketData.status;

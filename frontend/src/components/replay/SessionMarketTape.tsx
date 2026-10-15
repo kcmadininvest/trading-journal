@@ -8,10 +8,12 @@ import { SessionEventItem, SessionMarketData } from '../../services/sessionRepla
 import { getStopLossLineTooltipText, getTapeMarkerTooltipText } from './eventDetail';
 import {
   buildTapeRenderModel,
+  TapeBarIntervalUnit,
   TapeMarker,
   TapePriceLine,
   TapeRenderModel,
   TapeTradeSpan,
+  tapeBarIntervalLabel,
   tapePricesEqual,
 } from './marketTapeData';
 import { formatCurrencyWithSign, NumberFormatType } from '../../utils/numberFormat';
@@ -381,6 +383,13 @@ const TapeChart: React.FC<{
   );
 };
 
+const INTERVAL_LABEL_KEYS: Record<TapeBarIntervalUnit, string> = {
+  seconds: 'marketTapeIntervalSeconds',
+  minutes: 'marketTapeIntervalMinutes',
+  hours: 'marketTapeIntervalHours',
+  days: 'marketTapeIntervalDays',
+};
+
 const OPEN_ZONE_OPACITY = 0.14;
 const CLOSED_ZONE_OPACITY = 0.06;
 
@@ -613,6 +622,13 @@ export const SessionMarketTape: React.FC<SessionMarketTapeProps> = ({
     return buildTapeRenderModel(activeContract, events, currentIndex);
   }, [activeContract, events, currentIndex]);
 
+  const intervalLabel = useMemo(() => {
+    if (!activeContract) return null;
+    const parsed = tapeBarIntervalLabel(activeContract.interval, activeContract.bars ?? []);
+    if (!parsed) return null;
+    return t(INTERVAL_LABEL_KEYS[parsed.unit], { count: parsed.count });
+  }, [activeContract, t]);
+
   if (loading) {
     return (
       <div
@@ -688,7 +704,7 @@ export const SessionMarketTape: React.FC<SessionMarketTapeProps> = ({
         data-testid="session-market-tape"
         className={`flex flex-col overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 lg:min-h-0 lg:flex-1 ${replayCardClass}`}
       >
-        <div className="h-[220px] shrink-0 sm:h-[240px] lg:h-auto lg:flex-1 lg:min-h-[240px]">
+        <div className="relative h-[220px] shrink-0 sm:h-[240px] lg:h-auto lg:flex-1 lg:min-h-[240px]">
           <TapeChart
             model={model}
             events={events}
@@ -697,6 +713,11 @@ export const SessionMarketTape: React.FC<SessionMarketTapeProps> = ({
             t={t}
             numberFormat={preferences.number_format}
           />
+          {intervalLabel && (
+            <span className="pointer-events-none absolute left-2 top-2 z-10 whitespace-nowrap rounded-md border border-gray-200 bg-white/80 px-1.5 py-0.5 text-[11px] font-medium text-gray-600 sm:text-xs dark:border-gray-600 dark:bg-gray-800/80 dark:text-gray-300">
+              {intervalLabel}
+            </span>
+          )}
         </div>
         <MarketTapeLegend
           theme={tapeTheme}
