@@ -722,7 +722,7 @@ export const SessionMarketTape: React.FC<SessionMarketTapeProps> = ({
         <MarketTapeLegend
           theme={tapeTheme}
           isDark={isDark}
-          showPlannedStop={model.priceLines.some((line) => line.kind === 'planned_stop_loss')}
+          showPlannedStop={model.showPlannedStop === true}
           labels={{
             entryLong: t('marketTapeLegendEntryLong'),
             entryShort: t('marketTapeLegendEntryShort'),

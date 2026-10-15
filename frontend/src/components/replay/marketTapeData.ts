@@ -85,6 +85,8 @@ export interface TapeRenderModel {
   openPositionBand: { entryPrice: number; topPrice: number; bottomPrice: number; barStart: number; barEnd: number } | null;
   /** Optionnel : les fixtures de layout n'ont pas à le remplir. */
   tradeSpans?: TapeTradeSpan[];
+  /** Vrai si un stop planifié existe, même quand son trait se confond avec le broker. */
+  showPlannedStop?: boolean;
 }
 
 function parseTimeMs(iso: string): number {
@@ -153,6 +155,15 @@ function plannedStopLossFromEvent(evt: SessionEventItem): number | null {
   if (raw == null || raw === '') return null;
   const n = Number(raw);
   return Number.isFinite(n) ? n : null;
+}
+
+/** Stop de protection : au-dessus de l'entrée pour un short, en dessous pour un long. */
+export function isProtectiveStop(side: string, entry: number, stop: number): boolean {
+  if (!Number.isFinite(entry) || !Number.isFinite(stop) || tapePricesEqual(entry, stop)) return false;
+  const normalized = side.toLowerCase();
+  if (normalized === 'short') return stop > entry;
+  if (normalized === 'long') return stop < entry;
+  return false;
 }
 
 function brokerStopPriceFromEvent(evt: SessionEventItem): number | null {
@@ -366,7 +377,62 @@ function collectContractRoundTrips(
     trips.push(current);
   }
 
+  applyProtectivePlannedStops(trips, events, contractId, label, lastIndex);
   return trips;
+}
+
+/**
+ * Premier order_created stop du côté du risque, entre la clôture précédente
+ * et la dernière clôture de ce trade. Une simple mise à jour ne compte pas.
+ * Sans un tel ordre, le stop planifié du journal reste en place.
+ */
+function applyProtectivePlannedStops(
+  trips: ContractRoundTrip[],
+  events: SessionEventItem[],
+  contractId: string,
+  label: string,
+  maxIndex: number,
+): void {
+  for (let tripNumber = 0; tripNumber < trips.length; tripNumber++) {
+    const trip = trips[tripNumber];
+    const fromOrder = firstProtectiveCreatedStop(
+      trip,
+      trips[tripNumber - 1] ?? null,
+      events,
+      contractId,
+      label,
+      maxIndex,
+    );
+    if (fromOrder != null) trip.plannedSl = fromOrder;
+  }
+}
+
+function firstProtectiveCreatedStop(
+  trip: ContractRoundTrip,
+  previous: ContractRoundTrip | null,
+  events: SessionEventItem[],
+  contractId: string,
+  label: string,
+  maxIndex: number,
+): number | null {
+  const openEvt = events[trip.openIndex];
+  const entry = openEvt ? priceFromPayload(openEvt.payload || {}, ['entry_price']) : null;
+  if (entry == null) return null;
+
+  const start = previous
+    ? (previous.closeIndex != null ? previous.closeIndex : trip.openIndex)
+    : -1;
+  const end = trip.closeIndex != null ? trip.closeIndex : maxIndex + 1;
+
+  for (let i = start + 1; i < end && i <= maxIndex; i++) {
+    const evt = events[i];
+    if (evt.event_type !== 'order_created') continue;
+    if (!eventMatchesContract(evt, contractId, label)) continue;
+    const price = brokerStopPriceFromEvent(evt);
+    if (price == null) continue;
+    if (isProtectiveStop(trip.tradeSide, entry, price)) return price;
+  }
+  return null;
 }
 
 function buildTripLookup(
@@ -445,17 +511,19 @@ export function buildTradeSpans(
   for (const trip of trips) {
     if (trip.openIndex > currentIndex) continue;
 
-    const lines = priceLines.filter((line) => line.tripIndex === trip.tripIndex);
-    const broker = lines.find((line) => line.kind === 'broker_stop');
-    const planned = lines.find((line) => line.kind === 'planned_stop_loss');
-    const boundary = broker ?? planned;
-    if (!boundary) continue;
-
     const openEvt = events[trip.openIndex];
     const entryPrice = openEvt
       ? priceFromPayload(openEvt.payload || {}, ['entry_price'])
       : null;
     if (entryPrice == null) continue;
+
+    const lines = priceLines.filter((line) => line.tripIndex === trip.tripIndex);
+    const broker = lines.find((line) => line.kind === 'broker_stop');
+    const planned = lines.find((line) => line.kind === 'planned_stop_loss');
+    const brokerProtects = broker != null && isProtectiveStop(trip.tradeSide, entryPrice, broker.price);
+    const plannedProtects = planned != null && isProtectiveStop(trip.tradeSide, entryPrice, planned.price);
+    const boundary = brokerProtects ? broker : plannedProtects ? planned : null;
+    if (!boundary) continue;
 
     const exits = closeDetailsForTrip(events, trip, currentIndex).map((close) => ({
       barIndex: barIndexAtOrBefore(bars, events[close.eventIndex].occurred_at),
@@ -748,6 +816,14 @@ export function buildTapeRenderModel(
     cursorBarIndex,
   );
 
+  const showPlannedStop = collectContractRoundTrips(
+    events,
+    contract.contract_id,
+    contract.label,
+    bars,
+    currentIndex,
+  ).some((trip) => trip.openIndex <= currentIndex && trip.plannedSl != null);
+
   const rawLines = buildStopLossLines(
     events,
     currentIndex,
@@ -805,6 +881,7 @@ export function buildTapeRenderModel(
         }
       : null,
     tradeSpans,
+    showPlannedStop,
   };
 }
 

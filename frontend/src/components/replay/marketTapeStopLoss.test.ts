@@ -236,7 +236,7 @@ describe('trade spans on the tape', () => {
     expect(model.tradeSpans?.[0].stopPrice).toBe(98);
   });
 
-  it('draws broker then a different planned stop, and bounds the zone on the broker', () => {
+  it('keeps one stroke when the protective order is also the broker stop', () => {
     const events: SessionEventItem[] = [
       evt(1, 'position_open', '2024-01-01T10:01:00Z', {
         contract_name: label,
@@ -252,9 +252,106 @@ describe('trade spans on the tape', () => {
       }),
     ];
     const model = tape(events);
-    expect(model.priceLines.map((line) => line.kind)).toEqual(['broker_stop', 'planned_stop_loss']);
+    expect(model.priceLines.map((line) => line.kind)).toEqual(['broker_stop']);
     expect(model.priceLines[0].price).toBe(97.5);
+    expect(model.showPlannedStop).toBe(true);
     expect(model.tradeSpans?.[0].stopPrice).toBe(97.5);
+  });
+
+  it('ignores a stop on the wrong side of a short and keeps the journal stop', () => {
+    const events: SessionEventItem[] = [
+      evt(1, 'position_open', '2024-01-01T10:01:00Z', {
+        contract_name: label,
+        trade_type: 'Short',
+        entry_price: '100',
+        planned_stop_loss: '104',
+      }),
+      evt(2, 'order_created', '2024-01-01T10:01:30Z', {
+        contract_name: label,
+        order_type: 'stop',
+        stop_price: '96',
+        order: { orderType: 'stop', stopPrice: 96 },
+      }),
+    ];
+    const model = tape(events);
+    const planned = model.priceLines.find((line) => line.kind === 'planned_stop_loss');
+    expect(planned?.price).toBe(104);
+    expect(model.tradeSpans?.[0].stopPrice).toBe(104);
+  });
+
+  it('keeps the first protective stop when a later stop is on the wrong side', () => {
+    const events: SessionEventItem[] = [
+      evt(1, 'position_open', '2024-01-01T10:01:00Z', {
+        contract_name: label,
+        trade_type: 'Short',
+        entry_price: '100',
+      }),
+      evt(2, 'order_created', '2024-01-01T10:01:20Z', {
+        contract_name: label,
+        order_type: 'stop',
+        stop_price: '106',
+        order: { orderType: 'stop', stopPrice: 106 },
+      }),
+      evt(3, 'order_created', '2024-01-01T10:01:40Z', {
+        contract_name: label,
+        order_type: 'stop',
+        stop_price: '94',
+        order: { orderType: 'stop', stopPrice: 94 },
+      }),
+    ];
+    const model = tape(events);
+    expect(model.priceLines.find((line) => line.kind === 'planned_stop_loss')?.price).toBe(106);
+    expect(model.priceLines.find((line) => line.kind === 'broker_stop')?.price).toBe(94);
+    expect(model.tradeSpans?.[0].stopPrice).toBe(106);
+  });
+
+  it('counts a protective stop created just before the open', () => {
+    const events: SessionEventItem[] = [
+      evt(1, 'order_created', '2024-01-01T10:00:30Z', {
+        contract_name: label,
+        order_type: 'stop',
+        stop_price: '108',
+        order: { orderType: 'stop', stopPrice: 108 },
+      }),
+      evt(2, 'position_open', '2024-01-01T10:01:00Z', {
+        contract_name: label,
+        trade_type: 'Short',
+        entry_price: '100',
+      }),
+    ];
+    const model = tape(events);
+    expect(model.priceLines.find((line) => line.kind === 'planned_stop_loss')?.price).toBe(108);
+  });
+
+  it('does not take a planned stop from an update of an older order', () => {
+    const events: SessionEventItem[] = [
+      evt(1, 'position_open', '2024-01-01T10:01:00Z', {
+        contract_name: label,
+        trade_type: 'Short',
+        entry_price: '100',
+        planned_stop_loss: '110',
+      }),
+      evt(2, 'position_close', '2024-01-01T10:02:00Z', {
+        contract_name: label,
+        exit_price: '98',
+        pnl: '20',
+      }),
+      evt(3, 'order_updated', '2024-01-01T10:03:00Z', {
+        contract_name: label,
+        order_type: 'stop',
+        stop_price: '112',
+        order: { orderType: 'stop', stopPrice: 112 },
+      }),
+      evt(4, 'position_open', '2024-01-01T10:06:00Z', {
+        contract_name: label,
+        trade_type: 'Short',
+        entry_price: '104',
+      }),
+    ];
+    const model = tape(events);
+    const second = model.priceLines.filter((line) => line.tripIndex === 1 && line.kind === 'planned_stop_loss');
+    expect(second).toHaveLength(0);
+    expect(model.showPlannedStop).toBe(true);
   });
 
   it('drops a far planned stop and leaves the price scale unchanged', () => {
