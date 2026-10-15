@@ -15,6 +15,7 @@ import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { parsePnlDisplayMode, getTradeDisplayPnlValue } from '../../utils/pnlDisplay';
 import { JournalQuestionsForm, JournalQuestionsFormHandle } from '../journalQuestions/JournalQuestionsForm';
 import { tradeDayFilters, TradeDayBasis } from '../../utils/tradeDayFilters';
+import { isAnswered } from '../../utils/questionnaireVisibility';
 
 interface StrategyComplianceModalProps {
   open: boolean;
@@ -87,6 +88,10 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
   const serverDayComplianceRef = useRef<DayStrategyCompliance | null>(null); // Garder une référence à la compliance du serveur
   const questionFormRefs = useRef(new Map<number, JournalQuestionsFormHandle>());
   const [dirtyQuestionTradeIds, setDirtyQuestionTradeIds] = useState<Set<number>>(() => new Set());
+  const [readyQuestionTradeIds, setReadyQuestionTradeIds] = useState<Set<number>>(() => new Set());
+  const [userEditedQuestionTradeIds, setUserEditedQuestionTradeIds] = useState<Set<number>>(() => new Set());
+  const [copiedQuestionTradeId, setCopiedQuestionTradeId] = useState<number | null>(null);
+  const copiedQuestionTimerRef = useRef<number | null>(null);
 
   const setQuestionsDirty = useCallback((tradeId: number, dirty: boolean) => {
     setDirtyQuestionTradeIds((prev) => {
@@ -94,6 +99,25 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
       const next = new Set(prev);
       if (dirty) next.add(tradeId);
       else next.delete(tradeId);
+      return next;
+    });
+  }, []);
+
+  const setQuestionsReady = useCallback((tradeId: number, ready: boolean) => {
+    setReadyQuestionTradeIds((prev) => {
+      if (prev.has(tradeId) === ready) return prev;
+      const next = new Set(prev);
+      if (ready) next.add(tradeId);
+      else next.delete(tradeId);
+      return next;
+    });
+  }, []);
+
+  const markQuestionUserEdited = useCallback((tradeId: number) => {
+    setUserEditedQuestionTradeIds((prev) => {
+      if (prev.has(tradeId)) return prev;
+      const next = new Set(prev);
+      next.add(tradeId);
       return next;
     });
   }, []);
@@ -480,10 +504,25 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
   }, [trades, dayCompliance, isDayWithoutTrades, draftKey]);
 
   useEffect(() => {
+    return () => {
+      if (copiedQuestionTimerRef.current != null) {
+        window.clearTimeout(copiedQuestionTimerRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     if (open && date) {
       isInitialLoad.current = true;
       setIsDayWithoutTrades(false);
       setDayCompliance(null);
+      setReadyQuestionTradeIds(new Set());
+      setUserEditedQuestionTradeIds(new Set());
+      setCopiedQuestionTradeId(null);
+      if (copiedQuestionTimerRef.current != null) {
+        window.clearTimeout(copiedQuestionTimerRef.current);
+        copiedQuestionTimerRef.current = null;
+      }
       loadData();
     } else {
       setTrades([]);
@@ -492,6 +531,13 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
       setError(null);
       setSaveError(null);
       setDirtyQuestionTradeIds(new Set());
+      setReadyQuestionTradeIds(new Set());
+      setUserEditedQuestionTradeIds(new Set());
+      setCopiedQuestionTradeId(null);
+      if (copiedQuestionTimerRef.current != null) {
+        window.clearTimeout(copiedQuestionTimerRef.current);
+        copiedQuestionTimerRef.current = null;
+      }
       // Ne pas réinitialiser hasUnsavedChanges ici car les données restent dans localStorage
       // Le message réapparaîtra à la réouverture si un brouillon existe
       isInitialLoad.current = true;
@@ -717,6 +763,42 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const questionFormsReady = trades.length > 1 && trades.every((trade) => readyQuestionTradeIds.has(trade.id));
+
+  const copyQuestionAnswers = (sourceTradeId: number) => {
+    if (!questionFormsReady) return;
+    if (!userEditedQuestionTradeIds.has(sourceTradeId) || !dirtyQuestionTradeIds.has(sourceTradeId)) return;
+    const source = questionFormRefs.current.get(sourceTradeId);
+    if (!source?.isReady()) return;
+    const values = source.getValues();
+    if (!Object.values(values).some(isAnswered)) return;
+    const targetsReady = trades.every((trade) => questionFormRefs.current.get(trade.id)?.isReady());
+    if (!targetsReady) return;
+
+    for (const trade of trades) {
+      if (trade.id === sourceTradeId) continue;
+      questionFormRefs.current.get(trade.id)?.applyValues(values);
+    }
+
+    setCopiedQuestionTradeId(sourceTradeId);
+    if (copiedQuestionTimerRef.current != null) {
+      window.clearTimeout(copiedQuestionTimerRef.current);
+    }
+    copiedQuestionTimerRef.current = window.setTimeout(() => {
+      setCopiedQuestionTradeId((current) => (current === sourceTradeId ? null : current));
+      copiedQuestionTimerRef.current = null;
+    }, 1000);
+  };
+
+  const copyAnswersButtonState = (tradeId: number): 'hidden' | 'disabled' | 'enabled' => {
+    if (trades.length < 2) return 'hidden';
+    if (!questionFormsReady) return 'disabled';
+    const values = questionFormRefs.current.get(tradeId)?.getValues();
+    if (!values || Object.keys(values).length === 0) return 'hidden';
+    const editedByUser = userEditedQuestionTradeIds.has(tradeId) && dirtyQuestionTradeIds.has(tradeId);
+    return editedByUser ? 'enabled' : 'disabled';
   };
 
   const handleSave = async () => {
@@ -1611,8 +1693,26 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                     collapsible
                     hideSaveButton
                     onDirtyChange={(dirty) => setQuestionsDirty(trade.id, dirty)}
+                    onReadyChange={(ready) => setQuestionsReady(trade.id, ready)}
+                    onUserEdit={() => markQuestionUserEdited(trade.id)}
                     title={t('journalQuestions:positionTitle', { defaultValue: 'Questions position' })}
-                  />
+                  >
+                    {copyAnswersButtonState(trade.id) !== 'hidden' && (
+                      <div className="flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() => copyQuestionAnswers(trade.id)}
+                          disabled={copyAnswersButtonState(trade.id) !== 'enabled'}
+                          aria-live="polite"
+                          className="px-3 py-1.5 rounded-lg bg-purple-600 text-white shadow-sm hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600 text-xs sm:text-sm font-medium transition-transform duration-150 active:translate-y-1 active:shadow-none disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none disabled:hover:bg-purple-600 dark:disabled:hover:bg-purple-500"
+                        >
+                          {copiedQuestionTradeId === trade.id
+                            ? t('journalQuestions:copyAnswersCopied')
+                            : t('journalQuestions:copyAnswersToOthers')}
+                        </button>
+                      </div>
+                    )}
+                  </JournalQuestionsForm>
                 </div>
               ))}
             </div>

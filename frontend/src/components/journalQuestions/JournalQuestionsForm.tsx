@@ -32,8 +32,18 @@ interface JournalQuestionsFormProps {
   /** Masque le bouton interne : l'enregistrement est piloté par le parent via la ref. */
   hideSaveButton?: boolean;
   onDirtyChange?: (dirty: boolean) => void;
+  /** Passe à true après un chargement réussi, à false pendant le chargement ou si celui-ci échoue. */
+  onReadyChange?: (ready: boolean) => void;
+  /** Saisie de l'utilisateur uniquement. Une copie reçue via applyValues ne le déclenche pas. */
+  onUserEdit?: () => void;
   /** Mode compact : l'en-tête replie/déplie les questions (replié au départ). */
   collapsible?: boolean;
+  /** Affiché avec les questions. Masqué quand le panneau compact est replié. */
+  children?: React.ReactNode;
+}
+
+function cloneAnswerValue(value: unknown): unknown {
+  return Array.isArray(value) ? [...value] : value;
 }
 
 const CHOICE_TYPES: AnswerType[] = ['single_choice', 'multiple_choice'];
@@ -49,6 +59,10 @@ const CHOICE_PILL_IDLE_CLASS =
 export interface JournalQuestionsFormHandle {
   save: () => Promise<void>;
   isDirty: () => boolean;
+  /** Vrai une fois le chargement réussi. Reste faux pendant le chargement et après une erreur de chargement. */
+  isReady: () => boolean;
+  getValues: () => Record<number, unknown>;
+  applyValues: (values: Record<number, unknown>) => void;
 }
 
 const FIELD_INPUT_CLASS =
@@ -171,7 +185,10 @@ export const JournalQuestionsForm = forwardRef<JournalQuestionsFormHandle, Journ
   onSaved,
   hideSaveButton = false,
   onDirtyChange,
+  onReadyChange,
+  onUserEdit,
   collapsible = false,
+  children,
 }, ref) => {
   const { t } = useTranslation('journalQuestions');
   const [collapsed, setCollapsed] = useState(collapsible);
@@ -179,6 +196,7 @@ export const JournalQuestionsForm = forwardRef<JournalQuestionsFormHandle, Journ
   const { preferences } = usePreferences();
   const numberFormat = (preferences.number_format as NumberFormatType) || 'comma';
   const [loading, setLoading] = useState(true);
+  const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -231,10 +249,22 @@ export const JournalQuestionsForm = forwardRef<JournalQuestionsFormHandle, Journ
     onDirtyChangeRef.current?.(isDirty);
   }, [isDirty]);
 
+  const onReadyChangeRef = useRef(onReadyChange);
+  onReadyChangeRef.current = onReadyChange;
+  useEffect(() => {
+    onReadyChangeRef.current?.(loaded);
+  }, [loaded]);
+
+  const questionsRef = useRef(questions);
+  questionsRef.current = questions;
+  const loadedRef = useRef(loaded);
+  loadedRef.current = loaded;
+
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
       setLoading(true);
+      setLoaded(false);
       setError(null);
       try {
         const payload: AnswersFormPayload = await journalQuestionsService.getAnswers({
@@ -254,6 +284,7 @@ export const JournalQuestionsForm = forwardRef<JournalQuestionsFormHandle, Journ
         valuesRef.current = next;
         initialValuesRef.current = next;
         setBaselineSnapshot(visibleValuesSnapshot(payload.questions, next));
+        setLoaded(true);
       } catch (err: any) {
         if (!cancelled) setError(err?.message || t('loadError'));
       } finally {
@@ -267,6 +298,9 @@ export const JournalQuestionsForm = forwardRef<JournalQuestionsFormHandle, Journ
     // eslint-disable-next-line react-hooks/exhaustive-deps -- t volontairement hors deps
   }, [scope, date, tradingAccountId, tradeId]);
 
+  const onUserEditRef = useRef(onUserEdit);
+  onUserEditRef.current = onUserEdit;
+
   const setValue = (questionId: number, value: unknown) => {
     setValues((prev) => {
       const next = { ...prev, [questionId]: value };
@@ -274,6 +308,7 @@ export const JournalQuestionsForm = forwardRef<JournalQuestionsFormHandle, Journ
       return next;
     });
     setSuccess(null);
+    onUserEditRef.current?.();
   };
 
   const persist = async () => {
@@ -347,6 +382,23 @@ export const JournalQuestionsForm = forwardRef<JournalQuestionsFormHandle, Journ
         await persistRef.current();
       },
       isDirty: () => isDirtyRef.current,
+      isReady: () => loadedRef.current,
+      getValues: () => {
+        const snapshot: Record<number, unknown> = {};
+        for (const question of questionsRef.current) {
+          snapshot[question.id] = cloneAnswerValue(valuesRef.current[question.id]);
+        }
+        return snapshot;
+      },
+      applyValues: (incoming: Record<number, unknown>) => {
+        const next: Record<number, unknown> = { ...valuesRef.current };
+        for (const question of questionsRef.current) {
+          if (!Object.prototype.hasOwnProperty.call(incoming, question.id)) continue;
+          next[question.id] = cloneAnswerValue(incoming[question.id]);
+        }
+        valuesRef.current = next;
+        setValues(next);
+      },
     }),
     []
   );
@@ -468,6 +520,7 @@ export const JournalQuestionsForm = forwardRef<JournalQuestionsFormHandle, Journ
               variant="compact"
             />
           ))}
+          {children}
         </div>
       ) : (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">

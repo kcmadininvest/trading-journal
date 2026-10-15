@@ -47,6 +47,8 @@
   "statusLinkEmpty": "Questions du jour",
   "statusLinkCta": "Répondre",
   "positionTitle": "Questions position",
+  "copyAnswersToOthers": "Copier ces réponses sur les autres positions",
+  "copyAnswersCopied": "Copié",
   "positionDayTitle": "Questions des positions",
   "notAnsweredYet": "Pas encore répondu",
   "types": {

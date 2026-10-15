@@ -47,6 +47,8 @@
   "statusLinkEmpty": "오늘의 질문",
   "statusLinkCta": "답변하기",
   "positionTitle": "포지션 질문",
+  "copyAnswersToOthers": "이 답변을 다른 포지션에 복사",
+  "copyAnswersCopied": "복사됨",
   "positionDayTitle": "포지션 질문",
   "notAnsweredYet": "아직 답변하지 않음",
   "types": {

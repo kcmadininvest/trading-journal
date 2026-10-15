@@ -238,20 +238,25 @@ describe('JournalQuestionsForm collapsible', () => {
     const ref = createRef<JournalQuestionsFormHandle>();
 
     render(
-      <JournalQuestionsForm ref={ref} scope="position" tradeId={7} compact collapsible hideSaveButton title="Questions position" />
+      <JournalQuestionsForm ref={ref} scope="position" tradeId={7} compact collapsible hideSaveButton title="Questions position">
+        <button type="button">Copier</button>
+      </JournalQuestionsForm>
     );
 
     const toggle = await screen.findByRole('button', { name: /Questions position/ });
     expect(toggle).toHaveAttribute('aria-expanded', 'false');
     expect(screen.queryByRole('button', { name: 'yes' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Copier' })).toBeNull();
 
     fireEvent.click(toggle);
     expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByRole('button', { name: 'Copier' })).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'yes' }));
 
     fireEvent.click(toggle);
     expect(toggle).toHaveAttribute('aria-expanded', 'false');
     expect(screen.queryByRole('button', { name: 'yes' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Copier' })).toBeNull();
 
     await act(async () => {
       await ref.current?.save();
@@ -318,5 +323,121 @@ describe('JournalQuestionsForm parent-driven save', () => {
     });
     expect(screen.getByText('boom')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'yes' })).toHaveProperty('ariaPressed', 'true');
+  });
+});
+
+describe('JournalQuestionsForm answer copy', () => {
+  const positionPayload = {
+    scope: 'position' as const,
+    questionnaire_id: 1,
+    questions: [question(1, 'boolean')],
+    answers: [],
+  };
+
+  it('is not ready while questions are loading', async () => {
+    let resolveLoad: (value: typeof positionPayload) => void = () => {};
+    vi.mocked(journalQuestionsService.getAnswers).mockReturnValue(
+      new Promise((resolve) => {
+        resolveLoad = resolve;
+      })
+    );
+    const ref = createRef<JournalQuestionsFormHandle>();
+
+    render(<JournalQuestionsForm ref={ref} scope="position" tradeId={7} compact hideSaveButton />);
+
+    expect(ref.current?.isReady()).toBe(false);
+
+    await act(async () => {
+      resolveLoad(positionPayload);
+    });
+
+    await waitFor(() => expect(ref.current?.isReady()).toBe(true));
+    expect(ref.current?.getValues()).toEqual({ 1: null });
+  });
+
+  it('stays not ready when loading fails', async () => {
+    vi.mocked(journalQuestionsService.getAnswers).mockRejectedValue(new Error('boom'));
+    const ref = createRef<JournalQuestionsFormHandle>();
+
+    render(<JournalQuestionsForm ref={ref} scope="position" tradeId={7} compact hideSaveButton />);
+
+    expect(screen.getByText('loading')).toBeTruthy();
+    await waitFor(() => expect(screen.queryByText('loading')).toBeNull());
+    expect(ref.current?.isReady()).toBe(false);
+  });
+
+  it('applies copied values, becomes dirty, and saves them through the ref', async () => {
+    vi.mocked(journalQuestionsService.getAnswers).mockResolvedValue(positionPayload);
+    vi.mocked(journalQuestionsService.bulkSaveAnswers).mockResolvedValue({ answers: [] });
+    const ref = createRef<JournalQuestionsFormHandle>();
+    const onDirtyChange = vi.fn();
+
+    render(
+      <JournalQuestionsForm
+        ref={ref}
+        scope="position"
+        tradeId={7}
+        compact
+        hideSaveButton
+        onDirtyChange={onDirtyChange}
+      />
+    );
+
+    await waitFor(() => expect(ref.current?.isReady()).toBe(true));
+    expect(ref.current?.isDirty()).toBe(false);
+
+    act(() => {
+      ref.current?.applyValues({ 1: true });
+    });
+
+    await waitFor(() => expect(ref.current?.isDirty()).toBe(true));
+    expect(onDirtyChange).toHaveBeenLastCalledWith(true);
+    expect(screen.getByRole('button', { name: 'yes' })).toHaveProperty('ariaPressed', 'true');
+
+    await act(async () => {
+      await ref.current?.save();
+    });
+
+    expect(journalQuestionsService.bulkSaveAnswers).toHaveBeenCalledWith(
+      expect.objectContaining({ scope: 'position', trade: 7, answers: [{ question_id: 1, value: true }] })
+    );
+  });
+
+  it('reports a user edit but not a copied value', async () => {
+    vi.mocked(journalQuestionsService.getAnswers).mockResolvedValue(positionPayload);
+    const onUserEdit = vi.fn();
+
+    render(
+      <JournalQuestionsForm
+        scope="position"
+        tradeId={7}
+        compact
+        hideSaveButton
+        onUserEdit={onUserEdit}
+      />
+    );
+
+    const yes = await screen.findByRole('button', { name: 'yes' });
+    fireEvent.click(yes);
+    expect(onUserEdit).toHaveBeenCalledTimes(1);
+
+    onUserEdit.mockClear();
+    const ref = createRef<JournalQuestionsFormHandle>();
+    cleanup();
+    render(
+      <JournalQuestionsForm
+        ref={ref}
+        scope="position"
+        tradeId={7}
+        compact
+        hideSaveButton
+        onUserEdit={onUserEdit}
+      />
+    );
+    await waitFor(() => expect(ref.current?.isReady()).toBe(true));
+    act(() => {
+      ref.current?.applyValues({ 1: false });
+    });
+    expect(onUserEdit).not.toHaveBeenCalled();
   });
 });
