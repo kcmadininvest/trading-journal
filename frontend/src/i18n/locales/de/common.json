@@ -163,6 +163,8 @@
     "empty": "Kein Tagebuch für dieses Datum.",
     "years": "Jahre",
     "months": "Monate",
+    "currentMonth": "Aktueller Monat",
+    "currentMonthUnavailable": "Kein Journal für den aktuellen Monat",
     "entries": "Einträge",
     "noEntries": "Keine Einträge",
     "collapse": "Einklappen",

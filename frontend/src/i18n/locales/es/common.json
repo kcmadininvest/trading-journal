@@ -161,6 +161,8 @@
     "empty": "No hay diario para esta fecha.",
     "years": "Años",
     "months": "Meses",
+    "currentMonth": "Mes en curso",
+    "currentMonthUnavailable": "Ningún diario para el mes en curso",
     "entries": "Entradas",
     "noEntries": "No hay entradas",
     "collapse": "Reducir",

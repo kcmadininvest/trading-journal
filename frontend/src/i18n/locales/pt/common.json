@@ -146,6 +146,8 @@
     "empty": "Nenhum diario para esta data.",
     "years": "Anos",
     "months": "Meses",
+    "currentMonth": "Mês atual",
+    "currentMonthUnavailable": "Nenhum diário para o mês atual",
     "entries": "Entradas",
     "noEntries": "Nenhuma entrada",
     "collapse": "Recolher",

@@ -146,6 +146,8 @@
     "empty": "Nessun diario per questa data.",
     "years": "Anni",
     "months": "Mesi",
+    "currentMonth": "Mese in corso",
+    "currentMonthUnavailable": "Nessun diario per il mese in corso",
     "entries": "Voci",
     "noEntries": "Nessuna voce",
     "collapse": "Riduci",

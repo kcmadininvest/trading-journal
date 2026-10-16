@@ -165,6 +165,8 @@
     "empty": "Aucun journal pour cette date.",
     "years": "Années",
     "months": "Mois",
+    "currentMonth": "Mois en cours",
+    "currentMonthUnavailable": "Aucun journal pour le mois en cours",
     "entries": "Entrées",
     "noEntries": "Aucun journal",
     "collapse": "Réduire",

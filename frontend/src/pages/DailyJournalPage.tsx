@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import ReactMarkdown, { Components } from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
 import remarkGfm from 'remark-gfm';
@@ -16,6 +16,43 @@ import { useTradingAccount } from '../contexts/useTradingAccount';
 import { getMonthNames } from '../utils/dateFormat';
 import { DateInput } from '../components/common/DateInput';
 import { PageShell } from '../components/layout';
+
+function currentCalendarMonth(timeZone: string | undefined): { year: number; month: number } {
+  const now = new Date();
+  const zone = timeZone?.trim();
+  if (zone) {
+    try {
+      const parts = new Intl.DateTimeFormat('en-US', {
+        timeZone: zone,
+        year: 'numeric',
+        month: 'numeric',
+      }).formatToParts(now);
+      const year = Number(parts.find((part) => part.type === 'year')?.value);
+      const month = Number(parts.find((part) => part.type === 'month')?.value);
+      if (Number.isFinite(year) && Number.isFinite(month)) {
+        return { year, month };
+      }
+    } catch {
+      // Fuseau rejeté : on retombe sur la date locale.
+    }
+  }
+  return { year: now.getFullYear(), month: now.getMonth() + 1 };
+}
+
+function revealActivePill(container: HTMLDivElement | null) {
+  if (!container || container.clientWidth === 0) return;
+  const active = container.querySelector<HTMLElement>('[data-active="true"]');
+  if (!active) return;
+  const containerRect = container.getBoundingClientRect();
+  const activeRect = active.getBoundingClientRect();
+  const overflowLeft = containerRect.left - activeRect.left;
+  const overflowRight = activeRect.right - containerRect.right;
+  if (overflowLeft > 1) {
+    container.scrollLeft -= overflowLeft;
+  } else if (overflowRight > 1) {
+    container.scrollLeft += overflowRight;
+  }
+}
 
 const DailyJournalPage: React.FC = () => {
   const { t, i18n } = useI18nTranslation();
@@ -35,6 +72,9 @@ const DailyJournalPage: React.FC = () => {
   const [isEntryLoading, setIsEntryLoading] = useState(false);
   const [isMobileEditorOpen, setIsMobileEditorOpen] = useState(true);
   const editorRef = useRef<HTMLDivElement | null>(null);
+  const yearListRef = useRef<HTMLDivElement | null>(null);
+  const monthListRef = useRef<HTMLDivElement | null>(null);
+  const mobileJournalRef = useRef<HTMLDivElement | null>(null);
   const selectedYearRef = useRef<number | null>(null);
   const selectedMonthRef = useRef<number | null>(null);
 
@@ -247,6 +287,67 @@ const DailyJournalPage: React.FC = () => {
     const entries = selectedMonthData?.entries || [];
     return [...entries].sort((a, b) => a.date.localeCompare(b.date));
   }, [selectedMonthData]);
+
+  const todayParts = useMemo(
+    () => currentCalendarMonth(preferences.timezone),
+    [preferences.timezone],
+  );
+  const currentMonthInData = useMemo(() => {
+    const yearData = groupedYears.find((year) => year.year === todayParts.year);
+    return Boolean(yearData?.months.some((month) => month.month === todayParts.month));
+  }, [groupedYears, todayParts]);
+  const isOnCurrentMonth = selectedYear === todayParts.year && selectedMonth === todayParts.month;
+  const currentMonthLabel = t('dailyJournal.currentMonth', { defaultValue: 'Mois en cours' });
+  const currentMonthUnavailable = t('dailyJournal.currentMonthUnavailable', {
+    defaultValue: 'Aucun journal pour le mois en cours',
+  });
+
+  const goToCurrentMonth = () => {
+    if (!currentMonthInData) return;
+    setSelectedYear(todayParts.year);
+    setSelectedMonth(todayParts.month);
+    const mobile = mobileJournalRef.current;
+    if (!mobile || mobile.offsetWidth === 0) return;
+    const yearEl = mobile.querySelector<HTMLDetailsElement>(`#daily-journal-year-${todayParts.year}`);
+    const monthEl = mobile.querySelector<HTMLDetailsElement>(
+      `#daily-journal-month-${todayParts.year}-${todayParts.month}`,
+    );
+    if (yearEl) yearEl.open = true;
+    if (monthEl) {
+      monthEl.open = true;
+      monthEl.scrollIntoView({ block: 'nearest' });
+    }
+  };
+
+  const currentMonthButton = (key: string) => (
+    <button
+      key={key}
+      type="button"
+      onClick={goToCurrentMonth}
+      disabled={!currentMonthInData || isOnCurrentMonth}
+      title={!currentMonthInData ? currentMonthUnavailable : undefined}
+      className="shrink-0 inline-flex items-center whitespace-nowrap px-3 py-2 text-sm leading-4 font-medium rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed"
+    >
+      {currentMonthLabel}
+    </button>
+  );
+
+  useLayoutEffect(() => {
+    revealActivePill(yearListRef.current);
+    revealActivePill(monthListRef.current);
+  }, [selectedYear, selectedMonth, groupedYears, i18n.language, isLoading]);
+
+  useLayoutEffect(() => {
+    const containers = [yearListRef.current, monthListRef.current].filter(
+      (node): node is HTMLDivElement => node !== null,
+    );
+    if (containers.length === 0) return;
+    const observer = new ResizeObserver(() => {
+      containers.forEach((container) => revealActivePill(container));
+    });
+    containers.forEach((container) => observer.observe(container));
+    return () => observer.disconnect();
+  }, [selectedYear, selectedMonth, groupedYears, i18n.language, isLoading]);
 
   return (
     <PageShell className="space-y-6">
@@ -471,7 +572,7 @@ const DailyJournalPage: React.FC = () => {
             <div className="hidden md:block">
               <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
                 <div className="grid grid-cols-12 gap-4 items-start">
-                  <div className="col-span-3">
+                  <div className="col-span-3 min-w-0">
                     <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-3">{t('dailyJournal.years', { defaultValue: 'Annees' })}</h3>
                     <div className="flex items-center gap-2">
                       <button
@@ -484,22 +585,23 @@ const DailyJournalPage: React.FC = () => {
                           }
                         }}
                         disabled={!selectedYear || groupedYears.findIndex(y => y.year === selectedYear) === 0}
-                        className="p-2 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed"
+                        className="shrink-0 p-2 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                         </svg>
                       </button>
-                      <div className="flex-1 overflow-hidden">
-                        <div className="flex gap-2">
+                      <div ref={yearListRef} className="min-w-0 overflow-hidden">
+                        <div className="flex w-max gap-2">
                           {groupedYears.map((year) => (
                             <button
                               key={year.year}
+                              data-active={selectedYear === year.year ? 'true' : undefined}
                               onClick={() => {
                                 setSelectedYear(year.year);
                                 setSelectedMonth(year.months[0]?.month ?? null);
                               }}
-                              className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                              className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap ${
                                 selectedYear === year.year
                                   ? 'bg-blue-600 text-white'
                                   : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
@@ -520,7 +622,7 @@ const DailyJournalPage: React.FC = () => {
                           }
                         }}
                         disabled={!selectedYear || groupedYears.findIndex(y => y.year === selectedYear) === groupedYears.length - 1}
-                        className="p-2 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed"
+                        className="shrink-0 p-2 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -529,7 +631,7 @@ const DailyJournalPage: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="col-span-9">
+                  <div className="col-span-9 min-w-0">
                     <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-3">{t('dailyJournal.months', { defaultValue: 'Mois' })}</h3>
                     <div className="flex items-center gap-2">
                       <button
@@ -541,19 +643,20 @@ const DailyJournalPage: React.FC = () => {
                           }
                         }}
                         disabled={!selectedYearData || !selectedMonth || selectedYearData.months.findIndex(m => m.month === selectedMonth) === 0}
-                        className="p-2 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed"
+                        className="shrink-0 p-2 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                         </svg>
                       </button>
-                      <div className="flex-1 overflow-hidden">
-                        <div className="flex gap-2">
+                      <div ref={monthListRef} className="min-w-0 overflow-hidden">
+                        <div className="flex w-max gap-2">
                           {selectedYearData?.months.map((month) => (
                             <button
                               key={`${selectedYearData?.year}-${month.month}`}
+                              data-active={selectedMonth === month.month ? 'true' : undefined}
                               onClick={() => setSelectedMonth(month.month)}
-                              className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                              className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap ${
                                 selectedMonth === month.month
                                   ? 'bg-blue-600 text-white'
                                   : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
@@ -573,12 +676,13 @@ const DailyJournalPage: React.FC = () => {
                           }
                         }}
                         disabled={!selectedYearData || !selectedMonth || selectedYearData.months.findIndex(m => m.month === selectedMonth) === selectedYearData.months.length - 1}
-                        className="p-2 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed"
+                        className="shrink-0 p-2 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                         </svg>
                       </button>
+                      {currentMonthButton('desktop')}
                     </div>
                   </div>
                 </div>
@@ -646,15 +750,24 @@ const DailyJournalPage: React.FC = () => {
             </div>
 
             {/* Mobile layout */}
-            <div className="md:hidden space-y-3">
+            <div ref={mobileJournalRef} className="md:hidden space-y-3">
+              {currentMonthButton('mobile')}
               {groupedYears.map((year) => (
-                <details key={year.year} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+                <details
+                  key={year.year}
+                  id={`daily-journal-year-${year.year}`}
+                  className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700"
+                >
                   <summary className="px-4 py-3 cursor-pointer font-semibold text-gray-800 dark:text-gray-200">
                     {year.year}
                   </summary>
                   <div className="px-4 pb-4 space-y-3">
                     {year.months.map((month) => (
-                      <details key={`${year.year}-${month.month}`} className="bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
+                      <details
+                        key={`${year.year}-${month.month}`}
+                        id={`daily-journal-month-${year.year}-${month.month}`}
+                        className="bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700"
+                      >
                         <summary className="px-3 py-2 cursor-pointer text-sm font-semibold text-gray-700 dark:text-gray-300">
                           {monthNames[month.month - 1]} <span className="text-xs text-gray-400">({month.entries.length})</span>
                         </summary>

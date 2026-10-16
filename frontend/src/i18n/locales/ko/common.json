@@ -146,6 +146,8 @@
     "empty": "이 날짜의 저널이 없습니다.",
     "years": "연도",
     "months": "월",
+    "currentMonth": "이번 달",
+    "currentMonthUnavailable": "이번 달 일지가 없습니다",
     "entries": "항목",
     "noEntries": "항목이 없습니다",
     "collapse": "접기",

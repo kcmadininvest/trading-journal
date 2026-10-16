@@ -146,6 +146,8 @@
     "empty": "该日期没有日志。",
     "years": "年份",
     "months": "月份",
+    "currentMonth": "本月",
+    "currentMonthUnavailable": "本月没有日志",
     "entries": "条目",
     "noEntries": "暂无条目",
     "collapse": "收起",

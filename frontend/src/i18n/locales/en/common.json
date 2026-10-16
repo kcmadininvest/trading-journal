@@ -166,6 +166,8 @@
     "empty": "No journal for this date.",
     "years": "Years",
     "months": "Months",
+    "currentMonth": "Current month",
+    "currentMonthUnavailable": "No journal for the current month",
     "entries": "Entries",
     "noEntries": "No journal entries",
     "collapse": "Collapse",

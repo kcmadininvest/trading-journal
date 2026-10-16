@@ -146,6 +146,8 @@
     "empty": "この日付のジャーナルはありません。",
     "years": "年",
     "months": "月",
+    "currentMonth": "今月",
+    "currentMonthUnavailable": "今月の日誌はありません",
     "entries": "エントリー",
     "noEntries": "エントリーがありません",
     "collapse": "折りたたむ",
