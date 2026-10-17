@@ -119,13 +119,17 @@ export const RadarChart: React.FC<RadarChartProps> = ({
         excellent: 5.0,
       }),
       
-      // Max Drawdown: 0% = parfait, 10% = acceptable, 30%+ = risqué (inversé)
-      maxDrawdown: normalizeMetric(statisticsData.max_drawdown_pct || 0, {
-        min: 0,
-        target: 10,
-        excellent: 30,
-        inverse: true,
-      }),
+      // Drawdown actuel : 0 % = au pic, 10 % = milieu, 100 % = tout le pic perdu (inversé).
+      // Le plancher garde le point sur son axe : au centre, l'infobulle n'a pas d'angle.
+      maxDrawdown: Math.max(
+        6,
+        normalizeMetric(statisticsData.current_drawdown_pct ?? 0, {
+          min: 0,
+          target: 10,
+          excellent: 100,
+          inverse: true,
+        }),
+      ),
     };
 
     return {
@@ -168,7 +172,14 @@ export const RadarChart: React.FC<RadarChartProps> = ({
   }, [statisticsData, isDark, t]);
 
   // Définir les couleurs et descriptions pour chaque métrique
-  const metricInfo = useMemo(() => {
+  const metricInfo = useMemo((): Array<{
+    name: string;
+    color: string;
+    value: number;
+    unit: string;
+    description: string;
+    secondary?: string;
+  }> => {
     if (!statisticsData) return [];
     
     return [
@@ -203,9 +214,13 @@ export const RadarChart: React.FC<RadarChartProps> = ({
       { 
         name: t('analytics:radar.maxDrawdown', { defaultValue: 'Drawdown' }), 
         color: '#ef4444',
-        value: statisticsData.max_drawdown_pct,
+        value: statisticsData.current_drawdown_pct ?? 0,
         unit: '%',
-        description: t('analytics:radar.maxDrawdownDesc', { defaultValue: 'Perte maximale' }),
+        description: '',
+        secondary: t('analytics:radar.drawdownRecord', {
+          value: formatNumber(statisticsData.max_drawdown_pct || 0, 1),
+          defaultValue: 'Record {{value}}%',
+        }),
       },
     ];
   }, [statisticsData, t]);
@@ -327,14 +342,16 @@ export const RadarChart: React.FC<RadarChartProps> = ({
                       label: (context: any) => {
                         const index = context.dataIndex;
                         const metric = metricInfo[index];
+                        if (!metric) return [];
                         const normalizedValue = context.parsed.r;
                         const realValue = formatNumber(metric.value || 0, metric.unit === '%' ? 1 : 2);
-
-                        return [
+                        const lines = [
                           `${t('analytics:radar.value', { defaultValue: 'Valeur' })}: ${realValue}${metric.unit}`,
                           `${t('analytics:radar.score', { defaultValue: 'Score' })}: ${formatNumber(normalizedValue, 0)}/100`,
-                          `${metric.description}`,
                         ];
+                        if (metric.description) lines.push(metric.description);
+                        if (metric.secondary) lines.push(metric.secondary);
+                        return lines;
                       },
                     },
                     }),
@@ -410,9 +427,16 @@ export const RadarChart: React.FC<RadarChartProps> = ({
                         {formatNumber(metric.value || 0, metric.unit === '%' ? 1 : 2)}{metric.unit}
                       </span>
                     </div>
-                    <p className="text-[11px] leading-tight text-gray-500 dark:text-gray-400 mt-0.5">
-                      {metric.description}
-                    </p>
+                    {metric.description && (
+                      <p className="text-[11px] leading-tight text-gray-500 dark:text-gray-400 mt-0.5">
+                        {metric.description}
+                      </p>
+                    )}
+                    {metric.secondary && (
+                      <p className={`text-[11px] leading-tight text-gray-500 dark:text-gray-400${metric.description ? '' : ' mt-0.5'}`}>
+                        {metric.secondary}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>

@@ -164,7 +164,8 @@
     "profitFactorDesc": "Ganhos / Perdas",
     "winLossRatioDesc": "Ganho médio / Perda média",
     "recoveryFactorDesc": "Lucro / Drawdown máx.",
-    "maxDrawdownDesc": "Perda máxima"
+    "maxDrawdownDesc": "Perda máxima",
+    "drawdownRecord": "Recorde {{value}}%"
   },
   "equityCurve": {
     "title": "Curva de Capital",

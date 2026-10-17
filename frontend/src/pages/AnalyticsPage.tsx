@@ -87,6 +87,35 @@ ChartJS.register(
   ChartDataLabels
 );
 
+function dayBefore(isoDate: string): string {
+  const [year, month, day] = isoDate.split('-').map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  date.setUTCDate(date.getUTCDate() - 1);
+  const y = date.getUTCFullYear();
+  const m = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const d = String(date.getUTCDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function currentDrawdownFromCurve(
+  trades: TradeListItem[],
+  startCapital: number,
+  pnlOf: (trade: TradeListItem) => number | null,
+): { amount: number; pct: number } {
+  const ordered = [...trades].sort((a, b) => String(a.entered_at).localeCompare(String(b.entered_at)));
+  let peak = startCapital;
+  let capital = startCapital;
+  for (const trade of ordered) {
+    const pnl = pnlOf(trade);
+    if (pnl == null) continue;
+    capital += pnl;
+    if (capital > peak) peak = capital;
+  }
+  if (!(peak > 0) || capital >= peak) return { amount: 0, pct: 0 };
+  const amount = peak - capital;
+  return { amount, pct: (amount / peak) * 100 };
+}
+
 const AnalyticsPage: React.FC = () => {
   const { preferences } = usePreferences();
   const pnlDisplayMode = parsePnlDisplayMode(preferences.pnl_display);
@@ -270,6 +299,63 @@ const AnalyticsPage: React.FC = () => {
     selectedPositionStrategy,
     pnlDisplayMode,
   );
+
+  const periodHasEarlierTrades = Boolean(selectedPeriod?.start && selectedPeriod.start > '2000-01-01');
+  const apiHasCurrentDrawdown = typeof statisticsData?.current_drawdown_pct === 'number';
+
+  const { data: priorPnl } = useQuery({
+    queryKey: ['analytics', 'drawdown-prior-pnl', accountId, selectedPeriod?.start, selectedPositionStrategy, pnlDisplayMode],
+    enabled: !accountLoading && periodHasEarlierTrades && statisticsData != null && !apiHasCurrentDrawdown,
+    queryFn: async () => {
+      const response = await tradesService.list({
+        trading_account: accountId ?? undefined,
+        end_date: dayBefore(selectedPeriod!.start),
+        page_size: 1000,
+        ...(selectedPositionStrategy ? { position_strategy: selectedPositionStrategy } : {}),
+      });
+      if (response.count > response.results.length) return null;
+      return response.results.reduce((sum, trade) => {
+        const pnl = getTradeDisplayPnlValue(trade, pnlDisplayMode);
+        return sum + (pnl ?? 0);
+      }, 0);
+    },
+  });
+
+  const radarStatistics = useMemo(() => {
+    if (!statisticsData) return null;
+    if (apiHasCurrentDrawdown && typeof statisticsData.current_drawdown === 'number') {
+      return statisticsData;
+    }
+    if ((statisticsData.total_trades ?? 0) > 0 && trades.length === 0) return statisticsData;
+    if (trades.length >= 1000) return statisticsData;
+    if (!selectedAccount) return statisticsData;
+    const initial = selectedAccount?.initial_capital != null
+      ? parseFloat(String(selectedAccount.initial_capital))
+      : 0;
+    let startCapital = Number.isFinite(initial) ? initial : 0;
+    if (periodHasEarlierTrades) {
+      if (typeof priorPnl !== 'number') return statisticsData;
+      startCapital += priorPnl;
+    }
+    const current = currentDrawdownFromCurve(
+      trades,
+      startCapital,
+      (trade) => getTradeDisplayPnlValue(trade, pnlDisplayMode),
+    );
+    return {
+      ...statisticsData,
+      current_drawdown: Math.round(current.amount * 100) / 100,
+      current_drawdown_pct: Math.round(current.pct * 100) / 100,
+    };
+  }, [
+    statisticsData,
+    apiHasCurrentDrawdown,
+    trades,
+    selectedAccount,
+    periodHasEarlierTrades,
+    priorPnl,
+    pnlDisplayMode,
+  ]);
 
   // Performance par tranche de 30 minutes (nuage de points)
   const hourlyPerformanceScatter = useMemo(() => {
@@ -1524,7 +1610,7 @@ const AnalyticsPage: React.FC = () => {
             <RadarChart
               key={`radar-${pnlDisplayMode}`}
               data={null}
-              statisticsData={statisticsData}
+              statisticsData={radarStatistics}
               currencySymbol={currencySymbol}
               createRadarAlternatingZonesPlugin={createRadarAlternatingZonesPlugin}
               createRadarGradientPlugin={createRadarGradientPlugin}

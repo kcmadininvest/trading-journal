@@ -199,7 +199,8 @@
     "profitFactorDesc": "Gains / Losses",
     "winLossRatioDesc": "Average win / Average loss",
     "recoveryFactorDesc": "Profit / Max drawdown",
-    "maxDrawdownDesc": "Maximum loss"
+    "maxDrawdownDesc": "Maximum loss",
+    "drawdownRecord": "Record {{value}}%"
   },
   "equityCurve": {
     "title": "Equity Curve",

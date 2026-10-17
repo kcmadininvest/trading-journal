@@ -310,6 +310,8 @@ class TradesService {
     recovery_time: number;
     max_drawdown: number;
     max_drawdown_pct: number;
+    current_drawdown: number;
+    current_drawdown_pct: number;
     max_drawdown_global: number;
     max_drawdown_global_pct: number;
     expectancy: number;

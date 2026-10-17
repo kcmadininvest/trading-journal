@@ -70,6 +70,8 @@ EMPTY_STATISTICS_PAYLOAD: Dict[str, Any] = {
     'recovery_time': 0,
     'max_drawdown': 0.0,
     'max_drawdown_pct': 0.0,
+    'current_drawdown': 0.0,
+    'current_drawdown_pct': 0.0,
     'max_drawdown_global': 0.0,
     'max_drawdown_global_pct': 0.0,
     'max_runup': 0.0,
@@ -296,10 +298,18 @@ def compute_statistics_payload(request, trades, pf: str) -> Dict[str, Any]:
         """
         Calcule le maximum drawdown pour un queryset de trades donné.
         Utilise le capital initial si fourni, sinon utilise 0 comme référence.
-        Retourne (max_dd_absolu, max_dd_pourcentage, peak_capital)
+
+        Le creux retenu est le plus fort recul relatif (pic du moment − capital) / pic.
+        Le montant renvoyé est l'écart en devise de ce même creux, pas le plus gros
+        écart d'un autre épisode.
+        Le drawdown actuel est la distance entre le pic de cette courbe et le capital
+        du dernier trade. Retourne
+        (max_dd_absolu, max_dd_pourcentage, peak_capital, actuel_absolu, actuel_pourcentage).
         """
         max_dd = Decimal('0')
+        max_dd_pct = Decimal('0')
         peak_capital = Decimal('0')
+        last_capital = Decimal('0')
         if trades_queryset.exists():
             # Récupérer le capital initial du compte si non fourni
             if initial_capital is None:
@@ -315,29 +325,38 @@ def compute_statistics_payload(request, trades, pf: str) -> Dict[str, Any]:
             trades_ordered = trades_queryset.order_by('entered_at')
             cumulative_pnl = Decimal('0')
             peak_capital = initial_capital  # Le pic commence au capital initial
+            last_capital = initial_capital
             
             for trade in trades_ordered:
                 cumulative_pnl += pnl_dec(trade)
                 current_capital = initial_capital + cumulative_pnl
+                last_capital = current_capital
                 
                 # Mettre à jour le pic si on dépasse le pic précédent
                 if current_capital > peak_capital:
                     peak_capital = current_capital
                 
-                # Calculer le drawdown absolu seulement si on est en dessous du pic
-                if current_capital < peak_capital:
-                    # Drawdown absolu : différence entre le pic et la valeur actuelle
+                # Recul relatif depuis le pic en cours. Un pic nul n'a pas de base.
+                if peak_capital > 0 and current_capital < peak_capital:
                     current_dd = peak_capital - current_capital
-                    
-                    if current_dd > max_dd:
+                    current_dd_pct = (current_dd / peak_capital) * 100
+                    if current_dd_pct > max_dd_pct:
+                        max_dd_pct = current_dd_pct
                         max_dd = current_dd
         
-        # Calculer le pourcentage de drawdown
-        max_dd_pct = 0.0
-        if peak_capital > 0 and max_dd > 0:
-            max_dd_pct = float((max_dd / peak_capital) * 100)
+        open_dd = Decimal('0')
+        open_dd_pct = Decimal('0')
+        if peak_capital > 0 and last_capital < peak_capital:
+            open_dd = peak_capital - last_capital
+            open_dd_pct = (open_dd / peak_capital) * 100
         
-        return (float(max_dd), max_dd_pct, float(peak_capital))
+        return (
+            float(max_dd),
+            float(max_dd_pct),
+            float(peak_capital),
+            float(open_dd),
+            float(open_dd_pct),
+        )
     
     # 11b. Maximum Run-up (MRU) - Fonction helper
     def calculate_max_runup(trades_queryset, initial_capital=None):
@@ -513,7 +532,13 @@ def compute_statistics_payload(request, trades, pf: str) -> Dict[str, Any]:
                 period_start_capital = initial_capital
     
     # Max drawdown de la période (avec filtres de date)
-    max_drawdown, max_drawdown_pct, peak_capital = calculate_max_drawdown(trades, period_start_capital)
+    (
+        max_drawdown,
+        max_drawdown_pct,
+        peak_capital,
+        current_drawdown,
+        current_drawdown_pct,
+    ) = calculate_max_drawdown(trades, period_start_capital)
     
     # Max drawdown global (sans filtres de date, mais avec les autres filtres comme le compte)
     # Créer un queryset global en gardant les filtres de compte mais sans les filtres de date
@@ -527,7 +552,7 @@ def compute_statistics_payload(request, trades, pf: str) -> Dict[str, Any]:
     if trading_account_id:
         global_trades = global_trades.filter(trading_account_id=trading_account_id)
     
-    max_drawdown_global, max_drawdown_global_pct, peak_capital_global = calculate_max_drawdown(global_trades, initial_capital)
+    max_drawdown_global, max_drawdown_global_pct, peak_capital_global, _, _ = calculate_max_drawdown(global_trades, initial_capital)
     
     # Max run-up de la période (avec filtres de date) - utiliser le capital au début de la période
     try:
@@ -632,11 +657,12 @@ def compute_statistics_payload(request, trades, pf: str) -> Dict[str, Any]:
                 # Calculer le rendement annuel en pourcentage basé sur le capital initial
                 annual_return_pct = (total_pnl_decimal / initial_capital_float) * (365 / days_diff) * 100
                 
-                # Calculer le drawdown en pourcentage du capital initial pour le Calmar Ratio
-                max_drawdown_pct = (max_drawdown / initial_capital_float) * 100
+                # Le Calmar rapporte le montant du creux au capital initial.
+                # Ce ratio ne remplace pas le pourcentage publié, qui est relatif au pic du creux.
+                calmar_drawdown_pct = (max_drawdown / initial_capital_float) * 100
                 
-                if max_drawdown_pct > 0:
-                    calmar_ratio = annual_return_pct / max_drawdown_pct
+                if calmar_drawdown_pct > 0:
+                    calmar_ratio = annual_return_pct / calmar_drawdown_pct
     
     # 17. Trade Efficiency (% de trades où TP atteint)
     from django.db.models import Q, Exists, OuterRef
@@ -758,6 +784,8 @@ def compute_statistics_payload(request, trades, pf: str) -> Dict[str, Any]:
         'recovery_time': round(recovery_time, 1),
         'max_drawdown': round(max_drawdown, 2),
         'max_drawdown_pct': round(max_drawdown_pct, 2),
+        'current_drawdown': round(current_drawdown, 2),
+        'current_drawdown_pct': round(current_drawdown_pct, 2),
         'max_drawdown_global': round(max_drawdown_global, 2),
         'max_drawdown_global_pct': round(max_drawdown_global_pct, 2),
         'max_runup': round(max_runup, 2),

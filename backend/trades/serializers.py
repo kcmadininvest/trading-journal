@@ -404,6 +404,8 @@ class TradeStatisticsSerializer(serializers.Serializer):
     recovery_time = serializers.FloatField()
     max_drawdown = serializers.FloatField()
     max_drawdown_pct = serializers.FloatField()
+    current_drawdown = serializers.FloatField()
+    current_drawdown_pct = serializers.FloatField()
     max_drawdown_global = serializers.FloatField()
     max_drawdown_global_pct = serializers.FloatField()
     max_runup = serializers.FloatField()

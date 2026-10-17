@@ -209,12 +209,91 @@ class StatisticsParityGoldenTests(TestCase):
         self.assertGreater(stats['max_drawdown'], 0)
         self.assertEqual(stats['total_trades'], 3)
 
+    def _stats_for_range(self, start, end):
+        request = self._request({
+            'trading_account': str(self.account.id),
+            'start_date': start.isoformat(),
+            'end_date': end.isoformat(),
+        })
+        trades, pf = self._queryset(request)
+        return compute_statistics_payload(request, trades, pf)
+
+    def test_drawdown_pct_uses_the_peak_of_the_trough(self):
+        """Un nouveau pic plus haut ne dilue pas le pourcentage du creux précédent."""
+        # Capital 10 000, −1 000 (10 %), puis remontée à 20 000.
+        # L'ancien calcul divisait 1 000 par le pic final et affichait 5 %.
+        self._create_trade('DD1', date(2026, 6, 1), '-1000', '-1000')
+        self._create_trade('DD2', date(2026, 6, 2), '11000', '11000')
+
+        stats = self._stats_for_range(date(2026, 6, 1), date(2026, 6, 2))
+
+        self.assertAlmostEqual(stats['max_drawdown'], 1000.0, places=2)
+        self.assertAlmostEqual(stats['max_drawdown_pct'], 10.0, places=2)
+        self.assertAlmostEqual(stats['max_drawdown_global'], 1000.0, places=2)
+        self.assertAlmostEqual(stats['max_drawdown_global_pct'], 10.0, places=2)
+
+    def test_drawdown_keeps_the_worst_percentage_episode(self):
+        """Le montant publié est celui du creux au plus fort pourcentage."""
+        # 10 000 → 5 000 (50 %, 5 000), puis 100 000 → 80 000 (20 %, 20 000).
+        self._create_trade('DD50', date(2026, 6, 1), '-5000', '-5000')
+        self._create_trade('DDUP', date(2026, 6, 2), '95000', '95000')
+        self._create_trade('DD20', date(2026, 6, 3), '-20000', '-20000')
+
+        stats = self._stats_for_range(date(2026, 6, 1), date(2026, 6, 3))
+
+        self.assertAlmostEqual(stats['max_drawdown_pct'], 50.0, places=2)
+        self.assertAlmostEqual(stats['max_drawdown'], 5000.0, places=2)
+        self.assertAlmostEqual(stats['max_drawdown_global_pct'], 50.0, places=2)
+        self.assertAlmostEqual(stats['max_drawdown_global'], 5000.0, places=2)
+
+    def test_calmar_does_not_overwrite_drawdown_pct(self):
+        """Au-delà de 30 jours, le pourcentage reste relatif au pic du creux."""
+        # 10 000 → 20 000, puis −2 000 (10 % du pic, 20 % du capital initial).
+        self._create_trade('DDGAIN', date(2026, 6, 1), '10000', '10000')
+        self._create_trade('DDLOSS', date(2026, 7, 1), '-2000', '-2000')
+
+        stats = self._stats_for_range(date(2026, 6, 1), date(2026, 7, 1))
+
+        self.assertAlmostEqual(stats['max_drawdown'], 2000.0, places=2)
+        self.assertAlmostEqual(stats['max_drawdown_pct'], 10.0, places=2)
+        # Calmar = rendement annualisé / (montant du creux / capital initial).
+        # 8 000 / 10 000 × 365/30 × 100 / 20 = 48,67. Pas 97,33 (s'il divisait par les 10 % publiés).
+        self.assertAlmostEqual(stats['calmar_ratio'], 48.67, places=2)
+
+    def test_current_drawdown_shrinks_on_partial_recovery(self):
+        """Après un creux, une remontée qui ne refait pas le pic baisse l'actuel."""
+        # 10 000 → 8 000 (20 %), puis 8 500. Record 20 %, actuel 15 %.
+        self._create_trade('CUR1', date(2026, 6, 1), '-2000', '-2000')
+        self._create_trade('CUR2', date(2026, 6, 2), '500', '500')
+
+        stats = self._stats_for_range(date(2026, 6, 1), date(2026, 6, 2))
+
+        self.assertAlmostEqual(stats['max_drawdown'], 2000.0, places=2)
+        self.assertAlmostEqual(stats['max_drawdown_pct'], 20.0, places=2)
+        self.assertAlmostEqual(stats['current_drawdown'], 1500.0, places=2)
+        self.assertAlmostEqual(stats['current_drawdown_pct'], 15.0, places=2)
+        self.assertLess(stats['current_drawdown_pct'], stats['max_drawdown_pct'])
+
+    def test_current_drawdown_is_zero_back_at_the_peak(self):
+        """Revenu au pic, l'actuel vaut 0 et le record reste."""
+        self._create_trade('PEAK1', date(2026, 6, 1), '-2000', '-2000')
+        self._create_trade('PEAK2', date(2026, 6, 2), '2000', '2000')
+
+        stats = self._stats_for_range(date(2026, 6, 1), date(2026, 6, 2))
+
+        self.assertAlmostEqual(stats['max_drawdown'], 2000.0, places=2)
+        self.assertAlmostEqual(stats['max_drawdown_pct'], 20.0, places=2)
+        self.assertAlmostEqual(stats['current_drawdown'], 0.0, places=2)
+        self.assertAlmostEqual(stats['current_drawdown_pct'], 0.0, places=2)
+
     def test_empty_trades_returns_zero_payload(self):
         request = self._request({'trading_account': str(self.account.id)})
         trades, pf = self._queryset(request)
         stats = compute_statistics_payload(request, trades, pf)
         self.assertEqual(stats['total_trades'], 0)
         self.assertEqual(stats['max_drawdown'], 0.0)
+        self.assertEqual(stats['current_drawdown'], 0.0)
+        self.assertEqual(stats['current_drawdown_pct'], 0.0)
 
         rollup = TradeDailyRollup.objects.filter(user=self.user).count()
         self.assertEqual(rollup, 0)
