@@ -46,7 +46,7 @@
     "profitFactor": "利润因子",
     "profitFactorTooltip": "总收益与总损失的比率。> 1.0 = 盈利，> 2.0 = 优秀",
     "winLossRatio": "盈亏比",
-    "winLossRatioTooltip": "盈利交易与亏损交易数量的比率。> 1.0 = 收益多于损失",
+    "winLossRatioTooltip": "平均盈利与平均亏损的比率（以货币计）。> 1.0 = 平均盈利大于平均亏损。每笔交易的仓位大小已包含在其金额中。",
     "recoveryRatio": "恢复比率",
     "recoveryRatioTooltip": "最佳交易与最差损失的比率。> 1.0 = 最佳收益覆盖最差损失",
     "pnlPerTrade": "每笔交易P/L",

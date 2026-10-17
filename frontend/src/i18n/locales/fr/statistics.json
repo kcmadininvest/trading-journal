@@ -50,7 +50,7 @@
     "profitFactor": "Profit Factor",
     "profitFactorTooltip": "Ratio entre les gains totaux et les pertes totales. > 1.0 = profitable, > 2.0 = excellent",
     "winLossRatio": "Win/Loss Ratio",
-    "winLossRatioTooltip": "Ratio entre le nombre de trades gagnants et perdants. > 1.0 = plus de gains que de pertes",
+    "winLossRatioTooltip": "Ratio entre le gain moyen et la perte moyenne, en devise. > 1.0 = le gain moyen dépasse la perte moyenne. La taille de chaque trade est déjà comprise dans son montant.",
     "recoveryRatio": "Ratio Récupération",
     "recoveryRatioTooltip": "Rapport entre le Max Run-up et le Max Drawdown (meilleure hausse / pire baisse). > 1.0 = la meilleure hausse couvre la pire baisse, > 1.5 = excellente capacité de récupération",
     "pnlPerTrade": "P/L par Trade",

@@ -47,7 +47,7 @@
     "profitFactor": "利益ファクター",
     "profitFactorTooltip": "総利益と総損失の比率。> 1.0 = 利益、> 2.0 = 優秀",
     "winLossRatio": "勝敗比率",
-    "winLossRatioTooltip": "勝ちトレードと負けトレードの数の比率。> 1.0 = 利益が損失を上回る",
+    "winLossRatioTooltip": "平均利益と平均損失の比率（通貨建て）。> 1.0 = 平均利益が平均損失を上回る。各トレードのサイズは金額にすでに含まれています。",
     "recoveryRatio": "回復比率",
     "recoveryRatioTooltip": "最高トレードと最悪損失の比率。> 1.0 = 最高利益が最悪損失をカバー",
     "pnlPerTrade": "トレードあたりのP/L",

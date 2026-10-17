@@ -162,9 +162,14 @@ def compute_statistics_payload(request, trades, pf: str) -> Dict[str, Any]:
         profit_factor = abs(total_gains) / abs(total_losses)
     
     # 2. Ratio Win/Loss
+    # Payoff en devise : |gain moyen| / |perte moyenne|, sur le même PnL que le profit factor.
+    # La taille (micro-lot ou lot) est déjà dans le montant de chaque trade.
     win_loss_ratio = 0
-    if losing_trades > 0:
-        win_loss_ratio = winning_trades / losing_trades
+    if winning_trades > 0 and losing_trades > 0 and total_losses != 0:
+        avg_win = abs(total_gains) / winning_trades
+        avg_loss = abs(total_losses) / losing_trades
+        if avg_loss != 0:
+            win_loss_ratio = avg_win / avg_loss
     
     # 3. Ratio de Consistance (taux de réussite)
     consistency_ratio = win_rate
@@ -740,7 +745,7 @@ def compute_statistics_payload(request, trades, pf: str) -> Dict[str, Any]:
         'most_traded_contract': most_traded['contract_name'] if most_traded else None,
         # Ratios de Performance
         'profit_factor': round(float(profit_factor), 2),
-        'win_loss_ratio': round(win_loss_ratio, 2),
+        'win_loss_ratio': round(float(win_loss_ratio), 2),
         'consistency_ratio': round(consistency_ratio, 2),
         'recovery_ratio': round(recovery_ratio, 2),
         'pnl_per_trade': round(float(pnl_per_trade), 2),

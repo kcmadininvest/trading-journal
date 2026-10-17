@@ -46,7 +46,7 @@
     "profitFactor": "Profit Factor",
     "profitFactorTooltip": "Rapporto tra guadagni totali e perdite totali. > 1.0 = redditizio, > 2.0 = eccellente",
     "winLossRatio": "Rapporto Vincite/Perdite",
-    "winLossRatioTooltip": "Rapporto tra il numero di operazioni vincenti e perdenti. > 1.0 = più guadagni che perdite",
+    "winLossRatioTooltip": "Rapporto tra il guadagno medio e la perdita media, in valuta. > 1.0 = il guadagno medio supera la perdita media. La dimensione di ogni operazione è già inclusa nel suo importo.",
     "recoveryRatio": "Rapporto di Recupero",
     "recoveryRatioTooltip": "Rapporto tra la migliore operazione e la peggiore perdita. > 1.0 = il miglior guadagno copre la peggiore perdita",
     "pnlPerTrade": "P/L per Operazione",

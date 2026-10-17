@@ -47,7 +47,7 @@
     "profitFactor": "수익 팩터",
     "profitFactorTooltip": "총 수익과 총 손실의 비율。> 1.0 = 수익성, > 2.0 = 우수",
     "winLossRatio": "승패 비율",
-    "winLossRatioTooltip": "승리 거래와 손실 거래 수의 비율。> 1.0 = 수익이 손실보다 많음",
+    "winLossRatioTooltip": "평균 수익과 평균 손실의 비율(통화 기준). > 1.0 = 평균 수익이 평균 손실보다 큼. 각 거래의 크기는 금액에 이미 포함되어 있습니다.",
     "recoveryRatio": "회복 비율",
     "recoveryRatioTooltip": "최고 거래와 최악 손실의 비율。> 1.0 = 최고 수익이 최악 손실을 커버",
     "pnlPerTrade": "거래당 P/L",
