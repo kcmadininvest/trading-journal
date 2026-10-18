@@ -80,6 +80,22 @@ describe('apiClient refresh mutex', () => {
     localStorage.removeItem('user');
   });
 
+  it('ajoute Content-Type application/json si body string sans header', async () => {
+    const fetchMock = vi.mocked(fetch);
+    fetchMock.mockResolvedValue(new Response('{}', { status: 200 }));
+
+    await fetchWithAuth('http://localhost/api/x/', {
+      method: 'POST',
+      body: JSON.stringify({ a: 1 }),
+      retry: false,
+    });
+
+    const init = fetchMock.mock.calls[0]?.[1] as RequestInit;
+    const headers = init.headers as Record<string, string>;
+    expect(headers['Content-Type']).toBe('application/json');
+    expect(headers['X-CSRFToken']).toBe('test-csrf');
+  });
+
   it('emitSessionExpired est idempotent jusqu\'au reset', () => {
     const events: Event[] = [];
     const handler = (e: Event) => events.push(e);

@@ -48,6 +48,21 @@ function withCsrfHeaders(method: string, headers: Record<string, string>): Recor
   return headers;
 }
 
+/** DRF renvoie 415 si body JSON sans Content-Type (cas fréquent après migration cookie). */
+function withJsonContentType(
+  headers: Record<string, string>,
+  body: BodyInit | null | undefined,
+): Record<string, string> {
+  if (typeof body !== 'string' || body.length === 0) {
+    return headers;
+  }
+  const hasContentType = Object.keys(headers).some((k) => k.toLowerCase() === 'content-type');
+  if (!hasContentType) {
+    headers['Content-Type'] = 'application/json';
+  }
+  return headers;
+}
+
 async function refreshSession(baseUrl: string): Promise<boolean> {
   if (!refreshPromise) {
     refreshPromise = (async () => {
@@ -108,6 +123,7 @@ export async function fetchWithAuth(
   const headers: Record<string, string> = {
     ...((rest.headers as Record<string, string>) || {}),
   };
+  withJsonContentType(headers, rest.body);
   withCsrfHeaders(method, headers);
 
   const res = await fetch(input, {
@@ -123,6 +139,7 @@ export async function fetchWithAuth(
       const headers2: Record<string, string> = {
         ...((rest.headers as Record<string, string>) || {}),
       };
+      withJsonContentType(headers2, rest.body);
       withCsrfHeaders(method, headers2);
       return fetch(input, {
         ...rest,
