@@ -55,6 +55,7 @@
     "temporalAnalysis": "시간 분석",
     "profitFactor": "수익 팩터",
     "profitFactorTooltip": "총 수익과 총 손실의 비율。> 1.0 = 수익성, > 2.0 = 우수",
+    "profitFactorQualityHint": "< 1 낮음 · ≥ 1 수익 · ≥ 2 우수",
     "winLossRatio": "승패 비율",
     "winLossRatioTooltip": "평균 수익과 평균 손실의 비율(통화 기준). > 1.0 = 평균 수익이 평균 손실보다 큼. 각 거래의 크기는 금액에 이미 포함되어 있습니다.",
     "recoveryRatio": "회복 비율",
@@ -86,12 +87,13 @@
     "riskRewardRatioTooltip": "평균 수익과 평균 손실의 평균 비율。> 1.0 = 평균 수익이 평균 손실보다 큼",
     "expectancy": "기대값",
     "expectancyTooltip": "거래당 수학적 기대값 = (승률 × 평균 수익) - (패율 × 평균 손실)。> 0 = 수익성 전략",
+    "expectancyQualityHint": "< 0 음수 · = 0 중립 · > 0 수익",
     "sharpeRatio": "샤프 비율",
     "sharpeRatioAnnualized": "샤프 (연율화)",
     "sharpeRatioAnnualizedTooltip": "일별 위험 조정 수익률(252 거래일 기준 연율화).\n\n공식: 일일 PnL 평균 ÷ 일일 PnL 표준편차 × √252. 같은 날 거래는 설정 시간대로 합산. 거래별 샤프보다 성과의 일별 안정성 평가에 적합합니다.",
     "sharpeRatioPerTradeLabel": "샤프 (거래당)",
     "sharpeRatioPerTradeTooltip": "거래별 위험 조정 수익률.\n\n공식: PnL 평균 ÷ PnL 표준편차(기간 내 모든 거래). 연율화 없음: 일별이 아닌 거래별 안정성을 나타냅니다.",
-    "sharpeRatioPerTradeQualityHint": "거래당 PnL 평균/표준편차 · < 0.5 낮음 · ≥ 1 양호",
+    "sharpeRatioPerTradeQualityHint": "< 0.5 낮음 · ≥ 1 양호",
     "sharpeRatioQualityHint": "< 0.5 낮음 · 0.5–1 보통 · 1–2 양호 · ≥ 2 우수",
     "sharpeRatioExcellent": "우수 (≥ 2)",
     "sharpeRatioTooltip": "총 변동성에 조정된 수익률。리스크 단위당 초과 수익률을 측정。> 1.0 = 양호, > 2.0 = 우수",
@@ -236,6 +238,17 @@
       "tooltip": "기간 동안 승리 거래의 평균 이익과 패배 거래의 평균 손실 비교."
     }
   },
+  "riskReward": {
+    "plannedVsActual": "계획 vs 실제 R:R",
+    "compareEmpty": "이 기간에 계획 또는 실제 R:R가 없습니다.",
+    "compareInsightGood": "평균 실제 R:R({{actual}}) ≥ 계획({{planned}}) — 계획이 겨냥한 수준 이상을 확보합니다.",
+    "compareInsightMid": "부분 데이터: 계획 {{planned}} · 실제 {{actual}}. SL/TP를 보완해 더 정밀히 비교하세요.",
+    "compareInsightWarn": "평균 실제 R:R({{actual}})이 계획({{planned}})보다 낮음 — 목표 전 청산이 잦습니다.",
+    "planRespectEmpty": "비교 가능한 거래가 없습니다(손익분기 외 승리, 계획·실제 R:R 모두 있음).",
+    "planRespectInsightGood": "비교 가능한 {{comparableCount}}건 중 {{pct}}%가 실제 R:R ≥ 계획 — 계획 준수가 양호합니다.",
+    "planRespectInsightMid": "비교 가능한 {{comparableCount}}건 중 {{pct}}%가 계획 R:R을 충족 — 무난하며 70%+를 목표로 할 여지가 있습니다.",
+    "planRespectInsightWarn": "비교 가능한 {{comparableCount}}건 중 계획 R:R 달성은 {{pct}}%뿐 — 조기 청산 또는 스탑 확대."
+  },
   "performanceTab": {
     "verdict": {
       "good": "양호",
@@ -244,7 +257,13 @@
     },
     "details": {
       "efficiency": "효율",
-      "resilience": "회복력 및 위험 조정"
+      "resilience": "회복력 및 위험 조정",
+      "efficiencyInsightGood": "거래의 {{pct}}%에서 테이크프로핏 도달 — 계획 실행이 양호합니다.",
+      "efficiencyInsightMid": "테이크프로핏 도달 {{pct}}% — 실행은 무난하며 50% 이상 안정화 여지가 있습니다.",
+      "efficiencyInsightWarn": "테이크프로핏 도달은 {{pct}}%뿐 — 청산 타이밍이나 목표를 점검하세요.",
+      "resilienceInsightGood": "최대 런업이 최대 드로우다운의 {{ratio}}배 — 회복력이 좋습니다.",
+      "resilienceInsightWarn": "드로우다운이 런업을 초과합니다(비율 {{ratio}}) — 회복이 아직 불완전합니다.",
+      "recoveryRatioEmpty": "회복 비율을 표시할 수 없습니다(해당 기간 데이터 부족)."
     }
   }
 }

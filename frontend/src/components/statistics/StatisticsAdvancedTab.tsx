@@ -1,12 +1,12 @@
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MetricCard, MetricItem } from './MetricCard';
-import { MetricGauge } from './MetricGauge';
-import { GAUGE_CONFIGS } from './gaugeConfigs';
 import { STATS_GRID } from './statisticsConstants';
 import type { StatisticsTabBaseProps } from './statisticsTypes';
 import { buildTradeOutcomeSeries } from '../../utils/computeRollingPeakWinRate';
 import { StatisticsOutcomeSeriesCard } from './StatisticsOutcomeSeriesCard';
+import { PlanRespectStrip } from './PlanRespectStrip';
+import { RiskRewardCompareStrip } from './RiskRewardCompareStrip';
 import { WIN_RATE_ROLLING_WINDOW } from '../../utils/tradingSampleThresholds';
 
 export const StatisticsAdvancedTab: React.FC<StatisticsTabBaseProps> = ({
@@ -219,103 +219,52 @@ export const StatisticsAdvancedTab: React.FC<StatisticsTabBaseProps> = ({
             })}
           </p>
         </div>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-2">
           <MetricCard
-            title={t('statistics:riskReward.plannedRR', { defaultValue: 'R:R Prévu' })}
+            title={t('statistics:riskReward.plannedVsActual', {
+              defaultValue: 'R:R prévu vs réel',
+            })}
+            fillHeight
             icon={
               <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                />
               </svg>
             }
           >
-            <MetricItem
-              label={t('statistics:riskReward.averagePlannedRR', { defaultValue: 'R:R moyen prévu' })}
-              value={statisticsData.avg_planned_rr > 0 ? `1:${formatNumber(statisticsData.avg_planned_rr, 3)}` : '—'}
-              tooltip={t('statistics:riskReward.averagePlannedRRTooltip', {
-                defaultValue: "Ratio Risk/Reward moyen prévu à l'entrée des trades",
-              })}
-              variant={
-                statisticsData.avg_planned_rr >= 2.0
-                  ? 'success'
-                  : statisticsData.avg_planned_rr >= 1.5
-                    ? 'warning'
-                    : 'default'
-              }
-            />
-            <MetricItem
-              label={t('statistics:riskReward.tradesWithPlannedRR', { defaultValue: 'Trades avec R:R prévu' })}
-              value={`${statisticsData.trades_with_planned_rr} / ${statisticsData.total_trades}`}
-              tooltip={t('statistics:riskReward.tradesWithPlannedRRTooltip', {
-                defaultValue: 'Nombre de trades ayant un R:R prévu défini',
-              })}
-              variant="default"
-            />
-          </MetricCard>
-
-          <MetricCard
-            title={t('statistics:riskReward.actualRR', { defaultValue: 'R:R Réel' })}
-            icon={
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-              </svg>
-            }
-          >
-            <MetricItem
-              label={t('statistics:riskReward.averageActualRR', { defaultValue: 'R:R moyen réel' })}
-              value={statisticsData.avg_actual_rr > 0 ? `1:${formatNumber(statisticsData.avg_actual_rr, 3)}` : '—'}
-              tooltip={t('statistics:riskReward.averageActualRRTooltip', {
-                defaultValue:
-                  'Ratio Risk/Reward moyen réel sur les trades gagnants hors break-even (PnL = 0 ou BE déclaré sans TP)',
-              })}
-              variant={
-                statisticsData.avg_actual_rr >= 2.0
-                  ? 'success'
-                  : statisticsData.avg_actual_rr >= 1.5
-                    ? 'warning'
-                    : 'default'
-              }
-            />
-            <MetricItem
-              label={t('statistics:riskReward.tradesWithActualRR', { defaultValue: 'Trades avec R:R réel' })}
-              value={`${statisticsData.trades_with_actual_rr} / ${statisticsData.total_trades}`}
-              tooltip={t('statistics:riskReward.tradesWithActualRRTooltip', {
-                defaultValue: 'Nombre de trades ayant un R:R réel calculé',
-              })}
-              variant="default"
+            <RiskRewardCompareStrip
+              avgPlannedRr={statisticsData.avg_planned_rr}
+              avgActualRr={statisticsData.avg_actual_rr}
+              tradesWithPlannedRr={statisticsData.trades_with_planned_rr}
+              tradesWithActualRr={statisticsData.trades_with_actual_rr}
+              totalTrades={statisticsData.total_trades || 0}
+              formatNumber={formatNumber}
             />
           </MetricCard>
 
           <MetricCard
             title={t('statistics:riskReward.planRespect', { defaultValue: 'Respect du Plan' })}
+            fillHeight
             icon={
               <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
               </svg>
             }
           >
-            <MetricItem
-              label={t('statistics:riskReward.tradesWithBothRR', { defaultValue: 'Trades comparables' })}
-              value={statisticsData.trades_with_both_rr}
-              tooltip={t('statistics:riskReward.tradesWithBothRRTooltip', {
-                defaultValue:
-                  'Nombre de trades gagnants hors break-even ayant à la fois un R:R prévu et un R:R réel',
-              })}
-              variant="default"
+            <PlanRespectStrip
+              planRespectRate={statisticsData.plan_respect_rate}
+              tradesWithBothRr={statisticsData.trades_with_both_rr}
+              formatNumber={formatNumber}
             />
-            <div className="mt-4">
-              <MetricGauge
-                label={t('statistics:riskReward.planRespectRate', { defaultValue: 'Taux de respect' })}
-                value={statisticsData.plan_respect_rate}
-                config={GAUGE_CONFIGS.planRespectRate}
-                tooltip={t('statistics:riskReward.planRespectRateTooltip', {
-                  defaultValue:
-                    'Pourcentage de trades gagnants hors break-even où le R:R réel est supérieur ou égal au R:R prévu',
-                })}
-                formatValue={(val: number) => `${formatNumber(val, 1)}%`}
-                showLabels
-                size="md"
-              />
-            </div>
           </MetricCard>
         </div>
         {statisticsData.trades_with_planned_rr === 0 && statisticsData.trades_with_actual_rr === 0 && (

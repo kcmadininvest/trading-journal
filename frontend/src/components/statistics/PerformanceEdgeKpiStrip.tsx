@@ -95,12 +95,16 @@ export const PerformanceEdgeKpiStrip: React.FC<PerformanceEdgeKpiStripProps> = (
       label: t('statistics:performanceRatios.expectancy'),
       value: hideMoney ? maskValue(null, currencySymbol) : formatCurrency(statisticsData.expectancy, currencySymbol),
       verdict: getExpectancyVerdict(statisticsData.expectancy),
+      tooltip: t('statistics:performanceRatios.expectancyTooltip'),
+      qualityHint: t('statistics:performanceRatios.expectancyQualityHint'),
     },
     {
       key: 'profitFactor',
       label: t('statistics:performanceRatios.profitFactor'),
       value: formatNumber(statisticsData.profit_factor, 2),
       verdict: getGaugeVerdict(statisticsData.profit_factor, GAUGE_CONFIGS.profitFactor),
+      tooltip: t('statistics:performanceRatios.profitFactorTooltip'),
+      qualityHint: t('statistics:performanceRatios.profitFactorQualityHint'),
     },
     {
       key: 'sharpePerTrade',

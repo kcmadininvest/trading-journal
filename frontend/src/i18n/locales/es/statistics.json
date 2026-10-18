@@ -58,6 +58,7 @@
     "temporalAnalysis": "Análisis Temporal",
     "profitFactor": "Factor de Beneficio",
     "profitFactorTooltip": "Ratio entre ganancias totales y pérdidas totales. > 1.0 = rentable, > 2.0 = excelente",
+    "profitFactorQualityHint": "< 1 débil · ≥ 1 rentable · ≥ 2 excelente",
     "winLossRatio": "Ratio Ganancia/Pérdida",
     "winLossRatioTooltip": "Ratio entre la ganancia promedio y la pérdida promedio, en divisa. > 1.0 = la ganancia promedio supera la pérdida promedio. El tamaño de cada operación ya está incluido en su importe.",
     "recoveryRatio": "Ratio de Recuperación",
@@ -89,12 +90,13 @@
     "riskRewardRatioTooltip": "Ratio promedio entre ganancia promedio y pérdida promedio. > 1.0 = las ganancias promedio son superiores a las pérdidas promedio",
     "expectancy": "Expectativa",
     "expectancyTooltip": "Expectativa matemática por operación = (Tasa de Aciertos × Ganancia Promedio) - (Tasa de Pérdidas × Pérdida Promedio). > 0 = estrategia rentable",
+    "expectancyQualityHint": "< 0 negativo · = 0 neutro · > 0 rentable",
     "sharpeRatio": "Ratio Sharpe",
     "sharpeRatioAnnualized": "Sharpe (anualizado)",
     "sharpeRatioAnnualizedTooltip": "Rentabilidad ajustada al riesgo día a día, anualizada sobre 252 días de bolsa.\n\nFórmula: PnL diario medio ÷ desviación estándar del PnL diario × √252. Las operaciones del mismo día se suman según su zona horaria (Ajustes). Más adecuado que el Sharpe por operación para evaluar la constancia.",
     "sharpeRatioPerTradeLabel": "Sharpe (por operación)",
     "sharpeRatioPerTradeTooltip": "Rentabilidad ajustada al riesgo por operación.\n\nFórmula: PnL medio ÷ desviación estándar del PnL (todas las operaciones del período). No anualizado: mide la regularidad por operación, no por día.",
-    "sharpeRatioPerTradeQualityHint": "PnL medio / desv. por operación · < 0,5 débil · ≥ 1 bueno",
+    "sharpeRatioPerTradeQualityHint": "< 0,5 débil · ≥ 1 bueno",
     "sharpeRatioQualityHint": "< 0,5 débil · 0,5–1 medio · 1–2 bueno · ≥ 2 excelente",
     "sharpeRatioExcellent": "Excelente (≥ 2)",
     "sharpeRatioTooltip": "Retorno ajustado a la volatilidad total. Mide el retorno excedente por unidad de riesgo. > 1.0 = bueno, > 2.0 = excelente",
@@ -196,6 +198,11 @@
     "subtitle": "Análisis del ratio riesgo/recompensa planificado vs real",
     "plannedRR": "R:R Planificado",
     "actualRR": "R:R Real",
+    "plannedVsActual": "R:R planificado vs real",
+    "compareEmpty": "Ningún R:R planificado ni real en este período.",
+    "compareInsightGood": "R:R real medio ({{actual}}) ≥ planificado ({{planned}}) — captura al menos lo que apunta el plan.",
+    "compareInsightMid": "Datos parciales: planificado {{planned}} · real {{actual}}. Complete SL/TP para comparar con más precisión.",
+    "compareInsightWarn": "R:R real medio ({{actual}}) por debajo del planificado ({{planned}}) — salidas a menudo antes del objetivo.",
     "planRespect": "Respeto del Plan",
     "averagePlannedRR": "R:R promedio planificado",
     "averagePlannedRRTooltip": "Ratio Riesgo/Recompensa promedio planificado en la entrada de las operaciones",
@@ -209,6 +216,10 @@
     "planRespectRateTooltip": "Porcentaje de operaciones ganadoras fuera de break-even donde el R:R real es mayor o igual al R:R planificado",
     "tradesWithBothRR": "Operaciones comparables",
     "tradesWithBothRRTooltip": "Número de operaciones ganadoras fuera de break-even con R:R planificado y real",
+    "planRespectEmpty": "No hay operaciones comparables (ganadoras fuera de break-even con R:R planificado y real).",
+    "planRespectInsightGood": "En {{comparableCount}} operaciones comparables, el {{pct}}% tiene R:R real ≥ planificado — buen respeto del plan.",
+    "planRespectInsightMid": "En {{comparableCount}} operaciones comparables, el {{pct}}% cumple el R:R planificado — correcto; margen para apuntar a 70%+.",
+    "planRespectInsightWarn": "En {{comparableCount}} operaciones comparables, solo el {{pct}}% cumple el R:R planificado — salidas anticipadas o stop más amplio.",
     "noDataMessage": "No hay datos de R:R disponibles. Agregue un Stop Loss y un Take Profit planificado al crear o modificar una operación para ver las estadísticas de R:R."
   },
   "exportModal": {
@@ -276,7 +287,13 @@
     },
     "details": {
       "efficiency": "Eficiencia",
-      "resilience": "Resiliencia y riesgo ajustado"
+      "resilience": "Resiliencia y riesgo ajustado",
+      "efficiencyInsightGood": "Alcanza el Take Profit en el {{pct}}% de las operaciones — buena ejecución del plan.",
+      "efficiencyInsightMid": "Take Profit en el {{pct}}% de las operaciones — ejecución correcta; margen para estabilizar por encima del 50%.",
+      "efficiencyInsightWarn": "Solo el {{pct}}% de las operaciones alcanza el Take Profit — revise timing de salida u objetivos.",
+      "resilienceInsightGood": "Su max run-up cubre {{ratio}}× el max drawdown — buena capacidad de recuperación.",
+      "resilienceInsightWarn": "El drawdown supera el run-up (ratio {{ratio}}) — recuperación aún incompleta.",
+      "recoveryRatioEmpty": "Ratio de recuperación no disponible (datos insuficientes en el período)."
     }
   }
 }

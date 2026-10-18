@@ -64,8 +64,7 @@ export const StatisticsOverviewTab: React.FC<StatisticsTabBaseProps> = ({
       >
         <MetricItem
           label={t('statistics:performanceRatios.maxDrawdown', { defaultValue: 'Max Drawdown' })}
-          value={`${formatNumber(statisticsData.max_drawdown_global_pct, 2)}%`}
-          subValue={displayCurrency(statisticsData.max_drawdown_global)}
+          value={`${formatNumber(statisticsData.max_drawdown_global_pct, 2)}% (${displayCurrency(statisticsData.max_drawdown_global)})`}
           tooltip={t('statistics:performanceRatios.maxDrawdownGlobalTooltip', {
             defaultValue: 'Plus grande baisse depuis un pic (tous les temps).',
           })}

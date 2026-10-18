@@ -55,6 +55,7 @@
     "temporalAnalysis": "時間分析",
     "profitFactor": "利益ファクター",
     "profitFactorTooltip": "総利益と総損失の比率。> 1.0 = 利益、> 2.0 = 優秀",
+    "profitFactorQualityHint": "< 1 低 · ≥ 1 利益 · ≥ 2 優秀",
     "winLossRatio": "勝敗比率",
     "winLossRatioTooltip": "平均利益と平均損失の比率（通貨建て）。> 1.0 = 平均利益が平均損失を上回る。各トレードのサイズは金額にすでに含まれています。",
     "recoveryRatio": "回復比率",
@@ -86,12 +87,13 @@
     "riskRewardRatioTooltip": "平均利益と平均損失の平均比率。> 1.0 = 平均利益が平均損失を上回る",
     "expectancy": "期待値",
     "expectancyTooltip": "トレードあたりの数学的期待値 = (勝率 × 平均利益) - (敗率 × 平均損失)。> 0 = 利益戦略",
+    "expectancyQualityHint": "< 0 負 · = 0 中立 · > 0 利益",
     "sharpeRatio": "シャープ比率",
     "sharpeRatioAnnualized": "シャープ（年率換算）",
     "sharpeRatioAnnualizedTooltip": "日次のリスク調整後リターン（252営業日で年率換算）。\n\n計算式：日次PnL平均 ÷ 日次PnLの標準偏差 × √252。同日のトレードは設定のタイムゾーンで合算。パフォーマンスの日次安定性の評価に適しています。",
     "sharpeRatioPerTradeLabel": "シャープ（トレードあたり）",
     "sharpeRatioPerTradeTooltip": "トレードごとのリスク調整後リターン。\n\n計算式：PnL平均 ÷ PnLの標準偏差（期間内の全トレード）。年率換算なし：日単位ではなくトレード単位の安定性を示します。",
-    "sharpeRatioPerTradeQualityHint": "PnL平均/標準偏差（トレード）· < 0.5 低 · ≥ 1 良",
+    "sharpeRatioPerTradeQualityHint": "< 0.5 低 · ≥ 1 良",
     "sharpeRatioQualityHint": "< 0.5 低 · 0.5–1 中 · 1–2 良 · ≥ 2 優秀",
     "sharpeRatioExcellent": "優秀（≥ 2）",
     "sharpeRatioTooltip": "総ボラティリティに調整されたリターン。リスク単位あたりの超過リターンを測定。> 1.0 = 良好、> 2.0 = 優秀",
@@ -236,6 +238,17 @@
       "tooltip": "期間中の勝ちトレードの平均利益と負けトレードの平均損失の比較。"
     }
   },
+  "riskReward": {
+    "plannedVsActual": "予定 vs 実R:R",
+    "compareEmpty": "この期間に予定・実R:Rがありません。",
+    "compareInsightGood": "平均実R:R（{{actual}}）≥ 予定（{{planned}}）— 計画の目標以上を確保。",
+    "compareInsightMid": "部分データ: 予定 {{planned}} · 実 {{actual}}。SL/TPを補完して比較を精密に。",
+    "compareInsightWarn": "平均実R:R（{{actual}}）が予定（{{planned}}）未満 — 目標前の決済が多い。",
+    "planRespectEmpty": "比較可能なトレードがありません（ブレークイーブン以外の勝ちで予定・実R:Rあり）。",
+    "planRespectInsightGood": "比較可能な{{comparableCount}}件のうち{{pct}}%が実R:R≥予定 — 計画の遵守が良好。",
+    "planRespectInsightMid": "比較可能な{{comparableCount}}件のうち{{pct}}%が予定R:Rを達成 — 妥当、70%超を目指す余地あり。",
+    "planRespectInsightWarn": "比較可能な{{comparableCount}}件のうち予定R:R達成は{{pct}}%のみ — 早すぎる決済や拡大ストップ。"
+  },
   "performanceTab": {
     "verdict": {
       "good": "良好",
@@ -244,7 +257,13 @@
     },
     "details": {
       "efficiency": "効率",
-      "resilience": "回復力とリスク調整"
+      "resilience": "回復力とリスク調整",
+      "efficiencyInsightGood": "トレードの{{pct}}%でテイクプロフィット到達 — 計画の実行が良好。",
+      "efficiencyInsightMid": "テイクプロフィット到達{{pct}}% — 実行は妥当、50%超への安定余地あり。",
+      "efficiencyInsightWarn": "テイクプロフィット到達は{{pct}}%のみ — 決済タイミングや目標を見直してください。",
+      "resilienceInsightGood": "最大ランアップが最大ドローダウンの{{ratio}}倍 — 回復力が高い。",
+      "resilienceInsightWarn": "ドローダウンがランアップを上回る（比率{{ratio}}）— 回復はまだ不完全。",
+      "recoveryRatioEmpty": "回復比率を表示できません（この期間のデータ不足）。"
     }
   }
 }

@@ -58,6 +58,7 @@
     "temporalAnalysis": "Zeitliche Analyse",
     "profitFactor": "Profit-Faktor",
     "profitFactorTooltip": "Verhältnis zwischen Gesamtgewinnen und Gesamtverlusten. > 1.0 = profitabel, > 2.0 = ausgezeichnet",
+    "profitFactorQualityHint": "< 1 schwach · ≥ 1 profitabel · ≥ 2 ausgezeichnet",
     "winLossRatio": "Gewinn/Verlust-Verhältnis",
     "winLossRatioTooltip": "Verhältnis von durchschnittlichem Gewinn zu durchschnittlichem Verlust, in Währung. > 1.0 = der durchschnittliche Gewinn übersteigt den durchschnittlichen Verlust. Die Positionsgröße ist bereits im Betrag jedes Trades enthalten.",
     "recoveryRatio": "Erholungsverhältnis",
@@ -89,12 +90,13 @@
     "riskRewardRatioTooltip": "Durchschnittliches Verhältnis zwischen durchschnittlichem Gewinn und durchschnittlichem Verlust. > 1.0 = durchschnittliche Gewinne sind größer als durchschnittliche Verluste",
     "expectancy": "Erwartungswert",
     "expectancyTooltip": "Mathematischer Erwartungswert pro Trade = (Gewinnrate × Durchschnittlicher Gewinn) - (Verlustrate × Durchschnittlicher Verlust). > 0 = profitable Strategie",
+    "expectancyQualityHint": "< 0 negativ · = 0 neutral · > 0 profitabel",
     "sharpeRatio": "Sharpe-Verhältnis",
     "sharpeRatioAnnualized": "Sharpe (annualisiert)",
     "sharpeRatioAnnualizedTooltip": "Risikoadjustierte Rendite tageweise, annualisiert auf 252 Handelstage.\n\nFormel: mittlerer Tages-PnL ÷ Standardabweichung des Tages-PnL × √252. Trades am selben Tag werden nach Ihrer Zeitzone (Einstellungen) summiert. Besser geeignet als der Trade-Sharpe zur Beurteilung der Tageskonstanz.",
     "sharpeRatioPerTradeLabel": "Sharpe (pro Trade)",
     "sharpeRatioPerTradeTooltip": "Risikoadjustierte Rendite pro Trade.\n\nFormel: mittlerer PnL ÷ Standardabweichung des PnL (alle Trades der Periode). Nicht annualisiert: misst die Regelmäßigkeit je Trade, nicht je Tag.",
-    "sharpeRatioPerTradeQualityHint": "Mittl. PnL / Std.abw. pro Trade · < 0,5 schwach · ≥ 1 gut",
+    "sharpeRatioPerTradeQualityHint": "< 0,5 schwach · ≥ 1 gut",
     "sharpeRatioQualityHint": "< 0,5 schwach · 0,5–1 mittel · 1–2 gut · ≥ 2 ausgezeichnet",
     "sharpeRatioExcellent": "Ausgezeichnet (≥ 2)",
     "sharpeRatioTooltip": "Rendite angepasst an die Gesamtvolatilität. Misst die überschüssige Rendite pro Risikoeinheit. > 1.0 = gut, > 2.0 = ausgezeichnet",
@@ -196,6 +198,11 @@
     "subtitle": "Analyse des geplanten vs. tatsächlichen Risiko/Rendite-Verhältnisses",
     "plannedRR": "Geplantes R:R",
     "actualRR": "Tatsächliches R:R",
+    "plannedVsActual": "Geplantes vs tatsächliches R:R",
+    "compareEmpty": "Kein geplantes oder tatsächliches R:R in diesem Zeitraum.",
+    "compareInsightGood": "Tatsächliches Ø-R:R ({{actual}}) ≥ geplant ({{planned}}) — Sie holen mindestens das Plan-Ziel.",
+    "compareInsightMid": "Teilweise Daten: geplant {{planned}} · tatsächlich {{actual}}. SL/TP ergänzen für einen feineren Vergleich.",
+    "compareInsightWarn": "Tatsächliches Ø-R:R ({{actual}}) unter geplant ({{planned}}) — oft Ausstieg vor dem Plan-Ziel.",
     "planRespect": "Planeinhaltung",
     "averagePlannedRR": "Durchschnittliches geplantes R:R",
     "averagePlannedRRTooltip": "Durchschnittliches Risiko/Rendite-Verhältnis, das beim Trade-Einstieg geplant war",
@@ -209,6 +216,10 @@
     "planRespectRateTooltip": "Prozentsatz der Gewinn-Trades ohne Break-even, bei denen das tatsächliche R:R größer oder gleich dem geplanten R:R ist",
     "tradesWithBothRR": "Vergleichbare Trades",
     "tradesWithBothRRTooltip": "Anzahl der Gewinn-Trades ohne Break-even mit sowohl geplantem als auch tatsächlichem R:R",
+    "planRespectEmpty": "Keine vergleichbaren Trades (Gewinn ohne Break-even mit geplantem und tatsächlichem R:R).",
+    "planRespectInsightGood": "Bei {{comparableCount}} vergleichbaren Trades haben {{pct}}% tatsächliches R:R ≥ geplant — gute Planeinhaltung.",
+    "planRespectInsightMid": "Bei {{comparableCount}} vergleichbaren Trades erreichen {{pct}}% das geplante R:R — solide; Spielraum Richtung 70%+.",
+    "planRespectInsightWarn": "Bei {{comparableCount}} vergleichbaren Trades erreichen nur {{pct}}% das geplante R:R — früher Ausstieg oder weiterer Stop.",
     "noDataMessage": "Keine R:R-Daten verfügbar. Fügen Sie beim Erstellen oder Ändern eines Trades einen Stop Loss und einen geplanten Take Profit hinzu, um R:R-Statistiken zu sehen."
   },
   "exportModal": {
@@ -276,7 +287,13 @@
     },
     "details": {
       "efficiency": "Effizienz",
-      "resilience": "Resilienz & risikoadjustiert"
+      "resilience": "Resilienz & risikoadjustiert",
+      "efficiencyInsightGood": "Sie erreichen den Take Profit bei {{pct}}% der Trades — gute Planausführung.",
+      "efficiencyInsightMid": "Take Profit bei {{pct}}% der Trades — solide Ausführung, noch Spielraum über 50%.",
+      "efficiencyInsightWarn": "Nur {{pct}}% der Trades erreichen den Take Profit — Ausstiegszeitpunkt oder Ziele prüfen.",
+      "resilienceInsightGood": "Ihr Max-Run-up deckt {{ratio}}× den Max-Drawdown — starke Erholungsfähigkeit.",
+      "resilienceInsightWarn": "Der Drawdown übersteigt den Run-up (Verhältnis {{ratio}}) — Erholung noch unvollständig.",
+      "recoveryRatioEmpty": "Erholungsverhältnis nicht verfügbar (unzureichende Daten für diesen Zeitraum)."
     }
   }
 }

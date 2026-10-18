@@ -59,6 +59,7 @@
     "temporalAnalysis": "Temporal Analysis",
     "profitFactor": "Profit Factor",
     "profitFactorTooltip": "Ratio between total gains and total losses. > 1.0 = profitable, > 2.0 = excellent",
+    "profitFactorQualityHint": "< 1 weak · ≥ 1 profitable · ≥ 2 excellent",
     "winLossRatio": "Win/Loss Ratio",
     "winLossRatioTooltip": "Ratio of average win to average loss, in currency. > 1.0 = the average win exceeds the average loss. Each trade's size is already included in its amount.",
     "recoveryRatio": "Recovery Ratio",
@@ -90,12 +91,13 @@
     "riskRewardRatioTooltip": "Average ratio between average win and average loss. > 1.0 = average wins are greater than average losses",
     "expectancy": "Expectancy",
     "expectancyTooltip": "Mathematical expectation per trade = (Win Rate × Avg Win) - (Loss Rate × Avg Loss). > 0 = profitable strategy",
+    "expectancyQualityHint": "< 0 negative · = 0 neutral · > 0 profitable",
     "sharpeRatio": "Sharpe Ratio",
     "sharpeRatioAnnualized": "Sharpe (annualized)",
     "sharpeRatioAnnualizedTooltip": "Risk-adjusted return measured day by day, annualized over 252 trading days.\n\nFormula: mean daily PnL ÷ standard deviation of daily PnL × √252. Trades on the same day are summed using your timezone (Settings). Better suited than per-trade Sharpe to judge how steady your performance is.",
     "sharpeRatioPerTradeLabel": "Sharpe (per trade)",
     "sharpeRatioPerTradeTooltip": "Risk-adjusted return measured trade by trade.\n\nFormula: mean PnL ÷ standard deviation of PnL (all trades in the period). Not annualized: it reflects consistency per trade, not per day.",
-    "sharpeRatioPerTradeQualityHint": "Mean PnL / stdev per trade · < 0.5 weak · ≥ 1 good",
+    "sharpeRatioPerTradeQualityHint": "< 0.5 weak · ≥ 1 good",
     "sharpeRatioQualityHint": "< 0.5 weak · 0.5–1 average · 1–2 good · ≥ 2 excellent",
     "sharpeRatioExcellent": "Excellent (≥ 2)",
     "sharpeRatioTooltip": "Return adjusted to total volatility. Measures excess return per unit of risk. > 1.0 = good, > 2.0 = excellent",
@@ -197,6 +199,11 @@
     "subtitle": "Analysis of planned vs actual risk/reward ratio",
     "plannedRR": "Planned R:R",
     "actualRR": "Actual R:R",
+    "plannedVsActual": "Planned vs actual R:R",
+    "compareEmpty": "No planned or actual R:R for this period.",
+    "compareInsightGood": "Average actual R:R ({{actual}}) ≥ planned ({{planned}}) — you capture at least what the plan targets.",
+    "compareInsightMid": "Partial data: planned {{planned}} · actual {{actual}}. Add SL/TP to compare more precisely.",
+    "compareInsightWarn": "Average actual R:R ({{actual}}) below planned ({{planned}}) — exits often before the planned target.",
     "planRespect": "Plan Respect",
     "averagePlannedRR": "Average planned R:R",
     "averagePlannedRRTooltip": "Average Risk/Reward ratio planned at trade entry",
@@ -210,6 +217,10 @@
     "planRespectRateTooltip": "Percentage of winning non-break-even trades where actual R:R is greater than or equal to planned R:R",
     "tradesWithBothRR": "Comparable trades",
     "tradesWithBothRRTooltip": "Number of winning non-break-even trades with both planned and actual R:R",
+    "planRespectEmpty": "No comparable trades (winning non-break-even with planned and actual R:R).",
+    "planRespectInsightGood": "On {{comparableCount}} comparable trades, {{pct}}% have actual R:R ≥ planned — solid plan respect.",
+    "planRespectInsightMid": "On {{comparableCount}} comparable trades, {{pct}}% meet planned R:R — decent; room to aim for 70%+.",
+    "planRespectInsightWarn": "On {{comparableCount}} comparable trades, only {{pct}}% meet planned R:R — early exits or widened stops.",
     "noDataMessage": "No R:R data available. Add a Stop Loss and planned Take Profit when creating or modifying a trade to see R:R statistics."
   },
   "exportModal": {
@@ -284,7 +295,13 @@
     },
     "details": {
       "efficiency": "Efficiency",
-      "resilience": "Resilience & risk-adjusted"
+      "resilience": "Resilience & risk-adjusted",
+      "efficiencyInsightGood": "You hit Take Profit on {{pct}}% of trades — solid plan execution.",
+      "efficiencyInsightMid": "Take Profit hit on {{pct}}% of trades — decent execution; room to stabilize above 50%.",
+      "efficiencyInsightWarn": "Only {{pct}}% of trades hit Take Profit — review exit timing or targets.",
+      "resilienceInsightGood": "Your max run-up covers {{ratio}}× max drawdown — strong recovery capacity.",
+      "resilienceInsightWarn": "Drawdown exceeds run-up (ratio {{ratio}}) — recovery still incomplete.",
+      "recoveryRatioEmpty": "Recovery ratio unavailable (insufficient data for this period)."
     }
   }
 }

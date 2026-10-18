@@ -58,10 +58,11 @@ export const StatisticsHeroStrip: React.FC<StatisticsHeroStripProps> = ({
     {
       key: 'drawdown',
       label: t('statistics:performanceRatios.maxDrawdown', { defaultValue: 'Max Drawdown' }),
-      value: `${formatNumber(statisticsData.max_drawdown_global_pct, 2)}%`,
-      subValue: hideMoney
-        ? maskValue(null, currencySymbol)
-        : formatCurrency(statisticsData.max_drawdown_global, currencySymbol),
+      value: `${formatNumber(statisticsData.max_drawdown_global_pct, 2)}% (${
+        hideMoney
+          ? maskValue(null, currencySymbol)
+          : formatCurrency(statisticsData.max_drawdown_global, currencySymbol)
+      })`,
       valueClass: 'text-pink-600 dark:text-pink-400',
       cardClass: 'border-pink-200 bg-pink-50/50 dark:border-pink-900/50 dark:bg-pink-900/10',
     },
@@ -75,9 +76,6 @@ export const StatisticsHeroStrip: React.FC<StatisticsHeroStripProps> = ({
           <p className={clsx('mt-1 text-lg font-bold tabular-nums sm:text-xl', item.valueClass)}>
             {item.value}
           </p>
-          {'subValue' in item && item.subValue && (
-            <p className="mt-0.5 text-xs tabular-nums text-gray-500 dark:text-gray-400">{item.subValue}</p>
-          )}
         </div>
       ))}
     </div>

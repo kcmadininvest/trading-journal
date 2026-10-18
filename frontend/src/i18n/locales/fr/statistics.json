@@ -58,6 +58,7 @@
     "temporalAnalysis": "Analyse Temporelle",
     "profitFactor": "Profit Factor",
     "profitFactorTooltip": "Ratio entre les gains totaux et les pertes totales. > 1.0 = profitable, > 2.0 = excellent",
+    "profitFactorQualityHint": "< 1 faible · ≥ 1 profitable · ≥ 2 excellent",
     "winLossRatio": "Win/Loss Ratio",
     "winLossRatioTooltip": "Ratio entre le gain moyen et la perte moyenne, en devise. > 1.0 = le gain moyen dépasse la perte moyenne. La taille de chaque trade est déjà comprise dans son montant.",
     "recoveryRatio": "Ratio Récupération",
@@ -89,12 +90,13 @@
     "riskRewardRatioTooltip": "Ratio moyen entre gain moyen et perte moyenne. > 1.0 = les gains moyens sont supérieurs aux pertes moyennes",
     "expectancy": "Expectancy",
     "expectancyTooltip": "Espérance mathématique par trade = (Win Rate × Avg Win) - (Loss Rate × Avg Loss). > 0 = stratégie profitable",
+    "expectancyQualityHint": "< 0 négatif · = 0 neutre · > 0 profitable",
     "sharpeRatio": "Sharpe Ratio",
     "sharpeRatioAnnualized": "Sharpe (annualisé)",
     "sharpeRatioAnnualizedTooltip": "Mesure le rendement ajusté au risque jour par jour, annualisé sur une base de 252 jours de bourse.\n\nFormule : moyenne des PnL journaliers ÷ écart-type des PnL journaliers × √252. Les trades du même jour sont cumulés selon votre fuseau horaire (Réglages). Plus adapté qu’un Sharpe par trade pour juger la constance de votre performance.",
     "sharpeRatioPerTradeLabel": "Sharpe (par trade)",
     "sharpeRatioPerTradeTooltip": "Mesure le rendement ajusté au risque trade par trade.\n\nFormule : moyenne des PnL ÷ écart-type des PnL (sur tous les trades de la période). Non annualisé : il compare la régularité de chaque trade, pas celle des journées.",
-    "sharpeRatioPerTradeQualityHint": "Moyenne PnL / écart-type par trade · < 0,5 faible · ≥ 1 bon",
+    "sharpeRatioPerTradeQualityHint": "< 0,5 faible · ≥ 1 bon",
     "sharpeRatioQualityHint": "< 0,5 faible · 0,5–1 moyen · 1–2 bon · ≥ 2 excellent",
     "sharpeRatioExcellent": "Excellent (≥ 2)",
     "sharpeRatioTooltip": "Rendement ajusté à la volatilité totale. Mesure le rendement excédentaire par unité de risque. > 1.0 = bon, > 2.0 = excellent",
@@ -196,6 +198,11 @@
     "subtitle": "Analyse du ratio risque/récompense prévu vs réel",
     "plannedRR": "R:R Prévu",
     "actualRR": "R:R Réel",
+    "plannedVsActual": "R:R prévu vs réel",
+    "compareEmpty": "Aucun R:R prévu ni réel sur cette période.",
+    "compareInsightGood": "R:R réel moyen ({{actual}}) ≥ prévu ({{planned}}) — vous capturez au moins ce que le plan vise.",
+    "compareInsightMid": "Données partielles : prévu {{planned}} · réel {{actual}}. Complétez SL/TP pour comparer finement.",
+    "compareInsightWarn": "R:R réel moyen ({{actual}}) sous le prévu ({{planned}}) — sorties souvent avant l’objectif planifié.",
     "planRespect": "Respect du Plan",
     "averagePlannedRR": "R:R moyen prévu",
     "averagePlannedRRTooltip": "Ratio Risque/Récompense moyen prévu à l'entrée des trades",
@@ -209,6 +216,10 @@
     "planRespectRateTooltip": "Pourcentage de trades gagnants hors break-even où le R:R réel est supérieur ou égal au R:R prévu",
     "tradesWithBothRR": "Trades comparables",
     "tradesWithBothRRTooltip": "Nombre de trades gagnants hors break-even ayant à la fois un R:R prévu et un R:R réel",
+    "planRespectEmpty": "Aucun trade comparable (gagnant hors break-even avec R:R prévu et réel).",
+    "planRespectInsightGood": "Sur {{comparableCount}} trades comparables, {{pct}}% ont un R:R réel ≥ prévu — bon respect du plan.",
+    "planRespectInsightMid": "Sur {{comparableCount}} trades comparables, {{pct}}% respectent le R:R prévu — correct, marge pour viser 70%+.",
+    "planRespectInsightWarn": "Sur {{comparableCount}} trades comparables, seulement {{pct}}% atteignent le R:R prévu — sorties trop tôt ou stop élargi.",
     "noDataMessage": "Aucun R:R disponible. Ajoutez un Stop Loss et un Take Profit prévu lors de la création ou modification d'un trade pour voir les statistiques R:R."
   },
   "exportModal": {
@@ -283,7 +294,13 @@
     },
     "details": {
       "efficiency": "Efficacité",
-      "resilience": "Résilience & risque ajusté"
+      "resilience": "Résilience & risque ajusté",
+      "efficiencyInsightGood": "Vous atteignez le Take Profit sur {{pct}}% des trades — bonne exécution du plan.",
+      "efficiencyInsightMid": "Take Profit atteint sur {{pct}}% des trades — exécution correcte, encore de la marge pour stabiliser au-dessus de 50%.",
+      "efficiencyInsightWarn": "Seulement {{pct}}% des trades atteignent le Take Profit — revoir timing de sortie ou objectifs.",
+      "resilienceInsightGood": "Votre max run-up couvre {{ratio}}× le max drawdown — bonne capacité de récupération.",
+      "resilienceInsightWarn": "Le drawdown dépasse le run-up (ratio {{ratio}}) — récupération encore incomplète.",
+      "recoveryRatioEmpty": "Ratio de récupération indisponible (données insuffisantes sur la période)."
     }
   }
 }

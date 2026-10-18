@@ -55,6 +55,7 @@
     "temporalAnalysis": "Análise Temporal",
     "profitFactor": "Fator de Lucro",
     "profitFactorTooltip": "Rácio entre ganhos totais e perdas totais. > 1.0 = rentável, > 2.0 = excelente",
+    "profitFactorQualityHint": "< 1 fraco · ≥ 1 rentável · ≥ 2 excelente",
     "winLossRatio": "Rácio Ganhos/Perdas",
     "winLossRatioTooltip": "Rácio entre o ganho médio e a perda média, em moeda. > 1.0 = o ganho médio supera a perda média. O tamanho de cada operação já está incluído no seu valor.",
     "recoveryRatio": "Rácio de Recuperação",
@@ -86,12 +87,13 @@
     "riskRewardRatioTooltip": "Rácio médio entre ganho médio e perda média. > 1.0 = os ganhos médios são superiores às perdas médias",
     "expectancy": "Expectativa",
     "expectancyTooltip": "Expectativa matemática por operação = (Taxa de Sucesso × Ganho Médio) - (Taxa de Perda × Perda Média). > 0 = estratégia rentável",
+    "expectancyQualityHint": "< 0 negativo · = 0 neutro · > 0 rentável",
     "sharpeRatio": "Rácio Sharpe",
     "sharpeRatioAnnualized": "Sharpe (anualizado)",
     "sharpeRatioAnnualizedTooltip": "Retorno ajustado ao risco dia a dia, anualizado em 252 dias de bolsa.\n\nFórmula: PnL diário médio ÷ desvio padrão do PnL diário × √252. Trades no mesmo dia são somados conforme o seu fuso horário (Definições). Mais adequado que o Sharpe por trade para avaliar a consistência.",
     "sharpeRatioPerTradeLabel": "Sharpe (por trade)",
     "sharpeRatioPerTradeTooltip": "Retorno ajustado ao risco por trade.\n\nFórmula: PnL médio ÷ desvio padrão do PnL (todos os trades do período). Não anualizado: mede a regularidade por trade, não por dia.",
-    "sharpeRatioPerTradeQualityHint": "PnL médio / desvio por trade · < 0,5 fraco · ≥ 1 bom",
+    "sharpeRatioPerTradeQualityHint": "< 0,5 fraco · ≥ 1 bom",
     "sharpeRatioQualityHint": "< 0,5 fraco · 0,5–1 médio · 1–2 bom · ≥ 2 excelente",
     "sharpeRatioExcellent": "Excelente (≥ 2)",
     "sharpeRatioTooltip": "Retorno ajustado à volatilidade total. Mede o retorno excedente por unidade de risco. > 1.0 = bom, > 2.0 = excelente",
@@ -236,6 +238,17 @@
       "tooltip": "Comparação do ganho médio por trade vencedor e da perda média por trade perdedor no período."
     }
   },
+  "riskReward": {
+    "plannedVsActual": "R:R previsto vs real",
+    "compareEmpty": "Nenhum R:R previsto nem real neste período.",
+    "compareInsightGood": "R:R real médio ({{actual}}) ≥ previsto ({{planned}}) — captura pelo menos o que o plano visa.",
+    "compareInsightMid": "Dados parciais: previsto {{planned}} · real {{actual}}. Complete SL/TP para comparar melhor.",
+    "compareInsightWarn": "R:R real médio ({{actual}}) abaixo do previsto ({{planned}}) — saídas muitas vezes antes do objetivo.",
+    "planRespectEmpty": "Nenhum trade comparável (ganhador fora de break-even com R:R previsto e real).",
+    "planRespectInsightGood": "Em {{comparableCount}} trades comparáveis, {{pct}}% têm R:R real ≥ previsto — bom respeito do plano.",
+    "planRespectInsightMid": "Em {{comparableCount}} trades comparáveis, {{pct}}% respeitam o R:R previsto — correto; margem para visar 70%+.",
+    "planRespectInsightWarn": "Em {{comparableCount}} trades comparáveis, apenas {{pct}}% atingem o R:R previsto — saídas cedo ou stop alargado."
+  },
   "performanceTab": {
     "verdict": {
       "good": "Bom",
@@ -244,7 +257,13 @@
     },
     "details": {
       "efficiency": "Eficiência",
-      "resilience": "Resiliência e risco ajustado"
+      "resilience": "Resiliência e risco ajustado",
+      "efficiencyInsightGood": "Atinge o Take Profit em {{pct}}% dos trades — boa execução do plano.",
+      "efficiencyInsightMid": "Take Profit em {{pct}}% dos trades — execução correta; margem para estabilizar acima de 50%.",
+      "efficiencyInsightWarn": "Apenas {{pct}}% dos trades atingem o Take Profit — reveja timing de saída ou objetivos.",
+      "resilienceInsightGood": "O max run-up cobre {{ratio}}× o max drawdown — boa capacidade de recuperação.",
+      "resilienceInsightWarn": "O drawdown supera o run-up (rácio {{ratio}}) — recuperação ainda incompleta.",
+      "recoveryRatioEmpty": "Rácio de recuperação indisponível (dados insuficientes no período)."
     }
   }
 }
