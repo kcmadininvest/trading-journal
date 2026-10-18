@@ -12,7 +12,8 @@ from django.urls import reverse
 
 
 SIGN_SALT = 'trades.screenshots_media'
-SIGN_MAX_AGE = 7 * 24 * 3600
+# Aligné sur sessions longues ; bien plus court que 7j pour limiter fuite d'URL.
+SIGN_MAX_AGE = 24 * 3600
 
 
 def _relative_under_media_from_url(url: str) -> Optional[str]:

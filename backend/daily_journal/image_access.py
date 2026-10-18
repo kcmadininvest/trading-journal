@@ -4,7 +4,8 @@ from __future__ import annotations
 from django.core import signing
 
 SIGN_SALT = 'daily_journal.image_file'
-SIGN_MAX_AGE = 7 * 24 * 3600
+# Aligné sur sessions longues ; bien plus court que 7j pour limiter fuite d'URL.
+SIGN_MAX_AGE = 24 * 3600
 
 
 def sign_journal_image_payload(image_id: int, user_id: int) -> str:
