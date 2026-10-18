@@ -12,6 +12,7 @@ import {
 import { Radar as ChartRadar } from 'react-chartjs-2';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
+import { usePreferences } from '../../hooks/usePreferences';
 import TooltipComponent from '../ui/Tooltip';
 import { ChartTooltipResetContainer } from '../charts/ChartTooltipResetContainer';
 import { formatNumber } from '../../utils/numberFormat';
@@ -54,6 +55,8 @@ export const RadarChart: React.FC<RadarChartProps> = ({
 }) => {
   const { t } = useTranslation();
   const { theme } = useTheme();
+  const { preferences } = usePreferences();
+  const numberFormat = preferences.number_format;
   const isDark = theme === 'dark';
   const isCompact = variant === 'compact';
   const shellClassName = clsx(
@@ -163,6 +166,7 @@ export const RadarChart: React.FC<RadarChartProps> = ({
           pointBorderColor: '#ffffff',
           pointBorderWidth: 2,
           pointRadius: 4,
+          pointHitRadius: 12,
           pointHoverRadius: 6,
           pointHoverBorderWidth: 3,
         },
@@ -218,12 +222,12 @@ export const RadarChart: React.FC<RadarChartProps> = ({
         unit: '%',
         description: '',
         secondary: t('analytics:radar.drawdownRecord', {
-          value: formatNumber(statisticsData.max_drawdown_pct || 0, 1),
+          value: formatNumber(statisticsData.max_drawdown_pct || 0, 1, numberFormat),
           defaultValue: 'Record {{value}}%',
         }),
       },
     ];
-  }, [statisticsData, t]);
+  }, [statisticsData, t, numberFormat]);
 
   // Calculer le score global de performance (moyenne des métriques)
   const globalScore = useMemo(() => {
@@ -317,6 +321,10 @@ export const RadarChart: React.FC<RadarChartProps> = ({
               options={{
                 responsive: true,
                 maintainAspectRatio: false,
+                interaction: {
+                  mode: 'nearest',
+                  intersect: true,
+                },
                 layout: {
                   padding: {
                     top: 0,
@@ -334,7 +342,8 @@ export const RadarChart: React.FC<RadarChartProps> = ({
                   },
                   tooltip: {
                     ...buildChartTooltipPlugin(chartColors, 'barStackedLike', undefined, {
-                    padding: 14,
+                    mode: 'nearest',
+                    intersect: true,
                     callbacks: {
                       title: (context: any) => {
                         return context[0].label;
@@ -344,10 +353,10 @@ export const RadarChart: React.FC<RadarChartProps> = ({
                         const metric = metricInfo[index];
                         if (!metric) return [];
                         const normalizedValue = context.parsed.r;
-                        const realValue = formatNumber(metric.value || 0, metric.unit === '%' ? 1 : 2);
+                        const realValue = formatNumber(metric.value || 0, metric.unit === '%' ? 1 : 2, numberFormat);
                         const lines = [
                           `${t('analytics:radar.value', { defaultValue: 'Valeur' })}: ${realValue}${metric.unit}`,
-                          `${t('analytics:radar.score', { defaultValue: 'Score' })}: ${formatNumber(normalizedValue, 0)}/100`,
+                          `${t('analytics:radar.score', { defaultValue: 'Score' })}: ${formatNumber(normalizedValue, 0, numberFormat)}/100`,
                         ];
                         if (metric.description) lines.push(metric.description);
                         if (metric.secondary) lines.push(metric.secondary);
@@ -424,7 +433,7 @@ export const RadarChart: React.FC<RadarChartProps> = ({
                         {metric.name}
                       </span>
                       <span className="text-sm font-semibold text-gray-900 dark:text-gray-100 whitespace-nowrap">
-                        {formatNumber(metric.value || 0, metric.unit === '%' ? 1 : 2)}{metric.unit}
+                        {formatNumber(metric.value || 0, metric.unit === '%' ? 1 : 2, numberFormat)}{metric.unit}
                       </span>
                     </div>
                     {metric.description && (
