@@ -61,8 +61,12 @@
     "profitFactorQualityHint": "< 1 faible · ≥ 1 profitable · ≥ 2 excellent",
     "winLossRatio": "Win/Loss Ratio",
     "winLossRatioTooltip": "Ratio entre le gain moyen et la perte moyenne, en devise. > 1.0 = le gain moyen dépasse la perte moyenne. La taille de chaque trade est déjà comprise dans son montant.",
-    "recoveryRatio": "Ratio Récupération",
-    "recoveryRatioTooltip": "Rapport entre le Max Run-up et le Max Drawdown (meilleure hausse / pire baisse). > 1.0 = la meilleure hausse couvre la pire baisse, > 1.5 = excellente capacité de récupération",
+    "bestWorstTradeRatio": "Meilleur / Pire trade",
+    "bestWorstTradeRatioTooltip": "Rapport entre le gain du meilleur trade et la perte du pire trade (valeurs absolues). > 1.0 = le meilleur gain couvre la pire perte.",
+    "recoveryFactor": "Recovery Factor",
+    "recoveryFactorTooltip": "Combien de fois le profit net de la période couvre la pire baisse. < 1 faible · ≥ 1 correct · ≥ 2 bon · ≥ 3 excellent.",
+    "maxDrawdownPeriodTooltip": "Plus grande baisse depuis un pic sur la période filtrée.",
+    "maxRunup": "Max Run-up",
     "pnlPerTrade": "P/L par Trade",
     "pnlPerTradeTooltip": "Gain ou perte moyen par trade. Indique la rentabilité moyenne de chaque opération",
     "feesRatio": "Ratio Frais",
@@ -85,7 +89,7 @@
     "maxDrawdownGlobal": "Global",
     "maxDrawdownPeriod": "Période",
     "maxRunupGlobal": "Max Run-up Global",
-    "maxRunupTooltip": "Plus grande hausse depuis un point bas",
+    "maxRunupTooltip": "Plus grande hausse depuis un point bas sur la période filtrée.",
     "riskRewardRatio": "Risk/Reward Ratio",
     "riskRewardRatioTooltip": "Ratio moyen entre gain moyen et perte moyenne. > 1.0 = les gains moyens sont supérieurs aux pertes moyennes",
     "expectancy": "Expectancy",
@@ -298,9 +302,9 @@
       "efficiencyInsightGood": "Vous atteignez le Take Profit sur {{pct}}% des trades — bonne exécution du plan.",
       "efficiencyInsightMid": "Take Profit atteint sur {{pct}}% des trades — exécution correcte, encore de la marge pour stabiliser au-dessus de 50%.",
       "efficiencyInsightWarn": "Seulement {{pct}}% des trades atteignent le Take Profit — revoir timing de sortie ou objectifs.",
-      "resilienceInsightGood": "Votre max run-up couvre {{ratio}}× le max drawdown — bonne capacité de récupération.",
-      "resilienceInsightWarn": "Le drawdown dépasse le run-up (ratio {{ratio}}) — récupération encore incomplète.",
-      "recoveryRatioEmpty": "Ratio de récupération indisponible (données insuffisantes sur la période)."
+      "resilienceInsightGood": "Votre Recovery Factor est de {{ratio}} — le P/L net couvre au moins une fois le max drawdown.",
+      "resilienceInsightWarn": "Recovery Factor à {{ratio}} — le P/L net ne couvre pas encore le max drawdown.",
+      "recoveryFactorEmpty": "Recovery Factor indisponible (données insuffisantes sur la période)."
     }
   }
 }

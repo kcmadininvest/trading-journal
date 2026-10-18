@@ -439,14 +439,14 @@ function buildRiskSection(input: BuildBehaviorNarrativeInput): NarrativeSection 
     );
   }
 
-  if (context.recoveryRatio != null) {
+  if (context.recoveryFactor != null) {
     const recKey =
-      context.recoveryRatio >= 1
+      context.recoveryFactor >= 1
         ? 'analytics:behaviorNarrative.risk.recoveryGood'
         : 'analytics:behaviorNarrative.risk.recoveryLow';
     paragraphs.push(
       t(recKey, {
-        recovery: formatNumber(context.recoveryRatio, 2),
+        recovery: formatNumber(context.recoveryFactor, 2),
       }),
     );
   }
@@ -455,7 +455,7 @@ function buildRiskSection(input: BuildBehaviorNarrativeInput): NarrativeSection 
 
   return {
     id: 'risk',
-    titleKey: resolveRiskSectionTitle(context.maxDrawdownPct, context.recoveryRatio),
+    titleKey: resolveRiskSectionTitle(context.maxDrawdownPct, context.recoveryFactor),
     paragraphs,
     toneVariant: tone,
   };

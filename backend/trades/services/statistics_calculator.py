@@ -59,7 +59,8 @@ EMPTY_STATISTICS_PAYLOAD: Dict[str, Any] = {
     'profit_factor': 0,
     'win_loss_ratio': 0,
     'consistency_ratio': 0,
-    'recovery_ratio': 0,
+    'best_worst_trade_ratio': 0,
+    'recovery_factor': 0.0,
     'pnl_per_trade': 0,
     'fees_ratio': 0,
     'volume_pnl_ratio': 0,
@@ -176,12 +177,11 @@ def compute_statistics_payload(request, trades, pf: str) -> Dict[str, Any]:
     # 3. Ratio de Consistance (taux de réussite)
     consistency_ratio = win_rate
     
-    # 4. Ratio de Récupération
-    # Ratio du meilleur trade sur le pire trade (en valeur absolue)
-    recovery_ratio = 0
+    # 4. Ratio Meilleur / Pire trade (valeurs absolues)
+    best_worst_trade_ratio = 0
     if worst_trade and best_trade:
         if worst_trade != 0:
-            recovery_ratio = abs(best_trade) / abs(worst_trade)
+            best_worst_trade_ratio = abs(best_trade) / abs(worst_trade)
     
     # 5. Ratio P/L par Trade
     pnl_per_trade = 0
@@ -663,6 +663,12 @@ def compute_statistics_payload(request, trades, pf: str) -> Dict[str, Any]:
                 
                 if calmar_drawdown_pct > 0:
                     calmar_ratio = annual_return_pct / calmar_drawdown_pct
+
+    # Recovery Factor = P/L net période / Max Drawdown absolu période
+    recovery_factor = 0.0
+    if max_drawdown > 0:
+        total_pnl_for_rf = float(aggregates['total_pnl'] or Decimal('0'))
+        recovery_factor = total_pnl_for_rf / max_drawdown
     
     # 17. Trade Efficiency (% de trades où TP atteint)
     from django.db.models import Q, Exists, OuterRef
@@ -773,7 +779,8 @@ def compute_statistics_payload(request, trades, pf: str) -> Dict[str, Any]:
         'profit_factor': round(float(profit_factor), 2),
         'win_loss_ratio': round(float(win_loss_ratio), 2),
         'consistency_ratio': round(consistency_ratio, 2),
-        'recovery_ratio': round(recovery_ratio, 2),
+        'best_worst_trade_ratio': round(best_worst_trade_ratio, 2),
+        'recovery_factor': round(recovery_factor, 2),
         'pnl_per_trade': round(float(pnl_per_trade), 2),
         'fees_ratio': round(float(fees_ratio), 2),
         'volume_pnl_ratio': round(float(volume_pnl_ratio), 6),

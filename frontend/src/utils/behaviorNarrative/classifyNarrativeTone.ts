@@ -35,7 +35,7 @@ type ToneInput = Pick<
   | 'expectancy'
   | 'winRate'
   | 'maxDrawdownPct'
-  | 'recoveryRatio'
+  | 'recoveryFactor'
   | 'revenge'
   | 'sizing'
   | 'trajectoryProgression'
@@ -67,9 +67,9 @@ export function classifyNarrativeTone(input: ToneInput): NarrativeTone {
 
   if (input.monetaryNarrativesEnabled) {
     if (input.maxDrawdownPct != null && input.maxDrawdownPct > 15) score -= 1;
-    if (input.recoveryRatio != null) {
-      if (input.recoveryRatio >= 1.5) score += 1;
-      else if (input.recoveryRatio < 0.8) score -= 1;
+    if (input.recoveryFactor != null) {
+      if (input.recoveryFactor >= 1.5) score += 1;
+      else if (input.recoveryFactor < 0.8) score -= 1;
     }
     if (input.expectancy > 0) score += 1;
     else if (input.expectancy < 0) score -= 1;

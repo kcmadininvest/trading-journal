@@ -64,20 +64,38 @@ export const StatisticsOverviewTab: React.FC<StatisticsTabBaseProps> = ({
       >
         <MetricItem
           label={t('statistics:performanceRatios.maxDrawdown', { defaultValue: 'Max Drawdown' })}
-          value={`${formatNumber(statisticsData.max_drawdown_global_pct, 2)}% (${displayCurrency(statisticsData.max_drawdown_global)})`}
-          tooltip={t('statistics:performanceRatios.maxDrawdownGlobalTooltip', {
-            defaultValue: 'Plus grande baisse depuis un pic (tous les temps).',
+          value={`${formatNumber(statisticsData.max_drawdown_pct, 2)}% (${displayCurrency(statisticsData.max_drawdown)})`}
+          tooltip={t('statistics:performanceRatios.maxDrawdownPeriodTooltip', {
+            defaultValue: 'Plus grande baisse depuis un pic sur la période filtrée.',
           })}
           variant="danger"
         />
         <MetricItem
-          label={t('statistics:performanceRatios.maxRunupGlobal', { defaultValue: 'Max Run-up Global' })}
-          value={`${formatNumber(statisticsData.max_runup_global_pct, 2)}%`}
-          subValue={displayCurrency(statisticsData.max_runup_global)}
+          label={t('statistics:performanceRatios.maxRunup', { defaultValue: 'Max Run-up' })}
+          value={`${formatNumber(statisticsData.max_runup_pct, 2)}% (${displayCurrency(statisticsData.max_runup)})`}
           tooltip={t('statistics:performanceRatios.maxRunupTooltip', {
-            defaultValue: 'Plus grande hausse depuis un point bas',
+            defaultValue: 'Plus grande hausse depuis un point bas sur la période filtrée.',
           })}
           variant="success"
+        />
+        <MetricItem
+          label={t('statistics:performanceRatios.recoveryFactor', { defaultValue: 'Recovery Factor' })}
+          value={
+            statisticsData.max_drawdown > 0
+              ? formatNumber(statisticsData.recovery_factor, 2)
+              : t('statistics:performanceRatios.noRecovery', { defaultValue: 'N/A' })
+          }
+          tooltip={t('statistics:performanceRatios.recoveryFactorTooltip', {
+            defaultValue:
+              'Combien de fois le profit net de la période couvre la pire baisse. < 1 faible · ≥ 1 correct · ≥ 2 bon · ≥ 3 excellent.',
+          })}
+          variant={
+            statisticsData.max_drawdown > 0 && statisticsData.recovery_factor >= 1
+              ? 'success'
+              : statisticsData.max_drawdown > 0
+                ? 'danger'
+                : 'default'
+          }
         />
       </MetricCard>
 

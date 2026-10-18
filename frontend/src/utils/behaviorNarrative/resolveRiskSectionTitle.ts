@@ -14,7 +14,7 @@ export type RiskSectionTitleVariant = 'celebrate' | 'excellent' | 'positive' | '
  */
 export function resolveRiskSectionTitle(
   maxDrawdownPct: number | null,
-  recoveryRatio: number | null,
+  recoveryFactor: number | null,
 ): string {
   if (maxDrawdownPct == null) {
     return 'behaviorNarrative.risk.title.positive';
@@ -25,17 +25,17 @@ export function resolveRiskSectionTitle(
   }
 
   if (maxDrawdownPct > RISK_DRAWDOWN_MODERATE_MAX_PCT) {
-    if (recoveryRatio != null && recoveryRatio >= RISK_RECOVERY_STRONG_MIN) {
+    if (recoveryFactor != null && recoveryFactor >= RISK_RECOVERY_STRONG_MIN) {
       return 'behaviorNarrative.risk.title.excellent';
     }
     return 'behaviorNarrative.risk.title.mixed';
   }
 
-  if (recoveryRatio != null && recoveryRatio >= RISK_RECOVERY_GOOD_MIN) {
+  if (recoveryFactor != null && recoveryFactor >= RISK_RECOVERY_GOOD_MIN) {
     return 'behaviorNarrative.risk.title.celebrate';
   }
 
-  if (recoveryRatio != null && recoveryRatio < RISK_RECOVERY_LOW_MAX) {
+  if (recoveryFactor != null && recoveryFactor < RISK_RECOVERY_LOW_MAX) {
     return 'behaviorNarrative.risk.title.mixed';
   }
 

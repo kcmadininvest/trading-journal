@@ -294,6 +294,22 @@ class StatisticsParityGoldenTests(TestCase):
         self.assertEqual(stats['max_drawdown'], 0.0)
         self.assertEqual(stats['current_drawdown'], 0.0)
         self.assertEqual(stats['current_drawdown_pct'], 0.0)
+        self.assertEqual(stats['best_worst_trade_ratio'], 0)
+        self.assertEqual(stats['recovery_factor'], 0.0)
+        self.assertNotIn('recovery_ratio', stats)
 
         rollup = TradeDailyRollup.objects.filter(user=self.user).count()
         self.assertEqual(rollup, 0)
+
+    def test_best_worst_trade_ratio_and_recovery_factor(self):
+        """best/worst = |meilleur|/|pire| ; RF = P/L net / MDD absolu."""
+        # 10 000 → 11 000 (+1 000) → 10 500 (−500). MDD = 500, P/L = 500 → RF = 1.
+        self._create_trade('BW1', date(2026, 6, 1), '1000', '1000')
+        self._create_trade('BW2', date(2026, 6, 2), '-500', '-500')
+
+        stats = self._stats_for_range(date(2026, 6, 1), date(2026, 6, 2))
+
+        self.assertAlmostEqual(stats['max_drawdown'], 500.0, places=2)
+        self.assertAlmostEqual(float(stats['total_pnl']), 500.0, places=2)
+        self.assertAlmostEqual(stats['best_worst_trade_ratio'], 2.0, places=2)
+        self.assertAlmostEqual(stats['recovery_factor'], 1.0, places=2)

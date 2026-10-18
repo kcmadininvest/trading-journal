@@ -9,7 +9,9 @@ import {
 } from '../../utils/getGaugeVerdict';
 
 interface ResilienceStripProps {
-  recoveryRatio: number;
+  recoveryFactor: number;
+  recoveryFactorAvailable: boolean;
+  bestWorstTradeRatio: number;
   sortinoRatio: number;
   calmarRatio: number;
   recoveryTime: number | null | undefined;
@@ -31,18 +33,23 @@ const HELP_ICON = (
 );
 
 export const ResilienceStrip: React.FC<ResilienceStripProps> = ({
-  recoveryRatio,
+  recoveryFactor,
+  recoveryFactorAvailable,
+  bestWorstTradeRatio,
   sortinoRatio,
   calmarRatio,
   recoveryTime,
   formatNumber,
 }) => {
   const { t } = useTranslation();
-  const hasRecoveryRatio = recoveryRatio > 0;
-  const recoveryCoversDrawdown = recoveryRatio >= 1;
+  const recoveryFactorStrong = recoveryFactor >= 1;
 
   const sortinoVerdict = getGaugeVerdict(sortinoRatio, GAUGE_CONFIGS.sharpeRatio);
   const calmarVerdict = getGaugeVerdict(calmarRatio, GAUGE_CONFIGS.sharpeRatio);
+  const bestWorstVerdict = getGaugeVerdict(
+    bestWorstTradeRatio,
+    GAUGE_CONFIGS.bestWorstTradeRatio,
+  );
 
   const recoveryTimeValue =
     recoveryTime !== undefined && recoveryTime !== null && recoveryTime > 0
@@ -71,29 +78,36 @@ export const ResilienceStrip: React.FC<ResilienceStripProps> = ({
       tooltip: t('statistics:performanceRatios.recoveryTimeTooltip'),
       valueClass: 'text-gray-900 dark:text-gray-100',
     },
+    {
+      key: 'bestWorst',
+      label: t('statistics:performanceRatios.bestWorstTradeRatio'),
+      value: formatNumber(bestWorstTradeRatio, 2),
+      tooltip: t('statistics:performanceRatios.bestWorstTradeRatioTooltip'),
+      valueClass: VERDICT_TEXT_CLASSES[bestWorstVerdict],
+    },
   ];
 
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col gap-3">
-      {hasRecoveryRatio ? (
+      {recoveryFactorAvailable ? (
         <MetricGauge
-          label={t('statistics:performanceRatios.recoveryRatio')}
-          value={recoveryRatio}
-          config={GAUGE_CONFIGS.recoveryRatio}
-          tooltip={t('statistics:performanceRatios.recoveryRatioTooltip')}
-          formatValue={(val: number) => formatNumber(val, 2)}
+          label={t('statistics:performanceRatios.recoveryFactor')}
+          value={Math.max(0, recoveryFactor)}
+          config={GAUGE_CONFIGS.recoveryFactor}
+          tooltip={t('statistics:performanceRatios.recoveryFactorTooltip')}
+          formatValue={() => formatNumber(recoveryFactor, 2)}
           showLabels
           size="md"
         />
       ) : (
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          {t('statistics:performanceTab.details.recoveryRatioEmpty', {
-            defaultValue: 'Ratio de récupération indisponible (données insuffisantes sur la période).',
+          {t('statistics:performanceTab.details.recoveryFactorEmpty', {
+            defaultValue: 'Recovery Factor indisponible (données insuffisantes sur la période).',
           })}
         </p>
       )}
 
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-3">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4 sm:gap-3">
         {kpis.map((kpi) => (
           <div
             key={kpi.key}
@@ -119,21 +133,21 @@ export const ResilienceStrip: React.FC<ResilienceStripProps> = ({
         ))}
       </div>
 
-      {hasRecoveryRatio && recoveryCoversDrawdown && (
+      {recoveryFactorAvailable && recoveryFactorStrong && (
         <p className="mt-auto rounded-lg border border-emerald-200/80 bg-emerald-50/80 px-3 py-2 text-xs leading-relaxed text-emerald-900 dark:border-emerald-700/40 dark:bg-emerald-900/20 dark:text-emerald-100/90">
           {t('statistics:performanceTab.details.resilienceInsightGood', {
             defaultValue:
-              'Votre max run-up couvre {{ratio}}× le max drawdown — bonne capacité de récupération.',
-            ratio: formatNumber(recoveryRatio, 2),
+              'Votre Recovery Factor est de {{ratio}} — le P/L net couvre au moins une fois le max drawdown.',
+            ratio: formatNumber(recoveryFactor, 2),
           })}
         </p>
       )}
-      {hasRecoveryRatio && !recoveryCoversDrawdown && (
+      {recoveryFactorAvailable && !recoveryFactorStrong && (
         <p className="mt-auto rounded-lg border border-amber-200/80 bg-amber-50/80 px-3 py-2 text-xs leading-relaxed text-amber-900 dark:border-amber-700/40 dark:bg-amber-900/20 dark:text-amber-100/90">
           {t('statistics:performanceTab.details.resilienceInsightWarn', {
             defaultValue:
-              'Le drawdown dépasse le run-up (ratio {{ratio}}) — récupération encore incomplète.',
-            ratio: formatNumber(recoveryRatio, 2),
+              'Recovery Factor à {{ratio}} — le P/L net ne couvre pas encore le max drawdown.',
+            ratio: formatNumber(recoveryFactor, 2),
           })}
         </p>
       )}

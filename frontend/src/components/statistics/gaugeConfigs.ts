@@ -76,7 +76,20 @@ export const GAUGE_CONFIGS: Record<string, MetricGaugeConfig> = {
       { value: 1.5, label: 'Good', color: 'green' },
     ],
   },
-  recoveryRatio: {
+  /** Recovery Factor = P/L net / Max Drawdown : < 1 faible · ≥ 1 correct · ≥ 2 bon · ≥ 3 excellent */
+  recoveryFactor: {
+    type: 'ratio',
+    min: 0,
+    max: 5,
+    thresholds: [
+      { value: 0, label: 'Poor', color: 'red' },
+      { value: 1.0, label: 'Average', color: 'orange' },
+      { value: 2.0, label: 'Good', color: 'green' },
+      { value: 3.0, label: 'Excellent', color: 'green' },
+    ],
+  },
+  /** Meilleur trade / pire trade (absolus) */
+  bestWorstTradeRatio: {
     type: 'ratio',
     min: 0,
     max: 3,

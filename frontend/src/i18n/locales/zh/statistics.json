@@ -57,8 +57,6 @@
     "profitFactorQualityHint": "< 1 弱 · ≥ 1 盈利 · ≥ 2 优秀",
     "winLossRatio": "盈亏比",
     "winLossRatioTooltip": "平均盈利与平均亏损的比率（以货币计）。> 1.0 = 平均盈利大于平均亏损。每笔交易的仓位大小已包含在其金额中。",
-    "recoveryRatio": "恢复比率",
-    "recoveryRatioTooltip": "最佳交易与最差损失的比率。> 1.0 = 最佳收益覆盖最差损失",
     "pnlPerTrade": "每笔交易P/L",
     "pnlPerTradeTooltip": "每笔交易的平均收益或损失。表示每次操作的平均盈利能力",
     "feesRatio": "费用比率",
@@ -81,7 +79,7 @@
     "maxDrawdownGlobal": "全局",
     "maxDrawdownPeriod": "期间",
     "maxRunupGlobal": "最大上涨 全局",
-    "maxRunupTooltip": "从低点的最大上涨",
+    "maxRunupTooltip": "筛选期间内自低点的最大回升。",
     "riskRewardRatio": "风险/回报比率",
     "riskRewardRatioTooltip": "平均收益与平均损失的平均比率。> 1.0 = 平均收益大于平均损失",
     "expectancy": "期望值",
@@ -106,7 +104,13 @@
     "avgTimeBetweenTrades": "两笔交易间平均时间",
     "avgTimeBetweenTradesTooltip": "Average delay between two consecutive entries on the same trading day, using your Settings timezone.\n\nUseful to detect revenge trading, overactivity after a loss, or impatience after a long wait.",
     "avgDailyExposureTime": "每日暴露时间",
-    "avgDailyExposureTimeTooltip": "Average cumulative time spent in position per active trading day over the selected period, using your Settings timezone. Overlapping positions are merged.\n\nUseful to assess mental fatigue, emotional exposure, and overall risk."
+    "avgDailyExposureTimeTooltip": "Average cumulative time spent in position per active trading day over the selected period, using your Settings timezone. Overlapping positions are merged.\n\nUseful to assess mental fatigue, emotional exposure, and overall risk.",
+    "bestWorstTradeRatio": "最佳 / 最差交易",
+    "bestWorstTradeRatioTooltip": "最佳交易盈利与最差交易亏损的比率（绝对值）。> 1.0 = 最佳盈利覆盖最差亏损。",
+    "recoveryFactor": "Recovery Factor",
+    "recoveryFactorTooltip": "期间净利润能覆盖最差回撤多少次。< 1 弱 · ≥ 1 尚可 · ≥ 2 良好 · ≥ 3 优秀。",
+    "maxDrawdownPeriodTooltip": "筛选期间内自峰值的最大回撤。",
+    "maxRunup": "Max Run-up"
   },
   "tradesAnalysis": {
     "title": "交易分析",
@@ -260,9 +264,9 @@
       "efficiencyInsightGood": "{{pct}}%的交易触及止盈 — 计划执行良好。",
       "efficiencyInsightMid": "{{pct}}%的交易触及止盈 — 执行尚可，仍有空间稳定在50%以上。",
       "efficiencyInsightWarn": "仅{{pct}}%的交易触及止盈 — 请检查出场时机或目标。",
-      "resilienceInsightGood": "最大回升覆盖最大回撤的{{ratio}}倍 — 恢复能力良好。",
-      "resilienceInsightWarn": "回撤超过回升（比率{{ratio}}）— 恢复仍不完整。",
-      "recoveryRatioEmpty": "恢复比率不可用（该时段数据不足）。"
+      "resilienceInsightGood": "您的 Recovery Factor 为 {{ratio}} — 净盈亏至少覆盖一次最大回撤。",
+      "resilienceInsightWarn": "Recovery Factor 为 {{ratio}} — 净盈亏尚未覆盖最大回撤。",
+      "recoveryFactorEmpty": "Recovery Factor 不可用（该时段数据不足）。"
     }
   }
 }

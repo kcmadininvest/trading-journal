@@ -299,7 +299,8 @@ class TradesService {
     max_runup_pct?: number;
     max_runup_global?: number;
     max_runup_global_pct?: number;
-    recovery_ratio: number;
+    best_worst_trade_ratio: number;
+    recovery_factor: number;
     pnl_per_trade: number;
     fees_ratio: number;
     volume_pnl_ratio: number;

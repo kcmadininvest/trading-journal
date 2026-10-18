@@ -58,7 +58,9 @@ export const PerformanceDetailsGrid: React.FC<PerformanceDetailsGridProps> = ({
         }
       >
         <ResilienceStrip
-          recoveryRatio={statisticsData.recovery_ratio}
+          recoveryFactor={statisticsData.recovery_factor}
+          recoveryFactorAvailable={statisticsData.max_drawdown > 0}
+          bestWorstTradeRatio={statisticsData.best_worst_trade_ratio}
           sortinoRatio={statisticsData.sortino_ratio}
           calmarRatio={statisticsData.calmar_ratio}
           recoveryTime={statisticsData.recovery_time}

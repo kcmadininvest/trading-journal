@@ -58,8 +58,6 @@
     "profitFactorQualityHint": "< 1 fraco · ≥ 1 rentável · ≥ 2 excelente",
     "winLossRatio": "Rácio Ganhos/Perdas",
     "winLossRatioTooltip": "Rácio entre o ganho médio e a perda média, em moeda. > 1.0 = o ganho médio supera a perda média. O tamanho de cada operação já está incluído no seu valor.",
-    "recoveryRatio": "Rácio de Recuperação",
-    "recoveryRatioTooltip": "Rácio entre a melhor operação e a pior perda. > 1.0 = o melhor ganho cobre a pior perda",
     "pnlPerTrade": "P/L por Operação",
     "pnlPerTradeTooltip": "Ganho ou perda médio por operação. Indica a rentabilidade média de cada operação",
     "feesRatio": "Rácio de Taxas",
@@ -82,7 +80,7 @@
     "maxDrawdownGlobal": "Global",
     "maxDrawdownPeriod": "Período",
     "maxRunupGlobal": "Max Run-up Global",
-    "maxRunupTooltip": "Maior aumento desde um ponto baixo",
+    "maxRunupTooltip": "Maior subida desde um mínimo no período filtrado.",
     "riskRewardRatio": "Rácio Risco/Recompensa",
     "riskRewardRatioTooltip": "Rácio médio entre ganho médio e perda média. > 1.0 = os ganhos médios são superiores às perdas médias",
     "expectancy": "Expectativa",
@@ -107,7 +105,13 @@
     "avgTimeBetweenTrades": "Tempo médio entre dois trades",
     "avgTimeBetweenTradesTooltip": "Average delay between two consecutive entries on the same trading day, using your Settings timezone.\n\nUseful to detect revenge trading, overactivity after a loss, or impatience after a long wait.",
     "avgDailyExposureTime": "Tempo de exposição diário",
-    "avgDailyExposureTimeTooltip": "Average cumulative time spent in position per active trading day over the selected period, using your Settings timezone. Overlapping positions are merged.\n\nUseful to assess mental fatigue, emotional exposure, and overall risk."
+    "avgDailyExposureTimeTooltip": "Average cumulative time spent in position per active trading day over the selected period, using your Settings timezone. Overlapping positions are merged.\n\nUseful to assess mental fatigue, emotional exposure, and overall risk.",
+    "bestWorstTradeRatio": "Melhor / Pior trade",
+    "bestWorstTradeRatioTooltip": "Rácio entre o ganho do melhor trade e a perda do pior (valores absolutos). > 1.0 = o melhor ganho cobre a pior perda.",
+    "recoveryFactor": "Recovery Factor",
+    "recoveryFactorTooltip": "Quantas vezes o lucro líquido do período cobre a pior queda. < 1 fraco · ≥ 1 correto · ≥ 2 bom · ≥ 3 excelente.",
+    "maxDrawdownPeriodTooltip": "Maior queda desde um pico no período filtrado.",
+    "maxRunup": "Max Run-up"
   },
   "tradesAnalysis": {
     "title": "Análise de Operações",
@@ -261,9 +265,9 @@
       "efficiencyInsightGood": "Atinge o Take Profit em {{pct}}% dos trades — boa execução do plano.",
       "efficiencyInsightMid": "Take Profit em {{pct}}% dos trades — execução correta; margem para estabilizar acima de 50%.",
       "efficiencyInsightWarn": "Apenas {{pct}}% dos trades atingem o Take Profit — reveja timing de saída ou objetivos.",
-      "resilienceInsightGood": "O max run-up cobre {{ratio}}× o max drawdown — boa capacidade de recuperação.",
-      "resilienceInsightWarn": "O drawdown supera o run-up (rácio {{ratio}}) — recuperação ainda incompleta.",
-      "recoveryRatioEmpty": "Rácio de recuperação indisponível (dados insuficientes no período)."
+      "resilienceInsightGood": "O seu Recovery Factor é {{ratio}} — o P/L líquido cobre pelo menos uma vez o max drawdown.",
+      "resilienceInsightWarn": "Recovery Factor em {{ratio}} — o P/L líquido ainda não cobre o max drawdown.",
+      "recoveryFactorEmpty": "Recovery Factor indisponível (dados insuficientes no período)."
     }
   }
 }

@@ -58,8 +58,6 @@
     "profitFactorQualityHint": "< 1 낮음 · ≥ 1 수익 · ≥ 2 우수",
     "winLossRatio": "승패 비율",
     "winLossRatioTooltip": "평균 수익과 평균 손실의 비율(통화 기준). > 1.0 = 평균 수익이 평균 손실보다 큼. 각 거래의 크기는 금액에 이미 포함되어 있습니다.",
-    "recoveryRatio": "회복 비율",
-    "recoveryRatioTooltip": "최고 거래와 최악 손실의 비율。> 1.0 = 최고 수익이 최악 손실을 커버",
     "pnlPerTrade": "거래당 P/L",
     "pnlPerTradeTooltip": "거래당 평균 수익 또는 손실。각 거래의 평균 수익성을 나타냅니다",
     "feesRatio": "수수료 비율",
@@ -82,7 +80,7 @@
     "maxDrawdownGlobal": "글로벌",
     "maxDrawdownPeriod": "기간",
     "maxRunupGlobal": "최대 런업 글로벌",
-    "maxRunupTooltip": "저점에서의 최대 상승",
+    "maxRunupTooltip": "필터된 기간 중 저점 대비 최대 상승.",
     "riskRewardRatio": "리스크/리워드 비율",
     "riskRewardRatioTooltip": "평균 수익과 평균 손실의 평균 비율。> 1.0 = 평균 수익이 평균 손실보다 큼",
     "expectancy": "기대값",
@@ -107,7 +105,13 @@
     "avgTimeBetweenTrades": "두 거래 사이 평균 시간",
     "avgTimeBetweenTradesTooltip": "Average delay between two consecutive entries on the same trading day, using your Settings timezone.\n\nUseful to detect revenge trading, overactivity after a loss, or impatience after a long wait.",
     "avgDailyExposureTime": "일일 노출 시간",
-    "avgDailyExposureTimeTooltip": "Average cumulative time spent in position per active trading day over the selected period, using your Settings timezone. Overlapping positions are merged.\n\nUseful to assess mental fatigue, emotional exposure, and overall risk."
+    "avgDailyExposureTimeTooltip": "Average cumulative time spent in position per active trading day over the selected period, using your Settings timezone. Overlapping positions are merged.\n\nUseful to assess mental fatigue, emotional exposure, and overall risk.",
+    "bestWorstTradeRatio": "최고 / 최악 거래",
+    "bestWorstTradeRatioTooltip": "최고 거래 이익과 최악 거래 손실의 비율(절댓값). > 1.0 = 최고 이익이 최악 손실을 커버.",
+    "recoveryFactor": "Recovery Factor",
+    "recoveryFactorTooltip": "기간 순이익이 최악의 드로우다운을 몇 번 커버하는지. < 1 약함 · ≥ 1 보통 · ≥ 2 좋음 · ≥ 3 우수.",
+    "maxDrawdownPeriodTooltip": "필터된 기간 중 고점 대비 최대 하락.",
+    "maxRunup": "Max Run-up"
   },
   "tradesAnalysis": {
     "title": "거래 분석",
@@ -261,9 +265,9 @@
       "efficiencyInsightGood": "거래의 {{pct}}%에서 테이크프로핏 도달 — 계획 실행이 양호합니다.",
       "efficiencyInsightMid": "테이크프로핏 도달 {{pct}}% — 실행은 무난하며 50% 이상 안정화 여지가 있습니다.",
       "efficiencyInsightWarn": "테이크프로핏 도달은 {{pct}}%뿐 — 청산 타이밍이나 목표를 점검하세요.",
-      "resilienceInsightGood": "최대 런업이 최대 드로우다운의 {{ratio}}배 — 회복력이 좋습니다.",
-      "resilienceInsightWarn": "드로우다운이 런업을 초과합니다(비율 {{ratio}}) — 회복이 아직 불완전합니다.",
-      "recoveryRatioEmpty": "회복 비율을 표시할 수 없습니다(해당 기간 데이터 부족)."
+      "resilienceInsightGood": "Recovery Factor는 {{ratio}} — 순손익이 최대 드로우다운을 최소 1회 커버합니다.",
+      "resilienceInsightWarn": "Recovery Factor {{ratio}} — 순손익이 아직 최대 드로우다운을 커버하지 않습니다.",
+      "recoveryFactorEmpty": "Recovery Factor를 표시할 수 없습니다(해당 기간 데이터 부족)."
     }
   }
 }

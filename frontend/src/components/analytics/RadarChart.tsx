@@ -116,7 +116,7 @@ export const RadarChart: React.FC<RadarChartProps> = ({
       }),
       
       // Recovery Factor: 1.0 = minimum, 2.0 = bon, 5.0+ = excellent
-      recoveryFactor: normalizeMetric(statisticsData.recovery_ratio || 0, {
+      recoveryFactor: normalizeMetric(statisticsData.recovery_factor || 0, {
         min: 0,
         target: 2.0,
         excellent: 5.0,
@@ -211,7 +211,7 @@ export const RadarChart: React.FC<RadarChartProps> = ({
       { 
         name: t('analytics:radar.recoveryFactor', { defaultValue: 'Récupération' }), 
         color: '#f59e0b',
-        value: statisticsData.recovery_ratio,
+        value: statisticsData.recovery_factor,
         unit: '',
         description: t('analytics:radar.recoveryFactorDesc', { defaultValue: 'Profit / Drawdown max' }),
       },

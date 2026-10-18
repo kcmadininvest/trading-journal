@@ -76,7 +76,7 @@ export interface BehaviorNarrativeContext {
   maxConsecutiveLosses: number;
   maxDrawdownPct: number | null;
   maxDrawdownGlobal: number | null;
-  recoveryRatio: number | null;
+  recoveryFactor: number | null;
   calmarRatio: number | null;
   revenge: {
     alertLevel: 'none' | 'warning';

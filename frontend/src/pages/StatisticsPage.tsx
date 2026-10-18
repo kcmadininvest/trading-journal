@@ -28,7 +28,6 @@ import { parsePnlDisplayMode } from '../utils/pnlDisplay';
 import { useTheme } from '../hooks/useTheme';
 import { getChartColors } from '../utils/chartConfig';
 import { StatisticsTabNav } from '../components/statistics/StatisticsTabNav';
-import { StatisticsHeroStrip } from '../components/statistics/StatisticsHeroStrip';
 import { StatisticsOverviewTab } from '../components/statistics/StatisticsOverviewTab';
 import { StatisticsPerformanceTab } from '../components/statistics/StatisticsPerformanceTab';
 import { StatisticsTradesTab } from '../components/statistics/StatisticsTradesTab';
@@ -421,16 +420,6 @@ function StatisticsPage() {
             peakLoading={peakLoading}
             detailsLoading={(bundleLoading && !dashboardSlice) || isRefreshing}
             error={balanceError || (hasError ? t('statistics:errorLoadingData') : null)}
-          />
-        )}
-
-        {statisticsData && (
-          <StatisticsHeroStrip
-            statisticsData={statisticsData}
-            currencySymbol={currencySymbol}
-            formatCurrency={formatCurrency}
-            formatNumber={formatNumber}
-            hideMoney={privacySettings.hideProfitLoss}
           />
         )}
 

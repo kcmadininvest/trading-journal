@@ -58,8 +58,6 @@
     "profitFactorQualityHint": "< 1 低 · ≥ 1 利益 · ≥ 2 優秀",
     "winLossRatio": "勝敗比率",
     "winLossRatioTooltip": "平均利益と平均損失の比率（通貨建て）。> 1.0 = 平均利益が平均損失を上回る。各トレードのサイズは金額にすでに含まれています。",
-    "recoveryRatio": "回復比率",
-    "recoveryRatioTooltip": "最高トレードと最悪損失の比率。> 1.0 = 最高利益が最悪損失をカバー",
     "pnlPerTrade": "トレードあたりのP/L",
     "pnlPerTradeTooltip": "トレードあたりの平均利益または損失。各取引の平均収益性を示します",
     "feesRatio": "手数料比率",
@@ -82,7 +80,7 @@
     "maxDrawdownGlobal": "グローバル",
     "maxDrawdownPeriod": "期間",
     "maxRunupGlobal": "最大ランアップ グローバル",
-    "maxRunupTooltip": "低点からの最大上昇",
+    "maxRunupTooltip": "フィルタ期間内の底からの最大上昇。",
     "riskRewardRatio": "リスク/リワード比率",
     "riskRewardRatioTooltip": "平均利益と平均損失の平均比率。> 1.0 = 平均利益が平均損失を上回る",
     "expectancy": "期待値",
@@ -107,7 +105,13 @@
     "avgTimeBetweenTrades": "2取引間の平均時間",
     "avgTimeBetweenTradesTooltip": "Average delay between two consecutive entries on the same trading day, using your Settings timezone.\n\nUseful to detect revenge trading, overactivity after a loss, or impatience after a long wait.",
     "avgDailyExposureTime": "1日のエクスポージャー時間",
-    "avgDailyExposureTimeTooltip": "Average cumulative time spent in position per active trading day over the selected period, using your Settings timezone. Overlapping positions are merged.\n\nUseful to assess mental fatigue, emotional exposure, and overall risk."
+    "avgDailyExposureTimeTooltip": "Average cumulative time spent in position per active trading day over the selected period, using your Settings timezone. Overlapping positions are merged.\n\nUseful to assess mental fatigue, emotional exposure, and overall risk.",
+    "bestWorstTradeRatio": "最良 / 最悪トレード",
+    "bestWorstTradeRatioTooltip": "最良トレードの利益と最悪トレードの損失の比率（絶対値）。> 1.0 = 最良利益が最悪損失をカバー。",
+    "recoveryFactor": "Recovery Factor",
+    "recoveryFactorTooltip": "期間の純利益が最悪のドローダウンを何回分カバーするか。< 1 弱い · ≥ 1 妥当 · ≥ 2 良い · ≥ 3 優秀。",
+    "maxDrawdownPeriodTooltip": "フィルタ期間内のピークからの最大下落。",
+    "maxRunup": "Max Run-up"
   },
   "tradesAnalysis": {
     "title": "トレード分析",
@@ -261,9 +265,9 @@
       "efficiencyInsightGood": "トレードの{{pct}}%でテイクプロフィット到達 — 計画の実行が良好。",
       "efficiencyInsightMid": "テイクプロフィット到達{{pct}}% — 実行は妥当、50%超への安定余地あり。",
       "efficiencyInsightWarn": "テイクプロフィット到達は{{pct}}%のみ — 決済タイミングや目標を見直してください。",
-      "resilienceInsightGood": "最大ランアップが最大ドローダウンの{{ratio}}倍 — 回復力が高い。",
-      "resilienceInsightWarn": "ドローダウンがランアップを上回る（比率{{ratio}}）— 回復はまだ不完全。",
-      "recoveryRatioEmpty": "回復比率を表示できません（この期間のデータ不足）。"
+      "resilienceInsightGood": "Recovery Factorは{{ratio}} — 純損益が最大ドローダウンを少なくとも1回カバーしています。",
+      "resilienceInsightWarn": "Recovery Factor {{ratio}} — 純損益がまだ最大ドローダウンをカバーしていません。",
+      "recoveryFactorEmpty": "Recovery Factorを表示できません（この期間のデータ不足）。"
     }
   }
 }

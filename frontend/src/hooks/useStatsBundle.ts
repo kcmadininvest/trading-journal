@@ -43,6 +43,8 @@ function normalizeStatistics(result: Partial<StatisticsData>): StatisticsData {
     break_even_zero_trades: result.break_even_zero_trades ?? 0,
     break_even_positive_trades: result.break_even_positive_trades ?? 0,
     sharpe_ratio_annualized: result.sharpe_ratio_annualized ?? 0,
+    best_worst_trade_ratio: result.best_worst_trade_ratio ?? 0,
+    recovery_factor: result.recovery_factor ?? 0,
   } as StatisticsData;
 }
 
