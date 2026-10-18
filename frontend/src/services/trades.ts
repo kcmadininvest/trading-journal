@@ -1,5 +1,5 @@
 import { getApiBaseUrl } from '../utils/apiConfig';
-import { authService } from './auth';
+import { fetchWithAuth } from './apiClient';
 
 export interface TradeListItem {
   id: number;
@@ -69,38 +69,6 @@ export interface PaginatedResponse<T> {
 class TradesService {
   private readonly BASE_URL = getApiBaseUrl();
 
-  private getAuthHeaders() {
-    const token = localStorage.getItem('access_token');
-    return {
-      'Authorization': `Bearer ${token}`,
-      // Content-Type is set per-request (JSON vs multipart)
-    } as Record<string, string>;
-  }
-
-  private async refreshAccessToken(): Promise<boolean> {
-    const access = await authService.refreshAccessToken();
-    return !!access;
-  }
-
-  private async fetchWithAuth(input: string, init: RequestInit = {}, retry = true): Promise<Response> {
-    const headers: Record<string, string> = {
-      ...(init.headers as Record<string, string> || {}),
-      ...this.getAuthHeaders(),
-    };
-    const res = await fetch(input, { ...init, headers });
-    if (res.status === 401 && retry) {
-      const refreshed = await this.refreshAccessToken();
-      if (refreshed) {
-        const headers2: Record<string, string> = {
-          ...(init.headers as Record<string, string> || {}),
-          ...this.getAuthHeaders(),
-        };
-        return fetch(input, { ...init, headers: headers2 });
-      }
-    }
-    return res;
-  }
-
   private toQuery(params: Record<string, any>) {
     const search = new URLSearchParams();
     Object.entries(params).forEach(([k, v]) => {
@@ -123,7 +91,7 @@ class TradesService {
   async list(filters: TradesFilters = {}): Promise<PaginatedResponse<TradeListItem>> {
     const qs = this.toQuery(filters as any);
     const url = `${this.BASE_URL}/api/trades/imported/${qs ? `?${qs}` : ''}`;
-    const res = await this.fetchWithAuth(url);
+    const res = await fetchWithAuth(url);
     if (!res.ok) throw new Error('Erreur lors du chargement des trades');
     return res.json();
   }
@@ -136,7 +104,7 @@ class TradesService {
     skipped_unknown_contract: number;
   }> {
     const url = `${this.BASE_URL}/api/trades/imported/monte_carlo_inputs/?trading_account=${tradingAccount}`;
-    const res = await this.fetchWithAuth(url);
+    const res = await fetchWithAuth(url);
     if (!res.ok) throw new Error('Erreur lors du chargement des données Monte Carlo');
     return res.json();
   }
@@ -153,27 +121,27 @@ class TradesService {
   }> {
     const qs = this.toQuery(filters as any);
     const url = `${this.BASE_URL}/api/trades/imported/daily_aggregates/${qs ? `?${qs}` : ''}`;
-    const res = await this.fetchWithAuth(url);
+    const res = await fetchWithAuth(url);
     if (!res.ok) throw new Error('Erreur lors du chargement des données agrégées');
     return res.json();
   }
 
   async instruments(tradingAccount?: number | null): Promise<string[]> {
     const qs = tradingAccount ? `?trading_account=${tradingAccount}` : '';
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/imported/instruments/${qs}`);
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/trades/imported/instruments/${qs}`);
     if (!res.ok) return [];
     const data = await res.json();
     return data.instruments || [];
   }
 
   async retrieve(id: number): Promise<TradeDetail> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/imported/${id}/`);
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/trades/imported/${id}/`);
     if (!res.ok) throw new Error('Erreur lors de la récupération du trade');
     return res.json();
   }
 
   async create(payload: Partial<TradeDetail>): Promise<TradeDetail> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/imported/`, {
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/trades/imported/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -186,7 +154,7 @@ class TradesService {
   }
 
   async update(id: number, payload: Partial<TradeDetail>): Promise<TradeDetail> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/imported/${id}/`, {
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/trades/imported/${id}/`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -199,7 +167,7 @@ class TradesService {
   }
 
   async remove(id: number): Promise<void> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/imported/${id}/`, {
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/trades/imported/${id}/`, {
       method: 'DELETE',
     });
     if (!res.ok) throw new Error('Erreur lors de la suppression du trade');
@@ -214,7 +182,7 @@ class TradesService {
   }> {
     const qs = this.toQuery(filters as any);
     const url = `${this.BASE_URL}/api/trades/imported/statistics/${qs ? `?${qs}` : ''}`;
-    const res = await this.fetchWithAuth(url);
+    const res = await fetchWithAuth(url);
     if (!res.ok) throw new Error('Erreur lors du chargement des statistiques');
     const data = await res.json();
     return {
@@ -258,7 +226,7 @@ class TradesService {
       form.append('dry_run', 'true');
     }
     form.append('duplicate_to_copy_accounts', duplicateToCopyAccounts ? 'true' : 'false');
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/imported/upload_csv/`, {
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/trades/imported/upload_csv/`, {
       method: 'POST',
       body: form,
     });
@@ -371,7 +339,7 @@ class TradesService {
     
     const qs = queryParams.toString();
     const url = `${this.BASE_URL}/api/trades/imported/statistics/${qs ? `?${qs}` : ''}`;
-    const res = await this.fetchWithAuth(url);
+    const res = await fetchWithAuth(url);
     if (!res.ok) throw new Error('Erreur lors du chargement des statistiques détaillées');
     return res.json();
   }
@@ -468,7 +436,7 @@ class TradesService {
     
     const qs = queryParams.toString();
     const url = `${this.BASE_URL}/api/trades/imported/analytics/${qs ? `?${qs}` : ''}`;
-    const res = await this.fetchWithAuth(url);
+    const res = await fetchWithAuth(url);
     if (!res.ok) throw new Error('Erreur lors du chargement des analytics');
     return res.json();
   }
@@ -530,7 +498,7 @@ class TradesService {
 
     const qs = queryParams.toString();
     const url = `${this.BASE_URL}/api/trades/stats-bundle/${qs ? `?${qs}` : ''}`;
-    const res = await this.fetchWithAuth(url);
+    const res = await fetchWithAuth(url);
     if (!res.ok) throw new Error('Erreur lors du chargement du bundle stats');
     return res.json();
   }
@@ -540,7 +508,7 @@ class TradesService {
     updated_count: number;
     message: string;
   }> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/imported/bulk_assign_strategy/`, {
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/trades/imported/bulk_assign_strategy/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -560,7 +528,7 @@ class TradesService {
       ...filters,
       page_size: 10000, // Récupérer tous les trades
     });
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/imported/?${query}`);
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/trades/imported/?${query}`);
     if (!res.ok) throw new Error('Erreur lors de la récupération des IDs');
     const data = await res.json();
     return data.results.map((trade: TradeListItem) => trade.id);

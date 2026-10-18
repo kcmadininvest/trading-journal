@@ -1,4 +1,5 @@
 import { getApiBaseUrl } from '../utils/apiConfig';
+import { fetchWithAuth } from './apiClient';
 
 export interface FxRatesResponse {
   available: boolean;
@@ -7,13 +8,6 @@ export interface FxRatesResponse {
   fx_conversion_applied: boolean;
 }
 
-function getAuthHeaders(): HeadersInit {
-  const token = localStorage.getItem('access_token');
-  return {
-    Authorization: `Bearer ${token}`,
-    'Content-Type': 'application/json',
-  };
-}
 
 export const fxRatesService = {
   async getRates(base: string, symbols: string[]): Promise<FxRatesResponse | null> {
@@ -36,9 +30,7 @@ export const fxRatesService = {
     });
 
     try {
-      const res = await fetch(`${getApiBaseUrl()}/api/trades/fx-rates/?${params}`, {
-        headers: getAuthHeaders(),
-      });
+      const res = await fetchWithAuth(`${getApiBaseUrl()}/api/trades/fx-rates/?${params}`);
       if (!res.ok) return null;
       return (await res.json()) as FxRatesResponse;
     } catch {

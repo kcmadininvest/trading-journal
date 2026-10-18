@@ -8,4 +8,11 @@ test('connexion depuis l\'écran d\'accueil', async ({ page }) => {
   await page.getByLabel('Mot de passe').fill(testPassword());
   await page.locator('form').getByRole('button', { name: 'Se connecter' }).click();
   await expect(page).toHaveURL(/#dashboard/);
+
+  const ls = await page.evaluate(() => ({
+    access: localStorage.getItem('access_token'),
+    refresh: localStorage.getItem('refresh_token'),
+  }));
+  expect(ls.access).toBeNull();
+  expect(ls.refresh).toBeNull();
 });

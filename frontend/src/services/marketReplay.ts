@@ -1,7 +1,7 @@
 import { getApiBaseUrl } from '../utils/apiConfig';
-import { authService } from './auth';
 import type { MarketInstrument } from './historicalData';
 import { historicalDataService } from './historicalData';
+import { fetchWithAuth } from './apiClient';
 
 export interface AvailableTimeframe {
   value: string;
@@ -76,40 +76,8 @@ function mapTimeframe(row: {
 class MarketReplayService {
   private readonly BASE_URL = getApiBaseUrl();
 
-  private getAuthHeaders(): Record<string, string> {
-    const token = localStorage.getItem('access_token');
-    return {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    };
-  }
-
-  private async refreshAccessToken(): Promise<boolean> {
-    const access = await authService.refreshAccessToken();
-    return !!access;
-  }
-
-  private async fetchWithAuth(input: string, init: RequestInit = {}, retry = true): Promise<Response> {
-    const headers: Record<string, string> = {
-      ...((init.headers as Record<string, string>) || {}),
-      ...this.getAuthHeaders(),
-    };
-    const res = await fetch(input, { ...init, headers });
-    if (res.status === 401 && retry) {
-      const refreshed = await this.refreshAccessToken();
-      if (refreshed) {
-        const headers2: Record<string, string> = {
-          ...((init.headers as Record<string, string>) || {}),
-          ...this.getAuthHeaders(),
-        };
-        return fetch(input, { ...init, headers: headers2 });
-      }
-    }
-    return res;
-  }
-
   async listInstrumentsWithBars(): Promise<MarketInstrument[]> {
-    const res = await this.fetchWithAuth(
+    const res = await fetchWithAuth(
       `${this.BASE_URL}/api/market-data/instruments/?with_bars=1`,
     );
     if (!res.ok) {
@@ -125,7 +93,7 @@ class MarketReplayService {
   }
 
   async getInstrumentReplayMeta(instrument: string): Promise<InstrumentReplayMeta> {
-    const res = await this.fetchWithAuth(
+    const res = await fetchWithAuth(
       `${this.BASE_URL}/api/market-data/instruments/${encodeURIComponent(instrument)}/timeframes/`,
     );
     if (!res.ok) {
@@ -153,7 +121,7 @@ class MarketReplayService {
     if (opts && 'timeframe' in opts) qs.set('timeframe', opts.timeframe ?? '');
     if (opts?.contract) qs.set('contract', opts.contract);
     const query = qs.toString();
-    const res = await this.fetchWithAuth(
+    const res = await fetchWithAuth(
       `${this.BASE_URL}/api/market-data/instruments/${encodeURIComponent(instrument)}/available-sessions/${query ? `?${query}` : ''}`,
     );
     if (!res.ok) {
@@ -171,7 +139,7 @@ class MarketReplayService {
     const qs = new URLSearchParams();
     qs.set('session_date', sessionDate);
     if (opts?.contract) qs.set('contract', opts.contract);
-    const res = await this.fetchWithAuth(
+    const res = await fetchWithAuth(
       `${this.BASE_URL}/api/market-data/instruments/${encodeURIComponent(instrument)}/session-timeframes/?${qs}`,
     );
     if (!res.ok) {
@@ -195,7 +163,7 @@ class MarketReplayService {
       end: params.end,
       contract: params.contract || 'front',
     });
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/market-data/bars/?${qs}`);
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/market-data/bars/?${qs}`);
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
       throw new Error(body.detail || 'Erreur chargement bougies');

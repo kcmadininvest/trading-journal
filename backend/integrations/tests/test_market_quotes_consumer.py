@@ -5,6 +5,7 @@ from rest_framework_simplejwt.tokens import AccessToken
 
 from accounts.jwt_blacklist_cache import clear_jti_blacklist_cache, mark_jti_blacklisted
 from accounts.models import User
+from accounts.jwt_cookies import ACCESS_COOKIE_NAME
 from integrations.consumers import (
     WS_ACCESS_TOKEN_SUBPROTOCOL_PREFIX,
     _extract_ws_token,
@@ -37,9 +38,19 @@ class MarketQuotesConsumerAuthTests(TestCase):
         self.assertEqual(proto, f'{WS_ACCESS_TOKEN_SUBPROTOCOL_PREFIX}{token}')
 
     def test_extract_falls_back_to_query_string(self) -> None:
-        scope = {'subprotocols': [], 'query_string': b'token=legacy-token'}
+        scope = {'subprotocols': [], 'query_string': b'token=legacy-token', 'headers': []}
         extracted, proto = _extract_ws_token(scope)
         self.assertEqual(extracted, 'legacy-token')
+        self.assertIsNone(proto)
+
+    def test_extract_cookie_before_query(self) -> None:
+        scope = {
+            'subprotocols': [],
+            'query_string': b'token=legacy-token',
+            'headers': [(b'cookie', f'{ACCESS_COOKIE_NAME}=cookie-jwt'.encode())],
+        }
+        extracted, proto = _extract_ws_token(scope)
+        self.assertEqual(extracted, 'cookie-jwt')
         self.assertIsNone(proto)
 
     def test_blacklisted_access_token_rejected(self) -> None:

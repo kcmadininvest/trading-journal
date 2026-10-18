@@ -1,5 +1,6 @@
 import { getApiBaseUrl } from '../utils/apiConfig';
 import { clearTradingJournalFilterStorageKeys } from '../hooks/usePersistedPeriodAndStrategyFilters';
+import { bootstrapCsrf, fetchWithAuth, resetSessionExpiredFlag } from './apiClient';
 
 export interface User {
   id: number;
@@ -17,25 +18,19 @@ export interface User {
 }
 
 export interface LoginResponse {
-  access: string;
-  refresh: string;
   user: User;
 }
 
 class AuthService {
   private readonly BASE_URL = getApiBaseUrl();
-  private accessToken: string | null = null;
-  private refreshToken: string | null = null;
   private user: User | null = null;
+  private bootstrapPromise: Promise<User | null> | null = null;
 
   constructor() {
-    this.loadTokensFromStorage();
+    this.loadUserFromStorage();
   }
 
-  private loadTokensFromStorage() {
-    this.accessToken = localStorage.getItem('access_token');
-    this.refreshToken = localStorage.getItem('refresh_token');
-    
+  private loadUserFromStorage() {
     const userStr = localStorage.getItem('user');
     if (userStr) {
       try {
@@ -47,14 +42,9 @@ class AuthService {
     }
   }
 
-  private saveTokensToStorage(access: string, refresh: string, user: User) {
-    localStorage.setItem('access_token', access);
-    localStorage.setItem('refresh_token', refresh);
-    localStorage.setItem('user', JSON.stringify(user));
-    
-    this.accessToken = access;
-    this.refreshToken = refresh;
+  private saveUser(user: User) {
     this.user = user;
+    localStorage.setItem('user', JSON.stringify(user));
   }
 
   private clearStorage() {
@@ -62,199 +52,200 @@ class AuthService {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('user');
-    
-    this.accessToken = null;
-    this.refreshToken = null;
     this.user = null;
   }
 
+  async ensureCsrf(): Promise<void> {
+    await bootstrapCsrf(this.BASE_URL);
+  }
+
+  /**
+   * Vérifie la session cookie (profil). Utilisé au démarrage SPA.
+   */
+  async bootstrapSession(): Promise<User | null> {
+    if (this.bootstrapPromise) {
+      return this.bootstrapPromise;
+    }
+    this.bootstrapPromise = (async () => {
+      await this.ensureCsrf();
+      try {
+        const response = await fetchWithAuth(`${this.BASE_URL}/api/accounts/profile/`, {
+          method: 'GET',
+          // Pas de refresh/emit au boot anonyme (évite ConfirmModal « session expirée » sur la home).
+          retry: false,
+          baseUrl: this.BASE_URL,
+        });
+        if (!response.ok) {
+          if (response.status === 401) {
+            this.clearStorage();
+          }
+          return null;
+        }
+        const user = (await response.json()) as User;
+        this.saveUser(user);
+        resetSessionExpiredFlag();
+        return user;
+      } catch {
+        return this.user;
+      } finally {
+        this.bootstrapPromise = null;
+      }
+    })();
+    return this.bootstrapPromise;
+  }
+
   async login(username: string, password: string): Promise<LoginResponse> {
+    await this.ensureCsrf();
     try {
-      const response = await fetch(`${this.BASE_URL}/api/accounts/auth/login/`, {
+      const response = await fetchWithAuth(`${this.BASE_URL}/api/accounts/auth/login/`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: username, password }),
+        retry: false,
+        baseUrl: this.BASE_URL,
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.detail || 'Erreur de connexion');
       }
 
       const data = await response.json();
-      const { access, refresh, user } = data;
-      
-      this.saveTokensToStorage(access, refresh, user);
-      
-      // Déclencher un événement pour recharger les données du nouvel utilisateur
-      window.dispatchEvent(new CustomEvent('user:login', { 
-        detail: { user } 
-      }));
-      
-      return { access, refresh, user };
+      const user = data.user as User;
+      this.saveUser(user);
+      resetSessionExpiredFlag();
+
+      window.dispatchEvent(new CustomEvent('user:login', { detail: { user } }));
+
+      return { user };
     } catch (error: any) {
       throw new Error(error.message || 'Erreur de connexion');
     }
   }
 
   async register(username: string, email: string, password: string, firstName: string, lastName: string): Promise<LoginResponse> {
+    await this.ensureCsrf();
     try {
-      const response = await fetch(`${this.BASE_URL}/api/accounts/auth/register/`, {
+      const response = await fetchWithAuth(`${this.BASE_URL}/api/accounts/auth/register/`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          username, 
-          email, 
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username,
+          email,
           password,
           first_name: firstName,
           last_name: lastName,
-          password_confirm: password
+          password_confirm: password,
         }),
+        retry: false,
+        baseUrl: this.BASE_URL,
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        // Gérer les erreurs de validation du backend
         if (errorData && typeof errorData === 'object') {
-          // Créer un mapping des champs pour des messages plus clairs
           const fieldLabels: { [key: string]: string } = {
-            'email': 'Adresse email',
-            'username': 'Nom d\'utilisateur',
-            'password': 'Mot de passe',
-            'password_confirm': 'Confirmation du mot de passe',
-            'first_name': 'Prénom',
-            'last_name': 'Nom',
+            email: 'Adresse email',
+            username: "Nom d'utilisateur",
+            password: 'Mot de passe',
+            password_confirm: 'Confirmation du mot de passe',
+            first_name: 'Prénom',
+            last_name: 'Nom',
           };
-          
-          // Formater les messages d'erreur de manière plus lisible
           const errorMessages: string[] = [];
-          
           Object.entries(errorData).forEach(([key, value]: [string, any]) => {
             const fieldLabel = fieldLabels[key] || key;
-            
             if (Array.isArray(value)) {
-              // Pour chaque erreur du champ
               value.forEach((msg: string) => {
-                // Format standardisé : "Champ : Message"
-                // Le composant se chargera de la traduction
                 errorMessages.push(`${fieldLabel} : ${msg}`);
               });
             } else if (typeof value === 'string') {
               errorMessages.push(`${fieldLabel} : ${value}`);
             }
           });
-          
-          // Retourner les messages formatés, un par ligne
           if (errorMessages.length > 0) {
             throw new Error(errorMessages.join('\n'));
           }
         }
-        throw new Error(errorData.detail || errorData.message || errorData.error || 'Erreur d\'inscription');
+        throw new Error(errorData.detail || errorData.message || errorData.error || "Erreur d'inscription");
       }
 
       const data = await response.json();
-      
-      // Le compte n'est pas activé, donc pas de tokens
-      // On ne doit pas sauvegarder les tokens si le compte n'est pas actif
-      if (data.is_active === false || !data.access) {
-        // Le compte nécessite une activation par email
-        // Ne pas connecter l'utilisateur automatiquement
+
+      if (data.is_active === false || !data.user) {
         throw new Error(data.message || 'Votre compte a été créé. Veuillez vérifier votre email pour l\'activer.');
       }
-      
-      const { access, refresh, user } = data;
-      
-      this.saveTokensToStorage(access, refresh, user);
-      
-      // Déclencher un événement pour recharger les données du nouvel utilisateur
-      window.dispatchEvent(new CustomEvent('user:login', { 
-        detail: { user } 
-      }));
-      
-      return { access, refresh, user };
+
+      // Si le backend pose déjà des cookies (compte actif), synchroniser le user
+      if (data.user) {
+        this.saveUser(data.user);
+        resetSessionExpiredFlag();
+        window.dispatchEvent(new CustomEvent('user:login', { detail: { user: data.user } }));
+        return { user: data.user };
+      }
+
+      throw new Error(data.message || "Erreur d'inscription");
     } catch (error: any) {
-      throw new Error(error.message || 'Erreur d\'inscription');
+      throw new Error(error.message || "Erreur d'inscription");
     }
   }
 
   async logout(): Promise<void> {
     try {
-      if (this.refreshToken) {
-        await fetch(`${this.BASE_URL}/api/accounts/auth/logout/`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ refresh: this.refreshToken }),
-        });
-      }
+      await this.ensureCsrf();
+      await fetchWithAuth(`${this.BASE_URL}/api/accounts/auth/logout/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: '{}',
+        retry: false,
+        baseUrl: this.BASE_URL,
+      });
     } catch (error: any) {
       console.error('Erreur lors de la déconnexion:', error);
     } finally {
       this.clearStorage();
+      resetSessionExpiredFlag();
       window.dispatchEvent(new CustomEvent('user:logout'));
     }
   }
 
+  /** Purge locale après expiration (ne réémet pas l'event — déjà émis par apiClient). */
+  handleSessionExpired(): void {
+    this.clearStorage();
+    resetSessionExpiredFlag();
+  }
+
   isAuthenticated(): boolean {
-    return !!this.accessToken && !!this.user;
+    return !!this.user;
   }
 
   getCurrentUser(): User | null {
     return this.user;
   }
 
+  /** @deprecated Tokens plus en JS — conservé pour compat WS legacy / tests. */
   getAccessToken(): string | null {
-    return this.accessToken;
+    return null;
   }
 
   /**
-   * Rafraîchit le token d'accès en utilisant le refresh token
-   * Retourne le nouveau token d'accès ou null en cas d'échec
+   * Rafraîchit la session via cookie (mutex dans apiClient).
+   * Retourne true si OK.
    */
   async refreshAccessToken(): Promise<string | null> {
-    const refresh = this.refreshToken || localStorage.getItem('refresh_token');
-    if (!refresh) {
+    await this.ensureCsrf();
+    const response = await fetchWithAuth(`${this.BASE_URL}/api/accounts/auth/refresh/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}',
+      retry: false,
+      baseUrl: this.BASE_URL,
+    });
+    if (!response.ok) {
       return null;
     }
-
-    try {
-      const response = await fetch(`${this.BASE_URL}/api/accounts/auth/refresh/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ refresh }),
-      });
-
-      if (!response.ok) {
-        return null;
-      }
-
-      const data = await response.json();
-      const newAccess = data.access as string | undefined;
-      const newRefresh = data.refresh as string | undefined;
-
-      if (newAccess) {
-        this.accessToken = newAccess;
-        localStorage.setItem('access_token', newAccess);
-        if (newRefresh) {
-          this.refreshToken = newRefresh;
-          localStorage.setItem('refresh_token', newRefresh);
-        }
-        window.dispatchEvent(new CustomEvent('auth:token-refreshed', { detail: { access: newAccess } }));
-        return newAccess;
-      }
-
-      return null;
-    } catch (error) {
-      console.error('Erreur lors du rafraîchissement du token:', error);
-      return null;
-    }
+    window.dispatchEvent(new CustomEvent('auth:token-refreshed'));
+    return 'ok';
   }
 
   updateUser(userData: Partial<User>): void {

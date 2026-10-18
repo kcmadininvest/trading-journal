@@ -221,7 +221,8 @@ if not DEBUG:
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'Lax'
     CSRF_COOKIE_SECURE = True
-    CSRF_COOKIE_HTTPONLY = True
+    # Lisible JS pour header X-CSRFToken (SPA + cookies JWT)
+    CSRF_COOKIE_HTTPONLY = False
     CSRF_COOKIE_SAMESITE = 'Lax'
     
     # Headers de sécurité - Tous gérés par Apache pour éviter les duplications
@@ -232,8 +233,23 @@ else:
     # En développement, activer HttpOnly même sans HTTPS
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'Lax'
-    CSRF_COOKIE_HTTPONLY = True
+    CSRF_COOKIE_HTTPONLY = False
     CSRF_COOKIE_SAMESITE = 'Lax'
+
+# Origines de confiance CSRF (prod) — liste séparée par des virgules
+_csrf_trusted = config('CSRF_TRUSTED_ORIGINS', default='', cast=str)
+CSRF_TRUSTED_ORIGINS = [s.strip() for s in _csrf_trusted.split(',') if s.strip()]
+if DEBUG and not CSRF_TRUSTED_ORIGINS:
+    CSRF_TRUSTED_ORIGINS = [
+        'http://localhost:3000',
+        'http://127.0.0.1:3000',
+        'http://localhost:3001',
+        'http://127.0.0.1:3001',
+        'http://localhost:3100',
+        'http://127.0.0.1:3100',
+        'http://localhost:8001',
+        'http://127.0.0.1:8001',
+    ]
 
 # CORS Settings
 CORS_ALLOWED_ORIGINS = config(

@@ -1,6 +1,6 @@
 import { getApiBaseUrl } from '../utils/apiConfig';
-import { authService } from './auth';
 import type { ShowIfRule } from '../utils/questionnaireVisibility';
+import { fetchWithAuth } from './apiClient';
 
 export type { ShowIfRule, ShowIfCondition, ShowIfLogic, ShowIfOperator } from '../utils/questionnaireVisibility';
 
@@ -106,37 +106,6 @@ export interface BulkAnswersPayload {
 class JournalQuestionsService {
   private readonly BASE_URL = getApiBaseUrl();
 
-  private getAuthHeaders() {
-    const token = localStorage.getItem('access_token');
-    return {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    } as Record<string, string>;
-  }
-
-  private async refreshAccessToken(): Promise<boolean> {
-    const access = await authService.refreshAccessToken();
-    return !!access;
-  }
-
-  private async fetchWithAuth(input: string, init: RequestInit = {}, retry = true): Promise<Response> {
-    const headers: Record<string, string> = {
-      ...(init.headers as Record<string, string> || {}),
-      ...this.getAuthHeaders(),
-    };
-    if (init.body instanceof FormData) {
-      delete headers['Content-Type'];
-    }
-    const res = await fetch(input, { ...init, headers });
-    if (res.status === 401 && retry) {
-      const refreshed = await this.refreshAccessToken();
-      if (refreshed) {
-        return this.fetchWithAuth(input, init, false);
-      }
-    }
-    return res;
-  }
-
   private async parseError(res: Response): Promise<string> {
     try {
       const data = await res.json();
@@ -159,7 +128,7 @@ class JournalQuestionsService {
     const params = new URLSearchParams();
     if (isActive !== undefined) params.set('is_active', String(isActive));
     const q = params.toString();
-    const res = await this.fetchWithAuth(
+    const res = await fetchWithAuth(
       `${this.BASE_URL}/api/daily-journal/question-templates/${q ? `?${q}` : ''}`
     );
     if (!res.ok) throw new Error(await this.parseError(res));
@@ -168,7 +137,7 @@ class JournalQuestionsService {
   }
 
   async createTemplate(payload: Partial<QuestionTemplate> & { label: string; answer_type: AnswerType }): Promise<QuestionTemplate> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/daily-journal/question-templates/`, {
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/daily-journal/question-templates/`, {
       method: 'POST',
       body: JSON.stringify(payload),
     });
@@ -177,7 +146,7 @@ class JournalQuestionsService {
   }
 
   async updateTemplate(id: number, payload: Partial<QuestionTemplate>): Promise<QuestionTemplate> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/daily-journal/question-templates/${id}/`, {
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/daily-journal/question-templates/${id}/`, {
       method: 'PATCH',
       body: JSON.stringify(payload),
     });
@@ -186,7 +155,7 @@ class JournalQuestionsService {
   }
 
   async deleteTemplate(id: number): Promise<void> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/daily-journal/question-templates/${id}/`, {
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/daily-journal/question-templates/${id}/`, {
       method: 'DELETE',
     });
     if (!res.ok) throw new Error(await this.parseError(res));
@@ -194,7 +163,7 @@ class JournalQuestionsService {
 
   // --- Questionnaires ---
   async getOrCreateQuestionnaire(scope: QuestionnaireScope): Promise<Questionnaire> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/daily-journal/questionnaires/`, {
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/daily-journal/questionnaires/`, {
       method: 'POST',
       body: JSON.stringify({ scope }),
     });
@@ -206,7 +175,7 @@ class JournalQuestionsService {
     const params = new URLSearchParams();
     if (isActive !== undefined) params.set('is_active', String(isActive));
     const q = params.toString();
-    const res = await this.fetchWithAuth(
+    const res = await fetchWithAuth(
       `${this.BASE_URL}/api/daily-journal/questionnaires/${questionnaireId}/questions/${q ? `?${q}` : ''}`
     );
     if (!res.ok) throw new Error(await this.parseError(res));
@@ -217,7 +186,7 @@ class JournalQuestionsService {
     questionnaireId: number,
     payload: Partial<QuestionnaireQuestion> & { label: string; answer_type: AnswerType }
   ): Promise<QuestionnaireQuestion> {
-    const res = await this.fetchWithAuth(
+    const res = await fetchWithAuth(
       `${this.BASE_URL}/api/daily-journal/questionnaires/${questionnaireId}/questions/`,
       { method: 'POST', body: JSON.stringify(payload) }
     );
@@ -226,7 +195,7 @@ class JournalQuestionsService {
   }
 
   async cloneFromTemplate(questionnaireId: number, templateId: number): Promise<QuestionnaireQuestion> {
-    const res = await this.fetchWithAuth(
+    const res = await fetchWithAuth(
       `${this.BASE_URL}/api/daily-journal/questionnaires/${questionnaireId}/questions/from-template/`,
       { method: 'POST', body: JSON.stringify({ template_id: templateId }) }
     );
@@ -235,7 +204,7 @@ class JournalQuestionsService {
   }
 
   async reorderQuestions(questionnaireId: number, ids: number[]): Promise<QuestionnaireQuestion[]> {
-    const res = await this.fetchWithAuth(
+    const res = await fetchWithAuth(
       `${this.BASE_URL}/api/daily-journal/questionnaires/${questionnaireId}/questions/reorder/`,
       { method: 'POST', body: JSON.stringify({ ids }) }
     );
@@ -244,7 +213,7 @@ class JournalQuestionsService {
   }
 
   async updateQuestion(id: number, payload: Partial<QuestionnaireQuestion>): Promise<QuestionnaireQuestion> {
-    const res = await this.fetchWithAuth(
+    const res = await fetchWithAuth(
       `${this.BASE_URL}/api/daily-journal/questionnaire-questions/${id}/`,
       { method: 'PATCH', body: JSON.stringify(payload) }
     );
@@ -253,7 +222,7 @@ class JournalQuestionsService {
   }
 
   async deleteQuestion(id: number): Promise<{ deactivated?: boolean; question?: QuestionnaireQuestion }> {
-    const res = await this.fetchWithAuth(
+    const res = await fetchWithAuth(
       `${this.BASE_URL}/api/daily-journal/questionnaire-questions/${id}/`,
       { method: 'DELETE' }
     );
@@ -275,7 +244,7 @@ class JournalQuestionsService {
     if (params.date) search.set('date', params.date);
     if (params.trading_account != null) search.set('trading_account', String(params.trading_account));
     if (params.trade != null) search.set('trade', String(params.trade));
-    const res = await this.fetchWithAuth(
+    const res = await fetchWithAuth(
       `${this.BASE_URL}/api/daily-journal/answers/?${search.toString()}`
     );
     if (!res.ok) throw new Error(await this.parseError(res));
@@ -290,7 +259,7 @@ class JournalQuestionsService {
     search.set('scope', 'position');
     search.set('date', params.date);
     search.set('trading_account', String(params.trading_account));
-    const res = await this.fetchWithAuth(
+    const res = await fetchWithAuth(
       `${this.BASE_URL}/api/daily-journal/answers/?${search.toString()}`
     );
     if (!res.ok) throw new Error(await this.parseError(res));
@@ -298,7 +267,7 @@ class JournalQuestionsService {
   }
 
   async bulkSaveAnswers(payload: BulkAnswersPayload): Promise<{ answers: QuestionnaireAnswer[] }> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/daily-journal/answers/bulk/`, {
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/daily-journal/answers/bulk/`, {
       method: 'PUT',
       body: JSON.stringify(payload),
     });

@@ -31,20 +31,21 @@ export default defineConfig({
       ],
     },
     proxy: {
+      // Qualif Daphne écoute typiquement 8001 (voir start-daphne.sh)
       '/api': {
-        target: 'http://127.0.0.1:8000',
+        target: process.env.VITE_DEV_PROXY_TARGET || 'http://127.0.0.1:8001',
         changeOrigin: true,
       },
       '/media': {
-        target: 'http://127.0.0.1:8000',
+        target: process.env.VITE_DEV_PROXY_TARGET || 'http://127.0.0.1:8001',
         changeOrigin: true,
       },
       '/admin': {
-        target: 'http://127.0.0.1:8000',
+        target: process.env.VITE_DEV_PROXY_TARGET || 'http://127.0.0.1:8001',
         changeOrigin: true,
       },
       '/ws': {
-        target: 'ws://127.0.0.1:8000',
+        target: process.env.VITE_DEV_PROXY_WS_TARGET || 'ws://127.0.0.1:8001',
         ws: true,
       },
     },

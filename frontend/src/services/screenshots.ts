@@ -1,4 +1,5 @@
 import { getApiBaseUrl } from '../utils/apiConfig';
+import { fetchWithAuth } from './apiClient';
 
 export interface ScreenshotUploadResponse {
   original_url: string;
@@ -8,38 +9,6 @@ export interface ScreenshotUploadResponse {
 
 class ScreenshotsService {
   private readonly BASE_URL = getApiBaseUrl();
-
-  /**
-   * Récupère le token d'authentification depuis le localStorage
-   */
-  private getAuthToken(): string | null {
-    return localStorage.getItem('access_token');
-  }
-
-  /**
-   * Effectue une requête authentifiée
-   */
-  private async fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
-    const token = this.getAuthToken();
-    const headers = new Headers(options.headers);
-
-    if (token) {
-      headers.set('Authorization', `Bearer ${token}`);
-    }
-
-    const response = await fetch(url, {
-      ...options,
-      headers,
-    });
-
-    // Si le token est expiré, essayer de le rafraîchir
-    if (response.status === 401) {
-      // Rediriger vers la page de connexion ou rafraîchir le token
-      window.dispatchEvent(new CustomEvent('auth:token-expired'));
-    }
-
-    return response;
-  }
 
   /**
    * Interprète la réponse POST delete_screenshot : succès, ou 404 « fichier déjà absent »
@@ -80,7 +49,7 @@ class ScreenshotsService {
     const formData = new FormData();
     formData.append('file', file);
 
-    const response = await this.fetchWithAuth(
+    const response = await fetchWithAuth(
       `${this.BASE_URL}/api/trades/trade-strategies/upload_screenshot/`,
       {
         method: 'POST',
@@ -107,7 +76,7 @@ class ScreenshotsService {
     const formData = new FormData();
     formData.append('file', file);
 
-    const response = await this.fetchWithAuth(
+    const response = await fetchWithAuth(
       `${this.BASE_URL}/api/trades/day-strategy-compliances/upload_screenshot/`,
       {
         method: 'POST',
@@ -130,7 +99,7 @@ class ScreenshotsService {
    * (nécessaire lorsque le serveur web bloque l’accès direct à ce répertoire).
    */
   async signScreenshotDisplayUrl(url: string): Promise<string> {
-    const response = await this.fetchWithAuth(
+    const response = await fetchWithAuth(
       `${this.BASE_URL}/api/trades/sign-screenshot-display-url/`,
       {
         method: 'POST',
@@ -163,7 +132,7 @@ class ScreenshotsService {
    * @returns Message de confirmation
    */
   async deleteTradeScreenshot(screenshotUrl: string): Promise<{ message: string }> {
-    const response = await this.fetchWithAuth(
+    const response = await fetchWithAuth(
       `${this.BASE_URL}/api/trades/trade-strategies/delete_screenshot/`,
       {
         method: 'POST',
@@ -183,7 +152,7 @@ class ScreenshotsService {
    * @returns Message de confirmation
    */
   async deleteDayScreenshot(screenshotUrl: string): Promise<{ message: string }> {
-    const response = await this.fetchWithAuth(
+    const response = await fetchWithAuth(
       `${this.BASE_URL}/api/trades/day-strategy-compliances/delete_screenshot/`,
       {
         method: 'POST',
@@ -206,7 +175,7 @@ class ScreenshotsService {
     const formData = new FormData();
     formData.append('file', file);
 
-    const response = await this.fetchWithAuth(
+    const response = await fetchWithAuth(
       `${this.BASE_URL}/api/trades/position-strategies/upload_screenshot/`,
       {
         method: 'POST',
@@ -233,7 +202,7 @@ class ScreenshotsService {
     screenshotUrl: string,
     options: { keepalive?: boolean } = {}
   ): Promise<{ message: string }> {
-    const response = await this.fetchWithAuth(
+    const response = await fetchWithAuth(
       `${this.BASE_URL}/api/trades/position-strategies/delete_screenshot/`,
       {
         method: 'POST',

@@ -4,11 +4,13 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.throttling import AnonRateThrottle
 from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
-from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
 from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import ensure_csrf_cookie
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.conf import settings
@@ -27,6 +29,13 @@ security_logger = logging.getLogger('security')
 
 from .models import AppSettings, User, UserPreferences, LoginHistory, EmailActivationToken
 from .utils import send_activation_email, create_activation_token
+from .jwt_cookies import (
+    ACCESS_COOKIE_NAME,
+    REFRESH_COOKIE_NAME,
+    set_jwt_cookies,
+    clear_jwt_cookies,
+    strip_tokens_from_response_data,
+)
 from .throttling import (
     LoginThrottle,
     EmailBasedRegisterThrottle,
@@ -155,7 +164,13 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                         )
             except Exception as e:
                 security_logger.error(f"Erreur lors de l'enregistrement de la tentative de connexion échouée: {str(e)}")
-        
+
+        if response.status_code == 200 and isinstance(getattr(response, 'data', None), dict):
+            access = response.data.get('access')
+            refresh = response.data.get('refresh')
+            set_jwt_cookies(response, access=access, refresh=refresh)
+            response.data = strip_tokens_from_response_data(response.data)
+
         return response
     
     def _get_client_ip(self, request):
@@ -565,97 +580,126 @@ class PasswordChangeView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+def _blacklist_access_token_str(access_token_str: str) -> None:
+    try:
+        access_token = AccessToken(access_token_str)
+        jti = access_token.get('jti')
+        if not jti:
+            return
+        from datetime import datetime, timezone as dt_timezone
+
+        iat_timestamp = access_token.get('iat')
+        exp_timestamp = access_token.get('exp')
+        created_at = (
+            datetime.fromtimestamp(iat_timestamp, tz=dt_timezone.utc)
+            if iat_timestamp
+            else timezone.now()
+        )
+        expires_at = (
+            datetime.fromtimestamp(exp_timestamp, tz=dt_timezone.utc)
+            if exp_timestamp
+            else timezone.now()
+        )
+        user_id = access_token.get('user_id')
+        user = None
+        if user_id:
+            try:
+                user = User.objects.get(id=user_id)
+            except User.DoesNotExist:
+                logger.warning('Utilisateur %s non trouvé lors du logout', user_id)
+            except Exception as e:
+                logger.error('Erreur récupération user logout: %s', e)
+
+        outstanding_token, _created = OutstandingToken.objects.get_or_create(
+            jti=jti,
+            defaults={
+                'user': user,
+                'token': access_token_str,
+                'created_at': created_at,
+                'expires_at': expires_at,
+            },
+        )
+        BlacklistedToken.objects.get_or_create(token=outstanding_token)
+        from .jwt_blacklist_cache import mark_jti_blacklisted
+
+        mark_jti_blacklisted(jti)
+    except Exception as e:
+        logger.debug('Blacklist access token ignorée: %s', e)
+
+
+class CookieTokenRefreshView(TokenRefreshView):
+    """Refresh JWT depuis cookie tj_refresh (body.refresh en fallback legacy)."""
+
+    permission_classes = []
+
+    def post(self, request, *args, **kwargs):
+        data = request.data.copy() if hasattr(request.data, 'copy') else dict(request.data or {})
+        if not data.get('refresh'):
+            cookie_refresh = request.COOKIES.get(REFRESH_COOKIE_NAME)
+            if cookie_refresh:
+                data['refresh'] = cookie_refresh
+        serializer = self.get_serializer(data=data)
+        try:
+            serializer.is_valid(raise_exception=True)
+        except TokenError as e:
+            raise InvalidToken(e.args[0])
+
+        access = serializer.validated_data.get('access')
+        refresh = serializer.validated_data.get('refresh')
+        response = Response(strip_tokens_from_response_data(dict(serializer.validated_data)))
+        set_jwt_cookies(response, access=access, refresh=refresh)
+        return response
+
+
 class LogoutView(APIView):
     """
-    Vue pour la déconnexion avec blacklist des tokens
-    Permet la déconnexion même si le token est expiré
+    Déconnexion avec blacklist des tokens (cookie et/ou Bearer / body).
     """
-    permission_classes = []  # Pas d'authentification requise pour la déconnexion
-    
+    permission_classes = []
+
     def post(self, request):
         try:
-            # Récupérer le token d'accès depuis l'en-tête Authorization
+            access_token_str = None
             auth_header = request.META.get('HTTP_AUTHORIZATION', '')
             if auth_header.startswith('Bearer '):
                 access_token_str = auth_header.split(' ')[1]
-                
-                try:
-                    # Blacklister le token d'accès manuellement
-                    access_token = AccessToken(access_token_str)
-                    jti = access_token.get('jti')
-                    
-                    if jti:
-                        # Créer une entrée OutstandingToken si elle n'existe pas
-                        from datetime import datetime, timezone as dt_timezone
-                        
-                        # Convertir les timestamps en datetime
-                        iat_timestamp = access_token.get('iat')
-                        exp_timestamp = access_token.get('exp')
-                        
-                        created_at = (
-                            datetime.fromtimestamp(iat_timestamp, tz=dt_timezone.utc)
-                            if iat_timestamp
-                            else timezone.now()
-                        )
-                        expires_at = (
-                            datetime.fromtimestamp(exp_timestamp, tz=dt_timezone.utc)
-                            if exp_timestamp
-                            else timezone.now()
-                        )
-                        
-                        # Essayer de récupérer l'utilisateur depuis le token
-                        user_id = access_token.get('user_id')
-                        user = None
-                        if user_id:
-                            try:
-                                from django.contrib.auth import get_user_model
-                                UserModel = get_user_model()
-                                if UserModel:
-                                    user = UserModel.objects.get(id=user_id)
-                            except UserModel.DoesNotExist:
-                                logger.warning(f"Utilisateur {user_id} non trouvé lors du refresh token")
-                            except Exception as e:
-                                logger.error(f"Erreur lors de la récupération de l'utilisateur: {str(e)}")
-                        
-                        outstanding_token, created = OutstandingToken.objects.get_or_create(
-                            jti=jti,
-                            defaults={
-                                'user': user,
-                                'token': access_token_str,
-                                'created_at': created_at,
-                                'expires_at': expires_at
-                            }
-                        )
-                        
-                        # Créer une entrée BlacklistedToken
-                        BlacklistedToken.objects.get_or_create(token=outstanding_token)
-                        from .jwt_blacklist_cache import mark_jti_blacklisted
-                        mark_jti_blacklisted(jti)
-                        
-                except Exception as e:
-                    print(f"Erreur lors de la blacklist du token d'accès: {e}")
-            
-            # Essayer de récupérer le refresh token depuis le body
-            refresh_token = request.data.get("refresh")
-            
+            if not access_token_str:
+                access_token_str = request.COOKIES.get(ACCESS_COOKIE_NAME)
+            if access_token_str:
+                _blacklist_access_token_str(access_token_str)
+
+            refresh_token = request.data.get('refresh') if hasattr(request, 'data') else None
+            if not refresh_token:
+                refresh_token = request.COOKIES.get(REFRESH_COOKIE_NAME)
+
             if refresh_token:
                 try:
-                    # Blacklister le refresh token
                     token = RefreshToken(refresh_token)
                     refresh_jti = token.get('jti')
                     token.blacklist()
                     if refresh_jti:
                         from .jwt_blacklist_cache import mark_jti_blacklisted
+
                         mark_jti_blacklisted(refresh_jti)
                 except Exception as e:
-                    print(f"Erreur lors de la blacklist du refresh token: {e}")
-            
-            return Response({'message': 'Déconnexion réussie - Tokens blacklistés'})
-                
+                    logger.debug('Blacklist refresh ignorée: %s', e)
+
+            response = Response({'message': 'Déconnexion réussie - Tokens blacklistés'})
+            clear_jwt_cookies(response)
+            return response
         except Exception as e:
-            print(f"Erreur générale lors de la déconnexion: {e}")
-            # En cas d'erreur, confirmer quand même la déconnexion côté frontend
-            return Response({'message': 'Déconnexion réussie'})
+            logger.warning('Erreur logout: %s', e)
+            response = Response({'message': 'Déconnexion réussie'})
+            clear_jwt_cookies(response)
+            return response
+
+
+@api_view(['GET'])
+@permission_classes([permissions.AllowAny])
+@ensure_csrf_cookie
+def csrf_ensure(request):
+    """Pose le cookie CSRF lisible par le JS (bootstrap SPA)."""
+    return Response({'detail': 'CSRF cookie set'})
 
 
 # Vues Admin
@@ -977,101 +1021,89 @@ def admin_stats_view(request):
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
 def session_info(request):
-    """
-    Retourne les informations de session de l'utilisateur connecté
-    """
-    from rest_framework_simplejwt.tokens import RefreshToken
+    """Retourne les informations de session (access cookie ou Bearer)."""
     from datetime import datetime, timedelta
-    
+    from rest_framework_simplejwt.settings import api_settings as jwt_api_settings
+
     try:
-        # Récupérer le token de rafraîchissement depuis les cookies ou headers
-        refresh_token = request.COOKIES.get('refresh_token')
-        if not refresh_token:
-            # Essayer de récupérer depuis les headers
+        access_token_str = request.COOKIES.get(ACCESS_COOKIE_NAME)
+        if not access_token_str:
             auth_header = request.META.get('HTTP_AUTHORIZATION', '')
             if auth_header.startswith('Bearer '):
-                # Pour l'instant, on utilise le token d'accès pour calculer l'expiration
-                access_token = auth_header.split(' ')[1]
-                # Décoder le token pour récupérer l'expiration
-                from rest_framework_simplejwt.tokens import AccessToken
-                try:
-                    token = AccessToken(access_token)
-                    exp_timestamp = token['exp']
-                    exp_datetime = datetime.fromtimestamp(float(exp_timestamp))
-                    
-                    # Calculer les temps restants
-                    now = datetime.now()
-                    time_remaining = int((exp_datetime - now).total_seconds())
-                    warning_time_remaining = max(0, time_remaining - 600)  # 10 minutes avant expiration
-                    
-                    return Response({
-                        'access_token_expires_at': exp_datetime.isoformat(),
-                        'refresh_token_expires_at': (exp_datetime + timedelta(hours=3)).isoformat(),  # Approximation
-                        'session_expires_at': (exp_datetime + timedelta(hours=3)).isoformat(),
-                        'auto_logout_warning_at': (exp_datetime - timedelta(minutes=10)).isoformat(),
-                        'time_remaining': max(0, time_remaining),
-                        'warning_time_remaining': max(0, warning_time_remaining),
-                        'is_expired': time_remaining <= 0,
-                        'needs_refresh': time_remaining <= 600,  # Besoin de rafraîchir si moins de 10 minutes
-                    })
-                except (KeyError, ValueError, TypeError) as e:
-                    logger.debug(f"Impossible de décoder le token d'accès: {str(e)}")
-                except Exception as e:
-                    logger.error(f"Erreur inattendue lors du décodage du token: {str(e)}")
-        
+                access_token_str = auth_header.split(' ')[1]
+        if not access_token_str and getattr(request, 'auth', None) is not None:
+            try:
+                access_token_str = str(request.auth)
+            except Exception:
+                access_token_str = None
+
+        if not access_token_str:
+            return Response({'error': 'Token non valide ou expiré'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        token = AccessToken(access_token_str)
+        exp_timestamp = token['exp']
+        exp_datetime = datetime.fromtimestamp(float(exp_timestamp))
+        now = datetime.now()
+        time_remaining = int((exp_datetime - now).total_seconds())
+        refresh_lifetime = jwt_api_settings.REFRESH_TOKEN_LIFETIME
+        refresh_extra = refresh_lifetime if isinstance(refresh_lifetime, timedelta) else timedelta(hours=4)
+        refresh_approx = exp_datetime + refresh_extra - (
+            jwt_api_settings.ACCESS_TOKEN_LIFETIME
+            if isinstance(jwt_api_settings.ACCESS_TOKEN_LIFETIME, timedelta)
+            else timedelta(hours=1)
+        )
         return Response({
-            'error': 'Token non valide ou expiré'
-        }, status=status.HTTP_401_UNAUTHORIZED)
-        
+            'access_token_expires_at': exp_datetime.isoformat(),
+            'refresh_token_expires_at': refresh_approx.isoformat(),
+            'session_expires_at': refresh_approx.isoformat(),
+            'auto_logout_warning_at': (exp_datetime - timedelta(minutes=10)).isoformat(),
+            'time_remaining': max(0, time_remaining),
+            'warning_time_remaining': max(0, time_remaining - 600),
+            'is_expired': time_remaining <= 0,
+            'needs_refresh': time_remaining <= 600,
+        })
     except Exception as e:
-        return Response({
-            'error': 'Erreur lors de la récupération des informations de session'
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        logger.debug('session_info: %s', e)
+        return Response({'error': 'Token non valide ou expiré'}, status=status.HTTP_401_UNAUTHORIZED)
 
 
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticated])
 def extend_session(request):
-    """
-    Étend la session de l'utilisateur en rafraîchissant les tokens
-    """
-    from rest_framework_simplejwt.tokens import RefreshToken
+    """Étend la session en émettant de nouveaux cookies JWT."""
     from datetime import datetime, timedelta
-    
+    from rest_framework_simplejwt.settings import api_settings as jwt_api_settings
+
     try:
-        # Créer de nouveaux tokens pour l'utilisateur
         refresh = RefreshToken.for_user(request.user)
         access_token = refresh.access_token
-        
-        # Calculer les nouveaux temps d'expiration
         now = datetime.now()
-        access_expiry = now + timedelta(hours=1)
-        refresh_expiry = now + timedelta(hours=4)
-        
-        # Calculer le temps restant en secondes
+        access_lifetime = jwt_api_settings.ACCESS_TOKEN_LIFETIME
+        refresh_lifetime = jwt_api_settings.REFRESH_TOKEN_LIFETIME
+        access_expiry = now + (access_lifetime if isinstance(access_lifetime, timedelta) else timedelta(hours=1))
+        refresh_expiry = now + (refresh_lifetime if isinstance(refresh_lifetime, timedelta) else timedelta(hours=4))
         time_remaining = int((refresh_expiry - now).total_seconds())
-        warning_time_remaining = max(0, time_remaining - 600)  # 10 minutes avant expiration
-        
-        return Response({
-            'access': str(access_token),
-            'refresh': str(refresh),
+        response = Response({
             'session_info': {
                 'access_token_expires_at': access_expiry.isoformat(),
                 'refresh_token_expires_at': refresh_expiry.isoformat(),
                 'session_expires_at': refresh_expiry.isoformat(),
                 'auto_logout_warning_at': (refresh_expiry - timedelta(minutes=10)).isoformat(),
                 'time_remaining': time_remaining,
-                'warning_time_remaining': warning_time_remaining,
+                'warning_time_remaining': max(0, time_remaining - 600),
                 'is_expired': False,
                 'needs_refresh': False,
             },
-            'message': 'Session étendue avec succès'
+            'message': 'Session étendue avec succès',
         })
-        
+        set_jwt_cookies(response, access=str(access_token), refresh=str(refresh))
+        return response
     except Exception as e:
-        return Response({
-            'error': 'Erreur lors de l\'extension de la session'
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        logger.warning('extend_session: %s', e)
+        return Response(
+            {'error': 'Erreur lors de l\'extension de la session'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
 
 
 class SystemStatsView(APIView):

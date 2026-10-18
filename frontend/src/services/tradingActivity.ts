@@ -1,4 +1,5 @@
 import { getApiBaseUrl } from '../utils/apiConfig';
+import { fetchWithAuth } from './apiClient';
 
 const BASE = `${getApiBaseUrl()}/api/trading-activity`;
 
@@ -191,14 +192,6 @@ export type TradingActivityTaxPaymentLedgerFilters = TradingActivityLedgerFilter
   payment_type?: string;
 };
 
-function authHeaders(): HeadersInit {
-  const token = localStorage.getItem('access_token');
-  return {
-    Authorization: `Bearer ${token}`,
-    'Content-Type': 'application/json',
-  };
-}
-
 async function parseError(res: Response): Promise<string> {
   try {
     const body = await res.json();
@@ -214,7 +207,11 @@ async function parseError(res: Response): Promise<string> {
 }
 
 async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
-  const res = await fetch(url, { ...options, headers: { ...authHeaders(), ...options.headers } });
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(options.headers as Record<string, string> | undefined),
+  };
+  const res = await fetchWithAuth(url, { ...options, headers });
   if (!res.ok) throw new Error(await parseError(res));
   if (res.status === 204) return undefined as T;
   const ct = res.headers.get('content-type');

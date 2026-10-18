@@ -1,5 +1,5 @@
 import { getApiBaseUrl } from '../utils/apiConfig';
-import { authService } from './auth';
+import { fetchWithAuth } from './apiClient';
 
 export interface TradingGoal {
   id: number;
@@ -71,44 +71,6 @@ export interface GoalsFilters {
 class GoalsService {
   private readonly BASE_URL = getApiBaseUrl();
 
-  private getAuthHeaders() {
-    const token = localStorage.getItem('access_token');
-    return {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    } as Record<string, string>;
-  }
-
-  private async refreshAccessToken(): Promise<boolean> {
-    const access = await authService.refreshAccessToken();
-    return !!access;
-  }
-
-  private async fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
-    let res = await fetch(url, {
-      ...options,
-      headers: {
-        ...this.getAuthHeaders(),
-        ...options.headers,
-      },
-    });
-
-    if (res.status === 401) {
-      const refreshed = await this.refreshAccessToken();
-      if (refreshed) {
-        res = await fetch(url, {
-          ...options,
-          headers: {
-            ...this.getAuthHeaders(),
-            ...options.headers,
-          },
-        });
-      }
-    }
-
-    return res;
-  }
-
   async list(filters?: GoalsFilters): Promise<TradingGoal[]> {
     const params = new URLSearchParams();
     if (filters?.status) params.append('status', filters.status);
@@ -121,7 +83,7 @@ class GoalsService {
     params.append('page_size', '10000');
 
     const url = `${this.BASE_URL}/api/trades/goals/${params.toString() ? `?${params.toString()}` : ''}`;
-    const res = await this.fetchWithAuth(url);
+    const res = await fetchWithAuth(url);
 
     if (!res.ok) {
       throw new Error(`Failed to fetch goals: ${res.statusText}`);
@@ -134,7 +96,7 @@ class GoalsService {
 
   async get(id: number): Promise<TradingGoal> {
     const url = `${this.BASE_URL}/api/trades/goals/${id}/`;
-    const res = await this.fetchWithAuth(url);
+    const res = await fetchWithAuth(url);
 
     if (!res.ok) {
       throw new Error(`Failed to fetch goal: ${res.statusText}`);
@@ -145,7 +107,7 @@ class GoalsService {
 
   async create(data: Partial<TradingGoal>): Promise<TradingGoal> {
     const url = `${this.BASE_URL}/api/trades/goals/`;
-    const res = await this.fetchWithAuth(url, {
+    const res = await fetchWithAuth(url, {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -160,7 +122,7 @@ class GoalsService {
 
   async update(id: number, data: Partial<TradingGoal>): Promise<TradingGoal> {
     const url = `${this.BASE_URL}/api/trades/goals/${id}/`;
-    const res = await this.fetchWithAuth(url, {
+    const res = await fetchWithAuth(url, {
       method: 'PATCH',
       body: JSON.stringify(data),
     });
@@ -175,7 +137,7 @@ class GoalsService {
 
   async delete(id: number): Promise<void> {
     const url = `${this.BASE_URL}/api/trades/goals/${id}/`;
-    const res = await this.fetchWithAuth(url, {
+    const res = await fetchWithAuth(url, {
       method: 'DELETE',
     });
 
@@ -186,7 +148,7 @@ class GoalsService {
 
   async getProgress(id: number): Promise<GoalProgress> {
     const url = `${this.BASE_URL}/api/trades/goals/${id}/progress/`;
-    const res = await this.fetchWithAuth(url);
+    const res = await fetchWithAuth(url);
 
     if (!res.ok) {
       throw new Error(`Failed to fetch goal progress: ${res.statusText}`);
@@ -197,7 +159,7 @@ class GoalsService {
 
   async updateAllProgress(): Promise<{ message: string; updated_count: number }> {
     const url = `${this.BASE_URL}/api/trades/goals/update_all_progress/`;
-    const res = await this.fetchWithAuth(url, {
+    const res = await fetchWithAuth(url, {
       method: 'POST',
     });
 
@@ -215,7 +177,7 @@ class GoalsService {
     }
     const query = searchParams.toString();
     const url = `${this.BASE_URL}/api/trades/goals/statistics/${query ? `?${query}` : ''}`;
-    const res = await this.fetchWithAuth(url);
+    const res = await fetchWithAuth(url);
 
     if (!res.ok) {
       throw new Error(`Failed to fetch goals statistics: ${res.statusText}`);

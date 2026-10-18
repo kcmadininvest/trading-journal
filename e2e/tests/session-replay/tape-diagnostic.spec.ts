@@ -4,9 +4,9 @@ import { apiContext, findBuiltSession, login } from '../../helpers/api';
 
 test('relève la géométrie SVG du ruban cran par cran', async ({ page }) => {
   const api = await apiContext();
-  const { access } = await login(api);
+  await login(api);
   const sessionDate = process.env.E2E_SESSION_DATE;
-  const session = await findBuiltSession(api, access, sessionDate);
+  const session = await findBuiltSession(api, sessionDate);
   await api.dispose();
   test.skip(!session, 'Aucune session construite sur le compte de test.');
 

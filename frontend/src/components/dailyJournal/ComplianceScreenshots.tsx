@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { dayStrategyComplianceService } from '../../services/dayStrategyCompliance';
 import { getFullMediaUrl } from '../../utils/mediaUrl';
-
 interface ComplianceScreenshot {
   id: number;
   screenshot_url: string;
@@ -29,9 +28,6 @@ export const ComplianceScreenshots: React.FC<ComplianceScreenshotsProps> = ({
     const loadScreenshots = async () => {
       setIsLoading(true);
       try {
-        const token = localStorage.getItem('access_token');
-        if (!token) return;
-
         const data = await dayStrategyComplianceService.list({
           date,
           trading_account: tradingAccountId,

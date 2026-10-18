@@ -1,5 +1,5 @@
 import { getApiBaseUrl } from '../utils/apiConfig';
-import { authService } from './auth';
+import { fetchWithAuth } from './apiClient';
 
 export interface PositionStrategy {
   id: number;
@@ -50,44 +50,6 @@ export interface PositionStrategyFilters {
 class PositionStrategiesService {
   private readonly BASE_URL = getApiBaseUrl();
 
-  private getAuthHeaders() {
-    const token = localStorage.getItem('access_token');
-    return {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    } as Record<string, string>;
-  }
-
-  private async refreshAccessToken(): Promise<boolean> {
-    const access = await authService.refreshAccessToken();
-    return !!access;
-  }
-
-  private async fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
-    let res = await fetch(url, {
-      ...options,
-      headers: {
-        ...this.getAuthHeaders(),
-        ...options.headers,
-      },
-    });
-
-    if (res.status === 401) {
-      const refreshed = await this.refreshAccessToken();
-      if (refreshed) {
-        res = await fetch(url, {
-          ...options,
-          headers: {
-            ...this.getAuthHeaders(),
-            ...options.headers,
-          },
-        });
-      }
-    }
-
-    return res;
-  }
-
   async list(filters?: PositionStrategyFilters): Promise<PositionStrategy[]> {
     const params = new URLSearchParams();
     if (filters?.status) params.append('status', filters.status);
@@ -98,7 +60,7 @@ class PositionStrategiesService {
     params.append('page_size', '10000');
 
     const url = `${this.BASE_URL}/api/trades/position-strategies${params.toString() ? `?${params.toString()}` : ''}`;
-    const res = await this.fetchWithAuth(url);
+    const res = await fetchWithAuth(url);
 
     if (!res.ok) {
       throw new Error(`Failed to fetch position strategies: ${res.statusText}`);
@@ -110,7 +72,7 @@ class PositionStrategiesService {
   }
 
   async get(id: number): Promise<PositionStrategy> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/position-strategies/${id}/`);
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/trades/position-strategies/${id}/`);
 
     if (!res.ok) {
       throw new Error(`Failed to fetch position strategy: ${res.statusText}`);
@@ -133,7 +95,7 @@ class PositionStrategiesService {
     example_screenshot?: string;
     example_screenshot_thumbnail?: string;
   }): Promise<PositionStrategy> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/position-strategies/`, {
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/trades/position-strategies/`, {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -164,7 +126,7 @@ class PositionStrategiesService {
       example_screenshot_thumbnail?: string;
     }
   ): Promise<PositionStrategy> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/position-strategies/${id}/`, {
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/trades/position-strategies/${id}/`, {
       method: 'PATCH',
       body: JSON.stringify(data),
     });
@@ -179,7 +141,7 @@ class PositionStrategiesService {
   }
 
   async delete(id: number): Promise<void> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/position-strategies/${id}/`, {
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/trades/position-strategies/${id}/`, {
       method: 'DELETE',
     });
 
@@ -189,7 +151,7 @@ class PositionStrategiesService {
   }
 
   async getVersions(id: number): Promise<PositionStrategyVersion[]> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/position-strategies/${id}/versions/`);
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/trades/position-strategies/${id}/versions/`);
 
     if (!res.ok) {
       throw new Error(`Failed to fetch versions: ${res.statusText}`);
@@ -199,7 +161,7 @@ class PositionStrategiesService {
   }
 
   async restoreVersion(id: number, versionId: number): Promise<PositionStrategy> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/position-strategies/${id}/restore_version/`, {
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/trades/position-strategies/${id}/restore_version/`, {
       method: 'POST',
       body: JSON.stringify({ version_id: versionId }),
     });
@@ -213,7 +175,7 @@ class PositionStrategiesService {
   }
 
   async getPrintData(id: number): Promise<{ strategy: PositionStrategy; print_settings: any }> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/position-strategies/${id}/print_view/`);
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/trades/position-strategies/${id}/print_view/`);
 
     if (!res.ok) {
       throw new Error(`Failed to fetch print data: ${res.statusText}`);
@@ -223,7 +185,7 @@ class PositionStrategiesService {
   }
 
   async getCounts(): Promise<{ total: number; active: number; draft: number; archived: number }> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/position-strategies/counts/`);
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/trades/position-strategies/counts/`);
 
     if (!res.ok) {
       throw new Error(`Failed to fetch strategy counts: ${res.statusText}`);

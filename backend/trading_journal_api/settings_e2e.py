@@ -28,6 +28,12 @@ for _origin in ('http://127.0.0.1:3100', 'http://localhost:3100'):
         _e2e_origins.append(_origin)
 CORS_ALLOWED_ORIGINS = _e2e_origins
 
+_csrf = list(CSRF_TRUSTED_ORIGINS)  # noqa: F405
+for _origin in ('http://127.0.0.1:3100', 'http://localhost:3100'):
+    if _origin not in _csrf:
+        _csrf.append(_origin)
+CSRF_TRUSTED_ORIGINS = _csrf
+
 E2E_EXPECTED_DB_NAME = 'portfolio'
 E2E_EXPECTED_DB_SCHEMA = 'trading_journal'
 E2E_TEST_USERNAME = 'e2e'

@@ -1,5 +1,5 @@
 import { getApiBaseUrl } from '../utils/apiConfig';
-import { authService } from './auth';
+import { fetchWithAuth } from './apiClient';
 
 export interface DayStrategyCompliance {
   id: number;
@@ -25,39 +25,6 @@ class DayStrategyComplianceService {
   private readonly BASE_URL = getApiBaseUrl();
   private baseUrl = `${this.BASE_URL}/api/trades/day-strategy-compliances`;
 
-  private getAuthHeaders() {
-    const token = localStorage.getItem('access_token');
-    return {
-      'Authorization': `Bearer ${token}`,
-    } as Record<string, string>;
-  }
-
-  private async refreshAccessToken(): Promise<boolean> {
-    const access = await authService.refreshAccessToken();
-    return !!access;
-  }
-
-  private async fetchWithAuth(input: string, init: RequestInit = {}, retry = true): Promise<Response> {
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      ...(init.headers as Record<string, string> || {}),
-      ...this.getAuthHeaders(),
-    };
-    const res = await fetch(input, { ...init, headers });
-    if (res.status === 401 && retry) {
-      const refreshed = await this.refreshAccessToken();
-      if (refreshed) {
-        const headers2: Record<string, string> = {
-          'Content-Type': 'application/json',
-          ...(init.headers as Record<string, string> || {}),
-          ...this.getAuthHeaders(),
-        };
-        return fetch(input, { ...init, headers: headers2 });
-      }
-    }
-    return res;
-  }
-
   /**
    * Récupère toutes les compliances de l'utilisateur connecté
    */
@@ -79,7 +46,7 @@ class DayStrategyComplianceService {
       ? `${this.baseUrl}/?${queryParams.toString()}`
       : `${this.baseUrl}/`;
 
-    const response = await this.fetchWithAuth(url, {
+    const response = await fetchWithAuth(url, {
       method: 'GET',
     });
 
@@ -102,7 +69,7 @@ class DayStrategyComplianceService {
 
     const url = `${this.baseUrl}/by_date/?${queryParams.toString()}`;
 
-    const response = await this.fetchWithAuth(url, {
+    const response = await fetchWithAuth(url, {
       method: 'GET',
     });
 
@@ -124,7 +91,7 @@ class DayStrategyComplianceService {
    * Crée une nouvelle compliance
    */
   async create(data: Omit<DayStrategyCompliance, 'id' | 'user' | 'user_username' | 'trading_account_name' | 'emotions_display' | 'created_at' | 'updated_at'>): Promise<DayStrategyCompliance> {
-    const response = await this.fetchWithAuth(this.baseUrl + '/', {
+    const response = await fetchWithAuth(this.baseUrl + '/', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -141,7 +108,7 @@ class DayStrategyComplianceService {
    * Met à jour une compliance existante
    */
   async update(id: number, data: Partial<Omit<DayStrategyCompliance, 'id' | 'user' | 'user_username' | 'trading_account_name' | 'emotions_display' | 'created_at' | 'updated_at'>>): Promise<DayStrategyCompliance> {
-    const response = await this.fetchWithAuth(`${this.baseUrl}/${id}/`, {
+    const response = await fetchWithAuth(`${this.baseUrl}/${id}/`, {
       method: 'PATCH',
       body: JSON.stringify(data),
     });
@@ -158,7 +125,7 @@ class DayStrategyComplianceService {
    * Supprime une compliance
    */
   async delete(id: number): Promise<void> {
-    const response = await this.fetchWithAuth(`${this.baseUrl}/${id}/`, {
+    const response = await fetchWithAuth(`${this.baseUrl}/${id}/`, {
       method: 'DELETE',
     });
 

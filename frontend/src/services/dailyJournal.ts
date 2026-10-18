@@ -1,5 +1,5 @@
 import { getApiBaseUrl } from '../utils/apiConfig';
-import { authService } from './auth';
+import { fetchWithAuth } from './apiClient';
 
 export interface DailyJournalImage {
   id: number;
@@ -66,37 +66,6 @@ export interface DailyJournalGroupedResponse {
 class DailyJournalService {
   private readonly BASE_URL = getApiBaseUrl();
 
-  private getAuthHeaders() {
-    const token = localStorage.getItem('access_token');
-    return {
-      'Authorization': `Bearer ${token}`,
-    } as Record<string, string>;
-  }
-
-  private async refreshAccessToken(): Promise<boolean> {
-    const access = await authService.refreshAccessToken();
-    return !!access;
-  }
-
-  private async fetchWithAuth(input: string, init: RequestInit = {}, retry = true): Promise<Response> {
-    const headers: Record<string, string> = {
-      ...(init.headers as Record<string, string> || {}),
-      ...this.getAuthHeaders(),
-    };
-    const res = await fetch(input, { ...init, headers });
-    if (res.status === 401 && retry) {
-      const refreshed = await this.refreshAccessToken();
-      if (refreshed) {
-        const headers2: Record<string, string> = {
-          ...(init.headers as Record<string, string> || {}),
-          ...this.getAuthHeaders(),
-        };
-        return fetch(input, { ...init, headers: headers2 });
-      }
-    }
-    return res;
-  }
-
   private toQuery(params: Record<string, any>) {
     const search = new URLSearchParams();
     Object.entries(params).forEach(([k, v]) => {
@@ -108,20 +77,20 @@ class DailyJournalService {
 
   async listEntries(filters: DailyJournalFilters = {}): Promise<PaginatedResponse<DailyJournalEntry>> {
     const query = this.toQuery(filters);
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/daily-journal/entries/?${query}`);
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/daily-journal/entries/?${query}`);
     if (!res.ok) throw new Error('Erreur lors du chargement du journal');
     return res.json();
   }
 
   async listGrouped(filters: DailyJournalFilters = {}): Promise<DailyJournalGroupedResponse> {
     const query = this.toQuery(filters);
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/daily-journal/entries/grouped/?${query}`);
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/daily-journal/entries/grouped/?${query}`);
     if (!res.ok) throw new Error('Erreur lors du chargement du journal');
     return res.json();
   }
 
   async getEntry(entryId: number): Promise<DailyJournalEntry> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/daily-journal/entries/${entryId}/`);
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/daily-journal/entries/${entryId}/`);
     if (!res.ok) throw new Error('Erreur lors du chargement du journal');
     return res.json();
   }
@@ -136,7 +105,7 @@ class DailyJournalService {
   }
 
   async createEntry(payload: Pick<DailyJournalEntry, 'date' | 'content'> & { trading_account?: number | null }): Promise<DailyJournalEntry> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/daily-journal/entries/`, {
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/daily-journal/entries/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -149,7 +118,7 @@ class DailyJournalService {
   }
 
   async updateEntry(entryId: number, payload: Partial<Pick<DailyJournalEntry, 'content' | 'trading_account' | 'date'>>): Promise<DailyJournalEntry> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/daily-journal/entries/${entryId}/`, {
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/daily-journal/entries/${entryId}/`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -162,7 +131,7 @@ class DailyJournalService {
   }
 
   async deleteEntry(entryId: number): Promise<void> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/daily-journal/entries/${entryId}/`, {
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/daily-journal/entries/${entryId}/`, {
       method: 'DELETE',
     });
     if (!res.ok) {
@@ -176,7 +145,7 @@ class DailyJournalService {
     if (caption) {
       formData.append('caption', caption);
     }
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/daily-journal/entries/${entryId}/images/`, {
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/daily-journal/entries/${entryId}/images/`, {
       method: 'POST',
       body: formData,
     });
@@ -188,7 +157,7 @@ class DailyJournalService {
   }
 
   async updateImage(entryId: number, imageId: number, payload: Partial<Pick<DailyJournalImage, 'caption' | 'order'>>): Promise<DailyJournalImage> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/daily-journal/entries/${entryId}/images/${imageId}/`, {
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/daily-journal/entries/${entryId}/images/${imageId}/`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -201,7 +170,7 @@ class DailyJournalService {
   }
 
   async deleteImage(entryId: number, imageId: number): Promise<void> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/daily-journal/entries/${entryId}/images/${imageId}/`, {
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/daily-journal/entries/${entryId}/images/${imageId}/`, {
       method: 'DELETE',
     });
     if (!res.ok) {

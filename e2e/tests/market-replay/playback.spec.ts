@@ -3,8 +3,8 @@ import { apiContext, findMarketReplayTarget, login } from '../../helpers/api';
 
 test('lecture, pause et avance du market replay', async ({ page }) => {
   const api = await apiContext();
-  const { access } = await login(api);
-  const target = await findMarketReplayTarget(api, access);
+  await login(api);
+  const target = await findMarketReplayTarget(api);
   await api.dispose();
   test.skip(!target, 'Aucune séance de barres pour le compte de test.');
 

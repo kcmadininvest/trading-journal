@@ -1,5 +1,5 @@
 import { getApiBaseUrl } from '../utils/apiConfig';
-import { authService } from './auth';
+import { fetchWithAuth } from './apiClient';
 
 export interface MarketQuoteItem {
   key: string;
@@ -32,29 +32,13 @@ class MarketQuotesService {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       return `${protocol}//${window.location.host}`;
     }
-    return 'ws://127.0.0.1:8000';
-  }
-
-  private getAuthHeaders(): Record<string, string> {
-    const token = authService.getAccessToken();
-    return {
-      Authorization: token ? `Bearer ${token}` : '',
-      'Content-Type': 'application/json',
-    };
+    return 'ws://127.0.0.1:8001';
   }
 
   async getSnapshot(): Promise<MarketQuotesSnapshot> {
-    let response = await fetch(`${this.baseUrl}/api/trades/market-quotes/`, {
-      headers: this.getAuthHeaders(),
+    const response = await fetchWithAuth(`${this.baseUrl}/api/trades/market-quotes/`, {
+      baseUrl: this.baseUrl,
     });
-    if (response.status === 401) {
-      const refreshed = await authService.refreshAccessToken();
-      if (refreshed) {
-        response = await fetch(`${this.baseUrl}/api/trades/market-quotes/`, {
-          headers: this.getAuthHeaders(),
-        });
-      }
-    }
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }

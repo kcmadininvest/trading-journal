@@ -1,8 +1,9 @@
 import { request as playwrightRequest, type APIRequestContext } from '@playwright/test';
 
-const apiURL = process.env.E2E_API_URL ?? 'http://127.0.0.1:8100';
+/** Same-origin via proxy Vite (cookies HttpOnly) — défaut = front e2e. */
+const apiURL = process.env.E2E_API_URL ?? process.env.E2E_BASE_URL ?? 'http://127.0.0.1:3100';
 
-export const TEST_EMAIL = 'e2e@localhost';
+export const TEST_EMAIL = process.env.E2E_TEST_EMAIL ?? 'e2e@localhost';
 
 export function testPassword(): string {
   const password = process.env.E2E_TEST_PASSWORD;
@@ -12,33 +13,57 @@ export function testPassword(): string {
   return password;
 }
 
-export type LoginPayload = {
-  access: string;
-  refresh: string;
+export type LoginResult = {
   user: Record<string, unknown>;
 };
 
 export async function apiContext(): Promise<APIRequestContext> {
-  return playwrightRequest.newContext({ baseURL: apiURL });
+  return playwrightRequest.newContext({
+    baseURL: apiURL,
+    // Jar cookie pour tj_access / tj_refresh / csrftoken
+  });
 }
 
-export async function login(api: APIRequestContext, email = TEST_EMAIL, password = testPassword()): Promise<LoginPayload> {
+async function csrfHeaders(api: APIRequestContext): Promise<Record<string, string>> {
+  await api.get('/api/accounts/auth/csrf/');
+  const state = await api.storageState();
+  const csrf = state.cookies.find((c) => c.name === 'csrftoken')?.value;
+  return csrf ? { 'X-CSRFToken': csrf } : {};
+}
+
+/**
+ * Login cookie-aware : Set-Cookie tj_* sur le contexte, pas de JWT dans le JSON.
+ */
+export async function login(
+  api: APIRequestContext,
+  email = TEST_EMAIL,
+  password = testPassword(),
+): Promise<LoginResult> {
+  const headers = await csrfHeaders(api);
   const response = await api.post('/api/accounts/auth/login/', {
+    headers: {
+      ...headers,
+      'Content-Type': 'application/json',
+    },
     data: { email, password },
   });
   if (!response.ok()) {
     throw new Error(`Login API ${response.status()} ${await response.text()}`);
   }
-  return response.json() as Promise<LoginPayload>;
+  const body = (await response.json()) as { user?: Record<string, unknown> };
+  if (!body.user) {
+    throw new Error('Login API : user manquant dans la réponse');
+  }
+  return { user: body.user };
 }
 
-function authHeaders(access: string): { Authorization: string } {
-  return { Authorization: `Bearer ${access}` };
-}
-
-export async function createTradingAccount(api: APIRequestContext, access: string, name: string): Promise<number> {
+export async function createTradingAccount(api: APIRequestContext, name: string): Promise<number> {
+  const headers = await csrfHeaders(api);
   const response = await api.post('/api/trades/trading-accounts/', {
-    headers: authHeaders(access),
+    headers: {
+      ...headers,
+      'Content-Type': 'application/json',
+    },
     data: {
       name,
       account_type: 'other',
@@ -53,9 +78,10 @@ export async function createTradingAccount(api: APIRequestContext, access: strin
   return body.id as number;
 }
 
-export async function deleteTradingAccount(api: APIRequestContext, access: string, id: number): Promise<void> {
+export async function deleteTradingAccount(api: APIRequestContext, id: number): Promise<void> {
+  const headers = await csrfHeaders(api);
   const response = await api.delete(`/api/trades/trading-accounts/${id}/`, {
-    headers: authHeaders(access),
+    headers,
   });
   if (!response.ok() && response.status() !== 404) {
     throw new Error(`Suppression compte ${response.status()} ${await response.text()}`);
@@ -73,7 +99,6 @@ type SessionRow = {
 
 export async function findBuiltSession(
   api: APIRequestContext,
-  access: string,
   sessionDate?: string,
 ): Promise<SessionRow | null> {
   const qs = new URLSearchParams();
@@ -82,9 +107,7 @@ export async function findBuiltSession(
     qs.set('date_to', sessionDate);
   }
   const query = qs.toString();
-  const response = await api.get(`/api/trades/replay/sessions/${query ? `?${query}` : ''}`, {
-    headers: authHeaders(access),
-  });
+  const response = await api.get(`/api/trades/replay/sessions/${query ? `?${query}` : ''}`);
   if (!response.ok()) {
     throw new Error(`Sessions ${response.status()} ${await response.text()}`);
   }
@@ -97,11 +120,8 @@ export async function findBuiltSession(
 
 export async function findMarketReplayTarget(
   api: APIRequestContext,
-  access: string,
 ): Promise<{ instrument: string; date: string } | null> {
-  const instrumentsResponse = await api.get('/api/market-data/instruments/?with_bars=1', {
-    headers: authHeaders(access),
-  });
+  const instrumentsResponse = await api.get('/api/market-data/instruments/?with_bars=1');
   if (!instrumentsResponse.ok()) {
     throw new Error(`Instruments ${instrumentsResponse.status()} ${await instrumentsResponse.text()}`);
   }
@@ -111,7 +131,6 @@ export async function findMarketReplayTarget(
   if (!instrument) return null;
   const sessionsResponse = await api.get(
     `/api/market-data/instruments/${encodeURIComponent(instrument)}/available-sessions/`,
-    { headers: authHeaders(access) },
   );
   if (!sessionsResponse.ok()) {
     throw new Error(`Séances ${sessionsResponse.status()} ${await sessionsResponse.text()}`);

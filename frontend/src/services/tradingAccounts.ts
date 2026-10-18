@@ -1,5 +1,5 @@
 import { getApiBaseUrl } from '../utils/apiConfig';
-import { authService } from './auth';
+import { fetchWithAuth } from './apiClient';
 
 export interface TradingAccount {
   id: number;
@@ -37,51 +37,19 @@ export interface TradingAccount {
 class TradingAccountsService {
   private readonly BASE_URL = getApiBaseUrl();
 
-  private getAuthHeaders() {
-    const token = localStorage.getItem('access_token');
-    return {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    } as Record<string, string>;
-  }
-
-  private async refreshAccessToken(): Promise<boolean> {
-    const access = await authService.refreshAccessToken();
-    return !!access;
-  }
-
-  private async fetchWithAuth(input: string, init: RequestInit = {}, retry = true): Promise<Response> {
-    const headers: Record<string, string> = {
-      ...(init.headers as Record<string, string> || {}),
-      ...this.getAuthHeaders(),
-    };
-    const res = await fetch(input, { ...init, headers });
-    if (res.status === 401 && retry) {
-      const refreshed = await this.refreshAccessToken();
-      if (refreshed) {
-        const headers2: Record<string, string> = {
-          ...(init.headers as Record<string, string> || {}),
-          ...this.getAuthHeaders(),
-        };
-        return fetch(input, { ...init, headers: headers2 });
-      }
-    }
-    return res;
-  }
-
   async list(params?: { include_inactive?: boolean; include_archived?: boolean; }): Promise<TradingAccount[]> {
     const qs = new URLSearchParams();
     if (params?.include_inactive) qs.set('include_inactive', 'true');
     if (params?.include_archived) qs.set('include_archived', 'true');
     const url = `${this.BASE_URL}/api/trades/trading-accounts/${qs.toString() ? `?${qs.toString()}` : ''}`;
-    const res = await this.fetchWithAuth(url);
+    const res = await fetchWithAuth(url);
     if (!res.ok) throw new Error('Erreur lors du chargement des comptes');
     const data = await res.json();
     return Array.isArray(data) ? data : (data?.results ?? []);
   }
 
   async get(id: number): Promise<TradingAccount> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/trading-accounts/${id}/`);
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/trades/trading-accounts/${id}/`);
     if (!res.ok) {
       const error: any = new Error('Erreur lors du chargement du compte');
       error.status = res.status;
@@ -92,14 +60,14 @@ class TradingAccountsService {
   }
 
   async default(): Promise<TradingAccount | null> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/trading-accounts/default/`);
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/trades/trading-accounts/default/`);
     if (res.status === 404) return null;
     if (!res.ok) throw new Error('Erreur lors de la récupération du compte par défaut');
     return res.json();
   }
 
   async setDefault(id: number): Promise<void> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/trading-accounts/${id}/`, {
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/trades/trading-accounts/${id}/`, {
       method: 'PATCH',
       body: JSON.stringify({ is_default: true }),
     });
@@ -107,7 +75,7 @@ class TradingAccountsService {
   }
 
   async create(payload: Partial<TradingAccount>): Promise<TradingAccount> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/trading-accounts/`, {
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/trades/trading-accounts/`, {
       method: 'POST',
       body: JSON.stringify(payload),
     });
@@ -116,7 +84,7 @@ class TradingAccountsService {
   }
 
   async update(id: number, payload: Partial<TradingAccount>): Promise<TradingAccount> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/trading-accounts/${id}/`, {
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/trades/trading-accounts/${id}/`, {
       method: 'PATCH',
       body: JSON.stringify(payload),
     });
@@ -125,7 +93,7 @@ class TradingAccountsService {
   }
 
   async remove(id: number): Promise<void> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/trading-accounts/${id}/`, {
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/trades/trading-accounts/${id}/`, {
       method: 'DELETE',
     });
     if (!res.ok) throw new Error('Erreur lors de la suppression du compte');
@@ -136,13 +104,13 @@ class TradingAccountsService {
     if (params?.start_date) qs.set('start_date', params.start_date);
     if (params?.end_date) qs.set('end_date', params.end_date);
     const url = `${this.BASE_URL}/api/trades/trading-accounts/${id}/daily_metrics/${qs.toString() ? `?${qs.toString()}` : ''}`;
-    const res = await this.fetchWithAuth(url);
+    const res = await fetchWithAuth(url);
     if (!res.ok) throw new Error('Erreur lors du chargement des métriques');
     return res.json();
   }
 
   async archive(id: number): Promise<TradingAccount> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/trading-accounts/${id}/archive/`, {
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/trades/trading-accounts/${id}/archive/`, {
       method: 'POST',
     });
     if (!res.ok) throw new Error('Erreur lors de l\'archivage du compte');
@@ -150,7 +118,7 @@ class TradingAccountsService {
   }
 
   async unarchive(id: number): Promise<TradingAccount> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/trading-accounts/${id}/unarchive/`, {
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/trades/trading-accounts/${id}/unarchive/`, {
       method: 'POST',
     });
     if (!res.ok) throw new Error('Erreur lors de la désarchivage du compte');
@@ -158,7 +126,7 @@ class TradingAccountsService {
   }
 
   async sync(id: number, options?: { full_resync?: boolean }): Promise<TradeSyncResponse> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/trading-accounts/${id}/sync/`, {
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/trades/trading-accounts/${id}/sync/`, {
       method: 'POST',
       body: JSON.stringify(options ?? {}),
     });
@@ -179,7 +147,7 @@ class TradingAccountsService {
   }
 
   async getSyncStatus(id: number): Promise<TradeSyncStatus> {
-    const res = await this.fetchWithAuth(
+    const res = await fetchWithAuth(
       `${this.BASE_URL}/api/trades/trading-accounts/${id}/sync-status/`,
     );
     if (!res.ok) {
@@ -189,7 +157,7 @@ class TradingAccountsService {
   }
 
   async repairTopStepBrokerIds(): Promise<RepairTopStepBrokerIdsResponse> {
-    const res = await this.fetchWithAuth(
+    const res = await fetchWithAuth(
       `${this.BASE_URL}/api/trades/trading-accounts/repair-topstep-broker-ids/`,
       { method: 'POST', body: JSON.stringify({}) },
     );
@@ -210,7 +178,7 @@ class TradingAccountsService {
     if (params.timezone) queryParams.append('timezone', params.timezone);
     const qs = queryParams.toString();
     const url = `${this.BASE_URL}/api/trades/trading-accounts/${accountId}/balance-series${qs ? `?${qs}` : ''}`;
-    const res = await this.fetchWithAuth(url);
+    const res = await fetchWithAuth(url);
     if (!res.ok) {
       throw new Error('Erreur lors du chargement de la série de solde');
     }

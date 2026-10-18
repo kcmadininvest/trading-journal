@@ -1,5 +1,5 @@
 import { getApiBaseUrl } from '../utils/apiConfig';
-import { authService } from './auth';
+import { fetchWithAuth } from './apiClient';
 
 export interface Currency {
   id: number;
@@ -15,38 +15,6 @@ class CurrenciesService {
   private readonly CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
   private pendingRequest: Promise<Currency[]> | null = null;
 
-  private getAuthHeaders() {
-    const token = localStorage.getItem('access_token');
-    return {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    } as Record<string, string>;
-  }
-
-  private async refreshAccessToken(): Promise<boolean> {
-    const access = await authService.refreshAccessToken();
-    return !!access;
-  }
-
-  private async fetchWithAuth(input: string, init: RequestInit = {}, retry = true): Promise<Response> {
-    const headers: Record<string, string> = {
-      ...(init.headers as Record<string, string> || {}),
-      ...this.getAuthHeaders(),
-    };
-    const res = await fetch(input, { ...init, headers });
-    if (res.status === 401 && retry) {
-      const refreshed = await this.refreshAccessToken();
-      if (refreshed) {
-        const headers2: Record<string, string> = {
-          ...(init.headers as Record<string, string> || {}),
-          ...this.getAuthHeaders(),
-        };
-        return fetch(input, { ...init, headers: headers2 });
-      }
-    }
-    return res;
-  }
-
   async list(): Promise<Currency[]> {
     // Return cached data if still valid
     if (this.cachedCurrencies && (Date.now() - this.cacheTimestamp) < this.CACHE_DURATION) {
@@ -60,7 +28,7 @@ class CurrenciesService {
 
     this.pendingRequest = (async () => {
       try {
-        const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/currencies/?page_size=200`);
+        const res = await fetchWithAuth(`${this.BASE_URL}/api/trades/currencies/?page_size=200`);
         if (!res.ok) throw new Error('Erreur lors du chargement des devises');
         const data = await res.json();
         const currencies = Array.isArray(data) ? data : (data?.results ?? []);

@@ -15,9 +15,9 @@ export const getApiBaseUrl = (): string => {
     return apiUrl;
   }
 
-  return import.meta.env.DEV
-    ? 'http://127.0.0.1:8000'
-    : (typeof window !== 'undefined'
-        ? `${window.location.protocol}//${window.location.host}`
-        : '');
+  // DEV : same-origin (proxy Vite /api et /ws) pour cookies HttpOnly
+  if (typeof window !== 'undefined') {
+    return `${window.location.protocol}//${window.location.host}`;
+  }
+  return '';
 };

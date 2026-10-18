@@ -12,11 +12,11 @@ import { useTheme } from './hooks/useTheme';
 import { goalsService, TradingGoal } from './services/goals';
 import ToastViewport from './components/ui/ToastViewport';
 import { FormValidationTooltip } from './components/ui/Tooltip';
+import ConfirmModal from './components/ui/ConfirmModal';
 import { ComplianceRefreshProvider } from './contexts/ComplianceRefreshContext';
 import { ImageLightboxProvider } from './contexts/ImageLightboxContext';
 import { useBootstrap } from './hooks/useBootstrap';
 import { useTradingAccounts } from './hooks/useTradingAccounts';
-
 const CalendarPage = lazy(() => import('./pages/CalendarPage'));
 const UserManagementPage = lazy(() => import('./pages/UserManagementPage'));
 const TradesPage = lazy(() => import('./pages/TradesPage'));
@@ -135,6 +135,7 @@ function App() {
   const [billingLoading, setBillingLoading] = useState(false);
   const [billingError, setBillingError] = useState<string | null>(null);
   const [appSettings, setAppSettings] = useState<AppSettings | null>(null);
+  const [showSessionExpiredModal, setShowSessionExpiredModal] = useState(false);
   useTheme();
   const notifiedGoalsRef = useRef<Set<number>>(new Set());
   const isAuthenticated = !!currentUser || authService.isAuthenticated();
@@ -160,19 +161,42 @@ function App() {
   }, []);
 
   useEffect(() => {
-    const checkAuth = () => {
+    let cancelled = false;
+    const checkAuth = async () => {
       try {
-        if (authService.isAuthenticated()) {
+        const user = await authService.bootstrapSession();
+        if (!cancelled && user) {
+          setCurrentUser(user);
+        } else if (!cancelled && authService.isAuthenticated()) {
           setCurrentUser(authService.getCurrentUser());
         }
       } catch (error) {
         console.error('Erreur lors de la vérification de l\'authentification:', error);
       } finally {
-        setIsLoading(false);
+        if (!cancelled) {
+          setIsLoading(false);
+        }
       }
     };
 
-    checkAuth();
+    void checkAuth();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleSessionExpired = () => {
+      authService.handleSessionExpired();
+      setCurrentUser(null);
+      setAppSettings(null);
+      setBillingStatus(null);
+      setShowSessionExpiredModal(true);
+    };
+    window.addEventListener('auth:session-expired', handleSessionExpired);
+    return () => {
+      window.removeEventListener('auth:session-expired', handleSessionExpired);
+    };
   }, []);
 
   useEffect(() => {
@@ -713,6 +737,17 @@ function App() {
     window.location.hash = '';
   };
 
+  const handleSessionExpiredConfirm = () => {
+    setShowSessionExpiredModal(false);
+    authService.handleSessionExpired();
+    setCurrentUser(null);
+    setAppSettings(null);
+    setBillingStatus(null);
+    setCurrentPage('home');
+    window.location.hash = '';
+    window.dispatchEvent(new CustomEvent('auth:open-login'));
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
@@ -781,6 +816,19 @@ function App() {
       ) : (
         renderPage()
       )}
+
+      <ConfirmModal
+        isOpen={showSessionExpiredModal}
+        onClose={handleSessionExpiredConfirm}
+        onConfirm={handleSessionExpiredConfirm}
+        variant="warning"
+        showCancelButton={false}
+        title={t('auth:sessionExpired.title', { defaultValue: 'Session expirée' })}
+        message={t('auth:sessionExpired.message', {
+          defaultValue: 'Votre session a expiré. Veuillez vous reconnecter pour continuer.',
+        })}
+        confirmButtonText={t('auth:sessionExpired.confirm', { defaultValue: 'Se reconnecter' })}
+      />
 
       {showAccountCreationPrompt && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">

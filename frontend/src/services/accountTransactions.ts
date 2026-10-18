@@ -1,4 +1,5 @@
 import { getApiBaseUrl } from '../utils/apiConfig';
+import { fetchWithAuth } from './apiClient';
 
 export interface AccountTransaction {
   id: number;
@@ -94,24 +95,16 @@ export type AccountTransactionsListParams = {
 class AccountTransactionsService {
   private readonly BASE_URL = getApiBaseUrl();
 
-  private getAuthHeaders() {
-    const token = localStorage.getItem('access_token');
-    return {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    } as Record<string, string>;
-  }
-
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
-    const headers = {
-      ...this.getAuthHeaders(),
-      ...options.headers,
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...(options.headers as Record<string, string> | undefined),
     };
 
-    const response = await fetch(`${this.BASE_URL}/api/trades/${endpoint}`, {
+    const response = await fetchWithAuth(`${this.BASE_URL}/api/trades/${endpoint}`, {
       ...options,
       headers,
     });

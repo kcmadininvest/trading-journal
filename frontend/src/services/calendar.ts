@@ -1,6 +1,6 @@
 import { getApiBaseUrl } from '../utils/apiConfig';
-import { authService } from './auth';
 import type { PnlDisplayMode } from '../utils/pnlDisplay';
+import { fetchWithAuth } from './apiClient';
 
 export interface DailyCalendarData {
   date: string;
@@ -96,38 +96,6 @@ export interface MarketHolidaysBundleResponse {
 class CalendarService {
   private readonly BASE_URL = getApiBaseUrl();
 
-  private getAuthHeaders() {
-    const token = localStorage.getItem('access_token');
-    return {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    } as Record<string, string>;
-  }
-
-  private async refreshAccessToken(): Promise<boolean> {
-    const access = await authService.refreshAccessToken();
-    return !!access;
-  }
-
-  private async fetchWithAuth(input: string, init: RequestInit = {}, retry = true): Promise<Response> {
-    const headers: Record<string, string> = {
-      ...(init.headers as Record<string, string> || {}),
-      ...this.getAuthHeaders(),
-    };
-    const res = await fetch(input, { ...init, headers });
-    if (res.status === 401 && retry) {
-      const refreshed = await this.refreshAccessToken();
-      if (refreshed) {
-        const headers2: Record<string, string> = {
-          ...(init.headers as Record<string, string> || {}),
-          ...this.getAuthHeaders(),
-        };
-        return fetch(input, { ...init, headers: headers2 });
-      }
-    }
-    return res;
-  }
-
   /**
    * Récupère les données pour un mois spécifique (vue quotidienne)
    */
@@ -147,7 +115,7 @@ class CalendarService {
     if (pnlDisplay) {
       params.append('pnl_display', pnlDisplay);
     }
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/imported/calendar_data/?${params}`);
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/trades/imported/calendar_data/?${params}`);
     if (!res.ok) throw new Error('Erreur lors du chargement des données mensuelles');
     return res.json();
   }
@@ -169,7 +137,7 @@ class CalendarService {
     if (pnlDisplay) {
       params.append('pnl_display', pnlDisplay);
     }
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/imported/calendar_monthly_data/?${params}`);
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/trades/imported/calendar_monthly_data/?${params}`);
     if (!res.ok) throw new Error('Erreur lors du chargement des données annuelles');
     return res.json();
   }
@@ -191,7 +159,7 @@ class CalendarService {
     if (pnlDisplay) {
       params.append('pnl_display', pnlDisplay);
     }
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/imported/calendar_weekly_data/?${params}`);
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/trades/imported/calendar_weekly_data/?${params}`);
     if (!res.ok) throw new Error('Erreur lors du chargement des données hebdomadaires');
     return res.json();
   }

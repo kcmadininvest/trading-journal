@@ -1,5 +1,6 @@
 import { getApiBaseUrl } from '../utils/apiConfig';
 import type { PnlDisplayMode } from '../utils/pnlDisplay';
+import { fetchWithAuth } from './apiClient';
 
 export interface DailyAggregate {
   date: string;
@@ -95,21 +96,6 @@ class DashboardService {
     this.baseUrl = getApiBaseUrl();
   }
 
-  private async fetchWithAuth(url: string): Promise<Response> {
-    const token = localStorage.getItem('access_token');
-    const response = await fetch(url, {
-      headers: {
-        'Authorization': token ? `Bearer ${token}` : '',
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    return response;
-  }
 
   async getSummary(filters: DashboardFilters = {}): Promise<DashboardSummary> {
     const params = new URLSearchParams();
@@ -131,7 +117,7 @@ class DashboardService {
     }
 
     const url = `${this.baseUrl}/api/trades/dashboard-summary/?${params.toString()}`;
-    const response = await this.fetchWithAuth(url);
+    const response = await fetchWithAuth(url);
     return response.json();
   }
 
@@ -157,7 +143,7 @@ class DashboardService {
     const url = `${this.baseUrl}/api/trades/dashboard-activity-summary/?${params.toString()}`;
 
     try {
-      const response = await this.fetchWithAuth(url);
+      const response = await fetchWithAuth(url);
       return response.json();
     } catch {
       // Fallback de compatibilité : si l'endpoint léger n'est pas disponible,

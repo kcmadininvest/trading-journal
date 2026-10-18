@@ -1,5 +1,5 @@
 import { getApiBaseUrl } from '../utils/apiConfig';
-import { authService } from './auth';
+import { fetchWithAuth } from './apiClient';
 
 export type BillingAccessState = 'admin_bypass' | 'trialing' | 'active' | 'inactive';
 
@@ -16,44 +16,14 @@ export interface SubscriptionStatus {
 class BillingService {
   private readonly BASE_URL = getApiBaseUrl();
 
-  private getAuthHeaders() {
-    const token = localStorage.getItem('access_token');
-    return {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    };
-  }
-
-  private async refreshAccessToken(): Promise<boolean> {
-    const access = await authService.refreshAccessToken();
-    return !!access;
-  }
-
-  private async fetchWithAuth(url: string, init: RequestInit = {}, retry = true): Promise<Response> {
-    const res = await fetch(url, {
-      ...init,
-      headers: {
-        ...(init.headers || {}),
-        ...this.getAuthHeaders(),
-      },
-    });
-    if (res.status === 401 && retry) {
-      const refreshed = await this.refreshAccessToken();
-      if (refreshed) {
-        return this.fetchWithAuth(url, init, false);
-      }
-    }
-    return res;
-  }
-
   async getSubscriptionStatus(): Promise<SubscriptionStatus> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/billing/subscription/`, { method: 'GET' });
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/billing/subscription/`, { method: 'GET' });
     if (!res.ok) throw new Error('Unable to fetch subscription status');
     return res.json();
   }
 
   async createCheckoutSession(): Promise<{ session_id: string; checkout_url: string }> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/billing/checkout-session/`, {
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/billing/checkout-session/`, {
       method: 'POST',
       body: JSON.stringify({}),
     });
@@ -65,7 +35,7 @@ class BillingService {
   }
 
   async createPortalSession(): Promise<{ portal_url: string }> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/billing/portal-session/`, {
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/billing/portal-session/`, {
       method: 'POST',
       body: JSON.stringify({}),
     });

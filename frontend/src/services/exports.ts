@@ -1,5 +1,6 @@
 import { getApiBaseUrl } from '../utils/apiConfig';
 import axios from 'axios';
+import { bootstrapCsrf, getCookie } from './apiClient';
 
 const API_BASE_URL = getApiBaseUrl();
 
@@ -37,13 +38,14 @@ export interface ExportRequest {
 }
 
 class ExportService {
-  private getAuthHeaders() {
-    const token = localStorage.getItem('access_token');
+  private async requestHeaders(): Promise<Record<string, string>> {
+    await bootstrapCsrf(API_BASE_URL);
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     };
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
+    const csrf = getCookie('csrftoken');
+    if (csrf) {
+      headers['X-CSRFToken'] = csrf;
     }
     return headers;
   }
@@ -51,7 +53,8 @@ class ExportService {
   async getTemplates(format?: 'pdf' | 'excel'): Promise<ExportTemplate[]> {
     const params = format ? { template_format: format } : {};
     const response = await axios.get(`${API_BASE_URL}/api/trades/export-templates/`, {
-      headers: this.getAuthHeaders(),
+      withCredentials: true,
+      headers: await this.requestHeaders(),
       params,
     });
     return response.data.results || response.data;
@@ -59,33 +62,38 @@ class ExportService {
 
   async createTemplate(data: Partial<ExportTemplate>): Promise<ExportTemplate> {
     const response = await axios.post(`${API_BASE_URL}/api/trades/export-templates/`, data, {
-      headers: this.getAuthHeaders(),
+      withCredentials: true,
+      headers: await this.requestHeaders(),
     });
     return response.data;
   }
 
   async updateTemplate(id: number, data: Partial<ExportTemplate>): Promise<ExportTemplate> {
     const response = await axios.put(`${API_BASE_URL}/api/trades/export-templates/${id}/`, data, {
-      headers: this.getAuthHeaders(),
+      withCredentials: true,
+      headers: await this.requestHeaders(),
     });
     return response.data;
   }
 
   async deleteTemplate(id: number): Promise<void> {
     await axios.delete(`${API_BASE_URL}/api/trades/export-templates/${id}/`, {
-      headers: this.getAuthHeaders(),
+      withCredentials: true,
+      headers: await this.requestHeaders(),
     });
   }
 
   async setDefaultTemplate(id: number): Promise<void> {
     await axios.post(`${API_BASE_URL}/api/trades/export-templates/${id}/set-default/`, {}, {
-      headers: this.getAuthHeaders(),
+      withCredentials: true,
+      headers: await this.requestHeaders(),
     });
   }
 
   async getDefaultTemplates(): Promise<{ pdf: ExportTemplate | null; excel: ExportTemplate | null }> {
     const response = await axios.get(`${API_BASE_URL}/api/trades/export-templates/defaults/`, {
-      headers: this.getAuthHeaders(),
+      withCredentials: true,
+      headers: await this.requestHeaders(),
     });
     return response.data;
   }
@@ -95,7 +103,8 @@ class ExportService {
       `${API_BASE_URL}/api/trades/portfolio-export/generate/`,
       request,
       {
-        headers: this.getAuthHeaders(),
+        withCredentials: true,
+        headers: await this.requestHeaders(),
         responseType: 'blob',
       }
     );

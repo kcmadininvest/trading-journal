@@ -1,4 +1,5 @@
 import { getApiBaseUrl } from '../utils/apiConfig';
+import { fetchWithAuth } from './apiClient';
 
 export interface SessionMarketBar {
   t: string;
@@ -93,25 +94,6 @@ export interface SessionInsightItem {
 class SessionReplayService {
   private readonly BASE_URL = getApiBaseUrl();
 
-  private getAuthHeaders(): Record<string, string> {
-    const token = localStorage.getItem('access_token');
-    return {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    };
-  }
-
-  private async fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
-    const res = await fetch(url, {
-      ...options,
-      headers: { ...this.getAuthHeaders(), ...(options.headers || {}) },
-    });
-    if (res.status === 401) {
-      throw new ReplayApiError('Non authentifié', 401);
-    }
-    return res;
-  }
-
   private async parseErrorResponse(res: Response, fallback: string): Promise<string> {
     const err = await res.json().catch(() => ({}));
     const detail = (err as { detail?: string }).detail;
@@ -134,7 +116,7 @@ class SessionReplayService {
     options: ReplayRequestOptions = {},
   ): Promise<string[]> {
     const qs = new URLSearchParams({ trading_account: String(tradingAccountId) });
-    const res = await this.fetchWithAuth(
+    const res = await fetchWithAuth(
       `${this.BASE_URL}/api/trades/replay/sessions/active-dates/?${qs}`,
       { signal: options.signal },
     );
@@ -156,14 +138,14 @@ class SessionReplayService {
     if (params?.date_from) qs.set('date_from', params.date_from);
     if (params?.date_to) qs.set('date_to', params.date_to);
     const url = `${this.BASE_URL}/api/trades/replay/sessions/${qs.toString() ? `?${qs}` : ''}`;
-    const res = await this.fetchWithAuth(url, { signal: options.signal });
+    const res = await fetchWithAuth(url, { signal: options.signal });
     this.ensureOk(res, 'Impossible de charger les sessions');
     const data = await res.json();
     return Array.isArray(data) ? data : data.results ?? [];
   }
 
   async get(id: number, options: ReplayRequestOptions = {}): Promise<TradingSessionReplay> {
-    const res = await this.fetchWithAuth(
+    const res = await fetchWithAuth(
       `${this.BASE_URL}/api/trades/replay/sessions/${id}/`,
       { signal: options.signal },
     );
@@ -176,7 +158,7 @@ class SessionReplayService {
     sessionDate: string,
     options: ReplayRequestOptions = {},
   ): Promise<TradingSessionReplay> {
-    const res = await this.fetchWithAuth(
+    const res = await fetchWithAuth(
       `${this.BASE_URL}/api/trades/replay/sessions/build/`,
       {
         method: 'POST',
@@ -201,7 +183,7 @@ class SessionReplayService {
     sessionId: number,
     options: ReplayRequestOptions = {},
   ): Promise<SessionEventItem[]> {
-    const res = await this.fetchWithAuth(
+    const res = await fetchWithAuth(
       `${this.BASE_URL}/api/trades/replay/sessions/${sessionId}/timeline/`,
       { signal: options.signal },
     );
@@ -213,7 +195,7 @@ class SessionReplayService {
     sessionId: number,
     options: ReplayRequestOptions = {},
   ): Promise<TradingSessionReplay> {
-    const res = await this.fetchWithAuth(
+    const res = await fetchWithAuth(
       `${this.BASE_URL}/api/trades/replay/sessions/${sessionId}/refresh-market-data/`,
       {
         method: 'POST',
@@ -232,7 +214,7 @@ class SessionReplayService {
     sessionId: number,
     options: ReplayRequestOptions = {},
   ): Promise<SessionInsightItem[]> {
-    const res = await this.fetchWithAuth(
+    const res = await fetchWithAuth(
       `${this.BASE_URL}/api/trades/replay/sessions/${sessionId}/insights/`,
       { signal: options.signal },
     );
@@ -249,7 +231,7 @@ class SessionReplayService {
     if (content?.trim()) {
       payload.content = content.trim();
     }
-    const res = await this.fetchWithAuth(
+    const res = await fetchWithAuth(
       `${this.BASE_URL}/api/trades/replay/sessions/${sessionId}/apply-journal/`,
       {
         method: 'POST',

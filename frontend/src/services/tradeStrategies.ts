@@ -1,8 +1,8 @@
 import { getApiBaseUrl } from '../utils/apiConfig';
-import { authService } from './auth';
 import type { PnlDisplayMode } from '../utils/pnlDisplay';
 import type { TradeDayBasis } from '../utils/tradeDayFilters';
 import { STRATEGY_DRILL_DOWN_PAGE_SIZE } from '../utils/strategyDrillDown';
+import { fetchWithAuth } from './apiClient';
 
 export interface TradeStrategy {
   id: number;
@@ -128,37 +128,6 @@ export interface BulkStrategyData {
 class TradeStrategiesService {
   private readonly BASE_URL = getApiBaseUrl();
 
-  private getAuthHeaders() {
-    const token = localStorage.getItem('access_token');
-    return {
-      'Authorization': `Bearer ${token}`,
-    } as Record<string, string>;
-  }
-
-  private async refreshAccessToken(): Promise<boolean> {
-    const access = await authService.refreshAccessToken();
-    return !!access;
-  }
-
-  private async fetchWithAuth(input: string, init: RequestInit = {}, retry = true): Promise<Response> {
-    const headers: Record<string, string> = {
-      ...(init.headers as Record<string, string> || {}),
-      ...this.getAuthHeaders(),
-    };
-    const res = await fetch(input, { ...init, headers });
-    if (res.status === 401 && retry) {
-      const refreshed = await this.refreshAccessToken();
-      if (refreshed) {
-        const headers2: Record<string, string> = {
-          ...(init.headers as Record<string, string> || {}),
-          ...this.getAuthHeaders(),
-        };
-        return fetch(input, { ...init, headers: headers2 });
-      }
-    }
-    return res;
-  }
-
   /**
    * Liste les stratégies de trade avec filtres (drill-down page Stratégies).
    */
@@ -179,7 +148,7 @@ class TradeStrategiesService {
       ordering,
       ...params,
     });
-    const res = await this.fetchWithAuth(
+    const res = await fetchWithAuth(
       `${this.BASE_URL}/api/trades/trade-strategies/?${search}`
     );
     if (!res.ok) {
@@ -213,7 +182,7 @@ class TradeStrategiesService {
     if (dayBasis === 'entered_at') {
       params.append('day_basis', 'entered_at');
     }
-    const res = await this.fetchWithAuth(
+    const res = await fetchWithAuth(
       `${this.BASE_URL}/api/trades/trade-strategies/by_date/?${params}`
     );
     if (!res.ok) {
@@ -231,7 +200,7 @@ class TradeStrategiesService {
     if (tradingAccountId != null) {
       params.append('trading_account', String(tradingAccountId));
     }
-    const res = await this.fetchWithAuth(
+    const res = await fetchWithAuth(
       `${this.BASE_URL}/api/trades/trade-strategies/by_trade/?${params}`
     );
     if (res.status === 404) return null;
@@ -246,7 +215,7 @@ class TradeStrategiesService {
    * Récupère une stratégie par son ID
    */
   async retrieve(id: number): Promise<TradeStrategy> {
-    const res = await this.fetchWithAuth(
+    const res = await fetchWithAuth(
       `${this.BASE_URL}/api/trades/trade-strategies/${id}/`
     );
     if (!res.ok) {
@@ -268,7 +237,7 @@ class TradeStrategiesService {
     
     if (existing) {
       // Mise à jour
-      const res = await this.fetchWithAuth(
+      const res = await fetchWithAuth(
         `${this.BASE_URL}/api/trades/trade-strategies/${existing.id}/`,
         {
           method: 'PATCH',
@@ -283,7 +252,7 @@ class TradeStrategiesService {
       return res.json();
     } else {
       // Création
-      const res = await this.fetchWithAuth(
+      const res = await fetchWithAuth(
         `${this.BASE_URL}/api/trades/trade-strategies/`,
         {
           method: 'POST',
@@ -303,7 +272,7 @@ class TradeStrategiesService {
    * Crée ou met à jour plusieurs stratégies en une fois
    */
   async bulkCreateOrUpdate(strategies: BulkStrategyData[]): Promise<TradeStrategy[]> {
-    const res = await this.fetchWithAuth(
+    const res = await fetchWithAuth(
       `${this.BASE_URL}/api/trades/trade-strategies/bulk_create/`,
       {
         method: 'POST',
@@ -338,7 +307,7 @@ class TradeStrategiesService {
       year: String(year),
       month: String(month),
     });
-    const res = await this.fetchWithAuth(
+    const res = await fetchWithAuth(
       `${this.BASE_URL}/api/trades/trade-strategies/strategy_data/?${params}`
     );
     if (!res.ok) {
@@ -446,7 +415,7 @@ class TradeStrategiesService {
       queryParams.append('pnl_display', params.pnlDisplay);
     }
 
-    const res = await this.fetchWithAuth(
+    const res = await fetchWithAuth(
       `${this.BASE_URL}/api/trades/trade-strategies/statistics/?${queryParams}`
     );
     if (!res.ok) {
@@ -494,7 +463,7 @@ class TradeStrategiesService {
         queryParams.append('pnl_display', filters.pnlDisplay);
       }
     }
-    const res = await this.fetchWithAuth(
+    const res = await fetchWithAuth(
       `${this.BASE_URL}/api/trades/trade-strategies/strategy_compliance_stats/?${queryParams}`
     );
     if (!res.ok) {

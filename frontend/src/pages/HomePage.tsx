@@ -145,6 +145,17 @@ const HomePage: React.FC = () => {
     { value: 'de', label: 'Deutsch', flag: '🇩🇪' },
   ];
 
+  useEffect(() => {
+    const openLogin = () => {
+      setAuthMode('login');
+      setShowAuthModal(true);
+    };
+    window.addEventListener('auth:open-login', openLogin);
+    return () => {
+      window.removeEventListener('auth:open-login', openLogin);
+    };
+  }, []);
+
   const handleAuthSuccess = () => {
     setShowAuthModal(false);
     window.location.hash = 'dashboard';

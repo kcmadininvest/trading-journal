@@ -1,14 +1,20 @@
 import axios from 'axios';
 import { getApiBaseUrl } from '../utils/apiConfig';
+import { bootstrapCsrf, getCookie } from './apiClient';
 
 const API_BASE_URL = getApiBaseUrl();
+axios.defaults.withCredentials = true;
 
-const getAuthHeaders = () => {
-  const token = localStorage.getItem('access_token');
-  return {
-    Authorization: token ? `Bearer ${token}` : '',
-  };
-};
+async function csrfHeaders(): Promise<Record<string, string>> {
+  await bootstrapCsrf(API_BASE_URL);
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  const csrf = getCookie('csrftoken');
+  if (csrf) {
+    headers['X-CSRFToken'] = csrf;
+  }
+  return headers;
+}
+
 
 export interface PositionSizeRequest {
   account_balance: number;
@@ -107,42 +113,48 @@ export interface ForexLotSizeResponse {
 const calculatorApi = {
   calculatePositionSize: async (data: PositionSizeRequest): Promise<PositionSizeResponse> => {
     const response = await axios.post(`${API_BASE_URL}/api/trades/calculator/position-size/`, data, {
-      headers: getAuthHeaders(),
+      withCredentials: true,
+      headers: await csrfHeaders(),
     });
     return response.data;
   },
 
   calculateFixedRisk: async (data: FixedRiskRequest): Promise<PositionSizeResponse> => {
     const response = await axios.post(`${API_BASE_URL}/api/trades/calculator/fixed-risk/`, data, {
-      headers: getAuthHeaders(),
+      withCredentials: true,
+      headers: await csrfHeaders(),
     });
     return response.data;
   },
 
   calculateRiskReward: async (data: RiskRewardRequest): Promise<RiskRewardResponse> => {
     const response = await axios.post(`${API_BASE_URL}/api/trades/calculator/risk-reward/`, data, {
-      headers: getAuthHeaders(),
+      withCredentials: true,
+      headers: await csrfHeaders(),
     });
     return response.data;
   },
 
   calculateBreakeven: async (data: BreakevenRequest): Promise<BreakevenResponse> => {
     const response = await axios.post(`${API_BASE_URL}/api/trades/calculator/breakeven/`, data, {
-      headers: getAuthHeaders(),
+      withCredentials: true,
+      headers: await csrfHeaders(),
     });
     return response.data;
   },
 
   calculateMargin: async (data: MarginRequest): Promise<MarginResponse> => {
     const response = await axios.post(`${API_BASE_URL}/api/trades/calculator/margin/`, data, {
-      headers: getAuthHeaders(),
+      withCredentials: true,
+      headers: await csrfHeaders(),
     });
     return response.data;
   },
 
   calculateForexLotSize: async (data: ForexLotSizeRequest): Promise<ForexLotSizeResponse> => {
     const response = await axios.post(`${API_BASE_URL}/api/trades/calculator/forex-lot-size/`, data, {
-      headers: getAuthHeaders(),
+      withCredentials: true,
+      headers: await csrfHeaders(),
     });
     return response.data;
   },

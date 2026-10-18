@@ -1,5 +1,5 @@
 import { getApiBaseUrl } from '../utils/apiConfig';
-import { authService } from './auth';
+import { fetchWithAuth } from './apiClient';
 
 export interface BacktestVersion {
   id: number;
@@ -171,35 +171,6 @@ export interface AnalysisFilters {
 class BacktestJournalService {
   private readonly BASE_URL = getApiBaseUrl();
 
-  private getAuthHeaders() {
-    const token = localStorage.getItem('access_token');
-    return { Authorization: `Bearer ${token}` } as Record<string, string>;
-  }
-
-  private async refreshAccessToken(): Promise<boolean> {
-    const access = await authService.refreshAccessToken();
-    return !!access;
-  }
-
-  private async fetchWithAuth(
-    input: string,
-    init: RequestInit = {},
-    retry = true
-  ): Promise<Response> {
-    const headers: Record<string, string> = {
-      ...(init.headers as Record<string, string> || {}),
-      ...this.getAuthHeaders(),
-    };
-    const res = await fetch(input, { ...init, headers });
-    if (res.status === 401 && retry) {
-      const refreshed = await this.refreshAccessToken();
-      if (refreshed) {
-        return this.fetchWithAuth(input, init, false);
-      }
-    }
-    return res;
-  }
-
   private async parse<T>(res: Response): Promise<T> {
     const body = await res.json().catch(() => ({}));
     if (!res.ok) {
@@ -224,20 +195,20 @@ class BacktestJournalService {
   }
 
   async listStrategies(): Promise<BacktestStrategy[]> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/backtest-journal/strategies/`);
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/backtest-journal/strategies/`);
     const body = await this.parse<BacktestStrategy[] | { results: BacktestStrategy[] }>(res);
     return Array.isArray(body) ? body : body.results || [];
   }
 
   async getStrategy(id: number): Promise<BacktestStrategy> {
-    const res = await this.fetchWithAuth(
+    const res = await fetchWithAuth(
       `${this.BASE_URL}/api/backtest-journal/strategies/${id}/`
     );
     return this.parse(res);
   }
 
   async createStrategy(payload: Partial<BacktestStrategy>): Promise<BacktestStrategy> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/backtest-journal/strategies/`, {
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/backtest-journal/strategies/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -246,7 +217,7 @@ class BacktestJournalService {
   }
 
   async updateStrategy(id: number, payload: Partial<BacktestStrategy>): Promise<BacktestStrategy> {
-    const res = await this.fetchWithAuth(
+    const res = await fetchWithAuth(
       `${this.BASE_URL}/api/backtest-journal/strategies/${id}/`,
       {
         method: 'PATCH',
@@ -258,7 +229,7 @@ class BacktestJournalService {
   }
 
   async deleteStrategy(id: number): Promise<void> {
-    const res = await this.fetchWithAuth(
+    const res = await fetchWithAuth(
       `${this.BASE_URL}/api/backtest-journal/strategies/${id}/`,
       { method: 'DELETE' }
     );
@@ -268,7 +239,7 @@ class BacktestJournalService {
   }
 
   async updateVersion(id: number, payload: Partial<BacktestVersion>): Promise<BacktestVersion> {
-    const res = await this.fetchWithAuth(
+    const res = await fetchWithAuth(
       `${this.BASE_URL}/api/backtest-journal/versions/${id}/`,
       {
         method: 'PATCH',
@@ -280,7 +251,7 @@ class BacktestJournalService {
   }
 
   async duplicateVersion(id: number): Promise<BacktestVersion> {
-    const res = await this.fetchWithAuth(
+    const res = await fetchWithAuth(
       `${this.BASE_URL}/api/backtest-journal/versions/${id}/duplicate/`,
       { method: 'POST' }
     );
@@ -289,7 +260,7 @@ class BacktestJournalService {
 
   async listCampaigns(strategyId?: number): Promise<BacktestCampaign[]> {
     const query = this.toQuery({ strategy: strategyId });
-    const res = await this.fetchWithAuth(
+    const res = await fetchWithAuth(
       `${this.BASE_URL}/api/backtest-journal/campaigns/${query ? `?${query}` : ''}`
     );
     const body = await this.parse<BacktestCampaign[] | { results: BacktestCampaign[] }>(res);
@@ -297,14 +268,14 @@ class BacktestJournalService {
   }
 
   async getCampaign(id: number): Promise<BacktestCampaign> {
-    const res = await this.fetchWithAuth(
+    const res = await fetchWithAuth(
       `${this.BASE_URL}/api/backtest-journal/campaigns/${id}/`
     );
     return this.parse(res);
   }
 
   async createCampaign(payload: Partial<BacktestCampaign>): Promise<BacktestCampaign> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/backtest-journal/campaigns/`, {
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/backtest-journal/campaigns/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -313,7 +284,7 @@ class BacktestJournalService {
   }
 
   async updateCampaign(id: number, payload: Partial<BacktestCampaign>): Promise<BacktestCampaign> {
-    const res = await this.fetchWithAuth(
+    const res = await fetchWithAuth(
       `${this.BASE_URL}/api/backtest-journal/campaigns/${id}/`,
       {
         method: 'PATCH',
@@ -325,7 +296,7 @@ class BacktestJournalService {
   }
 
   async deleteCampaign(id: number): Promise<void> {
-    const res = await this.fetchWithAuth(
+    const res = await fetchWithAuth(
       `${this.BASE_URL}/api/backtest-journal/campaigns/${id}/`,
       { method: 'DELETE' }
     );
@@ -335,7 +306,7 @@ class BacktestJournalService {
   }
 
   async listObservations(campaignId: number): Promise<BacktestObservation[]> {
-    const res = await this.fetchWithAuth(
+    const res = await fetchWithAuth(
       `${this.BASE_URL}/api/backtest-journal/campaigns/${campaignId}/observations/`
     );
     return this.parse(res);
@@ -352,7 +323,7 @@ class BacktestJournalService {
       }
     >
   ): Promise<{ items: BacktestObservation[] }> {
-    const res = await this.fetchWithAuth(
+    const res = await fetchWithAuth(
       `${this.BASE_URL}/api/backtest-journal/campaigns/${campaignId}/observations/bulk/`,
       {
         method: 'POST',
@@ -364,7 +335,7 @@ class BacktestJournalService {
   }
 
   async deleteObservation(id: number): Promise<void> {
-    const res = await this.fetchWithAuth(
+    const res = await fetchWithAuth(
       `${this.BASE_URL}/api/backtest-journal/observations/${id}/`,
       { method: 'DELETE' }
     );
@@ -374,7 +345,7 @@ class BacktestJournalService {
   }
 
   async duplicateObservation(id: number): Promise<BacktestObservation> {
-    const res = await this.fetchWithAuth(
+    const res = await fetchWithAuth(
       `${this.BASE_URL}/api/backtest-journal/observations/${id}/duplicate/`,
       { method: 'POST' }
     );
@@ -389,7 +360,7 @@ class BacktestJournalService {
     const form = new FormData();
     form.append('file', file);
     form.append('kind', kind);
-    const res = await this.fetchWithAuth(
+    const res = await fetchWithAuth(
       `${this.BASE_URL}/api/backtest-journal/observations/${observationId}/screenshots/`,
       { method: 'POST', body: form }
     );
@@ -397,7 +368,7 @@ class BacktestJournalService {
   }
 
   async deleteScreenshot(observationId: number, kind: 'before' | 'after'): Promise<void> {
-    const res = await this.fetchWithAuth(
+    const res = await fetchWithAuth(
       `${this.BASE_URL}/api/backtest-journal/observations/${observationId}/screenshots/${kind}/`,
       { method: 'DELETE' }
     );
@@ -407,7 +378,7 @@ class BacktestJournalService {
   }
 
   async getStatistics(campaignId: number): Promise<BacktestMetrics> {
-    const res = await this.fetchWithAuth(
+    const res = await fetchWithAuth(
       `${this.BASE_URL}/api/backtest-journal/campaigns/${campaignId}/statistics/`
     );
     return this.parse(res);
@@ -416,7 +387,7 @@ class BacktestJournalService {
   async getEquity(
     campaignId: number
   ): Promise<{ taken: EquityPoint[]; refused_theoretical: EquityPoint[] }> {
-    const res = await this.fetchWithAuth(
+    const res = await fetchWithAuth(
       `${this.BASE_URL}/api/backtest-journal/campaigns/${campaignId}/equity/`
     );
     return this.parse(res);
@@ -434,7 +405,7 @@ class BacktestJournalService {
       scope: filters.scope,
     };
     const search = new URLSearchParams(this.toQuery(params));
-    const res = await this.fetchWithAuth(
+    const res = await fetchWithAuth(
       `${this.BASE_URL}/api/backtest-journal/campaigns/${campaignId}/analysis/?${search}`
     );
     return this.parse(res);
@@ -448,7 +419,7 @@ class BacktestJournalService {
       selection: filters.selection ? '1' : undefined,
     };
     const search = new URLSearchParams(this.toQuery(params));
-    const res = await this.fetchWithAuth(
+    const res = await fetchWithAuth(
       `${this.BASE_URL}/api/backtest-journal/campaigns/${campaignId}/export/?${search}`
     );
     if (!res.ok) {

@@ -6,18 +6,14 @@ const POLL_INTERVAL_MS = 2500;
 const WS_RECONNECT_BASE_MS = 1000;
 const WS_RECONNECT_MAX_MS = 30000;
 
-/** Sous-protocole WS — aligne backend `WS_ACCESS_TOKEN_SUBPROTOCOL_PREFIX`. */
-const WS_ACCESS_TOKEN_SUBPROTOCOL_PREFIX = 'access_token.';
-
-function buildWebSocketConnection(): { url: string; protocols: string[] } | null {
-  const token = authService.getAccessToken();
-  if (!token || !authService.isAuthenticated()) {
+function buildWebSocketConnection(): { url: string; protocols?: string[] } | null {
+  // Auth via cookie HttpOnly tj_access (envoyé automatiquement sur same-origin).
+  if (!authService.isAuthenticated()) {
     return null;
   }
   const base = marketQuotesService.getWebSocketBaseUrl();
   return {
     url: `${base}/ws/market-quotes/`,
-    protocols: [`${WS_ACCESS_TOKEN_SUBPROTOCOL_PREFIX}${token}`],
   };
 }
 
@@ -136,7 +132,9 @@ export function useMarketQuotes(enabled = true) {
       }
 
       try {
-        const ws = new WebSocket(connection.url, connection.protocols);
+        const ws = connection.protocols?.length
+          ? new WebSocket(connection.url, connection.protocols)
+          : new WebSocket(connection.url);
         wsRef.current = ws;
 
         ws.onopen = () => {

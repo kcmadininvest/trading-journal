@@ -1,4 +1,5 @@
 import { getApiBaseUrl } from '../utils/apiConfig';
+import { fetchWithAuth } from './apiClient';
 
 export interface IntegrationStatus {
   provider: string;
@@ -31,24 +32,8 @@ export interface IntegrationTestResult {
 class IntegrationsService {
   private readonly BASE_URL = getApiBaseUrl();
 
-  private getAuthHeaders(): Record<string, string> {
-    const token = localStorage.getItem('access_token');
-    return {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    };
-  }
-
-  private async fetchWithAuth(input: string, init: RequestInit = {}): Promise<Response> {
-    const headers: Record<string, string> = {
-      ...(init.headers as Record<string, string>),
-      ...this.getAuthHeaders(),
-    };
-    return fetch(input, { ...init, headers });
-  }
-
   async listIntegrations(): Promise<IntegrationListResponse> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/accounts/integrations/`);
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/accounts/integrations/`);
     if (!res.ok) {
       throw new Error('Erreur lors du chargement des intégrations API.');
     }
@@ -56,7 +41,7 @@ class IntegrationsService {
   }
 
   async getIntegration(provider: string): Promise<IntegrationStatus> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/accounts/integrations/${provider}/`);
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/accounts/integrations/${provider}/`);
     if (!res.ok) {
       throw new Error('Erreur lors du chargement de l\'intégration.');
     }
@@ -64,7 +49,7 @@ class IntegrationsService {
   }
 
   async saveIntegration(provider: string, data: IntegrationInput): Promise<IntegrationStatus> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/accounts/integrations/${provider}/`, {
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/accounts/integrations/${provider}/`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
@@ -84,7 +69,7 @@ class IntegrationsService {
   }
 
   async deleteIntegration(provider: string): Promise<void> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/accounts/integrations/${provider}/`, {
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/accounts/integrations/${provider}/`, {
       method: 'DELETE',
     });
     if (!res.ok) {
@@ -94,7 +79,7 @@ class IntegrationsService {
   }
 
   async testConnection(provider: string, data?: IntegrationInput): Promise<IntegrationTestResult> {
-    const res = await this.fetchWithAuth(
+    const res = await fetchWithAuth(
       `${this.BASE_URL}/api/accounts/integrations/${provider}/test-connection/`,
       {
         method: 'POST',

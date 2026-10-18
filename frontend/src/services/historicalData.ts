@@ -1,5 +1,5 @@
 import { getApiBaseUrl } from '../utils/apiConfig';
-import { authService } from './auth';
+import { fetchWithAuth } from './apiClient';
 
 export interface MarketInstrument {
   instrument: string;
@@ -149,41 +149,9 @@ const responseFilename = (header: string | null): string | null => {
 class HistoricalDataService {
   private readonly BASE_URL = getApiBaseUrl();
 
-  private getAuthHeaders(): Record<string, string> {
-    const token = localStorage.getItem('access_token');
-    return {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    };
-  }
-
-  private async refreshAccessToken(): Promise<boolean> {
-    const access = await authService.refreshAccessToken();
-    return !!access;
-  }
-
-  private async fetchWithAuth(input: string, init: RequestInit = {}, retry = true): Promise<Response> {
-    const headers: Record<string, string> = {
-      ...((init.headers as Record<string, string>) || {}),
-      ...this.getAuthHeaders(),
-    };
-    const res = await fetch(input, { ...init, headers });
-    if (res.status === 401 && retry) {
-      const refreshed = await this.refreshAccessToken();
-      if (refreshed) {
-        const headers2: Record<string, string> = {
-          ...((init.headers as Record<string, string>) || {}),
-          ...this.getAuthHeaders(),
-        };
-        return fetch(input, { ...init, headers: headers2 });
-      }
-    }
-    return res;
-  }
-
   async listInstruments(q?: string): Promise<MarketInstrument[]> {
     const params = q ? `?q=${encodeURIComponent(q)}` : '';
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/market-data/instruments/${params}`);
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/market-data/instruments/${params}`);
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
       throw new Error(body.detail || 'Erreur chargement instruments');
@@ -195,7 +163,7 @@ class HistoricalDataService {
     const qs = new URLSearchParams({ instrument });
     if (start) qs.set('start', start);
     if (end) qs.set('end', end);
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/market-data/contracts/?${qs}`);
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/market-data/contracts/?${qs}`);
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
       throw new Error(body.detail || 'Erreur chargement contrats');
@@ -205,7 +173,7 @@ class HistoricalDataService {
 
   async getCoverage(instrument?: string): Promise<CoverageResponse> {
     const qs = instrument ? `?instrument=${encodeURIComponent(instrument)}` : '';
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/market-data/coverage/${qs}`);
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/market-data/coverage/${qs}`);
     if (!res.ok) throw new Error('Erreur chargement couverture');
     const body = await res.json();
     return {
@@ -221,7 +189,7 @@ class HistoricalDataService {
   }
 
   async listJobs(): Promise<DownloadJob[]> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/market-data/downloads/`);
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/market-data/downloads/`);
     if (!res.ok) throw new Error('Erreur chargement jobs');
     return res.json();
   }
@@ -234,7 +202,7 @@ class HistoricalDataService {
     end: string;
     session_dates?: boolean;
   }): Promise<{ jobs: DownloadJob[] }> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/market-data/downloads/`, {
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/market-data/downloads/`, {
       method: 'POST',
       body: JSON.stringify(payload),
     });
@@ -257,7 +225,7 @@ class HistoricalDataService {
   }
 
   async getJob(id: number): Promise<DownloadJob> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/market-data/downloads/${id}/`);
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/market-data/downloads/${id}/`);
     if (res.status === 401) {
       throw new Error('AUTH_REQUIRED');
     }
@@ -285,7 +253,7 @@ class HistoricalDataService {
     }
     if (params.contract_id) qs.set('contract_id', params.contract_id);
     if (params.session_dates) qs.set('session_dates', '1');
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/market-data/bars/export/?${qs}`);
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/market-data/bars/export/?${qs}`);
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
       throw new Error(body.detail || 'Erreur export CSV');
@@ -301,7 +269,7 @@ class HistoricalDataService {
   }
 
   async getSyncSettings(): Promise<SyncSettings> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/market-data/sync-settings/`);
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/market-data/sync-settings/`);
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
       throw new Error(body.detail || 'Erreur chargement sync');
@@ -315,7 +283,7 @@ class HistoricalDataService {
     minute: number;
     targets: SyncTarget[];
   }): Promise<SyncSettings> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/market-data/sync-settings/`, {
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/market-data/sync-settings/`, {
       method: 'PUT',
       body: JSON.stringify(payload),
     });
@@ -327,7 +295,7 @@ class HistoricalDataService {
   }
 
   async listSyncRuns(limit = 20): Promise<SyncRun[]> {
-    const res = await this.fetchWithAuth(
+    const res = await fetchWithAuth(
       `${this.BASE_URL}/api/market-data/sync-runs/?limit=${limit}`,
     );
     if (!res.ok) throw new Error('Erreur chargement historique sync');
@@ -335,13 +303,13 @@ class HistoricalDataService {
   }
 
   async getSyncHealth(): Promise<SyncHealth> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/market-data/sync-health/`);
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/market-data/sync-health/`);
     if (!res.ok) throw new Error('Erreur chargement santé sync');
     return res.json();
   }
 
   async runSyncNow(): Promise<{ settings: SyncSettings; jobs: DownloadJob[] }> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/market-data/sync-settings/run-now/`, {
+    const res = await fetchWithAuth(`${this.BASE_URL}/api/market-data/sync-settings/run-now/`, {
       method: 'POST',
       body: JSON.stringify({}),
     });
