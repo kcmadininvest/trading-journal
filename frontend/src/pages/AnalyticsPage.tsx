@@ -37,7 +37,7 @@ import { useTradingAccount } from '../contexts/useTradingAccount';
 import { usePersistedPeriodAndStrategyFilters } from '../hooks/usePersistedPeriodAndStrategyFilters';
 import { useAccountIndicators } from '../hooks/useAccountIndicators';
 import { AccountSummaryCard } from '../components/common/AccountSummaryCard';
-import { useDashboardData } from '../hooks/useDashboardData';
+import { useDashboardActivitySummary } from '../hooks/useDashboardData';
 import { useGlobalAllAccountsActivity } from '../hooks/useGlobalAllAccountsActivity';
 import { useStatistics } from '../hooks/useStatistics';
 import { AnalyticsPageSkeleton } from '../components/ui/AnalyticsPageSkeleton';
@@ -168,11 +168,16 @@ const AnalyticsPage: React.FC = () => {
     selectedMonth,
   });
 
-  const { data: dashboardSummary, isLoading: summaryLoading, error: summaryError } = useDashboardData({
+  const {
+    data: activitySummary,
+    isLoading: activityLoading,
+    error: activityError,
+  } = useDashboardActivitySummary({
     accountId,
     startDate: summaryStartDate,
     endDate: summaryEndDate,
     loading: accountLoading,
+    positionStrategy: selectedPositionStrategy,
     pnlDisplay: pnlDisplayMode,
   });
   const { globalAllAccountsActivity } = useGlobalAllAccountsActivity({
@@ -213,8 +218,8 @@ const AnalyticsPage: React.FC = () => {
 
   // Obtenir le symbole de devise
   const chartConfig = useMemo(
-    () => resolveAccountChartConfig(selectedAccount, dashboardSummary?.balance_context),
-    [selectedAccount, dashboardSummary?.balance_context],
+    () => resolveAccountChartConfig(selectedAccount),
+    [selectedAccount],
   );
 
   const currencySymbol = useMemo(() => {
@@ -284,7 +289,8 @@ const AnalyticsPage: React.FC = () => {
   } = useAccountIndicators({
     selectedAccount,
     filteredTrades: trades,
-    activeDays: dashboardSummary?.active_days,
+    activeDays: activitySummary?.active_days,
+    totalTradesOverride: activitySummary?.total_positions ?? null,
     pnlDisplay: pnlDisplayMode,
     timezone: preferences.timezone,
   });
@@ -1567,8 +1573,8 @@ const AnalyticsPage: React.FC = () => {
           hideConsistencyTarget={privacySettings.hideConsistencyTarget}
           balanceLoading={balanceLoading}
           peakLoading={peakLoading}
-          detailsLoading={(summaryLoading && !dashboardSummary) || isRefreshing}
-          error={balanceError || error || summaryError}
+          detailsLoading={(activityLoading && !activitySummary) || isRefreshing}
+          error={balanceError || error || activityError}
         />
       )}
 

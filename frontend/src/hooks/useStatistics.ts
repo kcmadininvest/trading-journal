@@ -4,7 +4,6 @@ import { tradesService } from '../services/trades';
 import { tradingAccountsService, TradingAccount } from '../services/tradingAccounts';
 import { tradeStrategiesService } from '../services/tradeStrategies';
 import { currenciesService, Currency } from '../services/currencies';
-import { dashboardService, DashboardSummary } from '../services/dashboard';
 import type { PnlDisplayMode } from '../utils/pnlDisplay';
 import { queryKeys } from '../lib/queryKeys';
 import { queryClient } from '../lib/queryClient';
@@ -372,7 +371,6 @@ export interface StrategiesPageData {
   selectedAccountCompliance: any | null;
   currencies: Currency[];
   selectedAccount: TradingAccount | null;
-  dashboardSummary: DashboardSummary | null;
 }
 
 export interface StrategiesPageParams {
@@ -449,7 +447,6 @@ export function useStrategiesPageData({
           selectedAccountComplianceData,
           currenciesData,
           accountData,
-          dashboardData,
         ] = await Promise.all([
           tradeStrategiesService.statistics(strategyParams),
           tradeStrategiesService.strategyComplianceStats(undefined, strategyParams),
@@ -458,13 +455,6 @@ export function useStrategiesPageData({
             : Promise.resolve(null),
           currenciesService.list(),
           accountId ? tradingAccountsService.get(accountId) : Promise.resolve(null),
-          dashboardService.getSummary({
-            pnl_display: pnlDisplay,
-            ...(accountId ? { trading_account: accountId } : {}),
-            ...(summaryStartDate ? { start_date: summaryStartDate } : {}),
-            ...(summaryEndDate ? { end_date: summaryEndDate } : {}),
-            ...(positionStrategy ? { position_strategy: positionStrategy } : {}),
-          }).catch(() => null),
         ]);
 
         return {
@@ -473,7 +463,6 @@ export function useStrategiesPageData({
           selectedAccountCompliance: selectedAccountComplianceData,
           currencies: currenciesData,
           selectedAccount: accountData,
-          dashboardSummary: dashboardData,
         };
       } catch (err) {
         console.error('Erreur lors du chargement des données:', err);
@@ -497,7 +486,6 @@ export function useStrategiesPageData({
     selectedAccountCompliance: data?.selectedAccountCompliance ?? null,
     currencies: data?.currencies ?? [],
     selectedAccount: data?.selectedAccount ?? null,
-    dashboardSummary: data?.dashboardSummary ?? null,
     isLoading: query.isLoading,
     isFetching: query.isFetching,
     error: query.error instanceof Error ? query.error : null,

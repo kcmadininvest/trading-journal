@@ -20,6 +20,8 @@ import { usePrivacySettings } from '../hooks/usePrivacySettings';
 import { useAccountIndicators } from '../hooks/useAccountIndicators';
 import { AccountSummaryCard } from '../components/common/AccountSummaryCard';
 import { useStatsBundle } from '../hooks/useStatsBundle';
+import { useDashboardActivitySummary } from '../hooks/useDashboardData';
+import { usePeriodDateRange } from '../hooks/usePeriodDateRange';
 import { useGlobalAllAccountsActivity } from '../hooks/useGlobalAllAccountsActivity';
 import { ExportButton } from '../components/exports';
 import { PageShell } from '../components/layout';
@@ -84,6 +86,20 @@ function StatisticsPage() {
 
   const { globalAllAccountsActivity } = useGlobalAllAccountsActivity({
     loading: accountLoading,
+    pnlDisplay: pnlDisplayMode,
+  });
+
+  const { startDate: activityStartDate, endDate: activityEndDate } = usePeriodDateRange({
+    selectedPeriod,
+    selectedYear,
+    selectedMonth,
+  });
+  const { data: activitySummary } = useDashboardActivitySummary({
+    accountId: selectedAccountId,
+    startDate: activityStartDate,
+    endDate: activityEndDate,
+    loading: accountLoading,
+    positionStrategy: selectedPositionStrategy,
     pnlDisplay: pnlDisplayMode,
   });
 
@@ -206,7 +222,8 @@ function StatisticsPage() {
     selectedAccount,
     filteredTrades,
     analyticsData,
-    activeDays: dashboardSlice?.active_days,
+    activeDays: activitySummary?.active_days ?? dashboardSlice?.active_days,
+    totalTradesOverride: activitySummary?.total_positions ?? null,
     pnlDisplay: pnlDisplayMode,
     timezone: preferences.timezone,
   });

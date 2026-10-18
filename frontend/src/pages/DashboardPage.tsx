@@ -4,7 +4,7 @@ import clsx from 'clsx';
 import { ImportTradesModal } from '../components/trades/ImportTradesModal';
 import { User } from '../services/auth';
 import { calendarService as marketCalendarService, MarketHoliday, MarketTodaySnapshot } from '../services/calendar';
-import { useDashboardData } from '../hooks/useDashboardData';
+import { useDashboardData, useDashboardActivitySummary } from '../hooks/useDashboardData';
 import { useDashboardComplianceRefresh } from '../hooks/useDashboardComplianceRefresh';
 import { useDashboardPrefetch } from '../hooks/useDashboardPrefetch';
 import { useGlobalAllAccountsActivity } from '../hooks/useGlobalAllAccountsActivity';
@@ -288,6 +288,15 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   
   // Use consolidated dashboard data hook for optimized loading
   const { data: dashboardData, isLoading: dashboardLoading, isFetching: dashboardFetching, error: dashboardError } = useDashboardData({
+    accountId,
+    startDate: selectedPeriod?.start,
+    endDate: selectedPeriod?.end,
+    loading: dashboardGateLoading,
+    positionStrategy: selectedPositionStrategy,
+    pnlDisplay: pnlDisplayMode,
+  });
+
+  const { data: activitySummary } = useDashboardActivitySummary({
     accountId,
     startDate: selectedPeriod?.start,
     endDate: selectedPeriod?.end,
@@ -1579,7 +1588,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     selectedAccount,
     filteredTrades: trades,
     filteredBalanceData: accountBalanceData,
-    activeDays: dashboardData?.active_days,
+    activeDays: activitySummary?.active_days ?? dashboardData?.active_days,
+    totalTradesOverride: activitySummary?.total_positions ?? null,
     pnlDisplay: pnlDisplayMode,
     timezone: preferences.timezone,
   });

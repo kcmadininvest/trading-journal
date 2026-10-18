@@ -50,8 +50,11 @@ import { useComplianceRefresh } from '../contexts/useComplianceRefresh';
 import { useAccountIndicators } from '../hooks/useAccountIndicators';
 import { AccountSummaryCard } from '../components/common/AccountSummaryCard';
 import { useGlobalAllAccountsActivity } from '../hooks/useGlobalAllAccountsActivity';
+import { useDashboardActivitySummary } from '../hooks/useDashboardData';
 import { parsePnlDisplayMode } from '../utils/pnlDisplay';
 import { getChartColors, STRATEGY_CHART_LAZY_HEIGHT, STRATEGY_CHART_TILE_MIN_HEIGHT_CLASS } from '../utils/chartConfig';
+import type { TradingAccount } from '../services/tradingAccounts';
+import { currenciesService, type Currency } from '../services/currencies';
 import {
   resolveStrategiesPeriodDates,
   type StrategyChartDrillDownPayload,
@@ -222,14 +225,14 @@ const StrategiesPage: React.FC = () => {
     return 'edge';
   });
   const edgeFiltersDisabled = activeStrategiesTab === 'edge';
+  const heavyDataEnabled = !accountLoading && !preferencesLoading && !edgeFiltersDisabled;
 
   const {
     statistics,
     allAccountsCompliance,
     selectedAccountCompliance,
-    currencies,
-    selectedAccount,
-    dashboardSummary,
+    currencies: bundleCurrencies,
+    selectedAccount: bundleSelectedAccount,
     isLoading: bundleLoading,
     isFetching: bundleFetching,
     error: bundleError,
@@ -243,7 +246,35 @@ const StrategiesPage: React.FC = () => {
     summaryEndDate,
     positionStrategy: selectedPositionStrategy,
     pnlDisplay: pnlDisplayMode,
-    enabled: !accountLoading && !preferencesLoading,
+    enabled: heavyDataEnabled,
+  });
+
+  const [edgeCurrencies, setEdgeCurrencies] = useState<Currency[]>([]);
+  useEffect(() => {
+    if (!edgeFiltersDisabled || bundleCurrencies.length > 0) return;
+    let cancelled = false;
+    currenciesService.list().then((list) => {
+      if (!cancelled) setEdgeCurrencies(list);
+    }).catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [edgeFiltersDisabled, bundleCurrencies.length]);
+
+  const currencies = bundleCurrencies.length > 0 ? bundleCurrencies : edgeCurrencies;
+  const selectedAccount: TradingAccount | null = useMemo(() => {
+    if (bundleSelectedAccount) return bundleSelectedAccount;
+    if (accountId == null) return null;
+    return tradingAccounts.find((a) => a.id === accountId) ?? null;
+  }, [bundleSelectedAccount, accountId, tradingAccounts]);
+
+  const { data: activitySummary } = useDashboardActivitySummary({
+    accountId,
+    startDate: summaryStartDate,
+    endDate: summaryEndDate,
+    loading: accountLoading || preferencesLoading,
+    positionStrategy: selectedPositionStrategy,
+    pnlDisplay: pnlDisplayMode,
   });
 
   const edgeOverviewQuery = useQuery({
@@ -261,15 +292,25 @@ const StrategiesPage: React.FC = () => {
   });
 
   const filtersReady = !accountLoading && !preferencesLoading;
-  const { isInitialLoading, isRefreshing } = combineQueryLoadingStates([
-    { isLoading: !filtersReady, isFetching: false, data: filtersReady ? true : null },
-    { isLoading: bundleLoading, isFetching: bundleFetching, data: statistics },
-  ]);
+  const { isInitialLoading, isRefreshing } = combineQueryLoadingStates(
+    edgeFiltersDisabled
+      ? [
+          { isLoading: !filtersReady, isFetching: false, data: filtersReady ? true : null },
+          {
+            isLoading: edgeOverviewQuery.isLoading,
+            isFetching: edgeOverviewQuery.isFetching,
+            data: edgeOverviewQuery.data ?? null,
+          },
+        ]
+      : [
+          { isLoading: !filtersReady, isFetching: false, data: filtersReady ? true : null },
+          { isLoading: bundleLoading, isFetching: bundleFetching, data: statistics },
+        ],
+  );
 
-  // Utiliser le hook optimisé pour charger les trades filtrés (allTrades n'est plus chargé)
   const { filteredTrades, loading: tradesLoading, reload: reloadTrades } = useStrategyTrades({
     accountId,
-    accountLoading,
+    accountLoading: accountLoading || edgeFiltersDisabled,
     selectedPeriod,
     selectedYear,
     selectedMonth,
@@ -282,7 +323,10 @@ const StrategiesPage: React.FC = () => {
   }
   const tradesSettled = tradesFetchStartedRef.current && !tradesLoading;
   const detailsLoading =
-    selectedAccount != null && filteredTrades.length === 0 && !tradesSettled;
+    !edgeFiltersDisabled &&
+    selectedAccount != null &&
+    filteredTrades.length === 0 &&
+    !tradesSettled;
 
   // Générer les années disponibles (année en cours et 5 ans précédents)
 
@@ -325,13 +369,6 @@ const StrategiesPage: React.FC = () => {
   }, [selectedAccount?.currency, tradingAccounts, currencies]);
 
 
-  // Même source filtrée que Jours actifs (évite .length plafonné par page_size).
-  const totalTradesFromSummary = useMemo(() => {
-    const aggregates = dashboardSummary?.daily_aggregates;
-    if (!aggregates) return null;
-    return aggregates.reduce((sum, day) => sum + (day.trade_count || 0), 0);
-  }, [dashboardSummary?.daily_aggregates]);
-
   const {
     balanceLoading,
     balanceError,
@@ -340,8 +377,8 @@ const StrategiesPage: React.FC = () => {
   } = useAccountIndicators({
     selectedAccount,
     filteredTrades,
-    activeDays: dashboardSummary?.active_days,
-    totalTradesOverride: totalTradesFromSummary,
+    activeDays: activitySummary?.active_days,
+    totalTradesOverride: activitySummary?.total_positions ?? null,
     pnlDisplay: pnlDisplayMode,
     timezone: preferences.timezone,
   });

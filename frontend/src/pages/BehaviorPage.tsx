@@ -32,6 +32,8 @@ import { useAccountIndicators } from '../hooks/useAccountIndicators';
 import { AccountSummaryCard } from '../components/common/AccountSummaryCard';
 import { useGlobalAllAccountsActivity } from '../hooks/useGlobalAllAccountsActivity';
 import { useStatsBundle } from '../hooks/useStatsBundle';
+import { useDashboardActivitySummary } from '../hooks/useDashboardData';
+import { usePeriodDateRange } from '../hooks/usePeriodDateRange';
 import {
   buildBehaviorNarrative,
   buildBehaviorNarrativeContext,
@@ -136,6 +138,20 @@ const BehaviorPage: React.FC = () => {
     pnlDisplay: pnlDisplayMode,
   });
 
+  const { startDate: activityStartDate, endDate: activityEndDate } = usePeriodDateRange({
+    selectedPeriod,
+    selectedYear,
+    selectedMonth,
+  });
+  const { data: activitySummary } = useDashboardActivitySummary({
+    accountId,
+    startDate: activityStartDate,
+    endDate: activityEndDate,
+    loading: accountLoading,
+    positionStrategy: selectedPositionStrategy,
+    pnlDisplay: pnlDisplayMode,
+  });
+
   useEffect(() => {
     const loadFilteredTrades = async () => {
       if (accountLoading) {
@@ -191,7 +207,8 @@ const BehaviorPage: React.FC = () => {
     selectedAccount,
     filteredTrades,
     analyticsData,
-    activeDays: dashboardSlice?.active_days,
+    activeDays: activitySummary?.active_days ?? dashboardSlice?.active_days,
+    totalTradesOverride: activitySummary?.total_positions ?? null,
     pnlDisplay: pnlDisplayMode,
     timezone: preferences.timezone,
   });
