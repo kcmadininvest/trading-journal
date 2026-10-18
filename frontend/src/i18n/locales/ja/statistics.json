@@ -34,7 +34,16 @@
     "averagePnL": "平均P/L",
     "totalFees": "総手数料",
     "totalVolume": "総ボリューム",
-    "averageDuration": "平均期間"
+    "totalVolumeTooltip": "フィルタ期間内の全トレードのサイズ（size）の合計。累積エクスポージャー量であり、金額ではありません。",
+    "averageDuration": "平均期間",
+    "averageDurationTooltip": "フィルタ期間内のトレード平均保有時間（エントリー→エグジット）。結果を問わず集計。",
+    "durationRatioEmpty": "期間比率を表示できません（この期間のデータ不足）。",
+    "durationRatioInsightGood": "勝ちトレードは負けより平均{{ratio}}倍長く保有 — 利益を伸ばすスタイルと一致。",
+    "durationRatioInsightWarn": "負けトレードの方が勝ちより長い（比率{{ratio}}）— 利益の早締めや損失の放置のリスク。",
+    "netWinnersTooltip": "少なくとも1つのテイクプロフィットに到達したプラスPnLのトレード。TPなしの利益（ソフトBE）はブレークイーブンに別計上されます。",
+    "outcomeCompositionEmpty": "この期間にトレードはありません。",
+    "outcomeCompositionAria": "トレード内訳: 勝ち{{winners}}%、負け{{losers}}%、ブレークイーブン{{breakEven}}%",
+    "softBeInsight": "活動の{{activityPct}}%がソフトBE（TPなしのプラス{{softBeCount}}件）— プラス取引の{{positivePct}}%。"
   },
   "performanceRatios": {
     "title": "パフォーマンス比率",

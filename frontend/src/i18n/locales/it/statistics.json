@@ -34,7 +34,16 @@
     "averagePnL": "P/L medio",
     "totalFees": "Commissioni totali",
     "totalVolume": "Volume totale",
-    "averageDuration": "Durata media"
+    "totalVolumeTooltip": "Somma delle size di tutti i trade nel periodo filtrato. Misura il volume di esposizione cumulato, non un importo monetario.",
+    "averageDuration": "Durata media",
+    "averageDurationTooltip": "Durata media di un trade nel periodo filtrato (ingresso → uscita), tutti gli esiti inclusi.",
+    "durationRatioEmpty": "Rapporto di durata non disponibile (dati insufficienti nel periodo).",
+    "durationRatioInsightGood": "I tuoi vincenti durano in media {{ratio}}× più a lungo dei perdenti — allineato al lasciare correre i guadagni.",
+    "durationRatioInsightWarn": "I tuoi perdenti durano più a lungo dei vincenti (rapporto {{ratio}}) — rischio di chiudere troppo presto i guadagni o lasciare correre le perdite.",
+    "netWinnersTooltip": "Trade con PnL positivo in cui è stato raggiunto almeno un Take Profit. I guadagni senza TP (BE soft) sono contati separatamente in Breakeven.",
+    "outcomeCompositionEmpty": "Nessun trade in questo periodo.",
+    "outcomeCompositionAria": "Ripartizione dei trade: {{winners}}% vincenti, {{losers}}% perdenti, {{breakEven}}% breakeven",
+    "softBeInsight": "{{activityPct}}% dell’attività è BE soft ({{softBeCount}} trade positivi senza TP) — {{positivePct}}% dei tuoi trade positivi."
   },
   "performanceRatios": {
     "title": "Rapporti di Performance",

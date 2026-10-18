@@ -67,7 +67,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({
         </div>
       )}
       <div
-        className={`${variant === 'hero' ? 'space-y-3' : 'space-y-2'} ${fillHeight ? 'flex min-h-0 flex-1 flex-col justify-center' : ''}`}
+        className={`${variant === 'hero' ? 'space-y-3' : 'space-y-2'} ${fillHeight ? 'flex min-h-0 flex-1 flex-col' : ''}`}
       >
         {children}
       </div>

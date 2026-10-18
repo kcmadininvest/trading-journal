@@ -34,7 +34,16 @@
     "averagePnL": "Durchschnittliches P/L",
     "totalFees": "Gesamtgebühren",
     "totalVolume": "Gesamtvolumen",
-    "averageDuration": "Durchschnittliche Dauer"
+    "totalVolumeTooltip": "Summe der Größen (size) aller Trades im gefilterten Zeitraum. Misst das kumulierte Expositionsvolumen, keinen Geldbetrag.",
+    "averageDuration": "Durchschnittliche Dauer",
+    "averageDurationTooltip": "Durchschnittliche Tradedauer im gefilterten Zeitraum (Einstieg → Ausstieg), alle Ergebnisse zusammengenommen.",
+    "durationRatioEmpty": "Dauerverhältnis nicht verfügbar (unzureichende Daten für diesen Zeitraum).",
+    "durationRatioInsightGood": "Ihre Gewinner dauern im Schnitt {{ratio}}× länger als Ihre Verlierer — im Einklang damit, Gewinne laufen zu lassen.",
+    "durationRatioInsightWarn": "Ihre Verlierer dauern länger als Ihre Gewinner (Verhältnis {{ratio}}) — Risiko, Gewinne zu früh zu schließen oder Verluste laufen zu lassen.",
+    "netWinnersTooltip": "Trades mit positivem PnL und mindestens einem Take Profit. Gewinne ohne TP (weiches BE) werden separat unter Breakeven gezählt.",
+    "outcomeCompositionEmpty": "Keine Trades in diesem Zeitraum.",
+    "outcomeCompositionAria": "Trade-Aufteilung: {{winners}}% Gewinner, {{losers}}% Verlierer, {{breakEven}}% Breakeven",
+    "softBeInsight": "{{activityPct}}% der Aktivität ist weiches BE ({{softBeCount}} positive Trades ohne TP) — {{positivePct}}% Ihrer positiven Trades."
   },
   "performanceRatios": {
     "title": "Leistungskennzahlen",

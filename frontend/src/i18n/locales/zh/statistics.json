@@ -34,7 +34,16 @@
     "averagePnL": "平均P/L",
     "totalFees": "总费用",
     "totalVolume": "总交易量",
-    "averageDuration": "平均持续时间"
+    "totalVolumeTooltip": "筛选时段内所有交易规模（size）之和。衡量累计敞口数量，而非货币金额。",
+    "averageDuration": "平均持续时间",
+    "averageDurationTooltip": "筛选时段内交易的平均持仓时长（入场→出场），含全部结果。",
+    "durationRatioEmpty": "时长比率不可用（该时段数据不足）。",
+    "durationRatioInsightGood": "盈利单平均持仓约为亏损单的 {{ratio}} 倍 — 符合让利润奔跑。",
+    "durationRatioInsightWarn": "亏损单持仓长于盈利单（比率 {{ratio}}）— 存在过早止盈或让亏损拖延的风险。",
+    "netWinnersTooltip": "至少触及一个止盈的正PnL交易。未触及止盈的盈利（软盈亏平衡）单独计入盈亏平衡。",
+    "outcomeCompositionEmpty": "该时段没有交易。",
+    "outcomeCompositionAria": "交易分布：盈利{{winners}}%，亏损{{losers}}%，盈亏平衡{{breakEven}}%",
+    "softBeInsight": "{{activityPct}}%的活动为软盈亏平衡（{{softBeCount}}笔未触及止盈的盈利交易）——占正收益交易的{{positivePct}}%。"
   },
   "performanceRatios": {
     "title": "表现比率",

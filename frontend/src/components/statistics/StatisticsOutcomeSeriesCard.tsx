@@ -105,22 +105,24 @@ export const StatisticsOutcomeSeriesCard: React.FC<StatisticsOutcomeSeriesCardPr
       }
     >
       {series.length > 0 ? (
-        <TradeOutcomeSeriesStrip
-          series={series}
-          pnlDisplayMode={pnlDisplayMode}
-          currencySymbol={currencySymbol}
-          numberFormat={numberFormat}
-          dateFormat={dateFormat}
-          timezone={timezone}
-          hideMoney={hideMoney}
-          showLegend={false}
-          highlightLatest
-          layout="grid"
-          displayOrder="newestFirst"
-          className="min-w-0 space-y-0"
-        />
+        <div className="my-auto min-w-0">
+          <TradeOutcomeSeriesStrip
+            series={series}
+            pnlDisplayMode={pnlDisplayMode}
+            currencySymbol={currencySymbol}
+            numberFormat={numberFormat}
+            dateFormat={dateFormat}
+            timezone={timezone}
+            hideMoney={hideMoney}
+            showLegend={false}
+            highlightLatest
+            layout="grid"
+            displayOrder="newestFirst"
+            className="min-w-0 space-y-0"
+          />
+        </div>
       ) : (
-        <p className="text-center text-sm text-gray-500 dark:text-gray-400">{summaryLabel}</p>
+        <p className="my-auto text-center text-sm text-gray-500 dark:text-gray-400">{summaryLabel}</p>
       )}
     </MetricCard>
   );

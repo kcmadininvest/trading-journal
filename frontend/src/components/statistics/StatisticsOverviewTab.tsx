@@ -4,6 +4,7 @@ import { MetricCard, MetricItem } from './MetricCard';
 import { MetricGauge } from './MetricGauge';
 import { GAUGE_CONFIGS } from './gaugeConfigs';
 import { TradeOutcomeStrip } from './TradeOutcomeStrip';
+import { TemporalAnalysisStrip } from './TemporalAnalysisStrip';
 import type { StatisticsTabBaseProps } from './statisticsTypes';
 
 export const StatisticsOverviewTab: React.FC<StatisticsTabBaseProps> = ({
@@ -83,6 +84,7 @@ export const StatisticsOverviewTab: React.FC<StatisticsTabBaseProps> = ({
 
       <MetricCard
         title={t('statistics:performanceRatios.temporalAnalysis')}
+        fillHeight
         icon={
           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
@@ -94,39 +96,19 @@ export const StatisticsOverviewTab: React.FC<StatisticsTabBaseProps> = ({
           </svg>
         }
       >
-        <MetricItem
-          label={t('statistics:performanceRatios.frequency')}
-          value={`${formatNumber(statisticsData.frequency_ratio, 1)} ${t('statistics:performanceRatios.tradesPerDay')}`}
-          tooltip={t('statistics:performanceRatios.frequencyTooltip')}
-          variant="info"
-        />
-        <MetricItem
-          label={t('statistics:overview.averageDuration')}
-          value={statisticsData.average_duration}
-          variant="info"
-        />
-        <MetricItem
-          label={t('statistics:performanceRatios.avgTimeBetweenTrades')}
-          value={statisticsData.avg_time_between_trades}
-          tooltip={t('statistics:performanceRatios.avgTimeBetweenTradesTooltip')}
-          variant="info"
-        />
-        <MetricItem
-          label={t('statistics:performanceRatios.avgDailyExposureTime')}
-          value={statisticsData.avg_daily_exposure_time || '00:00:00'}
-          tooltip={t('statistics:performanceRatios.avgDailyExposureTimeTooltip')}
-          variant="info"
-        />
-        <MetricItem
-          label={t('statistics:performanceRatios.durationRatio')}
-          value={formatNumber(statisticsData.duration_ratio, 2)}
-          tooltip={t('statistics:performanceRatios.durationRatioTooltip')}
-          variant={statisticsData.duration_ratio >= 1.0 ? 'success' : 'warning'}
+        <TemporalAnalysisStrip
+          frequencyRatio={statisticsData.frequency_ratio}
+          averageDuration={statisticsData.average_duration}
+          avgTimeBetweenTrades={statisticsData.avg_time_between_trades}
+          avgDailyExposureTime={statisticsData.avg_daily_exposure_time || '00:00:00'}
+          durationRatio={statisticsData.duration_ratio}
+          formatNumber={formatNumber}
         />
       </MetricCard>
 
       <MetricCard
         title={t('statistics:overview.generalStatistics')}
+        fillHeight
         icon={
           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
@@ -143,7 +125,9 @@ export const StatisticsOverviewTab: React.FC<StatisticsTabBaseProps> = ({
           totalVolumeLabel={formatVolume(statisticsData.total_volume)}
           winningTrades={statisticsData.winning_trades}
           losingTrades={statisticsData.losing_trades}
+          breakEvenTrades={statisticsData.break_even_trades ?? 0}
           breakEvenPositiveTrades={statisticsData.break_even_positive_trades ?? 0}
+          formatNumber={formatNumber}
         />
       </MetricCard>
     </div>

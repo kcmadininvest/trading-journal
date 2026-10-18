@@ -34,7 +34,16 @@
     "averagePnL": "평균 P/L",
     "totalFees": "총 수수료",
     "totalVolume": "총 거래량",
-    "averageDuration": "평균 기간"
+    "totalVolumeTooltip": "필터링된 기간의 모든 거래 크기(size) 합계입니다. 누적 노출 거래량이며 금액이 아닙니다.",
+    "averageDuration": "평균 기간",
+    "averageDurationTooltip": "필터 기간 내 거래 평균 보유 시간(진입→청산), 모든 결과 포함.",
+    "durationRatioEmpty": "기간 비율을 표시할 수 없습니다(해당 기간 데이터 부족).",
+    "durationRatioInsightGood": "승리 거래가 패배보다 평균 {{ratio}}배 더 깁니다 — 이익을 길게 가져가는 스타일과 일치.",
+    "durationRatioInsightWarn": "패배 거래가 승리보다 깁니다(비율 {{ratio}}) — 이익을 너무 일찍 끊거나 손실을 방치할 위험.",
+    "netWinnersTooltip": "최소 하나의 테이크프로핏에 도달한 양수 PnL 거래. TP 없는 수익(소프트 BE)은 손익분기에서 별도로 집계됩니다.",
+    "outcomeCompositionEmpty": "이 기간에 거래가 없습니다.",
+    "outcomeCompositionAria": "거래 분포: 승 {{winners}}%, 패 {{losers}}%, 손익분기 {{breakEven}}%",
+    "softBeInsight": "활동의 {{activityPct}}%가 소프트 BE({{softBeCount}}건의 TP 없는 양수 거래) — 양수 거래의 {{positivePct}}%."
   },
   "performanceRatios": {
     "title": "성과 비율",

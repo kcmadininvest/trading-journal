@@ -86,6 +86,17 @@ export const GAUGE_CONFIGS: Record<string, MetricGaugeConfig> = {
       { value: 1.5, label: 'Good', color: 'green' },
     ],
   },
+  /** Durée moy. gagnants / durée moy. perdants : < 1 faible · ≥ 1 moyen · ≥ 1,5 bon */
+  durationRatio: {
+    type: 'ratio',
+    min: 0,
+    max: 3,
+    thresholds: [
+      { value: 0, label: 'Poor', color: 'red' },
+      { value: 1.0, label: 'Average', color: 'orange' },
+      { value: 1.5, label: 'Good', color: 'green' },
+    ],
+  },
   planRespectRate: {
     type: 'percentage',
     min: 0,

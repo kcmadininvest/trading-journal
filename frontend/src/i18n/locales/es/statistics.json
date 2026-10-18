@@ -34,7 +34,16 @@
     "averagePnL": "P/L Promedio",
     "totalFees": "Comisiones totales",
     "totalVolume": "Volumen total",
-    "averageDuration": "Duración promedio"
+    "totalVolumeTooltip": "Suma de los tamaños (size) de todas las operaciones del período filtrado. Mide el volumen de exposición acumulado, no un importe monetario.",
+    "averageDuration": "Duración promedio",
+    "averageDurationTooltip": "Duración media de una operación en el período filtrado (entrada → salida), todos los resultados incluidos.",
+    "durationRatioEmpty": "Ratio de duración no disponible (datos insuficientes en el período).",
+    "durationRatioInsightGood": "Sus ganadoras duran de media {{ratio}}× más que sus perdedoras — alineado con dejar correr las ganancias.",
+    "durationRatioInsightWarn": "Sus perdedoras duran más que sus ganadoras (ratio {{ratio}}) — riesgo de cortar ganancias demasiado pronto o dejar correr las pérdidas.",
+    "netWinnersTooltip": "Trades con PnL positivo donde se alcanzó al menos un Take Profit. Las ganancias sin TP (BE suave) se cuentan por separado en Breakeven.",
+    "outcomeCompositionEmpty": "No hay operaciones en este período.",
+    "outcomeCompositionAria": "Distribución de operaciones: {{winners}}% ganadoras, {{losers}}% perdedoras, {{breakEven}}% breakeven",
+    "softBeInsight": "{{activityPct}}% de la actividad es BE suave ({{softBeCount}} operaciones positivas sin TP) — {{positivePct}}% de sus operaciones positivas."
   },
   "performanceRatios": {
     "title": "Ratios de Rendimiento",

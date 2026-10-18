@@ -34,7 +34,16 @@
     "averagePnL": "Average P/L",
     "totalFees": "Total fees",
     "totalVolume": "Total volume",
-    "averageDuration": "Average duration"
+    "totalVolumeTooltip": "Sum of the size of all trades in the filtered period. Measures cumulative exposure volume, not a monetary amount.",
+    "averageDuration": "Average duration",
+    "averageDurationTooltip": "Average trade duration over the filtered period (entry → exit), all outcomes combined.",
+    "durationRatioEmpty": "Duration ratio unavailable (insufficient data for this period).",
+    "durationRatioInsightGood": "Your winners last on average {{ratio}}× longer than your losers — aligned with letting winners run.",
+    "durationRatioInsightWarn": "Your losers last longer than your winners (ratio {{ratio}}) — risk of cutting winners too early or letting losers run.",
+    "netWinnersTooltip": "Trades with positive PnL where at least one Take Profit was reached. Wins without TP (soft BE) are counted separately under Breakeven.",
+    "outcomeCompositionEmpty": "No trades in this period.",
+    "outcomeCompositionAria": "Trade breakdown: {{winners}}% winners, {{losers}}% losers, {{breakEven}}% breakeven",
+    "softBeInsight": "{{activityPct}}% of activity is soft BE ({{softBeCount}} positive trades without TP) — {{positivePct}}% of your positive trades."
   },
   "performanceRatios": {
     "title": "Performance Ratios",
