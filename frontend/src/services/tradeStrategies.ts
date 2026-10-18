@@ -34,6 +34,66 @@ export interface TradeStrategy {
   updated_at: string;
 }
 
+export type StrategyEdgeStatusValue =
+  | 'insufficient'
+  | 'present'
+  | 'fading'
+  | 'lost';
+
+export type StrategyEdgeConfidence = 'low' | 'medium' | 'high';
+
+export type StrategyEdgeBasis = 'respected' | 'all' | null;
+
+export interface StrategyEdgeWindowSnapshot {
+  sample_size: number;
+  expectancy: number;
+  profit_factor: number | null;
+  profit_factor_infinite: boolean;
+}
+
+export interface StrategyEdgeUncertaintyBand {
+  low: number;
+  high: number;
+}
+
+export interface StrategyEdgeStatus {
+  status: StrategyEdgeStatusValue;
+  sample_size: number;
+  trailing_window: number;
+  basis: StrategyEdgeBasis;
+  baseline_expectancy: number | null;
+  trailing_expectancy: number | null;
+  trailing_profit_factor: number | null;
+  trailing_profit_factor_infinite: boolean;
+  hysteresis_band: number | null;
+  confidence?: StrategyEdgeConfidence | null;
+  trailing_uncertainty?: StrategyEdgeUncertaintyBand | null;
+  trailing_sign_uncertain?: boolean;
+  windows?: {
+    '20': StrategyEdgeWindowSnapshot | null;
+    '30': StrategyEdgeWindowSnapshot | null;
+  };
+  period_independent?: boolean;
+  family_scope?: boolean;
+  fallback_warning?: boolean;
+  respected_sample_size?: number;
+  all_sample_size?: number;
+  reason?: string;
+}
+
+export interface StrategyEdgeOverviewItem extends StrategyEdgeStatus {
+  root_id: number;
+  display_strategy_id: number;
+  title: string;
+  version_count: number;
+}
+
+export interface StrategyEdgeOverviewResponse {
+  items: StrategyEdgeOverviewItem[];
+  period_independent: boolean;
+  account_scoped?: boolean;
+}
+
 export interface StrategyComplianceStats {
   current_streak: number;
   current_streak_start: string | null;
@@ -46,6 +106,8 @@ export interface StrategyComplianceStats {
   current_not_respect_streak_start: string | null;
   current_not_respect_streak_trades: number;
   overall_compliance_rate: number;
+  /** Statut d'edge all-time (hors filtre période), famille + compte. */
+  edge_status?: StrategyEdgeStatus | null;
   compliance_7d: number | null;
   compliance_30d: number | null;
   compliance_90d: number | null;
@@ -469,6 +531,31 @@ class TradeStrategiesService {
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.error || 'Erreur lors de la récupération des statistiques de compliance');
+    }
+    return res.json();
+  }
+
+  /**
+   * Vue d'ensemble edge all-time par famille (hors filtre période / stratégie).
+   */
+  async strategyEdgeOverview(params?: {
+    tradingAccount?: number;
+    pnlDisplay?: PnlDisplayMode;
+  }): Promise<StrategyEdgeOverviewResponse> {
+    const queryParams = new URLSearchParams();
+    if (params?.tradingAccount) {
+      queryParams.append('trading_account', String(params.tradingAccount));
+    }
+    if (params?.pnlDisplay) {
+      queryParams.append('pnl_display', params.pnlDisplay);
+    }
+    const qs = queryParams.toString();
+    const res = await fetchWithAuth(
+      `${this.BASE_URL}/api/trades/trade-strategies/strategy_edge_overview/${qs ? `?${qs}` : ''}`
+    );
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Erreur lors de la récupération de l’overview edge');
     }
     return res.json();
   }

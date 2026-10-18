@@ -78,7 +78,8 @@
   "tabs": {
     "stats": "Statistiche",
     "insights": "Analisi degli scarti",
-    "charts": "Grafici"
+    "charts": "Grafici",
+    "edge": "Edge"
   },
   "insights": {
     "gainIfTitle": "Costo degli scarti di strategia",
@@ -197,6 +198,59 @@
     "trendNoData": "—",
     "tradeLevelRate": "Tasso di rispetto (livello trade)",
     "tradeLevelRateHint": "Quota di trade valutati in cui la strategia è stata rispettata, nel periodo filtrato."
+  },
+  "edgeStatus": {
+    "title": "Edge della strategia (trade rispettati)",
+    "subtitle": "Indicazione basata sull'expectancy di sempre rispetto agli ultimi N trade — distinta dalla disciplina sotto. Tutte le versioni; il filtro periodo è ignorato.",
+    "selectStrategy": "Seleziona una strategia di posizione per vedere se c'è un edge, se si sta perdendo o se è perso.",
+    "na": "—",
+    "baseline": "Expectancy (sempre)",
+    "trailing": "Expectancy ultimi {{count}}",
+    "trailingPf": "Profit factor (trailing)",
+    "profitFactorInfinite": "∞",
+    "sample": "Trade analizzati",
+    "basisLabel": "Base",
+    "basisRespected": "trade rispettati",
+    "basisAll": "tutti i trade",
+    "periodIndependent": "Senza filtro periodo",
+    "familyScope": "Tutte le versioni",
+    "fallbackWarning": "Pochi trade rispettati ({{respected}}): stato calcolato su tutti i trade della famiglia.",
+    "uncertaintyBand": "Intervallo approx. {{low}} … {{high}}",
+    "signUncertain": "Segno recente incerto (l’intervallo attraversa lo zero).",
+    "confidence": {
+      "low": "Affidabilità bassa",
+      "medium": "Affidabilità media",
+      "high": "Affidabilità alta"
+    },
+    "status": {
+      "present": "Edge presente",
+      "fading": "Edge in calo",
+      "lost": "Edge perso",
+      "insufficient": "Dati insufficienti"
+    },
+    "hint": {
+      "present": "L'expectancy recente ({{count}} trade) resta favorevole. Solo un'euristica, non un test statistico.",
+      "fading": "Lo storico è positivo ma gli ultimi {{count}} trade sono chiaramente negativi: l'edge sembra erodersi.",
+      "lost": "Né lo storico né la finestra recente mostrano un'expectancy chiaramente positiva.",
+      "insufficient": "Meno di 20 trade idonei: lo stato dell'edge non è ancora affidabile."
+    }
+  },
+  "edgeOverview": {
+    "title": "Panoramica dell'edge",
+    "subtitle": "Tutte le tue strategie (tutte le versioni), sull’intero storico — i filtri periodo e strategia non si applicano qui. Clicca una riga per aprire i dettagli in Statistiche.",
+    "empty": "Nessuna strategia con trade per questo conto.",
+    "noActionable": "Nessuna famiglia con almeno 20 trade idonei per uno stato affidabile.",
+    "noReliable": "Nessuna famiglia con almeno 50 trade idonei per ora.",
+    "reliableSection": "Campione affidabile ({{formatted}})",
+    "preliminarySection": "Preliminare (20–49 trade) ({{formatted}})",
+    "insufficientSection": "Campione insufficiente ({{formatted}})",
+    "versions_one": "{{count}} versione",
+    "versions_other": "{{count}} versioni",
+    "sample": "{{formatted}} trade",
+    "openStats": "Apri in Statistiche →",
+    "filtersDisabledHint": "I filtri periodo e strategia non si applicano a questa scheda (sempre, tutte le famiglie).",
+    "sampleRespected": "{{formatted}} trade rispettati",
+    "sampleAll": "{{formatted}} trade (tutti)",
+    "howItWorks": "Come si legge lo stato: confrontiamo il risultato medio per trade su tutto lo storico con quello degli ultimi 30 trade (di preferenza quelli in cui hai rispettato il piano). Storico positivo e recente ancora positivo → edge presente. Storico positivo ma recente chiaramente negativo → edge in calo. Entrambi negativi → edge perso. L’affidabilità dipende dalla dimensione del campione (bassa sotto 50, media da 50, alta da 100). L’intervallo approssimativo sotto l’expectancy recente riflette l’incertezza del campione — non è una garanzia. Riferimento pratico, non una prova scientifica."
   }
 }
-

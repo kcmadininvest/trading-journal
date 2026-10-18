@@ -100,6 +100,10 @@ from .services.behavior_discipline import (
 )
 from .services.post_loss_sizing import compute_post_loss_sizing, empty_post_loss_sizing
 from .services.post_win_sizing import compute_post_win_sizing, empty_post_win_sizing
+from .services.strategy_edge_status import (
+    build_strategy_edge_overview_payload,
+    build_strategy_edge_status_payload,
+)
 from .fx_conversion import (
     aggregate_monetary_from_trades,
     combined_initial_capital_in_base,
@@ -3563,10 +3567,39 @@ class TradeStrategyViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
                     'compliance_rate': round((data['respected'] / data['with_strategy'] * 100) if data['with_strategy'] > 0 else 0, 2)
                 }
                 for date_str, data in sorted(daily_compliance.items())
-            ]
+            ],
+            # Edge all-time (hors filtre période UI) — famille + compte
+            'edge_status': build_strategy_edge_status_payload(
+                self.request.user,
+                trading_account_id=trading_account_id,
+                position_strategy_id=position_strategy_id,
+                pnl_field=get_trade_pnl_field_for_request(request.user, request),
+            ),
         }
         
         return Response(response_data)
+
+    @action(detail=False, methods=['get'])
+    def strategy_edge_overview(self, request):
+        """
+        Vue d'ensemble edge all-time par famille de stratégie (hors filtre période / stratégie).
+        Filtre compte optionnel via ``trading_account``.
+        """
+        trading_account_id = request.query_params.get('trading_account')
+        if trading_account_id:
+            try:
+                trading_account_id = int(trading_account_id)
+            except (ValueError, TypeError):
+                trading_account_id = None
+        else:
+            trading_account_id = None
+
+        payload = build_strategy_edge_overview_payload(
+            request.user,
+            trading_account_id=trading_account_id,
+            pnl_field=get_trade_pnl_field_for_request(request.user, request),
+        )
+        return Response(payload)
 
 
 class DayStrategyComplianceViewSet(viewsets.ModelViewSet):

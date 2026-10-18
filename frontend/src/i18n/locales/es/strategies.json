@@ -90,7 +90,8 @@
   "tabs": {
     "stats": "Estadísticas",
     "insights": "Análisis de desviaciones",
-    "charts": "Gráficos"
+    "charts": "Gráficos",
+    "edge": "Edge"
   },
   "insights": {
     "gainIfTitle": "Coste de las desviaciones",
@@ -209,5 +210,59 @@
     "trendNoData": "—",
     "tradeLevelRate": "Tasa de cumplimiento (nivel trade)",
     "tradeLevelRateHint": "Proporción de operaciones evaluadas donde se respetó la estrategia, en el período filtrado."
+  },
+  "edgeStatus": {
+    "title": "Edge de la estrategia (operaciones respetadas)",
+    "subtitle": "Indicación basada en la expectancy de todo el historial frente a las últimas N operaciones — distinta de la disciplina debajo. Todas las versiones; se ignora el filtro de periodo.",
+    "selectStrategy": "Seleccione una estrategia de posición para ver si hay edge, se está perdiendo o se ha perdido.",
+    "na": "—",
+    "baseline": "Expectancy (todo el historial)",
+    "trailing": "Expectancy últimas {{count}}",
+    "trailingPf": "Profit factor (trailing)",
+    "profitFactorInfinite": "∞",
+    "sample": "Operaciones analizadas",
+    "basisLabel": "Base",
+    "basisRespected": "operaciones respetadas",
+    "basisAll": "todas las operaciones",
+    "periodIndependent": "Sin filtro de periodo",
+    "familyScope": "Todas las versiones",
+    "fallbackWarning": "Pocas operaciones respetadas ({{respected}}): estado calculado sobre todas las de la familia.",
+    "uncertaintyBand": "Rango aprox. {{low}} … {{high}}",
+    "signUncertain": "Signo reciente incierto (el rango cruza cero).",
+    "confidence": {
+      "low": "Confianza baja",
+      "medium": "Confianza media",
+      "high": "Confianza alta"
+    },
+    "status": {
+      "present": "Edge presente",
+      "fading": "Edge en decadencia",
+      "lost": "Edge perdido",
+      "insufficient": "Datos insuficientes"
+    },
+    "hint": {
+      "present": "La expectancy reciente ({{count}} operaciones) sigue siendo favorable. Solo una heurística, no una prueba estadística.",
+      "fading": "El historial es positivo pero las últimas {{count}} operaciones son claramente negativas: el edge parece erosionarse.",
+      "lost": "Ni el historial ni la ventana reciente muestran una expectancy claramente positiva.",
+      "insufficient": "Menos de 20 operaciones elegibles: el estado del edge aún no es fiable."
+    }
+  },
+  "edgeOverview": {
+    "title": "Vista general del edge",
+    "subtitle": "Todas sus estrategias (todas las versiones), en todo el historial — los filtros de periodo y estrategia no se aplican aquí. Pulse una fila para ver el detalle en Estadísticas.",
+    "empty": "No hay estrategias con operaciones para esta cuenta.",
+    "noActionable": "Ninguna familia con al menos 20 operaciones elegibles para un estado fiable.",
+    "noReliable": "Aún no hay ninguna familia con al menos 50 operaciones elegibles.",
+    "reliableSection": "Muestra fiable ({{formatted}})",
+    "preliminarySection": "Preliminar (20–49 operaciones) ({{formatted}})",
+    "insufficientSection": "Muestra insuficiente ({{formatted}})",
+    "versions_one": "{{count}} versión",
+    "versions_other": "{{count}} versiones",
+    "sample": "{{formatted}} operaciones",
+    "openStats": "Abrir en Estadísticas →",
+    "filtersDisabledHint": "Los filtros de periodo y estrategia no se aplican en esta pestaña (todo el historial, todas las familias).",
+    "sampleRespected": "{{formatted}} operaciones respetadas",
+    "sampleAll": "{{formatted}} operaciones (todas)",
+    "howItWorks": "Cómo se determina el estado: comparamos el resultado medio por operación de todo el historial con el de las últimas 30 (preferiblemente respetando el plan). Historial positivo y reciente aún positivo → edge presente. Historial positivo pero reciente claramente negativo → edge en decadencia. Ambos negativos → edge perdido. La confianza depende del tamaño de muestra (baja bajo 50, media desde 50, alta desde 100). El rango aproximado bajo la expectancy reciente refleja la incertidumbre de la muestra — no es una garantía. Guía práctica, no una prueba científica."
   }
 }

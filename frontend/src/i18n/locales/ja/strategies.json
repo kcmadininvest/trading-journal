@@ -78,7 +78,8 @@
   "tabs": {
     "stats": "統計",
     "insights": "逸脱分析",
-    "charts": "グラフ"
+    "charts": "グラフ",
+    "edge": "エッジ"
   },
   "insights": {
     "gainIfTitle": "戦略逸脱のコスト",
@@ -195,6 +196,59 @@
     "trendNoData": "—",
     "tradeLevelRate": "遵守率（トレード単位）",
     "tradeLevelRateHint": "フィルター期間内で戦略が守られた評価済みトレードの割合。"
+  },
+  "edgeStatus": {
+    "title": "戦略エッジ（遵守トレード）",
+    "subtitle": "全期間の期待値と直近N件の比較に基づく目安です（下の規律とは別）。全バージョン対象。期間フィルターは無視します。",
+    "selectStrategy": "ポジション戦略を選ぶと、エッジの有無・低下・消失を確認できます。",
+    "na": "—",
+    "baseline": "期待値（全期間）",
+    "trailing": "直近{{count}}件の期待値",
+    "trailingPf": "プロフィットファクター（直近）",
+    "profitFactorInfinite": "∞",
+    "sample": "分析したトレード",
+    "basisLabel": "基準",
+    "basisRespected": "遵守トレード",
+    "basisAll": "全トレード",
+    "periodIndependent": "期間フィルター対象外",
+    "familyScope": "全バージョン",
+    "fallbackWarning": "遵守トレードが少ない（{{respected}}）：ファミリー全体でステータスを算出。",
+    "uncertaintyBand": "おおよその範囲 {{low}} … {{high}}",
+    "signUncertain": "直近の符号が不確か（範囲がゼロをまたぐ）。",
+    "confidence": {
+      "low": "信頼度 低",
+      "medium": "信頼度 中",
+      "high": "信頼度 高"
+    },
+    "status": {
+      "present": "エッジあり",
+      "fading": "エッジ低下中",
+      "lost": "エッジ消失",
+      "insufficient": "データ不足"
+    },
+    "hint": {
+      "present": "直近の期待値（{{count}}件）は良好です。統計検定ではなくヒューリスティックです。",
+      "fading": "履歴はプラスですが直近{{count}}件は明確にマイナス — エッジが削れている可能性があります。",
+      "lost": "履歴も直近ウィンドウも、明確にプラスの期待値を示していません。",
+      "insufficient": "適格トレードが20件未満のため、エッジ判定はまだ信頼できません。"
+    }
+  },
+  "edgeOverview": {
+    "title": "エッジ概要",
+    "subtitle": "すべての戦略（全バージョン）を全期間で表示します。期間・戦略フィルターはここでは使えません。行をクリックすると統計の詳細が開きます。",
+    "empty": "この口座にトレード付きの戦略がありません。",
+    "noActionable": "信頼できる判定に必要な適格トレード20件以上のファミリーがありません。",
+    "noReliable": "適格トレード50件以上のファミリーはまだありません。",
+    "reliableSection": "信頼できるサンプル（{{formatted}}）",
+    "preliminarySection": "暫定（20–49件）（{{formatted}}）",
+    "insufficientSection": "サンプル不足（{{formatted}}）",
+    "versions_one": "{{count}} バージョン",
+    "versions_other": "{{count}} バージョン",
+    "sample": "{{formatted}} トレード",
+    "openStats": "統計で開く →",
+    "filtersDisabledHint": "このタブでは期間・戦略フィルターは適用されません（全期間・全ファミリー）。",
+    "sampleRespected": "遵守 {{formatted}} トレード",
+    "sampleAll": "全 {{formatted}} トレード",
+    "howItWorks": "ステータスの見方：全期間の1トレードあたり平均結果と、直近30件（できれば計画を守ったトレード）を比べます。履歴も直近もプラス → エッジあり。履歴はプラスだが直近が明らかにマイナス → エッジ低下中。どちらもマイナス → エッジ消失。信頼度はサンプル数に依存します（50未満は低、50以上は中、100以上は高）。直近期待値の下のおおよその範囲はサンプルの不確かさを示し、保証ではありません。変化を追う目安であり、科学的な証明ではありません。"
   }
 }
-

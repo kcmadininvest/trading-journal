@@ -78,7 +78,8 @@
   "tabs": {
     "stats": "统计",
     "insights": "偏离分析",
-    "charts": "图表"
+    "charts": "图表",
+    "edge": "优势"
   },
   "insights": {
     "gainIfTitle": "策略偏离的成本",
@@ -197,6 +198,59 @@
     "trendNoData": "—",
     "tradeLevelRate": "遵守率（交易级）",
     "tradeLevelRateHint": "筛选期间内策略被遵守的已评估交易占比。"
+  },
+  "edgeStatus": {
+    "title": "策略优势（遵守的交易）",
+    "subtitle": "基于全期期望值与最近 N 笔交易的对比提示——与下方纪律分开。包含所有版本；忽略周期筛选。",
+    "selectStrategy": "选择仓位策略以查看优势是否存在、正在减弱或已消失。",
+    "na": "—",
+    "baseline": "期望值（全期）",
+    "trailing": "最近 {{count}} 笔期望值",
+    "trailingPf": "盈利因子（近期）",
+    "profitFactorInfinite": "∞",
+    "sample": "已分析交易",
+    "basisLabel": "基准",
+    "basisRespected": "遵守的交易",
+    "basisAll": "全部交易",
+    "periodIndependent": "不受周期筛选影响",
+    "familyScope": "所有版本",
+    "fallbackWarning": "遵守交易过少（{{respected}}）：状态按该策略族全部交易计算。",
+    "uncertaintyBand": "大致区间 {{low}} … {{high}}",
+    "signUncertain": "近期符号不确定（区间跨越零）。",
+    "confidence": {
+      "low": "置信度低",
+      "medium": "置信度中",
+      "high": "置信度高"
+    },
+    "status": {
+      "present": "优势存在",
+      "fading": "优势减弱中",
+      "lost": "优势已失",
+      "insufficient": "数据不足"
+    },
+    "hint": {
+      "present": "近期期望值（{{count}} 笔）仍偏有利。仅为启发式提示，非统计检验。",
+      "fading": "历史为正，但最近 {{count}} 笔明显为负——优势似乎在削弱。",
+      "lost": "历史与近期窗口均未显示明确为正的期望值。",
+      "insufficient": "合格交易少于 20 笔：优势状态尚不可靠。"
+    }
+  },
+  "edgeOverview": {
+    "title": "优势总览",
+    "subtitle": "展示您的全部策略（所有版本）与完整历史——此处不适用周期与策略筛选。点击一行可在统计中查看详情。",
+    "empty": "该账户没有带交易的策略。",
+    "noActionable": "没有至少 20 笔合格交易、可给出可靠状态的策略族。",
+    "noReliable": "尚无至少 50 笔合格交易的策略族。",
+    "reliableSection": "可靠样本（{{formatted}}）",
+    "preliminarySection": "初步（20–49 笔）（{{formatted}}）",
+    "insufficientSection": "样本不足（{{formatted}}）",
+    "versions_one": "{{count}} 个版本",
+    "versions_other": "{{count}} 个版本",
+    "sample": "{{formatted}} 笔交易",
+    "openStats": "在统计中打开 →",
+    "filtersDisabledHint": "此标签页不适用周期与策略筛选（全期、所有策略族）。",
+    "sampleRespected": "{{formatted}} 笔遵守交易",
+    "sampleAll": "{{formatted}} 笔交易（全部）",
+    "howItWorks": "状态如何判定：比较整段历史的每笔平均结果与最近 30 笔（优先为遵守计划的交易）。历史为正且近期仍为正 → 优势存在。历史为正但近期明显为负 → 优势减弱中。两者都为负 → 优势已失。置信度取决于样本量（低于 50 为低，从 50 起为中，从 100 起为高）。近期期望值下的大致区间反映样本不确定性——并非保证。实用参考，不是科学证明。"
   }
 }
-

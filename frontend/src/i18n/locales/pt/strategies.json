@@ -88,7 +88,8 @@
   "tabs": {
     "stats": "Estatísticas",
     "insights": "Análise de desvios",
-    "charts": "Gráficos"
+    "charts": "Gráficos",
+    "edge": "Edge"
   },
   "insights": {
     "gainIfTitle": "Custo dos desvios de estratégia",
@@ -207,6 +208,59 @@
     "trendNoData": "—",
     "tradeLevelRate": "Taxa de cumprimento (nível trade)",
     "tradeLevelRateHint": "Proporção de trades avaliados em que a estratégia foi respeitada, no período filtrado."
+  },
+  "edgeStatus": {
+    "title": "Edge da estratégia (trades respeitados)",
+    "subtitle": "Indicação com base na expectancy de sempre vs. os últimos N trades — distinta da disciplina abaixo. Todas as versões; o filtro de período é ignorado.",
+    "selectStrategy": "Selecione uma estratégia de posição para ver se há edge, se está a esvair-se ou se foi perdido.",
+    "na": "—",
+    "baseline": "Expectancy (sempre)",
+    "trailing": "Expectancy últimos {{count}}",
+    "trailingPf": "Profit factor (trailing)",
+    "profitFactorInfinite": "∞",
+    "sample": "Trades analisados",
+    "basisLabel": "Base",
+    "basisRespected": "trades respeitados",
+    "basisAll": "todos os trades",
+    "periodIndependent": "Sem filtro de período",
+    "familyScope": "Todas as versões",
+    "fallbackWarning": "Poucos trades respeitados ({{respected}}): estado calculado em todos os trades da família.",
+    "uncertaintyBand": "Intervalo aprox. {{low}} … {{high}}",
+    "signUncertain": "Sinal recente incerto (o intervalo atravessa zero).",
+    "confidence": {
+      "low": "Confiança baixa",
+      "medium": "Confiança média",
+      "high": "Confiança elevada"
+    },
+    "status": {
+      "present": "Edge presente",
+      "fading": "Edge a esvair-se",
+      "lost": "Edge perdido",
+      "insufficient": "Dados insuficientes"
+    },
+    "hint": {
+      "present": "A expectancy recente ({{count}} trades) mantém-se favorável. Apenas uma heurística, não um teste estatístico.",
+      "fading": "O histórico é positivo, mas os últimos {{count}} trades são claramente negativos — o edge parece estar a erodir-se.",
+      "lost": "Nem o histórico nem a janela recente mostram expectancy claramente positiva.",
+      "insufficient": "Menos de 20 trades elegíveis: o estado do edge ainda não é fiável."
+    }
+  },
+  "edgeOverview": {
+    "title": "Visão geral do edge",
+    "subtitle": "Todas as suas estratégias (todas as versões), em todo o histórico — os filtros de período e estratégia não se aplicam aqui. Clique numa linha para ver o detalhe em Estatísticas.",
+    "empty": "Nenhuma estratégia com trades nesta conta.",
+    "noActionable": "Nenhuma família com pelo menos 20 trades elegíveis para um estado fiável.",
+    "noReliable": "Ainda nenhuma família com pelo menos 50 trades elegíveis.",
+    "reliableSection": "Amostra fiável ({{formatted}})",
+    "preliminarySection": "Preliminar (20–49 trades) ({{formatted}})",
+    "insufficientSection": "Amostra insuficiente ({{formatted}})",
+    "versions_one": "{{count}} versão",
+    "versions_other": "{{count}} versões",
+    "sample": "{{formatted}} trades",
+    "openStats": "Abrir em Estatísticas →",
+    "filtersDisabledHint": "Os filtros de período e estratégia não se aplicam a este separador (sempre, todas as famílias).",
+    "sampleRespected": "{{formatted}} trades respeitados",
+    "sampleAll": "{{formatted}} trades (todos)",
+    "howItWorks": "Como ler o estado: comparamos o resultado médio por trade em todo o histórico com o dos últimos 30 trades (de preferência aqueles em que o plano foi respeitado). Histórico positivo e recente ainda positivo → edge presente. Histórico positivo mas recente claramente negativo → edge a esvair-se. Ambos negativos → edge perdido. A confiança depende do tamanho da amostra (baixa abaixo de 50, média a partir de 50, elevada a partir de 100). O intervalo aproximado sob a expectancy recente reflecte a incerteza da amostra — não é uma garantia. Guia prático, não uma prova científica."
   }
 }
-

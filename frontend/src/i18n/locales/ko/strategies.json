@@ -78,7 +78,8 @@
   "tabs": {
     "stats": "통계",
     "insights": "이탈 분석",
-    "charts": "차트"
+    "charts": "차트",
+    "edge": "엣지"
   },
   "insights": {
     "gainIfTitle": "전략 이탈 비용",
@@ -197,6 +198,59 @@
     "trendNoData": "—",
     "tradeLevelRate": "준수율 (트레이드 단위)",
     "tradeLevelRateHint": "필터 기간 내 전략을 준수한 평가 트레이드 비율."
+  },
+  "edgeStatus": {
+    "title": "전략 엣지 (준수 트레이드)",
+    "subtitle": "전체 기간 기대값과 최근 N건 비교에 기반한 안내입니다(아래 규율과 별도). 모든 버전 포함. 기간 필터는 무시합니다.",
+    "selectStrategy": "포지션 전략을 선택하면 엣지 존재·약화·상실 여부를 확인할 수 있습니다.",
+    "na": "—",
+    "baseline": "기대값 (전체 기간)",
+    "trailing": "최근 {{count}}건 기대값",
+    "trailingPf": "프로핏 팩터 (최근)",
+    "profitFactorInfinite": "∞",
+    "sample": "분석한 트레이드",
+    "basisLabel": "기준",
+    "basisRespected": "준수 트레이드",
+    "basisAll": "전체 트레이드",
+    "periodIndependent": "기간 필터 미적용",
+    "familyScope": "모든 버전",
+    "fallbackWarning": "준수 트레이드가 적음({{respected}}): 패밀리 전체로 상태를 계산합니다.",
+    "uncertaintyBand": "대략 범위 {{low}} … {{high}}",
+    "signUncertain": "최근 부호가 불확실합니다(범위가 0을 지남).",
+    "confidence": {
+      "low": "신뢰도 낮음",
+      "medium": "신뢰도 보통",
+      "high": "신뢰도 높음"
+    },
+    "status": {
+      "present": "엣지 있음",
+      "fading": "엣지 약화 중",
+      "lost": "엣지 상실",
+      "insufficient": "데이터 부족"
+    },
+    "hint": {
+      "present": "최근 기대값({{count}}건)이 양호합니다. 통계 검정이 아닌 휴리스틱입니다.",
+      "fading": "이력은 양수이나 최근 {{count}}건은 분명히 음수 — 엣지가 약해지는 것으로 보입니다.",
+      "lost": "이력과 최근 구간 모두 명확히 양수인 기대값을 보이지 않습니다.",
+      "insufficient": "적격 트레이드가 20건 미만이라 엣지 상태가 아직 신뢰하기 어렵습니다."
+    }
+  },
+  "edgeOverview": {
+    "title": "엣지 개요",
+    "subtitle": "모든 전략(모든 버전)을 전체 기간 기준으로 봅니다. 기간·전략 필터는 이 탭에 적용되지 않습니다. 행을 클릭하면 통계 상세로 이동합니다.",
+    "empty": "이 계좌에 트레이드가 있는 전략이 없습니다.",
+    "noActionable": "신뢰할 수 있는 상태에 필요한 적격 트레이드 20건 이상인 패밀리가 없습니다.",
+    "noReliable": "적격 트레이드 50건 이상인 패밀리가 아직 없습니다.",
+    "reliableSection": "신뢰할 수 있는 표본 ({{formatted}})",
+    "preliminarySection": "예비 (20–49건) ({{formatted}})",
+    "insufficientSection": "표본 부족 ({{formatted}})",
+    "versions_one": "{{count}}개 버전",
+    "versions_other": "{{count}}개 버전",
+    "sample": "{{formatted}}건 트레이드",
+    "openStats": "통계에서 열기 →",
+    "filtersDisabledHint": "이 탭에서는 기간·전략 필터가 적용되지 않습니다(전체 기간, 모든 패밀리).",
+    "sampleRespected": "준수 트레이드 {{formatted}}건",
+    "sampleAll": "전체 트레이드 {{formatted}}건",
+    "howItWorks": "상태 읽는 법: 전체 기간 트레이드당 평균 결과와 최근 30건(가능하면 계획을 지킨 트레이드)을 비교합니다. 이력과 최근이 모두 양수 → 엣지 있음. 이력은 양수인데 최근이 분명히 음수 → 엣지 약화. 둘 다 음수 → 엣지 상실. 신뢰도는 표본 크기에 따릅니다(50 미만 낮음, 50부터 보통, 100부터 높음). 최근 기대값 아래의 대략 범위는 표본 불확실성을 나타내며 보장이 아닙니다. 변화를 보기 위한 실용적 안내이며 과학적 증명은 아닙니다."
   }
 }
-

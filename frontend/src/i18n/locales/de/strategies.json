@@ -90,7 +90,8 @@
   "tabs": {
     "stats": "Statistiken",
     "insights": "Abweichungsanalyse",
-    "charts": "Diagramme"
+    "charts": "Diagramme",
+    "edge": "Edge"
   },
   "insights": {
     "gainIfTitle": "Kosten von Strategieabweichungen",
@@ -209,5 +210,59 @@
     "trendNoData": "—",
     "tradeLevelRate": "Einhaltungsrate (Trade-Ebene)",
     "tradeLevelRateHint": "Anteil bewerteter Trades mit eingehaltener Strategie im gefilterten Zeitraum."
+  },
+  "edgeStatus": {
+    "title": "Edge der Strategie (eingehaltene Trades)",
+    "subtitle": "Hinweis basierend auf der Allzeit-Expectancy vs. den letzten N Trades — getrennt von der Disziplin darunter. Alle Strategieversionen, Periodenfilter ignoriert.",
+    "selectStrategy": "Wählen Sie eine Positionsstrategie, um zu sehen, ob ein Edge besteht, schwindet oder verloren ist.",
+    "na": "—",
+    "baseline": "Expectancy (Allzeit)",
+    "trailing": "Expectancy letzte {{count}}",
+    "trailingPf": "Profit Factor (trailing)",
+    "profitFactorInfinite": "∞",
+    "sample": "Analysierte Trades",
+    "basisLabel": "Basis",
+    "basisRespected": "eingehaltene Trades",
+    "basisAll": "alle Trades",
+    "periodIndependent": "Ohne Periodenfilter",
+    "familyScope": "Alle Versionen",
+    "fallbackWarning": "Wenige eingehaltene Trades ({{respected}}): Status auf allen Trades der Familie berechnet.",
+    "uncertaintyBand": "Ca.-Spanne {{low}} … {{high}}",
+    "signUncertain": "Jüngstes Vorzeichen unsicher (Spanne kreuzt null).",
+    "confidence": {
+      "low": "Geringe Konfidenz",
+      "medium": "Mittlere Konfidenz",
+      "high": "Hohe Konfidenz"
+    },
+    "status": {
+      "present": "Edge vorhanden",
+      "fading": "Edge schwindet",
+      "lost": "Edge verloren",
+      "insufficient": "Unzureichende Daten"
+    },
+    "hint": {
+      "present": "Die jüngste Expectancy ({{count}} Trades) bleibt günstig. Nur ein Heuristik-Hinweis, kein statistischer Test.",
+      "fading": "Die Historie ist positiv, aber die letzten {{count}} Trades sind klar negativ — der Edge scheint zu erodieren.",
+      "lost": "Weder Historie noch das jüngste Fenster zeigen eine klar positive Expectancy.",
+      "insufficient": "Weniger als 20 geeignete Trades: der Edge-Status ist noch nicht zuverlässig."
+    }
+  },
+  "edgeOverview": {
+    "title": "Edge-Übersicht",
+    "subtitle": "Alle Ihre Strategien (alle Versionen), über die gesamte Historie — Perioden- und Strategiefilter gelten hier nicht. Klicken Sie eine Zeile, um Details in den Statistiken zu öffnen.",
+    "empty": "Keine Strategien mit Trades für dieses Konto.",
+    "noActionable": "Keine Familie mit mindestens 20 geeigneten Trades für einen zuverlässigen Status.",
+    "noReliable": "Noch keine Familie mit mindestens 50 geeigneten Trades.",
+    "reliableSection": "Zuverlässige Stichprobe ({{formatted}})",
+    "preliminarySection": "Vorläufig (20–49 Trades) ({{formatted}})",
+    "insufficientSection": "Unzureichende Stichprobe ({{formatted}})",
+    "versions_one": "{{count}} Version",
+    "versions_other": "{{count}} Versionen",
+    "sample": "{{formatted}} Trades",
+    "openStats": "In Statistiken öffnen →",
+    "filtersDisabledHint": "Perioden- und Strategiefilter gelten auf diesem Tab nicht (Allzeit, alle Familien).",
+    "sampleRespected": "{{formatted}} eingehaltene Trades",
+    "sampleAll": "{{formatted}} Trades (alle)",
+    "howItWorks": "So entsteht der Status: Wir vergleichen den durchschnittlichen Ergebniswert pro Trade über die gesamte Historie mit den letzten 30 Trades (bevorzugt solche mit eingehaltenem Plan). Historie positiv und jüngste Ergebnisse noch positiv → Edge vorhanden. Historie positiv, jüngste Ergebnisse klar negativ → Edge schwindet. Beides negativ → Edge verloren. Die Konfidenz hängt von der Stichprobengröße ab (gering unter 50, mittel ab 50, hoch ab 100). Die ungefähre Spanne unter der jüngsten Expectancy spiegelt die Unsicherheit der Stichprobe wider — keine Garantie. Praktischer Hinweis, kein wissenschaftlicher Beweis."
   }
 }

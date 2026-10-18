@@ -9,6 +9,8 @@ import { StrategyBadges } from '../components/strategy/StrategyBadges';
 import { StrategyStatsTradingMetricsCard } from '../components/strategy/StrategyStatsTradingMetricsCard';
 import { StrategyStatsDisciplineOverviewCard } from '../components/strategy/StrategyStatsDisciplineOverviewCard';
 import { StrategyComplianceTrendCard } from '../components/strategy/StrategyComplianceTrendCard';
+import { StrategyEdgeStatusCard } from '../components/strategy/StrategyEdgeStatusCard';
+import { StrategyEdgeOverviewPanel } from '../components/strategy/StrategyEdgeOverviewPanel';
 import { StrategyGainIfRespectedCard } from '../components/strategy/StrategyGainIfRespectedCard';
 import { StrategyDeviationLossMixCard } from '../components/strategy/StrategyDeviationLossMixCard';
 import { StrategyComplianceCompletionCard } from '../components/strategy/StrategyComplianceCompletionCard';
@@ -17,9 +19,11 @@ import { StrategyDrillDownModal } from '../components/strategy/StrategyDrillDown
 import { StrategyComplianceModal } from '../components/trades/StrategyComplianceModal';
 import { useStrategyDisciplineInsights } from '../hooks/useStrategyDisciplineInsights';
 import { TabsFilter } from '../components/common/TabsFilter';
-import { useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
 import { combineQueryLoadingStates } from '../hooks/useQueryLoadingState';
 import { useStrategiesPageData, useTradesUpdateInvalidation } from '../hooks/useStatistics';
+import { queryKeys } from '../lib/queryKeys';
+import { tradeStrategiesService } from '../services/tradeStrategies';
 import { PositionStrategyFilterField } from '../components/common/PositionStrategyPillBar';
 import { usePositionStrategiesForFilter } from '../hooks/usePositionStrategiesForFilter';
 import { useTheme } from '../hooks/useTheme';
@@ -206,6 +210,19 @@ const StrategiesPage: React.FC = () => {
   const queryClient = useQueryClient();
   useTradesUpdateInvalidation();
 
+  const [activeStrategiesTab, setActiveStrategiesTab] = useState(() => {
+    try {
+      const saved = localStorage.getItem('strategies_page_active_tab');
+      if (saved && ['edge', 'stats', 'insights', 'charts'].includes(saved)) {
+        return saved;
+      }
+    } catch {
+      // ignore
+    }
+    return 'edge';
+  });
+  const edgeFiltersDisabled = activeStrategiesTab === 'edge';
+
   const {
     statistics,
     allAccountsCompliance,
@@ -229,6 +246,20 @@ const StrategiesPage: React.FC = () => {
     enabled: !accountLoading && !preferencesLoading,
   });
 
+  const edgeOverviewQuery = useQuery({
+    queryKey: queryKeys.strategyEdgeOverview({
+      accountId,
+      pnlDisplay: pnlDisplayMode,
+    }),
+    queryFn: () =>
+      tradeStrategiesService.strategyEdgeOverview({
+        ...(accountId ? { tradingAccount: accountId } : {}),
+        pnlDisplay: pnlDisplayMode,
+      }),
+    enabled: !accountLoading && !preferencesLoading,
+    placeholderData: keepPreviousData,
+  });
+
   const filtersReady = !accountLoading && !preferencesLoading;
   const { isInitialLoading, isRefreshing } = combineQueryLoadingStates([
     { isLoading: !filtersReady, isFetching: false, data: filtersReady ? true : null },
@@ -242,6 +273,7 @@ const StrategiesPage: React.FC = () => {
     selectedPeriod,
     selectedYear,
     selectedMonth,
+    positionStrategy: selectedPositionStrategy,
     skipAllTrades: true,
   });
   const tradesFetchStartedRef = useRef(false);
@@ -265,8 +297,17 @@ const StrategiesPage: React.FC = () => {
     if (refreshCount === mountedRefreshCount.current) return;
     mountedRefreshCount.current = refreshCount;
     void queryClient.invalidateQueries({ queryKey: ['strategiesPage'] });
+    void queryClient.invalidateQueries({ queryKey: ['strategyEdgeOverview'] });
     void reloadTrades();
   }, [refreshCount, queryClient, reloadTrades]);
+
+  const handleEdgeSelectStrategy = useCallback(
+    (displayStrategyId: number) => {
+      setSelectedPositionStrategy(displayStrategyId);
+      setActiveStrategiesTab('stats');
+    },
+    [setSelectedPositionStrategy]
+  );
 
 
   const complianceSectionData = useMemo(() => selectedAccountCompliance || allAccountsCompliance, [selectedAccountCompliance, allAccountsCompliance]);
@@ -284,6 +325,13 @@ const StrategiesPage: React.FC = () => {
   }, [selectedAccount?.currency, tradingAccounts, currencies]);
 
 
+  // Même source filtrée que Jours actifs (évite .length plafonné par page_size).
+  const totalTradesFromSummary = useMemo(() => {
+    const aggregates = dashboardSummary?.daily_aggregates;
+    if (!aggregates) return null;
+    return aggregates.reduce((sum, day) => sum + (day.trade_count || 0), 0);
+  }, [dashboardSummary?.daily_aggregates]);
+
   const {
     balanceLoading,
     balanceError,
@@ -293,6 +341,7 @@ const StrategiesPage: React.FC = () => {
     selectedAccount,
     filteredTrades,
     activeDays: dashboardSummary?.active_days,
+    totalTradesOverride: totalTradesFromSummary,
     pnlDisplay: pnlDisplayMode,
     timezone: preferences.timezone,
   });
@@ -597,6 +646,7 @@ const StrategiesPage: React.FC = () => {
               </label>
               <PeriodSelector
                 value={selectedPeriod}
+                disabled={edgeFiltersDisabled}
                 onChange={(period) => {
                   setSelectedPeriod(period);
                   // Réinitialiser les anciens sélecteurs
@@ -613,11 +663,17 @@ const StrategiesPage: React.FC = () => {
               onChange={setSelectedPositionStrategy}
               strategies={positionStrategies}
               loading={loadingStrategies}
+              disabled={edgeFiltersDisabled}
             />
             <div className="flex w-full items-end lg:w-auto lg:flex-shrink-0">
               <PnlBasisToggle />
             </div>
           </div>
+          {edgeFiltersDisabled ? (
+            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+              {t('strategies:edgeOverview.filtersDisabledHint')}
+            </p>
+          ) : null}
         </div>
 
         {/* Soldes du compte */}
@@ -646,7 +702,33 @@ const StrategiesPage: React.FC = () => {
 
         {/* Onglets pour organiser le contenu */}
         <TabsFilter
+          activeTab={activeStrategiesTab}
+          onTabChange={setActiveStrategiesTab}
+          storageKey="strategies_page_active_tab"
           tabs={[
+            {
+              id: 'edge',
+              label: t('strategies:tabs.edge'),
+              icon: (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                  />
+                </svg>
+              ),
+              content: (
+                <StrategyEdgeOverviewPanel
+                  items={edgeOverviewQuery.data?.items ?? []}
+                  loading={edgeOverviewQuery.isLoading || edgeOverviewQuery.isFetching}
+                  currencySymbol={currencySymbol}
+                  hideProfitLoss={privacySettings.hideProfitLoss}
+                  onSelectStrategy={handleEdgeSelectStrategy}
+                />
+              ),
+            },
             {
               id: 'stats',
               label: t('strategies:tabs.stats'),
@@ -659,6 +741,13 @@ const StrategiesPage: React.FC = () => {
               ),
               content: (
                 <div className="flex flex-col gap-4 sm:gap-6">
+                  <StrategyEdgeStatusCard
+                    edgeStatus={complianceSectionData?.edge_status}
+                    strategySelected={selectedPositionStrategy != null}
+                    currencySymbol={currencySymbol}
+                    hideProfitLoss={privacySettings.hideProfitLoss}
+                  />
+
                   {/* Indicateurs de respect */}
                   {statistics && (
                     <div className="space-y-4 sm:space-y-6">
@@ -1009,8 +1098,6 @@ const StrategiesPage: React.FC = () => {
               )
             }
           ]}
-          defaultTab="stats"
-          storageKey="strategies-active-tab"
         />
       </div>
 
@@ -1018,6 +1105,7 @@ const StrategiesPage: React.FC = () => {
         setShowImport(false);
         if (done) {
           void queryClient.invalidateQueries({ queryKey: ['strategiesPage'] });
+          void queryClient.invalidateQueries({ queryKey: ['strategyEdgeOverview'] });
           void reloadTrades();
         }
       }} />

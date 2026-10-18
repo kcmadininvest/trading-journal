@@ -11,6 +11,8 @@ interface UseStrategyTradesParams {
   } | null;
   selectedYear: number | null;
   selectedMonth: number | null;
+  /** Filtre famille stratégie (même sémantique que le summary dashboard). */
+  positionStrategy?: number | null;
   skipAllTrades?: boolean;
 }
 
@@ -28,6 +30,7 @@ export const useStrategyTrades = ({
   selectedPeriod,
   selectedYear,
   selectedMonth,
+  positionStrategy = null,
   skipAllTrades = false,
 }: UseStrategyTradesParams): UseStrategyTradesReturn => {
   const [allTrades, setAllTrades] = useState<TradeListItem[]>([]);
@@ -72,6 +75,10 @@ export const useStrategyTrades = ({
         filteredFilters.end_date = endDate;
       }
 
+      if (positionStrategy != null) {
+        filteredFilters.position_strategy = positionStrategy;
+      }
+
       // Ne charger allTrades que si nécessaire
       if (skipAllTrades) {
         const filteredTradesResponse = await tradesService.list(filteredFilters);
@@ -96,7 +103,7 @@ export const useStrategyTrades = ({
     } finally {
       setLoading(false);
     }
-  }, [accountId, accountLoading, selectedPeriod, selectedYear, selectedMonth, skipAllTrades]);
+  }, [accountId, accountLoading, selectedPeriod, selectedYear, selectedMonth, positionStrategy, skipAllTrades]);
 
   useEffect(() => {
     loadTrades();

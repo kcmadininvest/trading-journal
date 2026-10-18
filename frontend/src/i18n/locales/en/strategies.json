@@ -88,9 +88,28 @@
     "fatigue": "Fatigue"
   },
   "tabs": {
+    "edge": "Edge",
     "stats": "Statistics",
     "insights": "Deviation analysis",
     "charts": "Charts"
+  },
+  "edgeOverview": {
+    "title": "Edge overview",
+    "subtitle": "All your strategies (all versions), over the full history — period and strategy filters do not apply here. Click a row to open details in Statistics.",
+    "empty": "No strategies with trades for this account.",
+    "noActionable": "No family with at least 20 eligible trades for a reliable status.",
+    "noReliable": "No family with at least 50 eligible trades yet.",
+    "reliableSection": "Reliable sample ({{formatted}})",
+    "preliminarySection": "Preliminary (20–49 trades) ({{formatted}})",
+    "insufficientSection": "Insufficient sample ({{formatted}})",
+    "versions_one": "{{count}} version",
+    "versions_other": "{{count}} versions",
+    "sample": "{{formatted}} trades",
+    "openStats": "Open in Statistics →",
+    "filtersDisabledHint": "Period and strategy filters do not apply on this tab (all-time, all families).",
+    "sampleRespected": "{{formatted}} respected trades",
+    "sampleAll": "{{formatted}} trades (all)",
+    "howItWorks": "How the status works: we compare your average result per trade over all history with your last 30 trades (preferably ones where you followed the plan). Positive history and recent results still positive → edge present. Positive history but recent results clearly negative → edge fading. Both negative → edge lost. Confidence depends on sample size (low under 50, medium from 50, high from 100). The approximate range under recent expectancy reflects sample uncertainty — not a guarantee. This is a practical guide, not a scientific proof."
   },
   "insights": {
     "gainIfTitle": "Cost of strategy deviations",
@@ -209,6 +228,41 @@
     "trendNoData": "—",
     "tradeLevelRate": "Compliance rate (trade level)",
     "tradeLevelRateHint": "Share of evaluated trades where the strategy was followed, for the filtered period."
+  },
+  "edgeStatus": {
+    "title": "Strategy edge (respected trades)",
+    "subtitle": "Heuristic based on all-time expectancy vs the last N trades — separate from discipline below. All strategy versions, period filter ignored.",
+    "selectStrategy": "Select a position strategy to see whether an edge exists, is fading, or is lost.",
+    "na": "—",
+    "baseline": "All-time expectancy",
+    "trailing": "Last {{count}} expectancy",
+    "trailingPf": "Trailing profit factor",
+    "profitFactorInfinite": "∞",
+    "sample": "Trades analyzed",
+    "basisLabel": "Basis",
+    "basisRespected": "respected trades",
+    "basisAll": "all trades",
+    "periodIndependent": "Ignores period filter",
+    "familyScope": "All versions",
+    "fallbackWarning": "Few respected trades ({{respected}}): status computed on all family trades.",
+    "uncertaintyBand": "Approx. range {{low}} … {{high}}",
+    "signUncertain": "Recent sign is uncertain (range crosses zero).",
+    "confidence": {
+      "low": "Low confidence",
+      "medium": "Medium confidence",
+      "high": "High confidence"
+    },
+    "status": {
+      "present": "Edge present",
+      "fading": "Edge fading",
+      "lost": "Edge lost",
+      "insufficient": "Insufficient data"
+    },
+    "hint": {
+      "present": "Recent expectancy ({{count}} trades) remains favorable. Heuristic only, not a formal statistical test.",
+      "fading": "History is positive but the last {{count}} trades are clearly negative — the edge appears to be eroding.",
+      "lost": "Neither history nor the recent window shows clearly positive expectancy.",
+      "insufficient": "Fewer than 20 eligible trades: edge status is not reliable yet."
+    }
   }
 }
-

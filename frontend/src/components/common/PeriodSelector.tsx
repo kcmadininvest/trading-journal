@@ -17,6 +17,8 @@ interface PeriodSelectorProps {
   onChange: (range: PeriodRange) => void;
   className?: string;
   variant?: 'default' | 'band';
+  /** Désactive l'ouverture du menu (ex. onglet Edge all-time). */
+  disabled?: boolean;
 }
 
 /** Ordre logique : horizons courts → mois → années / historique ; personnalisé à part. */
@@ -44,10 +46,15 @@ export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
   onChange,
   className = '',
   variant = 'default',
+  disabled = false,
 }) => {
   const { t, i18n } = useI18nTranslation();
   const pillClasses = getPillTriggerClasses(variant);
   const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (disabled) setOpen(false);
+  }, [disabled]);
   const rootRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -354,8 +361,13 @@ export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
           type="button"
           aria-expanded={open}
           aria-haspopup="listbox"
-          onClick={() => setOpen((o) => !o)}
-          className={`${pillClasses.trigger} ${pillClasses.style}`}
+          disabled={disabled}
+          onClick={() => {
+            if (!disabled) setOpen((o) => !o);
+          }}
+          className={`${pillClasses.trigger} ${pillClasses.style} ${
+            disabled ? 'cursor-not-allowed opacity-50' : ''
+          }`}
         >
           <span className="min-w-0 flex-1 truncate text-left">{displayLabel}</span>
           <svg

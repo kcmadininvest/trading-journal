@@ -88,9 +88,28 @@
     "fatigue": "Fatigue"
   },
   "tabs": {
+    "edge": "Edge",
     "stats": "Statistiques",
     "insights": "Analyse des écarts",
     "charts": "Graphiques"
+  },
+  "edgeOverview": {
+    "title": "Vue d’ensemble de l’edge",
+    "subtitle": "Toutes vos stratégies (toutes versions), sur l’ensemble de l’historique — les filtres période et stratégie ne s’appliquent pas ici. Cliquez sur une ligne pour voir le détail dans Statistiques.",
+    "empty": "Aucune stratégie avec des trades pour ce compte.",
+    "noActionable": "Aucune famille avec au moins 20 trades éligibles pour un statut fiable.",
+    "noReliable": "Aucune famille avec au moins 50 trades éligibles pour l’instant.",
+    "reliableSection": "Échantillon fiable ({{formatted}})",
+    "preliminarySection": "Préliminaire (20–49 trades) ({{formatted}})",
+    "insufficientSection": "Échantillon insuffisant ({{formatted}})",
+    "versions_one": "{{count}} version",
+    "versions_other": "{{count}} versions",
+    "sample": "{{formatted}} trades",
+    "openStats": "Ouvrir dans Statistiques →",
+    "filtersDisabledHint": "Période et stratégie non applicables à cet onglet (vue all-time toutes familles).",
+    "sampleRespected": "{{formatted}} trades respectés",
+    "sampleAll": "{{formatted}} trades (tous)",
+    "howItWorks": "Comment lire le statut : on compare le gain moyen par trade sur tout l’historique avec celui des 30 derniers trades (de préférence ceux où le plan a été respecté). Historique positif et période récente encore positive → edge présent. Historique positif mais résultats récents clairement négatifs → edge en train de se perdre. Les deux négatifs → edge perdu. La confiance dépend de la taille d’échantillon (faible sous 50, moyenne à partir de 50, élevée à partir de 100). La fourchette approximative sous l’expectancy récente reflète l’incertitude liée à l’échantillon — ce n’est pas une garantie. Repère pratique, pas une preuve scientifique."
   },
   "insights": {
     "gainIfTitle": "Coût des écarts de stratégie",
@@ -209,6 +228,41 @@
     "trendNoData": "—",
     "tradeLevelRate": "Taux de respect (niveau trade)",
     "tradeLevelRateHint": "Part des trades évalués où la stratégie a été respectée, sur la période filtrée."
+  },
+  "edgeStatus": {
+    "title": "Edge de la stratégie (trades respectés)",
+    "subtitle": "Indication basée sur l’expectancy all-time vs les N derniers trades — distincte du respect affiché ci-dessous. Toutes versions de la stratégie, hors filtre période.",
+    "selectStrategy": "Sélectionnez une stratégie de position pour évaluer si un edge existe, s’érode ou est perdu.",
+    "na": "—",
+    "baseline": "Expectancy all-time",
+    "trailing": "Expectancy {{count}} derniers",
+    "trailingPf": "Profit factor (trailing)",
+    "profitFactorInfinite": "∞",
+    "sample": "Trades analysés",
+    "basisLabel": "Base",
+    "basisRespected": "trades respectés",
+    "basisAll": "tous les trades",
+    "periodIndependent": "Hors filtre période",
+    "familyScope": "Toutes versions",
+    "fallbackWarning": "Peu de trades respectés ({{respected}}) : statut calculé sur tous les trades de la famille.",
+    "uncertaintyBand": "Fourchette ≈ {{low}} … {{high}}",
+    "signUncertain": "Signe récent incertain (la fourchette traverse zéro).",
+    "confidence": {
+      "low": "Confiance faible",
+      "medium": "Confiance moyenne",
+      "high": "Confiance élevée"
+    },
+    "status": {
+      "present": "Edge présent",
+      "fading": "Edge en train de se perdre",
+      "lost": "Edge perdu",
+      "insufficient": "Données insuffisantes"
+    },
+    "hint": {
+      "present": "L’expectancy récente ({{count}} trades) reste favorable. Indication heuristique, pas un test statistique.",
+      "fading": "L’historique est positif mais les {{count}} derniers trades sont clairement négatifs — l’edge semble s’éroder.",
+      "lost": "Ni l’historique ni la fenêtre récente ne montrent d’expectancy clairement positive.",
+      "insufficient": "Moins de 20 trades éligibles : le statut d’edge n’est pas encore fiable."
+    }
   }
 }
-

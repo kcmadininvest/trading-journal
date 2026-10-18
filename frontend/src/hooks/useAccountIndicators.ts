@@ -92,6 +92,8 @@ interface UseAccountIndicatorsParams {
     };
   } | null;
   activeDays?: number;
+  /** Total exact (ex. somme daily_aggregates) — évite le plafond page_size de filteredTrades. */
+  totalTradesOverride?: number | null;
   pnlDisplay?: PnlDisplayMode;
   timezone?: string;
 }
@@ -155,6 +157,7 @@ export function useAccountIndicators({
   filteredBalanceData,
   analyticsData,
   activeDays,
+  totalTradesOverride = null,
   pnlDisplay = 'net',
   timezone = 'Europe/Paris',
 }: UseAccountIndicatorsParams): UseAccountIndicatorsResult {
@@ -368,7 +371,10 @@ export function useAccountIndicators({
     };
   }, [selectedAccount, accountBalance, topstepConsistency, pnlDisplay]);
 
-  const totalTrades = filteredTrades.length;
+  const totalTrades =
+    totalTradesOverride != null && Number.isFinite(totalTradesOverride)
+      ? totalTradesOverride
+      : filteredTrades.length;
 
   return {
     accountBalance,

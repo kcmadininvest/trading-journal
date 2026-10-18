@@ -12,18 +12,28 @@ interface TabsFilterProps {
   tabs: Tab[];
   defaultTab?: string;
   storageKey?: string;
+  /** Mode contrôlé : onglet actif piloté par le parent. */
+  activeTab?: string;
+  onTabChange?: (tabId: string) => void;
 }
 
-export const TabsFilter: React.FC<TabsFilterProps> = ({ 
-  tabs, 
-  defaultTab, 
-  storageKey = 'tabs_filter_active' 
+export const TabsFilter: React.FC<TabsFilterProps> = ({
+  tabs,
+  defaultTab,
+  storageKey = 'tabs_filter_active',
+  activeTab: controlledActiveTab,
+  onTabChange,
 }) => {
-  const [activeTab, setActiveTab] = useState<string>(() => {
+  const isControlled = controlledActiveTab !== undefined;
+
+  const [internalActiveTab, setInternalActiveTab] = useState<string>(() => {
+    if (isControlled && controlledActiveTab) {
+      return controlledActiveTab;
+    }
     if (storageKey) {
       try {
         const saved = localStorage.getItem(storageKey);
-        if (saved && tabs.some(t => t.id === saved)) {
+        if (saved && tabs.some((t) => t.id === saved)) {
           return saved;
         }
       } catch {
@@ -33,23 +43,41 @@ export const TabsFilter: React.FC<TabsFilterProps> = ({
     return defaultTab || tabs[0]?.id || '';
   });
 
+  const activeTab = isControlled ? controlledActiveTab : internalActiveTab;
+
+  const setActiveTab = (tabId: string) => {
+    if (isControlled) {
+      onTabChange?.(tabId);
+    } else {
+      setInternalActiveTab(tabId);
+      onTabChange?.(tabId);
+    }
+  };
+
+  // Sync interne si le parent change l'onglet en mode contrôlé (ex. navigation programmatique)
+  useEffect(() => {
+    if (isControlled && controlledActiveTab) {
+      setInternalActiveTab(controlledActiveTab);
+    }
+  }, [isControlled, controlledActiveTab]);
+
   // Gérer le changement de taille d'écran : si l'onglet actif est masqué sur mobile, basculer sur le premier onglet visible
   useEffect(() => {
     const handleResize = () => {
-      const activeTabData = tabs.find(t => t.id === activeTab);
+      const activeTabData = tabs.find((t) => t.id === activeTab);
       if (activeTabData?.hideOnMobile && window.innerWidth < 640) {
-        // Si l'onglet actif est masqué sur mobile et qu'on est en mode mobile, basculer sur le premier onglet visible
-        const firstVisibleTab = tabs.find(t => !t.hideOnMobile);
+        const firstVisibleTab = tabs.find((t) => !t.hideOnMobile);
         if (firstVisibleTab) {
           setActiveTab(firstVisibleTab.id);
         }
       }
     };
 
-    handleResize(); // Vérifier au montage
+    handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [activeTab, tabs]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- setActiveTab stable enough via closure on controlled flags
+  }, [activeTab, tabs, isControlled]);
 
   useEffect(() => {
     if (storageKey && activeTab) {
@@ -65,7 +93,7 @@ export const TabsFilter: React.FC<TabsFilterProps> = ({
     setActiveTab(tabId);
   };
 
-  const activeTabData = tabs.find(t => t.id === activeTab);
+  const activeTabData = tabs.find((t) => t.id === activeTab);
   const activeTabContent = activeTabData?.content;
   const isActiveTabHiddenOnMobile = activeTabData?.hideOnMobile || false;
 
@@ -79,26 +107,31 @@ export const TabsFilter: React.FC<TabsFilterProps> = ({
             return (
               <button
                 key={tab.id}
+                type="button"
                 onClick={() => handleTabChange(tab.id)}
                 className={`
                   group inline-flex items-center gap-2 py-2 px-1 border-b-2 font-medium text-sm
                   transition-all duration-200
                   ${tab.hideOnMobile ? 'hidden sm:inline-flex' : ''}
-                  ${isActive
-                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:border-gray-600'
+                  ${
+                    isActive
+                      ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:border-gray-600'
                   }
                 `}
                 aria-current={isActive ? 'page' : undefined}
               >
                 {tab.icon && (
-                  <span className={`
+                  <span
+                    className={`
                     transition-colors duration-200
-                    ${isActive 
-                      ? 'text-blue-500 dark:text-blue-400' 
-                      : 'text-gray-400 group-hover:text-gray-500 dark:text-gray-500 dark:group-hover:text-gray-400'
+                    ${
+                      isActive
+                        ? 'text-blue-500 dark:text-blue-400'
+                        : 'text-gray-400 group-hover:text-gray-500 dark:text-gray-500 dark:group-hover:text-gray-400'
                     }
-                  `}>
+                  `}
+                  >
                     {tab.icon}
                   </span>
                 )}
@@ -111,10 +144,7 @@ export const TabsFilter: React.FC<TabsFilterProps> = ({
 
       {/* Tabs Content */}
       <div className={isActiveTabHiddenOnMobile ? 'hidden sm:block' : ''}>
-        <div
-          className="animate-fadeIn"
-          key={activeTab}
-        >
+        <div className="animate-fadeIn" key={activeTab}>
           {activeTabContent}
         </div>
       </div>

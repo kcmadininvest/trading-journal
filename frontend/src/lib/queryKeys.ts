@@ -69,4 +69,8 @@ export const queryKeys = {
     positionStrategy: number | null;
     pnlDisplay: PnlDisplayMode;
   }) => ['strategiesPage', params] as const,
+  strategyEdgeOverview: (params: {
+    accountId: number | null;
+    pnlDisplay: PnlDisplayMode;
+  }) => ['strategyEdgeOverview', params] as const,
 };

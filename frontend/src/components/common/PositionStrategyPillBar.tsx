@@ -200,6 +200,8 @@ export interface PositionStrategyFilterFieldProps {
   onChange: (strategyId: number | null) => void;
   strategies: PositionStrategy[];
   loading?: boolean;
+  /** Force disabled (ex. onglet Edge indépendant du filtre stratégie). */
+  disabled?: boolean;
   /** Conteneur (largeur / flex), ex. w-full lg:min-w-0 lg:flex-1 lg:max-w-sm */
   className?: string;
   /** Libellé au-dessus ; défaut : strategies:positionStrategy */
@@ -212,6 +214,7 @@ export const PositionStrategyFilterField: React.FC<PositionStrategyFilterFieldPr
   onChange,
   strategies,
   loading = false,
+  disabled = false,
   className = '',
   label,
 }) => {
@@ -225,7 +228,7 @@ export const PositionStrategyFilterField: React.FC<PositionStrategyFilterFieldPr
         value={value}
         onChange={onChange}
         strategies={strategies}
-        disabled={loading}
+        disabled={loading || disabled}
       />
     </div>
   );
