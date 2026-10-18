@@ -285,6 +285,7 @@ REST_FRAMEWORK = {
         'integration_test': '5/minute',  # Test connexion intégrations API
         'trade_sync': '3/minute',  # Sync trades TopStepX
         'historical_download': '30/hour',  # Téléchargement historique market_data
+        'protected_media': '120/minute',  # URLs signées screenshots / journal images
     },
 }
 

@@ -1,10 +1,9 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import ReactMarkdown, { Components } from 'react-markdown';
-import rehypeRaw from 'rehype-raw';
-import remarkGfm from 'remark-gfm';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { DailyJournalGroupedEntry, dailyJournalService } from '../../services/dailyJournal';
+import { journalRehypePlugins, journalRemarkPlugins } from './journalMarkdown';
 
 interface DailyJournalCardProps {
   entry: DailyJournalGroupedEntry;
@@ -217,7 +216,7 @@ export const DailyJournalCard: React.FC<DailyJournalCardProps> = ({
                   {t('dailyJournal.cardPreviewFallback', { defaultValue: 'Aperçu partiel (extrait).' })}
                 </p>
               )}
-              <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>
+              <ReactMarkdown remarkPlugins={journalRemarkPlugins} rehypePlugins={journalRehypePlugins} components={markdownComponents}>
                 {previewContent}
               </ReactMarkdown>
             </>
@@ -275,7 +274,7 @@ export const DailyJournalCard: React.FC<DailyJournalCardProps> = ({
                     : undefined
                 }
               >
-                <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={cardMarkdownComponents}>
+                <ReactMarkdown remarkPlugins={journalRemarkPlugins} rehypePlugins={journalRehypePlugins} components={cardMarkdownComponents}>
                   {entry.content_preview}
                 </ReactMarkdown>
               </div>

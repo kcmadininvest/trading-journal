@@ -76,3 +76,11 @@ class ContactThrottle(AnonRateThrottle):
     """
     scope = 'contact'
 
+
+class ProtectedMediaThrottle(AnonRateThrottle):
+    """
+    Throttling pour les URLs media signées (screenshots / images journal).
+    Limite le scraping / abus par IP (AllowAny + jeton).
+    """
+    scope = 'protected_media'
+

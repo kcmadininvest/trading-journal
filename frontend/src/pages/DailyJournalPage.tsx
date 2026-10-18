@@ -1,12 +1,15 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import ReactMarkdown, { Components } from 'react-markdown';
-import rehypeRaw from 'rehype-raw';
-import remarkGfm from 'remark-gfm';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { dailyJournalService, DailyJournalEntry, DailyJournalGroupedEntry, DailyJournalGroupedYear } from '../services/dailyJournal';
 import userService from '../services/userService';
 import { DailyJournalEditor } from '../components/dailyJournal/DailyJournalEditor';
 import { DailyJournalCard } from '../components/dailyJournal/DailyJournalCard';
+import {
+  journalRehypePlugins,
+  journalRemarkPlugins,
+  sanitizeMarkdownHref,
+} from '../components/dailyJournal/journalMarkdown';
 import { usePreferences } from '../hooks/usePreferences';
 import { formatDateLong, LanguageType } from '../utils/dateFormat';
 import { AccountSelector } from '../components/accounts/AccountSelector';
@@ -231,13 +234,14 @@ const DailyJournalPage: React.FC = () => {
       </li>
     ),
     a: ({ node, href, onClick, children, ...props }) => {
-      const normalizedHref = href && !/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(href)
-        ? `https://${href}`
-        : href;
+      const safeHref = sanitizeMarkdownHref(href);
+      if (!safeHref) {
+        return <span className="text-blue-600 dark:text-blue-400 underline">{children}</span>;
+      }
       return (
         <a
           {...props}
-          href={normalizedHref}
+          href={safeHref}
           target="_blank"
           rel="noopener noreferrer"
           className="text-blue-600 dark:text-blue-400 underline"
@@ -789,8 +793,8 @@ const DailyJournalPage: React.FC = () => {
                                 {entry.content_preview ? (
                                   <div className="text-xs text-gray-600 dark:text-gray-300 line-clamp-2">
                                     <ReactMarkdown
-                                      remarkPlugins={[remarkGfm]}
-                                      rehypePlugins={[rehypeRaw]}
+                                      remarkPlugins={journalRemarkPlugins}
+                                      rehypePlugins={journalRehypePlugins}
                                       components={cardPreviewMarkdownComponents}
                                     >
                                       {entry.content_preview}

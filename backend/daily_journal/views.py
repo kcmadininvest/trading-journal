@@ -10,6 +10,8 @@ from rest_framework.decorators import action, api_view, permission_classes, thro
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
 
+from accounts.throttling import ProtectedMediaThrottle
+
 from .image_access import load_journal_image_payload
 from .models import DailyJournalEntry, DailyJournalImage
 from .serializers import (
@@ -148,7 +150,7 @@ class DailyJournalEntryViewSet(viewsets.ModelViewSet):
 
 @api_view(['GET'])
 @permission_classes([permissions.AllowAny])
-@throttle_classes([])
+@throttle_classes([ProtectedMediaThrottle])
 def serve_journal_image_file(request, pk: int):
     """
     Sert le fichier image après vérification d'un jeton signé (lié à l'image et au propriétaire).

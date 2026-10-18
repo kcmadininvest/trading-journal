@@ -1,7 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import rehypeRaw from 'rehype-raw';
-import remarkGfm from 'remark-gfm';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { dailyJournalService, DailyJournalEntry, DailyJournalImage } from '../../services/dailyJournal';
 import userService from '../../services/userService';
@@ -13,6 +11,11 @@ import { JournalEditorToolbar } from './JournalEditorToolbar';
 import { JournalTableEditor } from './JournalTableEditor';
 import { ComplianceScreenshots } from './ComplianceScreenshots';
 import { JournalQuestionsStatusLink } from './JournalQuestionsStatusLink';
+import {
+  journalMarkdownComponents,
+  journalRehypePlugins,
+  journalRemarkPlugins,
+} from './journalMarkdown';
 import {
   MarkdownTableData,
   createEmptyTableData,
@@ -655,36 +658,9 @@ export const DailyJournalEditor: React.FC<DailyJournalEditorProps> = ({
         <div className="journal-markdown rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-800 dark:text-gray-200">
           {content.trim() ? (
             <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
-              rehypePlugins={[rehypeRaw]}
-              components={{
-                h1: ({ children }) => <h1 className="text-2xl font-bold mt-2 mb-2">{children}</h1>,
-                h2: ({ children }) => <h2 className="text-xl font-semibold mt-2 mb-2">{children}</h2>,
-                h3: ({ children }) => <h3 className="text-lg font-semibold mt-2 mb-2">{children}</h3>,
-                ul: ({ children }) => <ul className="list-disc pl-5 my-2 space-y-1">{children}</ul>,
-                ol: ({ children }) => <ol className="list-decimal pl-5 my-2 space-y-1">{children}</ol>,
-                li: ({ children }) => <li className="text-gray-800 dark:text-gray-200">{children}</li>,
-                a: ({ href, children }) => {
-                  const normalizedHref = href && !/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(href)
-                    ? `https://${href}`
-                    : href;
-                  return (
-                  <a
-                    href={normalizedHref}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 dark:text-blue-400 underline"
-                  >
-                    {children}
-                  </a>
-                  );
-                },
-                blockquote: ({ children }) => (
-                  <blockquote className="border-l-4 border-gray-300 dark:border-gray-600 pl-4 italic text-gray-600 dark:text-gray-300 my-2">
-                    {children}
-                  </blockquote>
-                ),
-              }}
+              remarkPlugins={journalRemarkPlugins}
+              rehypePlugins={journalRehypePlugins}
+              components={journalMarkdownComponents}
             >
               {content}
             </ReactMarkdown>

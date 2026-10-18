@@ -7,6 +7,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from accounts.throttling import ProtectedMediaThrottle
 
 from .protected_screenshot_urls import (
     _relative_under_media_from_url,
@@ -19,7 +20,7 @@ from .protected_screenshot_urls import (
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
-@throttle_classes([])
+@throttle_classes([ProtectedMediaThrottle])
 def serve_protected_screenshot_media(request):
     """Sert un fichier sous media/screenshots/ après vérification du jeton."""
     raw = (request.GET.get('s') or '').strip()

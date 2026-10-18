@@ -1,4 +1,4 @@
-Django>=4.2,<5.0
+Django>=4.2.30,<5.0
 daphne>=4.0.0
 channels>=4.0.0
 channels-redis>=4.2.0
@@ -11,7 +11,7 @@ redis>=5.0.1
 django-redis>=5.4.0
 hiredis>=2.3.2
 djangorestframework-simplejwt>=5.3.1
-Pillow>=10.1.0
+Pillow>=11.3.0,<12  # 12.x requires Python >=3.10; runtime is 3.9
 python-dateutil>=2.8.2
 pytz>=2023.3
 drf-spectacular>=0.27.0

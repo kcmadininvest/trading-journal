@@ -9,18 +9,24 @@ from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import AccessToken
 
+from accounts.jwt_blacklist_cache import is_jti_blacklisted
 from integrations.market_quotes_activation import bootstrap_market_quotes_for_user
 from integrations.market_quotes_hub_control import signal_user_active, signal_user_inactive
 from integrations.market_quotes_service import channel_group_name, load_snapshot
 
 logger = logging.getLogger(__name__)
 
+# Préfixe Sec-WebSocket-Protocol (évite le JWT dans la query string / logs Referer).
+WS_ACCESS_TOKEN_SUBPROTOCOL_PREFIX = 'access_token.'
 
-@database_sync_to_async
-def _get_user_from_token(token_str: str):
+
+def _resolve_user_from_token_sync(token_str: str):
     from django.contrib.auth import get_user_model
 
     token = AccessToken(token_str)
+    jti = token.get('jti')
+    if jti and is_jti_blacklisted(str(jti)):
+        raise TokenError('Token has been blacklisted')
     user_id = token.get('user_id')
     if user_id is None:
         raise TokenError('user_id absent')
@@ -28,26 +34,50 @@ def _get_user_from_token(token_str: str):
     return User.objects.get(pk=int(user_id))
 
 
+_get_user_from_token = database_sync_to_async(_resolve_user_from_token_sync)
+
+
+def _extract_ws_token(scope) -> tuple[str | None, str | None]:
+    """
+    Retourne (token, subprotocol_à_accepter).
+    Préfère le sous-protocole ; fallback query `?token=` pour clients legacy.
+    """
+    subprotocols = list(scope.get('subprotocols') or [])
+    for proto in subprotocols:
+        if isinstance(proto, str) and proto.startswith(WS_ACCESS_TOKEN_SUBPROTOCOL_PREFIX):
+            raw = proto[len(WS_ACCESS_TOKEN_SUBPROTOCOL_PREFIX) :]
+            if raw:
+                return raw, proto
+
+    raw_qs = scope.get('query_string', b'')
+    if isinstance(raw_qs, bytes):
+        raw_qs = raw_qs.decode()
+    query = parse_qs(raw_qs)
+    token_list = query.get('token') or []
+    if token_list and token_list[0]:
+        return token_list[0], None
+    return None, None
+
+
 class MarketQuotesConsumer(AsyncJsonWebsocketConsumer):
     async def connect(self) -> None:
-        raw_qs = self.scope.get('query_string', b'')
-        if isinstance(raw_qs, bytes):
-            raw_qs = raw_qs.decode()
-        query = parse_qs(raw_qs)
-        token_list = query.get('token') or []
-        if not token_list or not token_list[0]:
+        token_str, chosen_subprotocol = _extract_ws_token(self.scope)
+        if not token_str:
             await self.close(code=4401)
             return
 
         try:
-            self.user = await _get_user_from_token(token_list[0])
+            self.user = await _get_user_from_token(token_str)
         except Exception:
             await self.close(code=4401)
             return
 
         self._group = channel_group_name(self.user.id)
         await self.channel_layer.group_add(self._group, self.channel_name)
-        await self.accept()
+        if chosen_subprotocol:
+            await self.accept(subprotocol=chosen_subprotocol)
+        else:
+            await self.accept()
 
         await database_sync_to_async(bootstrap_market_quotes_for_user)(self.user)
         await database_sync_to_async(signal_user_active)(self.user.id)
