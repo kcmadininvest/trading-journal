@@ -1,6 +1,6 @@
 """
-Authentification JWT avec blacklist + dual-read (cookie puis Bearer).
-CSRF forcé uniquement lorsque l'auth provient du cookie.
+Authentification JWT via cookie HttpOnly tj_access uniquement.
+CSRF forcé sur les méthodes non sûres.
 """
 
 from rest_framework.authentication import SessionAuthentication
@@ -21,27 +21,16 @@ def _enforce_csrf(request) -> None:
 class BlacklistJWTAuthentication(JWTAuthentication):
     """
     Authentification JWT avec vérification de blacklist (cache Redis + DB).
-    Lit d'abord le cookie tj_access, sinon Authorization Bearer.
+    Cookie tj_access uniquement — Authorization Bearer ignoré.
     """
 
     def authenticate(self, request):
-        header = self.get_header(request)
-        if header is not None:
-            raw_token = self.get_raw_token(header)
-            if raw_token is None:
-                return None
-            validated_token = self.get_validated_token(raw_token)
-            user = self.get_user(validated_token)
-            request.jwt_auth_source = 'bearer'
-            return (user, validated_token)
-
         raw_cookie = request.COOKIES.get(ACCESS_COOKIE_NAME)
         if not raw_cookie:
             return None
 
         validated_token = self.get_validated_token(raw_cookie)
         user = self.get_user(validated_token)
-        request.jwt_auth_source = 'cookie'
         if request.method not in SAFE_METHODS:
             _enforce_csrf(request)
         return (user, validated_token)

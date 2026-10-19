@@ -223,11 +223,6 @@ class AuthService {
     return this.user;
   }
 
-  /** @deprecated Tokens plus en JS — conservé pour compat WS legacy / tests. */
-  getAccessToken(): string | null {
-    return null;
-  }
-
   /**
    * Rafraîchit la session via cookie (mutex dans apiClient).
    * Retourne true si OK.

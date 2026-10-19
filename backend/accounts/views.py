@@ -628,16 +628,15 @@ def _blacklist_access_token_str(access_token_str: str) -> None:
 
 
 class CookieTokenRefreshView(TokenRefreshView):
-    """Refresh JWT depuis cookie tj_refresh (body.refresh en fallback legacy)."""
+    """Refresh JWT depuis cookie tj_refresh uniquement (body.refresh ignoré)."""
 
     permission_classes = []
 
     def post(self, request, *args, **kwargs):
-        data = request.data.copy() if hasattr(request.data, 'copy') else dict(request.data or {})
-        if not data.get('refresh'):
-            cookie_refresh = request.COOKIES.get(REFRESH_COOKIE_NAME)
-            if cookie_refresh:
-                data['refresh'] = cookie_refresh
+        cookie_refresh = request.COOKIES.get(REFRESH_COOKIE_NAME)
+        if not cookie_refresh:
+            raise InvalidToken('No refresh cookie')
+        data = {'refresh': cookie_refresh}
         serializer = self.get_serializer(data=data)
         try:
             serializer.is_valid(raise_exception=True)
@@ -652,26 +651,17 @@ class CookieTokenRefreshView(TokenRefreshView):
 
 
 class LogoutView(APIView):
-    """
-    Déconnexion avec blacklist des tokens (cookie et/ou Bearer / body).
-    """
+    """Déconnexion avec blacklist des tokens depuis cookies uniquement."""
+
     permission_classes = []
 
     def post(self, request):
         try:
-            access_token_str = None
-            auth_header = request.META.get('HTTP_AUTHORIZATION', '')
-            if auth_header.startswith('Bearer '):
-                access_token_str = auth_header.split(' ')[1]
-            if not access_token_str:
-                access_token_str = request.COOKIES.get(ACCESS_COOKIE_NAME)
+            access_token_str = request.COOKIES.get(ACCESS_COOKIE_NAME)
             if access_token_str:
                 _blacklist_access_token_str(access_token_str)
 
-            refresh_token = request.data.get('refresh') if hasattr(request, 'data') else None
-            if not refresh_token:
-                refresh_token = request.COOKIES.get(REFRESH_COOKIE_NAME)
-
+            refresh_token = request.COOKIES.get(REFRESH_COOKIE_NAME)
             if refresh_token:
                 try:
                     token = RefreshToken(refresh_token)
@@ -1021,16 +1011,12 @@ def admin_stats_view(request):
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
 def session_info(request):
-    """Retourne les informations de session (access cookie ou Bearer)."""
+    """Retourne les informations de session (cookie tj_access)."""
     from datetime import datetime, timedelta
     from rest_framework_simplejwt.settings import api_settings as jwt_api_settings
 
     try:
         access_token_str = request.COOKIES.get(ACCESS_COOKIE_NAME)
-        if not access_token_str:
-            auth_header = request.META.get('HTTP_AUTHORIZATION', '')
-            if auth_header.startswith('Bearer '):
-                access_token_str = auth_header.split(' ')[1]
         if not access_token_str and getattr(request, 'auth', None) is not None:
             try:
                 access_token_str = str(request.auth)

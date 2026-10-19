@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import logging
-from urllib.parse import parse_qs
 
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
@@ -16,9 +15,6 @@ from integrations.market_quotes_hub_control import signal_user_active, signal_us
 from integrations.market_quotes_service import channel_group_name, load_snapshot
 
 logger = logging.getLogger(__name__)
-
-# Préfixe Sec-WebSocket-Protocol (legacy / clients hors navigateur).
-WS_ACCESS_TOKEN_SUBPROTOCOL_PREFIX = 'access_token.'
 
 
 def _resolve_user_from_token_sync(token_str: str):
@@ -58,26 +54,11 @@ def _cookies_from_scope(scope) -> dict[str, str]:
 def _extract_ws_token(scope) -> tuple[str | None, str | None]:
     """
     Retourne (token, subprotocol_à_accepter).
-    Ordre : sous-protocole → cookie tj_access → query ?token= (legacy).
+    Cookie tj_access uniquement (plus de query ?token= ni subprotocol access_token.*).
     """
-    subprotocols = list(scope.get('subprotocols') or [])
-    for proto in subprotocols:
-        if isinstance(proto, str) and proto.startswith(WS_ACCESS_TOKEN_SUBPROTOCOL_PREFIX):
-            raw = proto[len(WS_ACCESS_TOKEN_SUBPROTOCOL_PREFIX) :]
-            if raw:
-                return raw, proto
-
     cookie_token = _cookies_from_scope(scope).get(ACCESS_COOKIE_NAME)
     if cookie_token:
         return cookie_token, None
-
-    raw_qs = scope.get('query_string', b'')
-    if isinstance(raw_qs, bytes):
-        raw_qs = raw_qs.decode()
-    query = parse_qs(raw_qs)
-    token_list = query.get('token') or []
-    if token_list and token_list[0]:
-        return token_list[0], None
     return None, None
 
 
