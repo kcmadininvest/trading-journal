@@ -84,7 +84,7 @@ class TradingAccountSerializer(serializers.ModelSerializer):
 
     def get_trades_count(self, obj):
         """Retourne le nombre de trades associés à ce compte."""
-        return obj.imported_trades.count()
+        return obj.imported_trades.filter(user=obj.user).count()
 
     def validate_copy_imports_from(self, leader):
         if leader is None:
@@ -179,7 +179,7 @@ class TradingAccountListSerializer(serializers.ModelSerializer):
 
     def get_trades_count(self, obj):
         """Retourne le nombre de trades associés à ce compte."""
-        return obj.imported_trades.count()
+        return obj.imported_trades.filter(user=obj.user).count()
 
 
 class ImportedTradeSerializer(serializers.ModelSerializer):
@@ -251,6 +251,16 @@ class ImportedTradeSerializer(serializers.ModelSerializer):
         if request and request.user and request.user.is_authenticated:
             if value.user != request.user:
                 raise serializers.ValidationError("Cette stratégie ne vous appartient pas.")
+        return value
+
+    def validate_trading_account(self, value):
+        """Valide que le compte de trading appartient à l'utilisateur."""
+        if value is None:
+            return value
+        request = self.context.get('request')
+        if request and request.user and request.user.is_authenticated:
+            if value.user_id != request.user.id:
+                raise serializers.ValidationError("Ce compte ne vous appartient pas.")
         return value
 
     def create(self, validated_data):
@@ -603,6 +613,14 @@ class TradeStrategySerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("La note doit être entre 1 et 5")
         return value
 
+    def validate_trade(self, value):
+        """Empêche de lier une stratégie au trade d'un autre utilisateur."""
+        request = self.context.get('request')
+        if request and request.user and request.user.is_authenticated:
+            if value.user_id != request.user.id:
+                raise serializers.ValidationError("Ce trade ne vous appartient pas.")
+        return value
+
     def validate_screenshot_url(self, value):
         request = self.context.get('request')
         user = request.user if request else None
@@ -676,6 +694,16 @@ class DayStrategyComplianceSerializer(serializers.ModelSerializer):
         """Valide que la note est entre 1 et 5."""
         if value is not None and (value < 1 or value > 5):
             raise serializers.ValidationError("La note doit être entre 1 et 5")
+        return value
+
+    def validate_trading_account(self, value):
+        """Valide que le compte appartient à l'utilisateur."""
+        if value is None:
+            return value
+        request = self.context.get('request')
+        if request and request.user and request.user.is_authenticated:
+            if value.user_id != request.user.id:
+                raise serializers.ValidationError("Ce compte ne vous appartient pas.")
         return value
 
     def validate_screenshot_url(self, value):
@@ -1020,6 +1048,16 @@ class TradingGoalSerializer(serializers.ModelSerializer):
             'last_achieved_alert_sent',
         ]
         read_only_fields = ['user', 'current_value', 'created_at', 'updated_at', 'last_achieved_alert_sent']
+
+    def validate_trading_account(self, value):
+        """Valide que le compte appartient à l'utilisateur."""
+        if value is None:
+            return value
+        request = self.context.get('request')
+        if request and request.user and request.user.is_authenticated:
+            if value.user_id != request.user.id:
+                raise serializers.ValidationError("Ce compte ne vous appartient pas.")
+        return value
     
     def validate(self, data):
         """Valide les données de l'objectif."""

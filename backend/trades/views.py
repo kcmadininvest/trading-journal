@@ -421,7 +421,7 @@ class TradingAccountViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
         """
         try:
             account = self.get_object()
-            trades = account.imported_trades.all()
+            trades = account.imported_trades.filter(user=account.user)
             
             if not trades.exists():
                 return Response({

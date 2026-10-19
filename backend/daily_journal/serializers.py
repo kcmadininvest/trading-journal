@@ -48,6 +48,16 @@ class DailyJournalEntrySerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id', 'user', 'created_at', 'updated_at']
 
+    def validate_trading_account(self, value):
+        """Valide que le compte appartient à l'utilisateur."""
+        if value is None:
+            return value
+        request = self.context.get('request')
+        if request and request.user and request.user.is_authenticated:
+            if value.user_id != request.user.id:
+                raise serializers.ValidationError("Ce compte ne vous appartient pas.")
+        return value
+
     def validate(self, attrs):
         user = self.context['request'].user
         trading_account = attrs.get('trading_account')

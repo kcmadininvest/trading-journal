@@ -1,32 +1,41 @@
 import React, { useEffect } from 'react';
+import { canInjectInlineScript, getCspNonce } from '../../utils/cspNonce';
 
 /**
- * Composant pour charger le schéma JSON-LD de l'organisation
- * de manière compatible avec la Content Security Policy (CSP)
+ * Charge le schéma JSON-LD organisation.
+ * Injection inline uniquement si nonce CSP dispo (prod) ou DEV_ONLY (Vite).
  */
 const OrganizationSchema: React.FC = () => {
   useEffect(() => {
-    // Charger le JSON-LD depuis un fichier externe pour respecter la CSP
+    if (!canInjectInlineScript()) {
+      return undefined;
+    }
+
+    let cancelled = false;
+
     fetch('/organization-schema.json')
-      .then(response => response.json())
-      .then(schema => {
-        // Créer un élément script avec le type application/ld+json
+      .then((response) => response.json())
+      .then((schema) => {
+        if (cancelled) return;
+        const existing = document.getElementById('organization-schema');
+        if (existing) existing.remove();
+
         const script = document.createElement('script');
         script.type = 'application/ld+json';
-        script.text = JSON.stringify(schema);
-        
-        // Ajouter l'ID pour pouvoir le retrouver et le supprimer au démontage
         script.id = 'organization-schema';
-        
-        // Ajouter le script au head
+        const nonce = getCspNonce();
+        if (nonce) {
+          script.nonce = nonce;
+        }
+        script.text = JSON.stringify(schema);
         document.head.appendChild(script);
       })
-      .catch(error => {
+      .catch((error) => {
         console.error('Erreur lors du chargement du schéma JSON-LD:', error);
       });
 
-    // Nettoyer le script au démontage du composant
     return () => {
+      cancelled = true;
       const existingScript = document.getElementById('organization-schema');
       if (existingScript) {
         existingScript.remove();
@@ -34,8 +43,7 @@ const OrganizationSchema: React.FC = () => {
     };
   }, []);
 
-  return null; // Ce composant ne rend rien visuellement
+  return null;
 };
 
 export default OrganizationSchema;
-
