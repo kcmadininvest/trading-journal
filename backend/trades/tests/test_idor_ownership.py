@@ -8,6 +8,7 @@ from rest_framework.test import APITestCase
 from accounts.models import User
 from daily_journal.models import DailyJournalEntry
 from trades.models import (
+    AccountTransaction,
     DayStrategyCompliance,
     ImportedTrade,
     TradeStrategy,
@@ -82,6 +83,35 @@ class IdorOwnershipTests(APITestCase):
             trade_day=now.date(),
             pnl=Decimal('-10'),
         )
+        self.tx_b = AccountTransaction.objects.create(
+            user=self.user_b,
+            trading_account=self.account_b,
+            transaction_type='deposit',
+            amount=Decimal('100.00'),
+            transaction_date=now,
+            description='idor tx b',
+        )
+
+    def test_account_transaction_rejects_alien_account(self) -> None:
+        self.client.force_authenticate(user=self.user_a)
+        response = self.client.post(
+            '/api/trades/account-transactions/',
+            {
+                'trading_account': self.account_b.id,
+                'transaction_type': 'deposit',
+                'amount': '50.00',
+                'transaction_date': timezone.now().isoformat(),
+                'description': 'alien',
+            },
+            format='json',
+        )
+        self.assertEqual(response.status_code, 400, response.data)
+        self.assertIn('trading_account', response.data)
+
+    def test_account_transaction_get_alien_404(self) -> None:
+        self.client.force_authenticate(user=self.user_a)
+        response = self.client.get(f'/api/trades/account-transactions/{self.tx_b.id}/')
+        self.assertEqual(response.status_code, 404)
 
     def test_trade_strategy_rejects_alien_trade(self) -> None:
         self.client.force_authenticate(user=self.user_a)
