@@ -8,6 +8,10 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
+const {
+  applyCspAndOrganizationSeo,
+  loadOrganizationSchemaJson,
+} = require('./cspSeoBuild');
 
 function loadEnvProduction() {
   const envPath = path.join(__dirname, '..', '.env.production');
@@ -204,7 +208,11 @@ async function generatePrerenderedHTML(route, lang, query = '') {
     // Ajouter un commentaire pour indiquer que c'est pré-rendu
     html = html.replace('</head>', `<!-- Pré-rendu SSR pour ${route} (${lang}) - SEO optimisé -->
 </head>`);
-    
+
+    // SSI nonce + Organization JSON-LD statique (build Apache uniquement ; source Vite reste DEV_ONLY)
+    const organizationJson = loadOrganizationSchemaJson(BUILD_DIR);
+    html = applyCspAndOrganizationSeo(html, organizationJson);
+
     return html;
     
   } catch (error) {
@@ -299,5 +307,12 @@ if (require.main === module) {
 }
 
 // Exporter pour utilisation comme module
-module.exports = { app, prerenderAllPages, generatePrerenderedHTML };
+module.exports = {
+  app,
+  prerenderAllPages,
+  generatePrerenderedHTML,
+  applyCspAndOrganizationSeo,
+  loadOrganizationSchemaJson,
+};
+
 
