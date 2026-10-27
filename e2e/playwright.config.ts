@@ -30,13 +30,13 @@ export default defineConfig({
     },
     {
       name: 'login',
-      testMatch: /login\.spec\.ts/,
+      testMatch: /login\.spec\.ts|password-reset\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
     {
       name: 'chromium',
       dependencies: ['setup'],
-      testIgnore: /auth\.setup\.ts|login\.spec\.ts/,
+      testIgnore: /auth\.setup\.ts|login\.spec\.ts|password-reset\.spec\.ts/,
       use: {
         ...devices['Desktop Chrome'],
         storageState: path.join(__dirname, '.auth/user.json'),

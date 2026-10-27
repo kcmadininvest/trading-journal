@@ -14,6 +14,14 @@ urlpatterns = [
     # Activation de compte
     path('auth/activate/<uuid:token>/', views.AccountActivationView.as_view(), name='activate_account'),
     path('auth/resend-activation/', views.ResendActivationEmailView.as_view(), name='resend_activation'),
+
+    # Mot de passe oublié
+    path('auth/password-reset/', views.PasswordResetRequestView.as_view(), name='password_reset'),
+    path(
+        'auth/password-reset/confirm/',
+        views.PasswordResetConfirmView.as_view(),
+        name='password_reset_confirm',
+    ),
     
     # Profil utilisateur
     path('profile/', views.UserProfileView.as_view(), name='user_profile'),

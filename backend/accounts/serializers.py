@@ -279,6 +279,56 @@ class PasswordChangeSerializer(serializers.Serializer):
         return user
 
 
+class PasswordResetRequestSerializer(serializers.Serializer):
+    """Demande d'email de réinitialisation (forgot password)."""
+    email = serializers.EmailField(required=True)
+
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    """Confirmation de réinitialisation avec token + nouveau mot de passe."""
+    token = serializers.UUIDField(required=True)
+    new_password = serializers.CharField(
+        style={'input_type': 'password'},
+        write_only=True,
+    )
+    new_password_confirm = serializers.CharField(
+        style={'input_type': 'password'},
+        write_only=True,
+    )
+
+    def validate(self, attrs):
+        from .models import PasswordResetToken
+
+        if attrs['new_password'] != attrs['new_password_confirm']:
+            raise serializers.ValidationError(
+                {'new_password_confirm': 'Les mots de passe ne correspondent pas.'}
+            )
+
+        try:
+            reset_token = PasswordResetToken.objects.select_related('user').get(
+                token=attrs['token']
+            )
+        except PasswordResetToken.DoesNotExist:
+            raise serializers.ValidationError(
+                {'token': 'Lien de réinitialisation invalide ou expiré.'}
+            )
+
+        if not reset_token.is_valid():
+            raise serializers.ValidationError(
+                {'token': 'Lien de réinitialisation invalide ou expiré.'}
+            )
+
+        from django.core.exceptions import ValidationError as DjangoValidationError
+
+        try:
+            validate_password(attrs['new_password'], user=reset_token.user)
+        except DjangoValidationError as e:
+            raise serializers.ValidationError({'new_password': list(e.messages)})
+
+        attrs['reset_token'] = reset_token
+        return attrs
+
+
 class AdminUserListSerializer(serializers.ModelSerializer):
     """
     Sérialiseur pour la liste des utilisateurs (admin seulement)

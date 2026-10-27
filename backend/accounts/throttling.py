@@ -63,10 +63,18 @@ class ActivationThrottle(AnonRateThrottle):
 
 class PasswordResetThrottle(AnonRateThrottle):
     """
-    Throttling pour l'endpoint de réinitialisation de mot de passe
+    Throttling pour l'endpoint de demande de réinitialisation de mot de passe
     Limite à 3 tentatives par heure par IP
     """
     scope = 'password_reset'
+
+
+class PasswordResetConfirmThrottle(AnonRateThrottle):
+    """
+    Throttling pour la confirmation de réinitialisation (formulaire nouveau MDP).
+    Plus souple que la demande email pour permettre les retries de validation.
+    """
+    scope = 'password_reset_confirm'
 
 
 class ContactThrottle(AnonRateThrottle):

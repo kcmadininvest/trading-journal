@@ -296,7 +296,8 @@ REST_FRAMEWORK = {
         'login': '5/minute',  # Endpoint de login (personnalisé)
         'register': '5/hour',  # Endpoint d'inscription (personnalisé, basé sur email)
         'activate': '10/hour',  # Endpoint d'activation (personnalisé)
-        'password_reset': '3/hour',  # Réinitialisation de mot de passe (personnalisé)
+        'password_reset': '3/hour',  # Demande email réinitialisation MDP
+        'password_reset_confirm': '10/hour',  # Confirmation nouveau MDP (token)
         'contact': '5/hour',  # Formulaire contact page publique
         'integration_test': '5/minute',  # Test connexion intégrations API
         'trade_sync': '3/minute',  # Sync trades TopStepX

@@ -478,3 +478,55 @@ class EmailActivationToken(models.Model):
             days_since_creation = (timezone.now() - self.created_at).days  # type: ignore
             return days_since_creation <= 30
         return False
+
+
+class PasswordResetToken(models.Model):
+    """
+    Token de réinitialisation de mot de passe (forgot password).
+    FK (pas OneToOne) : plusieurs demandes possibles dans le temps.
+    """
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='password_reset_tokens',
+        verbose_name=_('Utilisateur'),
+    )
+    token = models.UUIDField(
+        default=uuid.uuid4,
+        unique=True,
+        verbose_name=_('Token'),
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name=_('Date de création'),
+    )
+    expires_at = models.DateTimeField(
+        verbose_name=_("Date d'expiration"),
+    )
+    is_used = models.BooleanField(
+        default=_IS_USED_DEFAULT,
+        verbose_name=_('Utilisé'),
+    )
+
+    class Meta:
+        verbose_name = _('Token de réinitialisation mot de passe')
+        verbose_name_plural = _('Tokens de réinitialisation mot de passe')
+        db_table = 'accounts_passwordresettoken'
+        indexes = [
+            models.Index(fields=['token']),
+            models.Index(fields=['user', '-created_at']),
+        ]
+
+    def __str__(self):
+        return f"Token reset pour {self.user.email}"
+
+    def save(self, *args, **kwargs):
+        if not self.expires_at:
+            self.expires_at = timezone.now() + timedelta(hours=1)
+        return super().save(*args, **kwargs)
+
+    def is_expired(self):
+        return timezone.now() > self.expires_at
+
+    def is_valid(self):
+        return not self.is_used and not self.is_expired()

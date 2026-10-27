@@ -27,8 +27,21 @@ from trades.protected_screenshot_urls import transform_screenshot_url_for_respon
 logger = logging.getLogger(__name__)
 security_logger = logging.getLogger('security')
 
-from .models import AppSettings, User, UserPreferences, LoginHistory, EmailActivationToken
-from .utils import send_activation_email, create_activation_token
+from .models import (
+    AppSettings,
+    User,
+    UserPreferences,
+    LoginHistory,
+    EmailActivationToken,
+    PasswordResetToken,
+)
+from .utils import (
+    send_activation_email,
+    create_activation_token,
+    create_password_reset_token,
+    send_password_reset_email,
+    get_password_reset_generic_message,
+)
 from .jwt_cookies import (
     ACCESS_COOKIE_NAME,
     REFRESH_COOKIE_NAME,
@@ -36,11 +49,13 @@ from .jwt_cookies import (
     clear_jwt_cookies,
     strip_tokens_from_response_data,
 )
+from .jwt_blacklist_cache import safe_blacklist_user_refresh_tokens
 from .throttling import (
     LoginThrottle,
     EmailBasedRegisterThrottle,
     ActivationThrottle,
     PasswordResetThrottle,
+    PasswordResetConfirmThrottle,
     ContactThrottle,
 )
 from .serializers import (
@@ -50,6 +65,8 @@ from .serializers import (
     UserUpdateSerializer,
     UserFullUpdateSerializer,
     PasswordChangeSerializer,
+    PasswordResetRequestSerializer,
+    PasswordResetConfirmSerializer,
     AdminUserListSerializer,
     AdminUserUpdateSerializer,
     CustomTokenObtainPairSerializer,
@@ -568,16 +585,100 @@ class UserProfileView(APIView):
 
 class PasswordChangeView(APIView):
     """
-    Vue pour le changement de mot de passe
+    Vue pour le changement de mot de passe.
+    Invalide les autres sessions JWT (refresh) en préservant la session courante.
     """
     permission_classes = [permissions.IsAuthenticated]
     
     def post(self, request):
         serializer = PasswordChangeSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
-            serializer.save()
+            user = serializer.save()
+            exclude_jti = None
+            refresh_cookie = request.COOKIES.get(REFRESH_COOKIE_NAME)
+            if refresh_cookie:
+                try:
+                    exclude_jti = str(RefreshToken(refresh_cookie).get('jti') or '') or None
+                except Exception as e:
+                    logger.debug('Refresh cookie illisible au change-password: %s', e)
+                    exclude_jti = None
+            safe_blacklist_user_refresh_tokens(user, exclude_jti=exclude_jti)
             return Response({'message': 'Mot de passe modifié avec succès'})
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class PasswordResetRequestView(APIView):
+    """Demande d'email de réinitialisation — réponse toujours générique."""
+    permission_classes = [permissions.AllowAny]
+    throttle_classes = [PasswordResetThrottle]
+
+    def post(self, request):
+        serializer = PasswordResetRequestSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        email = serializer.validated_data['email'].strip()
+        generic = {'message': get_password_reset_generic_message()}
+
+        try:
+            user = User.objects.get(email__iexact=email, is_active=True)
+        except User.DoesNotExist:
+            return Response(generic, status=status.HTTP_200_OK)
+        except User.MultipleObjectsReturned:
+            user = User.objects.filter(email__iexact=email, is_active=True).first()
+            if not user:
+                return Response(generic, status=status.HTTP_200_OK)
+
+        try:
+            reset_token = create_password_reset_token(user)
+            language = None
+            if 'language' in request.data:
+                language = request.data.get('language')
+            elif 'Accept-Language' in request.headers:
+                accept_lang = request.headers.get('Accept-Language', '').split(',')[0].split('-')[0].lower()
+                if accept_lang in ['fr', 'en', 'es', 'de', 'it', 'pt', 'ja', 'ko', 'zh']:
+                    language = accept_lang
+            send_password_reset_email(user, reset_token, language=language)
+        except Exception as e:
+            logger.error('Erreur demande reset password: %s', e, exc_info=True)
+
+        return Response(generic, status=status.HTTP_200_OK)
+
+
+class PasswordResetConfirmView(APIView):
+    """Confirmation du nouveau mot de passe via token email."""
+    permission_classes = [permissions.AllowAny]
+    throttle_classes = [PasswordResetConfirmThrottle]
+
+    def post(self, request):
+        serializer = PasswordResetConfirmSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        reset_token = serializer.validated_data['reset_token']
+        user = reset_token.user
+        new_password = serializer.validated_data['new_password']
+
+        user.set_password(new_password)
+        user.save(update_fields=['password'])
+
+        reset_token.is_used = True
+        reset_token.save(update_fields=['is_used'])
+        PasswordResetToken.objects.filter(user=user, is_used=False).exclude(
+            pk=reset_token.pk
+        ).update(is_used=True)
+
+        safe_blacklist_user_refresh_tokens(user, exclude_jti=None)
+
+        access_cookie = request.COOKIES.get(ACCESS_COOKIE_NAME)
+        if access_cookie:
+            _blacklist_access_token_str(access_cookie)
+
+        response = Response({
+            'message': 'Mot de passe réinitialisé avec succès. Vous pouvez vous connecter.',
+        })
+        clear_jwt_cookies(response)
+        return response
 
 
 def _blacklist_access_token_str(access_token_str: str) -> None:

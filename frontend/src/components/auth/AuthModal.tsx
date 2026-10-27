@@ -16,7 +16,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
   initialMode = 'login' 
 }) => {
   const { t } = useI18nTranslation();
-  const [mode, setMode] = useState<'login' | 'register'>(initialMode);
+  const [mode, setMode] = useState<'login' | 'register' | 'forgot'>(initialMode);
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -137,6 +137,15 @@ const AuthModal: React.FC<AuthModalProps> = ({
     setSuccessMessage('');
 
     try {
+      if (mode === 'forgot') {
+        const email = formData.email.trim() || formData.username.trim();
+        if (!email) {
+          throw new Error(t('auth:errors.emailRequired'));
+        }
+        const message = await authService.requestPasswordReset(email);
+        setSuccessMessage(message || t('auth:forgotPasswordSuccess'));
+        return;
+      }
       if (mode === 'login') {
         await authService.login(formData.username, formData.password);
         onSuccess();
@@ -244,7 +253,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
     return label;
   };
 
-  const switchMode = (newMode: 'login' | 'register') => {
+  const switchMode = (newMode: 'login' | 'register' | 'forgot') => {
     setMode(newMode);
     setFormData({
       username: '',
@@ -288,35 +297,46 @@ const AuthModal: React.FC<AuthModalProps> = ({
             </svg>
           </button>
 
-          {/* Onglets */}
-          <div className="flex pr-12">
-            <button
-              onClick={() => switchMode('login')}
-              className={`flex-1 px-6 py-4 text-center font-semibold transition-all duration-200 relative ${
-                mode === 'login'
-                  ? 'text-blue-600 dark:text-blue-400'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400'
-              }`}
-            >
-              {t('auth:connexion')}
-              {mode === 'login' && (
-                <span className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 dark:from-blue-400 dark:via-purple-400 dark:to-indigo-400 rounded-t-full" />
-              )}
-            </button>
-            <button
-              onClick={() => switchMode('register')}
-              className={`flex-1 px-6 py-4 text-center font-semibold transition-all duration-200 relative ${
-                mode === 'register'
-                  ? 'text-blue-600 dark:text-blue-400'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400'
-              }`}
-            >
-              {t('auth:inscription')}
-              {mode === 'register' && (
-                <span className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 dark:from-blue-400 dark:via-purple-400 dark:to-indigo-400 rounded-t-full" />
-              )}
-            </button>
-          </div>
+          {/* Onglets (masqués en mode forgot) */}
+          {mode === 'forgot' ? (
+            <div className="px-6 py-4 pr-14">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                {t('auth:forgotPasswordTitle')}
+              </h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                {t('auth:forgotPasswordHint')}
+              </p>
+            </div>
+          ) : (
+            <div className="flex pr-12">
+              <button
+                onClick={() => switchMode('login')}
+                className={`flex-1 px-6 py-4 text-center font-semibold transition-all duration-200 relative ${
+                  mode === 'login'
+                    ? 'text-blue-600 dark:text-blue-400'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400'
+                }`}
+              >
+                {t('auth:connexion')}
+                {mode === 'login' && (
+                  <span className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 dark:from-blue-400 dark:via-purple-400 dark:to-indigo-400 rounded-t-full" />
+                )}
+              </button>
+              <button
+                onClick={() => switchMode('register')}
+                className={`flex-1 px-6 py-4 text-center font-semibold transition-all duration-200 relative ${
+                  mode === 'register'
+                    ? 'text-blue-600 dark:text-blue-400'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400'
+                }`}
+              >
+                {t('auth:inscription')}
+                {mode === 'register' && (
+                  <span className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 dark:from-blue-400 dark:via-purple-400 dark:to-indigo-400 rounded-t-full" />
+                )}
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Contenu */}
@@ -347,8 +367,31 @@ const AuthModal: React.FC<AuthModalProps> = ({
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Champ Email/Username selon le mode */}
-            {mode === 'login' ? (
+            {mode === 'forgot' ? (
+              <div className="space-y-2">
+                <label htmlFor="forgotEmail" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {t('auth:email')} <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
+                    </svg>
+                  </div>
+                  <input
+                    type="email"
+                    id="forgotEmail"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    required
+                    autoComplete="email"
+                    className="w-full pl-10 pr-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:border-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
+                    placeholder="votre@email.com"
+                  />
+                </div>
+              </div>
+            ) : mode === 'login' ? (
               <div className="space-y-2">
                 <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   {t('auth:email')} <span className="text-red-500">*</span>
@@ -462,7 +505,8 @@ const AuthModal: React.FC<AuthModalProps> = ({
               </>
             )}
 
-            {/* Mot de passe */}
+            {/* Mot de passe (login / register) */}
+            {mode !== 'forgot' && (
             <div className="space-y-2">
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 {t('auth:password')} <span className="text-red-500">*</span>
@@ -501,7 +545,19 @@ const AuthModal: React.FC<AuthModalProps> = ({
                   )}
                 </button>
               </div>
+              {mode === 'login' && (
+                <div className="text-right">
+                  <button
+                    type="button"
+                    onClick={() => switchMode('forgot')}
+                    className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                  >
+                    {t('auth:forgotPassword')}
+                  </button>
+                </div>
+              )}
             </div>
+            )}
 
             {/* Confirmation mot de passe (inscription uniquement) */}
             {mode === 'register' && (
@@ -565,12 +621,26 @@ const AuthModal: React.FC<AuthModalProps> = ({
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  {t('auth:loading')}
+                  {mode === 'forgot' ? t('auth:sending') : t('auth:loading')}
                 </span>
+              ) : mode === 'forgot' ? (
+                t('auth:sendResetLink')
+              ) : mode === 'login' ? (
+                t('auth:login')
               ) : (
-                mode === 'login' ? t('auth:login') : t('auth:register')
+                t('auth:register')
               )}
             </button>
+
+            {mode === 'forgot' && (
+              <button
+                type="button"
+                onClick={() => switchMode('login')}
+                className="w-full text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
+              >
+                {t('auth:backToLogin')}
+              </button>
+            )}
           </form>
         </div>
       </div>

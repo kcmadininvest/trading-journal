@@ -249,6 +249,62 @@ class AuthService {
       localStorage.setItem('user', JSON.stringify(this.user));
     }
   }
+
+  async requestPasswordReset(email: string): Promise<string> {
+    await this.ensureCsrf();
+    const response = await fetchWithAuth(`${this.BASE_URL}/api/accounts/auth/password-reset/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+      retry: false,
+      baseUrl: this.BASE_URL,
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(data.detail || data.error || data.message || 'Erreur de réinitialisation');
+    }
+    return data.message || '';
+  }
+
+  async confirmPasswordReset(
+    token: string,
+    newPassword: string,
+    newPasswordConfirm: string,
+  ): Promise<string> {
+    await this.ensureCsrf();
+    const response = await fetchWithAuth(`${this.BASE_URL}/api/accounts/auth/password-reset/confirm/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        token,
+        new_password: newPassword,
+        new_password_confirm: newPasswordConfirm,
+      }),
+      retry: false,
+      baseUrl: this.BASE_URL,
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      if (data && typeof data === 'object') {
+        const parts: string[] = [];
+        Object.values(data).forEach((value) => {
+          if (Array.isArray(value)) {
+            value.forEach((msg) => parts.push(String(msg)));
+          } else if (typeof value === 'string') {
+            parts.push(value);
+          }
+        });
+        if (parts.length > 0) {
+          throw new Error(parts.join('\n'));
+        }
+      }
+      throw new Error(data.detail || data.error || data.message || 'Erreur de réinitialisation');
+    }
+    // Cookies JWT cleared côté serveur — purger le user local
+    this.clearStorage();
+    resetSessionExpiredFlag();
+    return data.message || '';
+  }
 }
 
 export const authService = new AuthService();

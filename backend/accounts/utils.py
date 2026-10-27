@@ -5,12 +5,20 @@ from django.core.mail import send_mail, EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.conf import settings
 from django.utils.html import strip_tags
-from .models import EmailActivationToken, User
+from .models import EmailActivationToken, PasswordResetToken, User
 from django.utils import timezone
 from datetime import timedelta
 import logging
 
 logger = logging.getLogger(__name__)
+
+_GENERIC_PASSWORD_RESET_MESSAGE = (
+    'Si un compte existe pour cette adresse, un email de réinitialisation a été envoyé.'
+)
+
+
+def get_password_reset_generic_message() -> str:
+    return _GENERIC_PASSWORD_RESET_MESSAGE
 
 
 def send_activation_email(user: User, activation_token: EmailActivationToken, language: str = None) -> bool:
@@ -98,3 +106,76 @@ def create_activation_token(user: User) -> EmailActivationToken:
     # Créer un nouveau token
     token = EmailActivationToken.objects.create(user=user)
     return token
+
+
+def _resolve_email_language(user: User, language: str = None) -> str:
+    if language:
+        return language
+    try:
+        if hasattr(user, 'preferences') and user.preferences.language:
+            return user.preferences.language
+    except Exception:
+        pass
+    return 'fr'
+
+
+def create_password_reset_token(user: User) -> PasswordResetToken:
+    """Invalide les tokens reset non utilisés puis en crée un nouveau (1 h)."""
+    PasswordResetToken.objects.filter(user=user, is_used=False).delete()
+    return PasswordResetToken.objects.create(user=user)
+
+
+def send_password_reset_email(
+    user: User,
+    reset_token: PasswordResetToken,
+    language: str = None,
+) -> bool:
+    """Envoie l'email de réinitialisation de mot de passe."""
+    try:
+        language = _resolve_email_language(user, language)
+        frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:3000')
+        reset_url = f"{frontend_url}/reset-password/{reset_token.token}/"
+
+        context = {
+            'user': user,
+            'reset_url': reset_url,
+        }
+
+        template_path = 'emails/password_reset_email.html'
+        subject = 'Réinitialisation de votre mot de passe K&C Trading Journal'
+
+        if language == 'es':
+            template_path = 'emails/es/password_reset_email.html'
+            subject = 'Restablece tu contraseña K&C Trading Journal'
+        elif language == 'de':
+            template_path = 'emails/de/password_reset_email.html'
+            subject = 'Passwort zurücksetzen — K&C Trading Journal'
+        elif language == 'en':
+            template_path = 'emails/password_reset_email.html'
+            subject = 'Reset your K&C Trading Journal password'
+
+        html_content = render_to_string(template_path, context)
+        text_content = strip_tags(html_content)
+
+        msg = EmailMultiAlternatives(
+            subject,
+            text_content,
+            settings.DEFAULT_FROM_EMAIL,
+            [user.email],
+        )
+        msg.attach_alternative(html_content, 'text/html')
+        msg.send()
+
+        logger.info(
+            'Email de réinitialisation envoyé à %s (langue: %s)',
+            user.email,
+            language,
+        )
+        return True
+    except Exception as e:
+        logger.error(
+            "Erreur envoi email réinitialisation à %s: %s",
+            user.email,
+            str(e),
+        )
+        return False

@@ -57,6 +57,7 @@ EXCLUDE_LABELS = frozenset({
     'guardian.UserObjectPermission',
     'accounts.LoginHistory',
     'accounts.EmailActivationToken',
+    'accounts.PasswordResetToken',
     'trades.TradeSyncLog',
     'trades.TopStepImportLog',
     'integrations.UserApiIntegration',

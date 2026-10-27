@@ -28,6 +28,7 @@ const TransactionsPage = lazy(() => import('./pages/TransactionsPage'));
 const TradingActivityPage = lazy(() => import('./pages/TradingActivityPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const ActivateAccountPage = lazy(() => import('./pages/ActivateAccountPage'));
+const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
 const PositionStrategiesPage = lazy(() => import('./pages/PositionStrategiesPage'));
 const StrategyChecklistPopup = lazy(() => import('./pages/StrategyChecklistPopup'));
 const GoalsPage = lazy(() => import('./pages/GoalsPage'));
@@ -544,6 +545,12 @@ function App() {
     if (activateMatch) {
       const token = activateMatch[1];
       return <LazyPage><ActivateAccountPage token={token} /></LazyPage>;
+    }
+
+    const resetPasswordMatch = pathname.match(/^\/reset-password\/([^/]+)\/?$/);
+    if (resetPasswordMatch) {
+      const token = resetPasswordMatch[1];
+      return <LazyPage><ResetPasswordPage token={token} /></LazyPage>;
     }
 
     // Pages publiques accessibles via pathname (SEO) - Support multilingue
