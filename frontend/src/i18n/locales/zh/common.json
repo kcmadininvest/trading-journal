@@ -161,5 +161,21 @@
   "pnlGrossShort": "毛",
   "pnlFilterNet": "净盈亏",
   "pnlFilterGross": "毛盈亏",
-  "pnlBasisToggleAria": "盈亏显示：净或毛"
+  "pnlBasisToggleAria": "盈亏显示：净或毛",
+  "dstChange": {
+    "spring": "夏令时",
+    "fall": "冬令时",
+    "springShort": "夏令时",
+    "fallShort": "冬令时",
+    "in": "",
+    "days": "天后",
+    "daysShort": "天",
+    "today": "今天",
+    "tomorrow": "明天",
+    "todayBadge": "今天",
+    "tomorrowBadge": "明天",
+    "tooltip": "{{market}} 时制变更：{{date}} {{time}}",
+    "clocksForward": "时钟拨快1小时",
+    "clocksBackward": "时钟拨慢1小时"
+  }
 }

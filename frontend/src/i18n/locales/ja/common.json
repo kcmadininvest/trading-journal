@@ -161,5 +161,21 @@
   "pnlGrossShort": "総",
   "pnlFilterNet": "純損益",
   "pnlFilterGross": "総損益",
-  "pnlBasisToggleAria": "損益の表示：純損益または総損益"
+  "pnlBasisToggleAria": "損益の表示：純損益または総損益",
+  "dstChange": {
+    "spring": "夏時間",
+    "fall": "冬時間",
+    "springShort": "夏時間",
+    "fallShort": "冬時間",
+    "in": "",
+    "days": "日後",
+    "daysShort": "日",
+    "today": "今日",
+    "tomorrow": "明日",
+    "todayBadge": "今日",
+    "tomorrowBadge": "明日",
+    "tooltip": "{{market}}の時刻変更: {{date}} {{time}}",
+    "clocksForward": "時計を1時間進めます",
+    "clocksBackward": "時計を1時間戻します"
+  }
 }

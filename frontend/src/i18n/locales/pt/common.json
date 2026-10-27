@@ -161,5 +161,21 @@
   "pnlGrossShort": "Bruto",
   "pnlFilterNet": "PnL líquido",
   "pnlFilterGross": "PnL bruto",
-  "pnlBasisToggleAria": "Exibição do PnL: líquido ou bruto"
+  "pnlBasisToggleAria": "Exibição do PnL: líquido ou bruto",
+  "dstChange": {
+    "spring": "Horário de verão",
+    "fall": "Horário de inverno",
+    "springShort": "Verão",
+    "fallShort": "Inverno",
+    "in": "em",
+    "days": "dias",
+    "daysShort": "d",
+    "today": "Hoje",
+    "tomorrow": "Amanhã",
+    "todayBadge": "hoje",
+    "tomorrowBadge": "amanhã",
+    "tooltip": "Mudança de horário {{market}}: {{date}} às {{time}}",
+    "clocksForward": "Os relógios avançam 1 hora",
+    "clocksBackward": "Os relógios atrasam 1 hora"
+  }
 }

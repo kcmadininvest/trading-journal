@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { getNextDSTChange, DSTEvent, MarketRegion } from '../../utils/dstCalculator';
+import { formatDstBadgeLabel, formatDstBadgeTitle } from '../../utils/dstBadgeLabel';
 import { getTimezoneOffsetFromUser } from '../../utils/timezoneCalculator';
 import { MarketHoliday, MarketTodaySnapshot } from '../../services/calendar';
 import { getMarketStatus, MarketStatus } from '../../utils/marketHours';
@@ -10,7 +11,7 @@ import {
   sortUpcomingHolidays,
 } from '../../utils/marketHolidayDisplay';
 import { formatClockTime, type DateFormatType, type LanguageType } from '../../utils/dateFormat';
-import { formatNumber, type NumberFormatType } from '../../utils/numberFormat';
+import { type NumberFormatType } from '../../utils/numberFormat';
 
 export type ApiMarketCode = 'XNYS' | 'XPAR' | 'XLON' | 'XTKS';
 
@@ -216,20 +217,12 @@ export const MarketClockCard: React.FC<MarketClockCardProps> = ({
     }
   };
 
-  const dstShortLabel = () => {
-    if (!dstEvent) return '';
-    const season =
-      dstEvent.type === 'spring'
-        ? t('common:dstChange.spring', { defaultValue: 'Été' }).split(' ')[0]
-        : t('common:dstChange.fall', { defaultValue: 'Hiver' }).split(' ')[0];
-    if (dstEvent.isToday) {
-      return `${season} ${t('common:dstChange.today', { defaultValue: "Aujourd'hui" })}`;
-    }
-    if (dstEvent.isTomorrow) {
-      return `${season} ${t('common:dstChange.tomorrow', { defaultValue: 'Demain' })}`;
-    }
-    return `${season} +${formatNumber(dstEvent.daysUntil, 0, numberFormat)}j`;
-  };
+  const dstShortLabel = dstEvent
+    ? formatDstBadgeLabel(dstEvent, t, numberFormat)
+    : '';
+  const dstTitle = dstEvent
+    ? formatDstBadgeTitle(dstEvent, t, getMarketLabel(marketCode), dateFormat)
+    : '';
 
   return (
     <div className="flex h-full min-w-0 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
@@ -268,13 +261,14 @@ export const MarketClockCard: React.FC<MarketClockCardProps> = ({
         </div>
         {showDstBadge ? (
           <span
+            title={dstTitle}
             className={`shrink-0 rounded-full border px-1.5 py-0.5 text-[11px] font-medium whitespace-nowrap ${
               isDSTUrgent
                 ? 'border-amber-400/30 bg-amber-500/10 text-amber-300'
                 : 'border-gray-200 bg-gray-100 text-gray-500 dark:border-gray-600 dark:bg-gray-700/50 dark:text-gray-400'
             }`}
           >
-            {dstShortLabel()}
+            {dstShortLabel}
           </span>
         ) : null}
       </div>

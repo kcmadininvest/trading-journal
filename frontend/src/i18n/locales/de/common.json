@@ -194,10 +194,15 @@
   "dstChange": {
     "spring": "Sommerzeit",
     "fall": "Winterzeit",
+    "springShort": "Sommerzeit",
+    "fallShort": "Winterzeit",
     "in": "in",
     "days": "Tagen",
+    "daysShort": "T",
     "today": "Heute",
     "tomorrow": "Morgen",
+    "todayBadge": "heute",
+    "tomorrowBadge": "morgen",
     "tooltip": "{{market}} Zeitumstellung: {{date}} um {{time}}",
     "clocksForward": "Die Uhren werden 1 Stunde vorgestellt",
     "clocksBackward": "Die Uhren werden 1 Stunde zurückgestellt"

@@ -197,10 +197,15 @@
   "dstChange": {
     "spring": "Daylight Saving Time",
     "fall": "Standard Time",
+    "springShort": "Summer",
+    "fallShort": "Winter",
     "in": "in",
     "days": "days",
+    "daysShort": "d",
     "today": "Today",
     "tomorrow": "Tomorrow",
+    "todayBadge": "today",
+    "tomorrowBadge": "tomorrow",
     "tooltip": "{{market}} time change: {{date}} at {{time}}",
     "clocksForward": "Clocks move forward 1 hour",
     "clocksBackward": "Clocks move back 1 hour"

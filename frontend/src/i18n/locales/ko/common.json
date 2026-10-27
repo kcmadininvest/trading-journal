@@ -161,5 +161,21 @@
   "pnlGrossShort": "총",
   "pnlFilterNet": "순손익",
   "pnlFilterGross": "총손익",
-  "pnlBasisToggleAria": "손익 표시: 순 또는 총"
+  "pnlBasisToggleAria": "손익 표시: 순 또는 총",
+  "dstChange": {
+    "spring": "일광 절약 시간",
+    "fall": "표준시",
+    "springShort": "서머타임",
+    "fallShort": "표준시",
+    "in": "",
+    "days": "일 후",
+    "daysShort": "일",
+    "today": "오늘",
+    "tomorrow": "내일",
+    "todayBadge": "오늘",
+    "tomorrowBadge": "내일",
+    "tooltip": "{{market}} 시간 변경: {{date}} {{time}}",
+    "clocksForward": "시계를 1시간 앞당깁니다",
+    "clocksBackward": "시계를 1시간 되돌립니다"
+  }
 }

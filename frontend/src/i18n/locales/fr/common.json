@@ -196,10 +196,15 @@
   "dstChange": {
     "spring": "Heure d'été",
     "fall": "Heure d'hiver",
+    "springShort": "Été",
+    "fallShort": "Hiver",
     "in": "dans",
     "days": "jours",
+    "daysShort": "j",
     "today": "Aujourd'hui",
     "tomorrow": "Demain",
+    "todayBadge": "aujourd'hui",
+    "tomorrowBadge": "demain",
     "tooltip": "Changement d'heure {{market}} : {{date}} à {{time}}",
     "clocksForward": "Les horloges avancent d'1 heure",
     "clocksBackward": "Les horloges reculent d'1 heure"

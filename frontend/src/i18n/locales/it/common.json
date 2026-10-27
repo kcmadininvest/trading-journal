@@ -161,5 +161,21 @@
   "pnlGrossShort": "Lordo",
   "pnlFilterNet": "PnL netto",
   "pnlFilterGross": "PnL lordo",
-  "pnlBasisToggleAria": "Visualizzazione PnL: netto o lordo"
+  "pnlBasisToggleAria": "Visualizzazione PnL: netto o lordo",
+  "dstChange": {
+    "spring": "Ora legale",
+    "fall": "Ora solare",
+    "springShort": "Estate",
+    "fallShort": "Inverno",
+    "in": "tra",
+    "days": "giorni",
+    "daysShort": "g",
+    "today": "Oggi",
+    "tomorrow": "Domani",
+    "todayBadge": "oggi",
+    "tomorrowBadge": "domani",
+    "tooltip": "Cambio ora {{market}}: {{date}} alle {{time}}",
+    "clocksForward": "Gli orologi avanzano di 1 ora",
+    "clocksBackward": "Gli orologi tornano indietro di 1 ora"
+  }
 }

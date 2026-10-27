@@ -38,4 +38,19 @@ describe('marketHolidayDisplay', () => {
     const today = localTodayYyyyMmDd();
     expect(formatHolidayRelativeDate(today, t, 'fr')).toBe("Aujourd'hui");
   });
+
+  it('formatHolidayRelativeDate keeps capitalized Demain via dstChange.tomorrow', () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const y = tomorrow.getFullYear();
+    const m = String(tomorrow.getMonth() + 1).padStart(2, '0');
+    const d = String(tomorrow.getDate()).padStart(2, '0');
+    const tFr = ((key: string, opts?: { defaultValue?: string }) => {
+      if (key === 'common:dstChange.tomorrow') return 'Demain';
+      return opts?.defaultValue ?? key;
+    }) as TFunction;
+    expect(formatHolidayRelativeDate(`${y}-${m}-${d}`, tFr, 'fr')).toBe('Demain');
+  });
 });
