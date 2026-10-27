@@ -11,13 +11,6 @@ export function getDstTransitionTime(region: MarketRegion, type: 'spring' | 'fal
   return '02:00';
 }
 
-function toYyyyMmDdLocal(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
-}
-
 function joinBadgeParts(season: string, relative: string): string {
   const left = season.trim();
   const right = relative.trim();
@@ -60,7 +53,7 @@ export function formatDstBadgeTitle(
   marketLabel: string,
   dateFormat: DateFormatType = 'EU',
 ): string {
-  const dateStr = formatDate(toYyyyMmDdLocal(event.date), dateFormat, false);
+  const dateStr = formatDate(event.dateYmd, dateFormat, false);
   const time = getDstTransitionTime(event.region, event.type);
   const main = t('common:dstChange.tooltip', {
     defaultValue: 'Changement d\'heure {{market}} : {{date}} à {{time}}',

@@ -162,16 +162,28 @@
   "pnlFilterNet": "PnL líquido",
   "pnlFilterGross": "PnL bruto",
   "pnlBasisToggleAria": "Exibição do PnL: líquido ou bruto",
+  "marketHours": {
+    "title": "Mercados",
+    "open": "Aberto",
+    "closed": "Fechado",
+    "preMarket": "Pré-mercado",
+    "afterHours": "After-hours",
+    "opensAt": "Abre às {{time}}",
+    "closesAt": "Fecha às {{time}}",
+    "hours": "{{open}} – {{close}}",
+    "localTime": "Hora local: {{time}}",
+    "earlyClose": "Fecho antecipado"
+  },
+  "relativeDate": {
+    "tomorrow": "Amanhã",
+    "inDays": "em {{count}} dias"
+  },
   "dstChange": {
     "spring": "Horário de verão",
     "fall": "Horário de inverno",
     "springShort": "Verão",
     "fallShort": "Inverno",
-    "in": "em",
-    "days": "dias",
     "daysShort": "d",
-    "today": "Hoje",
-    "tomorrow": "Amanhã",
     "todayBadge": "hoje",
     "tomorrowBadge": "amanhã",
     "tooltip": "Mudança de horário {{market}}: {{date}} às {{time}}",

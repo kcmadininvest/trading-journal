@@ -162,16 +162,28 @@
   "pnlFilterNet": "순손익",
   "pnlFilterGross": "총손익",
   "pnlBasisToggleAria": "손익 표시: 순 또는 총",
+  "marketHours": {
+    "title": "시장",
+    "open": "개장",
+    "closed": "휴장",
+    "preMarket": "프리마켓",
+    "afterHours": "애프터아워",
+    "opensAt": "{{time}} 개장",
+    "closesAt": "{{time}} 폐장",
+    "hours": "{{open}} – {{close}}",
+    "localTime": "현지 시간: {{time}}",
+    "earlyClose": "조기 폐장"
+  },
+  "relativeDate": {
+    "tomorrow": "내일",
+    "inDays": "{{count}}일 후"
+  },
   "dstChange": {
     "spring": "일광 절약 시간",
     "fall": "표준시",
     "springShort": "서머타임",
     "fallShort": "표준시",
-    "in": "",
-    "days": "일 후",
     "daysShort": "일",
-    "today": "오늘",
-    "tomorrow": "내일",
     "todayBadge": "오늘",
     "tomorrowBadge": "내일",
     "tooltip": "{{market}} 시간 변경: {{date}} {{time}}",

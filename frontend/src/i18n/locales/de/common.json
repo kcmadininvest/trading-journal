@@ -191,16 +191,16 @@
   "pnlFilterNet": "PnL netto",
   "pnlFilterGross": "PnL brutto",
   "pnlBasisToggleAria": "PnL-Anzeige: netto oder brutto",
+  "relativeDate": {
+    "tomorrow": "Morgen",
+    "inDays": "in {{count}} Tagen"
+  },
   "dstChange": {
     "spring": "Sommerzeit",
     "fall": "Winterzeit",
     "springShort": "Sommerzeit",
     "fallShort": "Winterzeit",
-    "in": "in",
-    "days": "Tagen",
     "daysShort": "T",
-    "today": "Heute",
-    "tomorrow": "Morgen",
     "todayBadge": "heute",
     "tomorrowBadge": "morgen",
     "tooltip": "{{market}} Zeitumstellung: {{date}} um {{time}}",

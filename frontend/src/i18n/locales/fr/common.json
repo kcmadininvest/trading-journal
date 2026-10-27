@@ -193,16 +193,16 @@
   "pnlFilterNet": "PnL net",
   "pnlFilterGross": "PnL brut",
   "pnlBasisToggleAria": "Affichage des montants PnL : net ou brut",
+  "relativeDate": {
+    "tomorrow": "Demain",
+    "inDays": "dans {{count}} jours"
+  },
   "dstChange": {
     "spring": "Heure d'été",
     "fall": "Heure d'hiver",
     "springShort": "Été",
     "fallShort": "Hiver",
-    "in": "dans",
-    "days": "jours",
     "daysShort": "j",
-    "today": "Aujourd'hui",
-    "tomorrow": "Demain",
     "todayBadge": "aujourd'hui",
     "tomorrowBadge": "demain",
     "tooltip": "Changement d'heure {{market}} : {{date}} à {{time}}",

@@ -12,6 +12,7 @@ import {
 } from '../../utils/marketHolidayDisplay';
 import { formatClockTime, type DateFormatType, type LanguageType } from '../../utils/dateFormat';
 import { type NumberFormatType } from '../../utils/numberFormat';
+import { getTodayYmdInTimezone } from '../../utils/zonedWallClock';
 
 export type ApiMarketCode = 'XNYS' | 'XPAR' | 'XLON' | 'XTKS';
 
@@ -117,11 +118,11 @@ export const MarketClockCard: React.FC<MarketClockCardProps> = ({
   }, []);
 
   useEffect(() => {
-    const event = getNextDSTChange(region);
-    setDstEvent(event);
-    const interval = setInterval(() => setDstEvent(getNextDSTChange(region)), 60 * 60 * 1000);
+    const refresh = () => setDstEvent(getNextDSTChange(region, timezone));
+    refresh();
+    const interval = setInterval(refresh, 60 * 60 * 1000);
     return () => clearInterval(interval);
-  }, [region]);
+  }, [region, timezone]);
 
   useEffect(() => {
     const now = currentTime;
@@ -189,9 +190,14 @@ export const MarketClockCard: React.FC<MarketClockCardProps> = ({
     [timezone, userTimezone, currentTime],
   );
 
+  const marketTodayYmd = useMemo(
+    () => getTodayYmdInTimezone(timezone, currentTime),
+    [timezone, currentTime],
+  );
+
   const upcomingEvents = useMemo(
-    () => sortUpcomingHolidays(holidays, maxUpcomingEvents),
-    [holidays, maxUpcomingEvents],
+    () => sortUpcomingHolidays(holidays, maxUpcomingEvents, marketTodayYmd),
+    [holidays, maxUpcomingEvents, marketTodayYmd],
   );
 
   // Le Japon n'applique pas le DST — badge réservé aux fuseaux US/EU.
@@ -225,7 +231,10 @@ export const MarketClockCard: React.FC<MarketClockCardProps> = ({
     : '';
 
   return (
-    <div className="flex h-full min-w-0 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
+    <div
+      data-testid={`market-clock-${marketCode}`}
+      className="flex h-full min-w-0 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800"
+    >
       <div
         className={`flex items-center justify-between rounded-t-xl border-b bg-gray-50 px-2.5 py-1.5 dark:bg-gray-700/50 ${classes.headerBorder}`}
       >
@@ -286,15 +295,19 @@ export const MarketClockCard: React.FC<MarketClockCardProps> = ({
           ) : (
             <ul className="space-y-0.5">
               {upcomingEvents.map((event) => {
-                const urgent = isHolidayUrgent(event.date);
+                const urgent = isHolidayUrgent(event.date, marketTodayYmd);
                 const relativeDate = formatHolidayRelativeDate(
                   event.date,
                   t,
                   locale,
                   dateFormat,
                   numberFormat,
+                  marketTodayYmd,
                 );
                 const isEarlyClose = event.type === 'early_close';
+                const eventLabel = isEarlyClose
+                  ? t('common:marketHours.earlyClose', { defaultValue: 'Fermeture anticipée' })
+                  : event.name;
 
                 return (
                   <li
@@ -329,7 +342,7 @@ export const MarketClockCard: React.FC<MarketClockCardProps> = ({
                         urgent ? 'font-medium text-gray-900 dark:text-gray-100' : 'text-gray-700 dark:text-gray-300'
                       }`}
                     >
-                      {event.name}
+                      {eventLabel}
                     </span>
                     <span
                       className={`shrink-0 text-xs ${

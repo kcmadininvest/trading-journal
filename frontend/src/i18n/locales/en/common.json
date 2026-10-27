@@ -194,16 +194,16 @@
   "pnlFilterNet": "Net PnL",
   "pnlFilterGross": "Gross PnL",
   "pnlBasisToggleAria": "PnL amount display: net or gross",
+  "relativeDate": {
+    "tomorrow": "Tomorrow",
+    "inDays": "in {{count}} days"
+  },
   "dstChange": {
     "spring": "Daylight Saving Time",
     "fall": "Standard Time",
     "springShort": "Summer",
     "fallShort": "Winter",
-    "in": "in",
-    "days": "days",
     "daysShort": "d",
-    "today": "Today",
-    "tomorrow": "Tomorrow",
     "todayBadge": "today",
     "tomorrowBadge": "tomorrow",
     "tooltip": "{{market}} time change: {{date}} at {{time}}",

@@ -162,16 +162,28 @@
   "pnlFilterNet": "PnL netto",
   "pnlFilterGross": "PnL lordo",
   "pnlBasisToggleAria": "Visualizzazione PnL: netto o lordo",
+  "marketHours": {
+    "title": "Mercati",
+    "open": "Aperto",
+    "closed": "Chiuso",
+    "preMarket": "Pre-mercato",
+    "afterHours": "After-hours",
+    "opensAt": "Apre alle {{time}}",
+    "closesAt": "Chiude alle {{time}}",
+    "hours": "{{open}} – {{close}}",
+    "localTime": "Ora locale: {{time}}",
+    "earlyClose": "Chiusura anticipata"
+  },
+  "relativeDate": {
+    "tomorrow": "Domani",
+    "inDays": "tra {{count}} giorni"
+  },
   "dstChange": {
     "spring": "Ora legale",
     "fall": "Ora solare",
     "springShort": "Estate",
     "fallShort": "Inverno",
-    "in": "tra",
-    "days": "giorni",
     "daysShort": "g",
-    "today": "Oggi",
-    "tomorrow": "Domani",
     "todayBadge": "oggi",
     "tomorrowBadge": "domani",
     "tooltip": "Cambio ora {{market}}: {{date}} alle {{time}}",

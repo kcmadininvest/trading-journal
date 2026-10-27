@@ -162,16 +162,28 @@
   "pnlFilterNet": "净盈亏",
   "pnlFilterGross": "毛盈亏",
   "pnlBasisToggleAria": "盈亏显示：净或毛",
+  "marketHours": {
+    "title": "市场",
+    "open": "开市",
+    "closed": "休市",
+    "preMarket": "盘前",
+    "afterHours": "盘后",
+    "opensAt": "{{time}} 开市",
+    "closesAt": "{{time}} 收市",
+    "hours": "{{open}} – {{close}}",
+    "localTime": "当地时间：{{time}}",
+    "earlyClose": "提前收市"
+  },
+  "relativeDate": {
+    "tomorrow": "明天",
+    "inDays": "{{count}}天后"
+  },
   "dstChange": {
     "spring": "夏令时",
     "fall": "冬令时",
     "springShort": "夏令时",
     "fallShort": "冬令时",
-    "in": "",
-    "days": "天后",
     "daysShort": "天",
-    "today": "今天",
-    "tomorrow": "明天",
     "todayBadge": "今天",
     "tomorrowBadge": "明天",
     "tooltip": "{{market}} 时制变更：{{date}} {{time}}",

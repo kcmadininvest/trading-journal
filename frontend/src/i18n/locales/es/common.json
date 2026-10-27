@@ -189,16 +189,16 @@
   "pnlFilterNet": "PnL neto",
   "pnlFilterGross": "PnL bruto",
   "pnlBasisToggleAria": "Visualización del PnL: neto o bruto",
+  "relativeDate": {
+    "tomorrow": "Mañana",
+    "inDays": "en {{count}} días"
+  },
   "dstChange": {
     "spring": "Horario de verano",
     "fall": "Horario de invierno",
     "springShort": "Verano",
     "fallShort": "Invierno",
-    "in": "en",
-    "days": "días",
     "daysShort": "d",
-    "today": "Hoy",
-    "tomorrow": "Mañana",
     "todayBadge": "hoy",
     "tomorrowBadge": "mañana",
     "tooltip": "Cambio de hora {{market}}: {{date}} a las {{time}}",

@@ -43,7 +43,8 @@ function makeT(map: Record<string, string>): TFunction {
 
 function baseEvent(overrides: Partial<DSTEvent> = {}): DSTEvent {
   return {
-    date: new Date(2026, 9, 25, 3, 0, 0, 0),
+    instant: new Date('2026-10-25T01:00:00.000Z'),
+    dateYmd: '2026-10-25',
     type: 'fall',
     daysUntil: 1,
     isToday: false,
@@ -115,7 +116,8 @@ describe('dstBadgeLabel', () => {
       baseEvent({
         type: 'spring',
         region: 'US',
-        date: new Date(2026, 2, 8, 2, 0, 0, 0),
+        dateYmd: '2026-03-08',
+        instant: new Date('2026-03-08T07:00:00.000Z'),
       }),
       makeT(EN),
       'NYSE',

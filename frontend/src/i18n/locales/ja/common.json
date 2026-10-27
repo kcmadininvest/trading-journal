@@ -162,16 +162,28 @@
   "pnlFilterNet": "純損益",
   "pnlFilterGross": "総損益",
   "pnlBasisToggleAria": "損益の表示：純損益または総損益",
+  "marketHours": {
+    "title": "市場",
+    "open": "開場",
+    "closed": "閉場",
+    "preMarket": "プレマーケット",
+    "afterHours": "アフターアワーズ",
+    "opensAt": "{{time}}に開場",
+    "closesAt": "{{time}}に閉場",
+    "hours": "{{open}} – {{close}}",
+    "localTime": "現地時間: {{time}}",
+    "earlyClose": "早期閉場"
+  },
+  "relativeDate": {
+    "tomorrow": "明日",
+    "inDays": "{{count}}日後"
+  },
   "dstChange": {
     "spring": "夏時間",
     "fall": "冬時間",
     "springShort": "夏時間",
     "fallShort": "冬時間",
-    "in": "",
-    "days": "日後",
     "daysShort": "日",
-    "today": "今日",
-    "tomorrow": "明日",
     "todayBadge": "今日",
     "tomorrowBadge": "明日",
     "tooltip": "{{market}}の時刻変更: {{date}} {{time}}",
