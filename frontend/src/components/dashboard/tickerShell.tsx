@@ -8,8 +8,8 @@ export const BAND_SHELL_VISUAL =
 export const DASHBOARD_CARD_SHELL =
   'w-full min-w-0 rounded-xl border border-gray-200 bg-white text-gray-900 shadow-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100';
 
-/** Bandeau horizontal centré (cotations live). */
-export const TICKER_SHELL_CLASS = `${BAND_SHELL_VISUAL} flex min-h-[3.25rem] items-center justify-center gap-4 overflow-x-auto px-4 py-2.5 sm:px-5 sm:py-3`;
+/** Bandeau horizontal scrollable (cotations live) ; centrage via min-w-full si contenu court. */
+export const TICKER_SHELL_CLASS = `${BAND_SHELL_VISUAL} flex min-h-[3.25rem] items-center gap-4 overflow-x-auto px-4 py-2.5 sm:px-5 sm:py-3`;
 
 /** Barre de filtres : hauteur min. pour h-9/h-10 + py-2 ; overflow visible pour les menus portés. */
 export const FILTER_BAR_SHELL_CLASS = `${DASHBOARD_CARD_SHELL} flex min-h-[3.5rem] items-center justify-start gap-2 overflow-visible px-3 py-2 sm:gap-3 sm:px-4`;

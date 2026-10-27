@@ -23,8 +23,11 @@ const FATAL_MESSAGES = new Set([
   'no_contracts',
 ]);
 
-const TICKER_ROW_CLASS =
-  'mx-auto flex w-max min-w-full items-center justify-center gap-4 sm:gap-6';
+/** Piste non compressible : évite le clip gauche (justify-center dans une row shrinkée). */
+const TICKER_TRACK_CLASS = 'flex w-max shrink-0 items-center gap-4 sm:gap-6';
+
+/** Centre la piste si elle tient ; avec w-max+shrink-0 le shell peut scroller depuis la gauche. */
+const TICKER_CENTER_WRAP_CLASS = 'flex min-w-full w-max shrink-0 justify-center';
 
 function VerticalRule() {
   return <div className="h-6 w-px shrink-0 bg-white/10" aria-hidden />;
@@ -210,23 +213,27 @@ export const MarketQuotesTicker: React.FC = () => {
   const isLive = hasPrices && (snapshot?.connected === true || wsConnected);
 
   const tickerContent = statusMessage ? (
-    <div className={TICKER_ROW_CLASS}>
-      <LiveStatus live={false} />
-      <VerticalRule />
-      <StatusContent message={statusMessage} pulse={statusPulse} />
+    <div className={TICKER_CENTER_WRAP_CLASS}>
+      <div className={TICKER_TRACK_CLASS}>
+        <LiveStatus live={false} />
+        <VerticalRule />
+        <StatusContent message={statusMessage} pulse={statusPulse} />
+      </div>
     </div>
   ) : (
-    <div className={TICKER_ROW_CLASS} aria-live="polite">
-      <LiveStatus live={isLive} />
-      <VerticalRule />
-      {quotes.map((quote, index) => (
-        <QuoteRow
-          key={quote.key}
-          quote={quote}
-          numberFormat={numberFormat}
-          showSeparator={index < quotes.length - 1}
-        />
-      ))}
+    <div className={TICKER_CENTER_WRAP_CLASS} aria-live="polite">
+      <div className={TICKER_TRACK_CLASS}>
+        <LiveStatus live={isLive} />
+        <VerticalRule />
+        {quotes.map((quote, index) => (
+          <QuoteRow
+            key={quote.key}
+            quote={quote}
+            numberFormat={numberFormat}
+            showSeparator={index < quotes.length - 1}
+          />
+        ))}
+      </div>
     </div>
   );
 
