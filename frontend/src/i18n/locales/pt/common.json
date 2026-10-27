@@ -176,7 +176,7 @@
   },
   "relativeDate": {
     "tomorrow": "Amanhã",
-    "inDays": "em {{count}} dias"
+    "inDays": "em {{value}} dias"
   },
   "dstChange": {
     "spring": "Horário de verão",

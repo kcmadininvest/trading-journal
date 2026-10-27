@@ -7,9 +7,9 @@ import {
 } from './marketHolidayDisplay';
 import type { MarketHoliday } from '../services/calendar';
 
-const t = ((key: string, opts?: { defaultValue?: string; count?: string | number }) => {
-  if (key === 'common:relativeDate.inDays' && opts?.count != null) {
-    return `dans ${opts.count} jours`;
+const t = ((key: string, opts?: { defaultValue?: string; value?: string | number }) => {
+  if (key === 'common:relativeDate.inDays' && opts?.value != null) {
+    return `dans ${opts.value} jours`;
   }
   if (key === 'common:relativeDate.tomorrow') return 'Demain';
   if (key === 'calendar:today') return "Aujourd'hui";

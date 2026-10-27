@@ -51,10 +51,12 @@ export function formatHolidayRelativeDate(
     return t('common:relativeDate.tomorrow', { defaultValue: 'Demain' });
   }
   if (diffDays <= 7) {
-    const count = formatNumber(diffDays, 0, numberFormat);
+    // `value` (pas `count`) : i18next réserve `count` au pluriel (number),
+    // alors que l’affichage passe par formatNumber (string, prefs utilisateur).
+    const value = formatNumber(diffDays, 0, numberFormat);
     return t('common:relativeDate.inDays', {
-      defaultValue: 'dans {{count}} jours',
-      count,
+      defaultValue: 'dans {{value}} jours',
+      value,
     });
   }
   const formatted = formatDate(dateStr, dateFormat, false);

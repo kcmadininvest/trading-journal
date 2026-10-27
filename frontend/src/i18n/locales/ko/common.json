@@ -176,7 +176,7 @@
   },
   "relativeDate": {
     "tomorrow": "내일",
-    "inDays": "{{count}}일 후"
+    "inDays": "{{value}}일 후"
   },
   "dstChange": {
     "spring": "일광 절약 시간",

@@ -176,7 +176,7 @@
   },
   "relativeDate": {
     "tomorrow": "明天",
-    "inDays": "{{count}}天后"
+    "inDays": "{{value}}天后"
   },
   "dstChange": {
     "spring": "夏令时",

@@ -193,7 +193,7 @@
   "pnlBasisToggleAria": "PnL-Anzeige: netto oder brutto",
   "relativeDate": {
     "tomorrow": "Morgen",
-    "inDays": "in {{count}} Tagen"
+    "inDays": "in {{value}} Tagen"
   },
   "dstChange": {
     "spring": "Sommerzeit",

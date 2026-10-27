@@ -176,7 +176,7 @@
   },
   "relativeDate": {
     "tomorrow": "Domani",
-    "inDays": "tra {{count}} giorni"
+    "inDays": "tra {{value}} giorni"
   },
   "dstChange": {
     "spring": "Ora legale",

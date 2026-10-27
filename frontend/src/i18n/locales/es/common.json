@@ -191,7 +191,7 @@
   "pnlBasisToggleAria": "Visualización del PnL: neto o bruto",
   "relativeDate": {
     "tomorrow": "Mañana",
-    "inDays": "en {{count}} días"
+    "inDays": "en {{value}} días"
   },
   "dstChange": {
     "spring": "Horario de verano",

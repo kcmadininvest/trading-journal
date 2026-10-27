@@ -195,7 +195,7 @@
   "pnlBasisToggleAria": "Affichage des montants PnL : net ou brut",
   "relativeDate": {
     "tomorrow": "Demain",
-    "inDays": "dans {{count}} jours"
+    "inDays": "dans {{value}} jours"
   },
   "dstChange": {
     "spring": "Heure d'été",
