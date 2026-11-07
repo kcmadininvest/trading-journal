@@ -1,11 +1,18 @@
 """Tests auth JWT via cookies HttpOnly (cookie-only, plus de Bearer / body.refresh)."""
+from unittest.mock import patch
+
 from django.core.cache import cache
 from django.test import TestCase, override_settings
 from rest_framework import status
+from rest_framework.response import Response
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from accounts.jwt_cookies import ACCESS_COOKIE_NAME, REFRESH_COOKIE_NAME
+from accounts.jwt_cookies import (
+    ACCESS_COOKIE_NAME,
+    REFRESH_COOKIE_NAME,
+    clear_jwt_cookies,
+)
 from accounts.models import User
 
 
@@ -151,6 +158,42 @@ class JwtCookieAuthTests(TestCase):
         access = response.cookies.get(ACCESS_COOKIE_NAME)
         self.assertIsNotNone(access)
         self.assertEqual(access.value, '')
+
+    def test_clear_jwt_cookies_secure_mode_django42_compatible(self) -> None:
+        """Prod (secure=True) ne doit plus passer secure= à delete_cookie (Django 4.2)."""
+        response = Response({'ok': True})
+        with patch('accounts.jwt_cookies._cookie_secure', return_value=True):
+            clear_jwt_cookies(response)
+        access = response.cookies.get(ACCESS_COOKIE_NAME)
+        refresh = response.cookies.get(REFRESH_COOKIE_NAME)
+        self.assertIsNotNone(access)
+        self.assertIsNotNone(refresh)
+        self.assertEqual(access.value, '')
+        self.assertEqual(refresh.value, '')
+        self.assertTrue(access['secure'])
+        self.assertTrue(refresh['secure'])
+
+    @override_settings(DEBUG=False)
+    def test_logout_clears_cookies_when_debug_false(self) -> None:
+        """Régression prod : logout avec cookies Secure ne doit pas renvoyer 500."""
+        self._login()
+        csrf = self.client.cookies.get('csrftoken')
+        response = self.client.post(
+            '/api/accounts/auth/logout/',
+            {},
+            format='json',
+            HTTP_X_CSRFTOKEN=csrf.value,
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        access = response.cookies.get(ACCESS_COOKIE_NAME)
+        refresh = response.cookies.get(REFRESH_COOKIE_NAME)
+        self.assertIsNotNone(access)
+        self.assertIsNotNone(refresh)
+        self.assertEqual(access.value, '')
+        self.assertEqual(refresh.value, '')
+        # Cookies blacklistés absents → plus de 401 « Token has been blacklisted »
+        profile = self.client.get('/api/accounts/profile/')
+        self.assertEqual(profile.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_logout_bearer_body_without_cookies_does_not_blacklist(self) -> None:
         """N4 — logout sans cookies ne blackliste pas ; Bearer seul reste inutilisable pour auth"""
