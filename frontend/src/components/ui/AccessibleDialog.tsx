@@ -13,6 +13,8 @@ export interface AccessibleDialogProps {
   size?: 'md' | 'lg' | 'xl' | '2xl';
   /** Contenu du footer (actions) */
   footer?: React.ReactNode;
+  /** Classes du conteneur footer (défaut : flex wrap aligné à droite) */
+  footerClassName?: string;
   /** Classe additionnelle sur le panneau */
   className?: string;
   /** Empêche la fermeture via Escape / backdrop */
@@ -40,6 +42,7 @@ const AccessibleDialog: React.FC<AccessibleDialogProps> = ({
   children,
   size = 'lg',
   footer,
+  footerClassName,
   className = '',
   disableClose = false,
   titleId: titleIdProp,
@@ -147,7 +150,12 @@ const AccessibleDialog: React.FC<AccessibleDialogProps> = ({
         <div className="p-6">{children}</div>
 
         {footer && (
-          <div className="px-6 pb-6 flex flex-wrap justify-end gap-2 border-t border-gray-100 dark:border-gray-700 pt-4">
+          <div
+            className={
+              footerClassName ||
+              'px-6 pb-6 flex flex-wrap justify-end gap-2 border-t border-gray-100 dark:border-gray-700 pt-4'
+            }
+          >
             {footer}
           </div>
         )}
