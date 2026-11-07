@@ -27,7 +27,7 @@ const TutorialAutoPrompt: React.FC<TutorialAutoPromptProps> = ({
       onClose={onLater}
       title={t('autoPrompt.title')}
       description={t('autoPrompt.description')}
-      size="lg"
+      size="xl"
       footer={
         <>
           <button
