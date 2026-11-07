@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
   P0_SLUG,
-  TUTORIALS,
   TUTORIAL_BY_SLUG,
   getTutorialStatus,
   isP0Incomplete,
