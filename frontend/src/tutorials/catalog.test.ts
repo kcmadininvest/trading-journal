@@ -17,9 +17,9 @@ describe('tutorials catalog', () => {
     expect(p0.steps).toHaveLength(4);
   });
 
-  it('includes secondary stubs', () => {
-    const stubs = TUTORIALS.filter((t) => t.stub);
-    expect(stubs.length).toBeGreaterThanOrEqual(2);
+  it('keeps calendar stubbed until its captures exist', () => {
+    expect(TUTORIAL_BY_SLUG['import-trades']?.stub).toBeFalsy();
+    expect(TUTORIAL_BY_SLUG.calendar?.stub).toBe(true);
   });
 
   it('tracks progress helpers', () => {

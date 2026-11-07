@@ -51,7 +51,7 @@ const STEPS: Array<{
         timeout: 60_000,
       });
       // Compte seedé : peut être dans un panneau desktop hors viewport mobile-first
-      await expect(page.locator('main').getByText(/Demo Futures|Futures Account/i).first()).toBeAttached({
+      await expect(appMain(page).getByText(/Demo Futures|Futures Account/i).first()).toBeAttached({
         timeout: 30_000,
       });
     },
@@ -61,9 +61,9 @@ const STEPS: Array<{
     step: 2,
     hash: '#trades',
     ready: async (page) => {
-      await expect(page.locator('main')).toBeVisible({ timeout: 30_000 });
+      await expect(appMain(page)).toBeVisible({ timeout: 30_000 });
       // Doublons mobile/desktop : attached suffit (visible=false sur le clone caché)
-      await expect(page.locator('main').getByText(/NQH6|ESH6/i).first()).toBeAttached({
+      await expect(appMain(page).getByText(/NQH6|ESH6/i).first()).toBeAttached({
         timeout: 60_000,
       });
     },
@@ -97,7 +97,93 @@ const STEPS: Array<{
       ).toBeVisible({ timeout: 60_000 });
     },
   },
+  {
+    slug: 'import-trades',
+    step: 1,
+    hash: '#trades',
+    ready: async (page, locale) => {
+      await expect(appMain(page).getByText(/NQH6|ESH6/i).first()).toBeAttached({
+        timeout: 60_000,
+      });
+      await openImportModal(page, locale);
+      // Step 1 = zone fichier / compte, guide replié pour distinguer du step 2
+      await setFormatGuideOpen(page, locale, false);
+      await expect(
+        page.getByText(/Glissez-déposez|Drag and drop/i).first()
+      ).toBeVisible({ timeout: 15_000 });
+    },
+  },
+  {
+    slug: 'import-trades',
+    step: 2,
+    hash: '#trades',
+    ready: async (page, locale) => {
+      await openImportModal(page, locale);
+      await setFormatGuideOpen(page, locale, true);
+      await expect(
+        page.getByText(/Guide de format CSV|CSV Format Guide/i).first()
+      ).toBeVisible({ timeout: 15_000 });
+      await expect(page.getByText(/ContractName/i).first()).toBeVisible({ timeout: 15_000 });
+    },
+  },
 ];
+
+/** Évite le <main> de l’overlay ESLint Vite (`window window-collapsed`). */
+function appMain(page: Page) {
+  return page.getByRole('main').first();
+}
+
+async function openImportModal(page: Page, locale: LocaleCode) {
+  const title = locale === 'fr' ? /Importer des trades/i : /Import Trades/i;
+  const heading = page.getByRole('heading', { name: title });
+  if (await heading.isVisible().catch(() => false)) {
+    return;
+  }
+  const importBtn = page
+    .getByRole('button', { name: locale === 'fr' ? /^Importer$/i : /^Import$/i })
+    .first();
+  await expect(importBtn).toBeVisible({ timeout: 30_000 });
+  await importBtn.click();
+  await expect(heading).toBeVisible({ timeout: 15_000 });
+}
+
+async function setFormatGuideOpen(page: Page, locale: LocaleCode, open: boolean) {
+  const hideLabel = locale === 'fr' ? /Masquer le guide de format/i : /Hide format guide/i;
+  const showLabel = locale === 'fr' ? /Voir le guide de format/i : /Show format guide/i;
+  const hideBtn = page.getByRole('button', { name: hideLabel });
+  const showBtn = page.getByRole('button', { name: showLabel });
+  const guideVisible = await page
+    .getByText(/Guide de format CSV|CSV Format Guide/i)
+    .first()
+    .isVisible()
+    .catch(() => false);
+
+  if (open && !guideVisible) {
+    await expect(showBtn).toBeVisible({ timeout: 10_000 });
+    await showBtn.click();
+    await expect(
+      page.getByText(/Guide de format CSV|CSV Format Guide/i).first()
+    ).toBeVisible({ timeout: 10_000 });
+  } else if (!open && guideVisible) {
+    await expect(hideBtn).toBeVisible({ timeout: 10_000 });
+    await hideBtn.click();
+    await expect(
+      page.getByText(/Guide de format CSV|CSV Format Guide/i).first()
+    ).toBeHidden({ timeout: 10_000 });
+  }
+}
+
+async function closeImportModal(page: Page) {
+  const modal = page
+    .locator('div.fixed.inset-0.z-50')
+    .filter({ has: page.getByRole('heading', { name: /Importer des trades|Import Trades/i }) });
+  if (!(await modal.isVisible().catch(() => false))) {
+    return;
+  }
+  // Clic hors carte (backdrop) — Escape n’est pas branché sur cette modale
+  await modal.click({ position: { x: 4, y: 4 } });
+  await expect(modal).toBeHidden({ timeout: 10_000 });
+}
 
 async function dismissOverlays(page: Page) {
   for (let i = 0; i < 3; i += 1) {
@@ -164,6 +250,8 @@ async function login(page: Page) {
 }
 
 async function setUiLanguage(page: Page, locale: (typeof LOCALES)[number]) {
+  await closeImportModal(page);
+  await dismissOverlays(page);
   const langButton = page.getByRole('button', { name: /Language|Langue|Idioma|Sprache/i }).first();
   await langButton.click();
   await page.getByRole('button', { name: locale.label }).click();
@@ -219,7 +307,7 @@ async function withTimeout<T>(promise: Promise<T>, ms: number, label: string): P
 }
 
 async function captureStep(page: Page, target: string) {
-  await expect(page.locator('main').first()).toBeVisible({ timeout: 30_000 });
+  await expect(appMain(page)).toBeVisible({ timeout: 30_000 });
   // Pas de scrollIntoViewIfNeeded : sur #trades le layout bouge (table) et l’action ne résout jamais.
   await page.waitForTimeout(800);
   // eslint-disable-next-line no-console
@@ -240,7 +328,7 @@ async function captureStep(page: Page, target: string) {
 }
 
 test.describe('Tutorials screenshots (manual)', () => {
-  test('capture P0 getting-started FR+EN', async ({ page, browserName }) => {
+  test('capture getting-started + import-trades FR+EN', async ({ page, browserName }) => {
     test.skip(browserName !== 'chromium', 'Captures Chromium only');
 
     await login(page);
@@ -256,15 +344,15 @@ test.describe('Tutorials screenshots (manual)', () => {
 
       for (const step of STEPS) {
         // eslint-disable-next-line no-console
-        console.log(`[tutorials] ${locale.code} step ${step.step} → ${step.hash}`);
+        console.log(`[tutorials] ${locale.code} ${step.slug}#${step.step} → ${step.hash}`);
         await goHash(page, step.hash);
         await dismissOverlays(page);
         // eslint-disable-next-line no-console
-        console.log(`[tutorials] ${locale.code} step ${step.step} settled, waiting ready`);
+        console.log(`[tutorials] ${locale.code} ${step.slug}#${step.step} settled, waiting ready`);
         await waitSpinnersGone(page);
         await step.ready(page, locale.code);
         // eslint-disable-next-line no-console
-        console.log(`[tutorials] ${locale.code} step ${step.step} ready ok`);
+        console.log(`[tutorials] ${locale.code} ${step.slug}#${step.step} ready ok`);
         await waitSpinnersGone(page);
 
         const target = path.join(localeDir, `${step.slug}-step-${step.step}.png`);
@@ -278,7 +366,10 @@ test.describe('Tutorials screenshots (manual)', () => {
             break;
           } catch (err) {
             // eslint-disable-next-line no-console
-            console.warn(`[tutorials] ${locale.code} step ${step.step} attempt ${attempt} failed`, err);
+            console.warn(
+              `[tutorials] ${locale.code} ${step.slug}#${step.step} attempt ${attempt} failed`,
+              err
+            );
             lastError = err;
           }
         }
@@ -290,6 +381,8 @@ test.describe('Tutorials screenshots (manual)', () => {
         // eslint-disable-next-line no-console
         console.log(`[tutorials] wrote ${target}`);
       }
+
+      await closeImportModal(page);
     }
 
     const frJoined = digestsByLocale.fr.join('|');
@@ -297,9 +390,9 @@ test.describe('Tutorials screenshots (manual)', () => {
     expect(frJoined).not.toEqual(enJoined);
 
     await setUiLanguage(page, LOCALES[0]);
-    await page.goto('/#help');
+    await goHash(page, '#help');
     await expect(page.getByTestId('help-page')).toBeVisible({ timeout: 30_000 });
-    await page.getByTestId('help-card-getting-started').click();
-    await expect(page.getByTestId('tutorial-viewer-getting-started')).toBeVisible();
+    await page.getByTestId('help-card-import-trades').click();
+    await expect(page.getByTestId('tutorial-viewer-import-trades')).toBeVisible();
   });
 });

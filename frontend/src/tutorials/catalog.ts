@@ -40,7 +40,6 @@ export const TUTORIALS: TutorialDef[] = [
     slug: 'import-trades',
     section: 'go-further',
     estimatedMinutes: 4,
-    stub: true,
     steps: [
       { id: 'open-import', imageStep: 1 },
       { id: 'format', imageStep: 2 },
