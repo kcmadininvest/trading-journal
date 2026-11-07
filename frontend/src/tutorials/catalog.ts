@@ -49,7 +49,6 @@ export const TUTORIALS: TutorialDef[] = [
     slug: 'calendar',
     section: 'go-further',
     estimatedMinutes: 3,
-    stub: true,
     steps: [
       { id: 'overview', imageStep: 1 },
       { id: 'day-detail', imageStep: 2 },

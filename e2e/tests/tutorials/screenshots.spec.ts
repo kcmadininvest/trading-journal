@@ -126,6 +126,41 @@ const STEPS: Array<{
       await expect(page.getByText(/ContractName/i).first()).toBeVisible({ timeout: 15_000 });
     },
   },
+  {
+    slug: 'calendar',
+    step: 1,
+    hash: '#calendar',
+    ready: async (page, locale) => {
+      await closeImportModal(page);
+      await closeDayTradesModal(page);
+      // « Aujourd’hui » n’apparaît que si on n’est pas déjà sur le mois courant
+      await expect(
+        page.getByRole('button', { name: locale === 'fr' ? /Quotidienne/i : /Daily/i }).first()
+      ).toBeVisible({ timeout: 60_000 });
+      await expect(page.getByRole('heading', { level: 2 }).first()).toBeVisible({
+        timeout: 30_000,
+      });
+      // Cases avec trades seedés : bouton œil « Voir les trades »
+      await expect(
+        page.getByRole('button', { name: locale === 'fr' ? /Voir les trades/i : /View trades/i }).first()
+      ).toBeVisible({ timeout: 60_000 });
+    },
+  },
+  {
+    slug: 'calendar',
+    step: 2,
+    hash: '#calendar',
+    ready: async (page, locale) => {
+      await closeImportModal(page);
+      await openDayTradesModal(page, locale);
+      await expect(
+        page.getByRole('heading', {
+          name: locale === 'fr' ? /Trades du jour/i : /Day Trades/i,
+        })
+      ).toBeVisible({ timeout: 15_000 });
+      await expect(page.getByText(/NQH6|ESH6/i).first()).toBeVisible({ timeout: 30_000 });
+    },
+  },
 ];
 
 /** Évite le <main> de l’overlay ESLint Vite (`window window-collapsed`). */
@@ -173,16 +208,36 @@ async function setFormatGuideOpen(page: Page, locale: LocaleCode, open: boolean)
   }
 }
 
-async function closeImportModal(page: Page) {
-  const modal = page
-    .locator('div.fixed.inset-0.z-50')
-    .filter({ has: page.getByRole('heading', { name: /Importer des trades|Import Trades/i }) });
+async function closeFixedModal(page: Page, heading: RegExp) {
+  const modal = page.locator('div.fixed.inset-0.z-50').filter({ has: page.getByRole('heading', { name: heading }) });
   if (!(await modal.isVisible().catch(() => false))) {
     return;
   }
-  // Clic hors carte (backdrop) — Escape n’est pas branché sur cette modale
+  // Clic hors carte (backdrop) — Escape souvent non branché
   await modal.click({ position: { x: 4, y: 4 } });
   await expect(modal).toBeHidden({ timeout: 10_000 });
+}
+
+async function closeImportModal(page: Page) {
+  await closeFixedModal(page, /Importer des trades|Import Trades/i);
+}
+
+async function closeDayTradesModal(page: Page) {
+  await closeFixedModal(page, /Trades du jour|Day Trades/i);
+}
+
+async function openDayTradesModal(page: Page, locale: LocaleCode) {
+  const title = locale === 'fr' ? /Trades du jour/i : /Day Trades/i;
+  const heading = page.getByRole('heading', { name: title });
+  if (await heading.isVisible().catch(() => false)) {
+    return;
+  }
+  const viewTrades = page
+    .getByRole('button', { name: locale === 'fr' ? /Voir les trades/i : /View trades/i })
+    .first();
+  await expect(viewTrades).toBeVisible({ timeout: 60_000 });
+  await viewTrades.click();
+  await expect(heading).toBeVisible({ timeout: 15_000 });
 }
 
 async function dismissOverlays(page: Page) {
@@ -251,6 +306,7 @@ async function login(page: Page) {
 
 async function setUiLanguage(page: Page, locale: (typeof LOCALES)[number]) {
   await closeImportModal(page);
+  await closeDayTradesModal(page);
   await dismissOverlays(page);
   const langButton = page.getByRole('button', { name: /Language|Langue|Idioma|Sprache/i }).first();
   await langButton.click();
@@ -328,7 +384,10 @@ async function captureStep(page: Page, target: string) {
 }
 
 test.describe('Tutorials screenshots (manual)', () => {
-  test('capture getting-started + import-trades FR+EN', async ({ page, browserName }) => {
+  test('capture getting-started + import-trades + calendar FR+EN', async ({
+    page,
+    browserName,
+  }) => {
     test.skip(browserName !== 'chromium', 'Captures Chromium only');
 
     await login(page);
@@ -383,6 +442,7 @@ test.describe('Tutorials screenshots (manual)', () => {
       }
 
       await closeImportModal(page);
+      await closeDayTradesModal(page);
     }
 
     const frJoined = digestsByLocale.fr.join('|');
@@ -392,7 +452,7 @@ test.describe('Tutorials screenshots (manual)', () => {
     await setUiLanguage(page, LOCALES[0]);
     await goHash(page, '#help');
     await expect(page.getByTestId('help-page')).toBeVisible({ timeout: 30_000 });
-    await page.getByTestId('help-card-import-trades').click();
-    await expect(page.getByTestId('tutorial-viewer-import-trades')).toBeVisible();
+    await page.getByTestId('help-card-calendar').click();
+    await expect(page.getByTestId('tutorial-viewer-calendar')).toBeVisible();
   });
 });

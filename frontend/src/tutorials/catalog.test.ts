@@ -17,9 +17,10 @@ describe('tutorials catalog', () => {
     expect(p0.steps).toHaveLength(4);
   });
 
-  it('keeps calendar stubbed until its captures exist', () => {
+  it('marks secondary tutorials as ready once captures exist', () => {
     expect(TUTORIAL_BY_SLUG['import-trades']?.stub).toBeFalsy();
-    expect(TUTORIAL_BY_SLUG.calendar?.stub).toBe(true);
+    expect(TUTORIAL_BY_SLUG.calendar?.stub).toBeFalsy();
+    expect(TUTORIAL_BY_SLUG.calendar?.steps).toHaveLength(2);
   });
 
   it('tracks progress helpers', () => {
