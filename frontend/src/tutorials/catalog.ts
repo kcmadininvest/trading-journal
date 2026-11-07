@@ -85,7 +85,25 @@ export function isP0Incomplete(progress: TutorialsProgress | null | undefined): 
   return status !== 'completed' && status !== 'skipped';
 }
 
+/** Locales pour lesquelles des captures dédiées sont générées (Playwright). */
+export const TUTORIAL_SHOT_LOCALES = ['fr', 'en'] as const;
+
 export function tutorialImagePath(locale: string, slug: string, stepNumber: number): string {
   const lang = (locale || 'fr').split('-')[0];
   return `/tutorials/${lang}/${slug}-step-${stepNumber}.png`;
+}
+
+/**
+ * Chemins image à tenter dans l’ordre : locale UI, puis EN, puis FR.
+ * Permet au viewer de suivre le changement de langue et de dégrader
+ * proprement si une locale n’a pas encore de captures.
+ */
+export function tutorialImageCandidates(
+  locale: string,
+  slug: string,
+  stepNumber: number
+): string[] {
+  const lang = (locale || 'fr').split('-')[0];
+  const ordered = [lang, 'en', 'fr'].filter((value, index, all) => all.indexOf(value) === index);
+  return ordered.map((code) => tutorialImagePath(code, slug, stepNumber));
 }

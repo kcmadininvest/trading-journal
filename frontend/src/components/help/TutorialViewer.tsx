@@ -4,7 +4,7 @@ import {
   TutorialDef,
   TutorialProgressEntry,
   TutorialStatus,
-  tutorialImagePath,
+  tutorialImageCandidates,
 } from '../../tutorials/catalog';
 
 export interface TutorialViewerProps {
@@ -31,20 +31,27 @@ const TutorialViewer: React.FC<TutorialViewerProps> = ({
   );
   const [stepIndex, setStepIndex] = useState(initialIndex);
   const [imgFailed, setImgFailed] = useState(false);
+  const [imgCandidateIndex, setImgCandidateIndex] = useState(0);
+
+  const locale = i18n.language?.split('-')[0] || 'fr';
 
   useEffect(() => {
     setStepIndex(initialIndex);
   }, [tutorial.slug, initialIndex]);
 
+  // Recalcule les captures dès que la langue UI ou l’étape change
   useEffect(() => {
     setImgFailed(false);
-  }, [stepIndex, tutorial.slug]);
+    setImgCandidateIndex(0);
+  }, [stepIndex, tutorial.slug, locale]);
 
   const total = tutorial.steps.length;
   const step = tutorial.steps[stepIndex];
   const isLast = stepIndex >= total - 1;
-  const locale = i18n.language?.split('-')[0] || 'fr';
-  const imageSrc = step ? tutorialImagePath(locale, tutorial.slug, step.imageStep) : '';
+  const imageCandidates = step
+    ? tutorialImageCandidates(locale, tutorial.slug, step.imageStep)
+    : [];
+  const imageSrc = imageCandidates[imgCandidateIndex] || '';
 
   const markSeen = (nextIndex: number, status: TutorialStatus) => {
     onProgressChange({
@@ -91,6 +98,14 @@ const TutorialViewer: React.FC<TutorialViewerProps> = ({
     onClose();
   };
 
+  const handleImageError = () => {
+    if (imgCandidateIndex + 1 < imageCandidates.length) {
+      setImgCandidateIndex((index) => index + 1);
+      return;
+    }
+    setImgFailed(true);
+  };
+
   if (!step) {
     return null;
   }
@@ -131,16 +146,17 @@ const TutorialViewer: React.FC<TutorialViewerProps> = ({
 
       <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
         <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 overflow-hidden min-h-[180px] flex items-center justify-center">
-          {imgFailed ? (
+          {imgFailed || !imageSrc ? (
             <p className="text-sm text-gray-500 dark:text-gray-400 p-6 text-center">
               {t('viewer.imagePlaceholder')}
             </p>
           ) : (
             <img
+              key={imageSrc}
               src={imageSrc}
               alt={t(altKey)}
               className="w-full h-auto object-contain max-h-[320px]"
-              onError={() => setImgFailed(true)}
+              onError={handleImageError}
             />
           )}
         </div>

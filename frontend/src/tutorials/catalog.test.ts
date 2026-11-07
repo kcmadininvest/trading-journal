@@ -5,6 +5,7 @@ import {
   TUTORIAL_BY_SLUG,
   getTutorialStatus,
   isP0Incomplete,
+  tutorialImageCandidates,
   tutorialImagePath,
 } from './catalog';
 
@@ -30,6 +31,17 @@ describe('tutorials catalog', () => {
   it('builds image paths', () => {
     expect(tutorialImagePath('fr-FR', 'getting-started', 2)).toBe(
       '/tutorials/fr/getting-started-step-2.png'
+    );
+  });
+
+  it('orders image candidates by UI locale then EN/FR fallback', () => {
+    expect(tutorialImageCandidates('es', 'getting-started', 1)).toEqual([
+      '/tutorials/es/getting-started-step-1.png',
+      '/tutorials/en/getting-started-step-1.png',
+      '/tutorials/fr/getting-started-step-1.png',
+    ]);
+    expect(tutorialImageCandidates('en', 'getting-started', 1)[0]).toBe(
+      '/tutorials/en/getting-started-step-1.png'
     );
   });
 });
