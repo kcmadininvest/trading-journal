@@ -1,101 +1,101 @@
 {
   "hub": {
-    "title": "Help & guides",
-    "subtitle": "Step-by-step walkthroughs to get started. Available anytime.",
-    "sectionStart": "Getting started",
-    "sectionFurther": "Go further",
-    "estimatedMinutes": "{{count}} min",
-    "stub": "Preview",
-    "search": "Search guides",
-    "noResults": "No guide matches your search.",
-    "backToLibrary": "Back to library",
-    "menuLabel": "Help",
-    "settingsLink": "Help & guides",
-    "settingsLinkHint": "Open the tutorial library"
+    "title": "ヘルプとガイド",
+    "subtitle": "ジャーナルを使い始めるためのステップバイステップ。いつでも参照できます。",
+    "sectionStart": "はじめに",
+    "sectionFurther": "さらに進む",
+    "estimatedMinutes": "{{count}} 分",
+    "stub": "プレビュー",
+    "search": "ガイドを検索",
+    "noResults": "条件に一致するガイドがありません。",
+    "backToLibrary": "ライブラリに戻る",
+    "menuLabel": "ヘルプ",
+    "settingsLink": "ヘルプとガイド",
+    "settingsLinkHint": "チュートリアルライブラリを開く"
   },
   "status": {
-    "not_started": "Not started",
-    "in_progress": "In progress",
-    "completed": "Completed",
-    "skipped": "Skipped"
+    "not_started": "未開始",
+    "in_progress": "進行中",
+    "completed": "完了",
+    "skipped": "スキップ済み"
   },
   "viewer": {
-    "stepOf": "Step {{current}} of {{total}}",
-    "previous": "Previous",
-    "next": "Next",
-    "finish": "Finish",
-    "skipStep": "Skip this step",
-    "skipTutorial": "Skip tutorial",
-    "imagePlaceholder": "Screenshot coming soon for this step."
+    "stepOf": "ステップ {{current}} / {{total}}",
+    "previous": "前へ",
+    "next": "次へ",
+    "finish": "完了",
+    "skipStep": "このステップをスキップ",
+    "skipTutorial": "チュートリアルをスキップ",
+    "imagePlaceholder": "このステップのスクリーンショットは近日公開予定です。"
   },
   "autoPrompt": {
-    "title": "Welcome — getting started guide",
-    "description": "A short path to create an account, import trades, read the dashboard, and open the journal.",
-    "hint": "You can always find this guide under Help, even if you dismiss this reminder.",
-    "start": "Start",
-    "later": "Later",
-    "dismissAuto": "Don’t show this automatically again"
+    "title": "ようこそ — スタートガイド",
+    "description": "口座作成、トレード取込、ダッシュボード確認、ジャーナル開始までの短い流れです。",
+    "hint": "このリマインダーを閉じても、ヘルプからいつでもこのガイドを開けます。",
+    "start": "始める",
+    "later": "後で",
+    "dismissAuto": "自動では表示しない"
   },
   "banner": {
-    "resume": "Resume the getting started guide",
-    "dismiss": "Dismiss"
+    "resume": "スタートガイドを再開",
+    "dismiss": "非表示"
   },
   "tutorials": {
     "getting-started": {
-      "title": "Getting started",
-      "summary": "Trading account, import, dashboard, and journal.",
+      "title": "はじめの一歩",
+      "summary": "取引口座、取込、ダッシュボード、ジャーナル。",
       "steps": {
         "account": {
-          "title": "Create a trading account",
-          "body": "Open Trading accounts, then create an account (broker, currency, capital).\nThis is the foundation for linking trades and tracking PnL.",
-          "alt": "Trading accounts page with the create-account form"
+          "title": "取引口座を作成する",
+          "body": "取引口座を開き、口座を作成します（ブローカー、通貨、資本）。\nトレードを紐づけ、PnLを追跡するための基盤です。",
+          "alt": "口座作成フォームがある取引口座ページ"
         },
         "import": {
-          "title": "Import or enter trades",
-          "body": "From Trades or the dashboard, import a CSV or enter a trade.\nThe format guide stays available in the import dialog.",
-          "alt": "Trade import dialog with the format guide"
+          "title": "トレードを取り込む／入力する",
+          "body": "トレード画面またはダッシュボードから CSV を取り込むか、トレードを入力します。\n取込ウィンドウでは形式ガイドを引き続き利用できます。",
+          "alt": "形式ガイド付きのトレード取込ウィンドウ"
         },
         "dashboard": {
-          "title": "Read the dashboard",
-          "body": "The dashboard summarizes your period: PnL, results, and activity.\nAdjust the period and account filters as needed.",
-          "alt": "Dashboard with performance metrics"
+          "title": "ダッシュボードを読む",
+          "body": "ダッシュボードは期間の要約です：PnL、結果、活動。\n期間と口座を調整して表示を絞り込みます。",
+          "alt": "パフォーマンス指標のあるダッシュボード"
         },
         "journal": {
-          "title": "Open the daily journal",
-          "body": "The daily journal and day questions help you learn from each session.\nCome back to Help whenever you want to resume this guide.",
-          "alt": "Daily journal page"
+          "title": "今日のジャーナルを開く",
+          "body": "日次ジャーナルと今日の質問で、各セッションから学びを積み上げます。\nガイドを再開したいときはここへ戻ってください。",
+          "alt": "日次ジャーナルページ"
         }
       }
     },
     "import-trades": {
-      "title": "Import trades",
-      "summary": "CSV, columns, and checks before confirmation.",
+      "title": "トレードを取り込む",
+      "summary": "CSV、列、確定前の確認。",
       "steps": {
         "open-import": {
-          "title": "Open import",
-          "body": "From the Trades page, start Import. Pick the target account, then your CSV file.",
-          "alt": "Import button on the Trades page"
+          "title": "取込を開く",
+          "body": "トレードページから「取込」を開始します。対象口座を選び、CSV ファイルを指定します。",
+          "alt": "トレードページの取込ボタン"
         },
         "format": {
-          "title": "Check the format",
-          "body": "Use the built-in format guide, fix columns if needed, then confirm the preview.",
-          "alt": "CSV format guide in the import dialog"
+          "title": "形式を確認する",
+          "body": "組み込みの形式ガイドを確認し、必要なら列を直し、プレビューを確定します。",
+          "alt": "取込ウィンドウ内の CSV 形式ガイド"
         }
       }
     },
     "calendar": {
-      "title": "PnL calendar",
-      "summary": "Month view of day-by-day results.",
+      "title": "PnLカレンダー",
+      "summary": "日ごとの結果の月表示。",
       "steps": {
         "overview": {
-          "title": "Overview",
-          "body": "The calendar colors each day by PnL. Move between months to spot streaks.",
-          "alt": "Monthly PnL calendar"
+          "title": "概要",
+          "body": "カレンダーは PnL に応じて各日を色分けします。月を切り替えて連続を把握します。",
+          "alt": "月次 PnL カレンダー"
         },
         "day-detail": {
-          "title": "Day detail",
-          "body": "Click a day to see related trades and jump into the journal.",
-          "alt": "Calendar day detail"
+          "title": "日の詳細",
+          "body": "日をクリックすると関連トレードを確認し、ジャーナルへ進めます。",
+          "alt": "カレンダーの日詳細"
         }
       }
     }

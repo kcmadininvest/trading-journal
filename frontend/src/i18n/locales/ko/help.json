@@ -1,101 +1,101 @@
 {
   "hub": {
-    "title": "Help & guides",
-    "subtitle": "Step-by-step walkthroughs to get started. Available anytime.",
-    "sectionStart": "Getting started",
-    "sectionFurther": "Go further",
-    "estimatedMinutes": "{{count}} min",
-    "stub": "Preview",
-    "search": "Search guides",
-    "noResults": "No guide matches your search.",
-    "backToLibrary": "Back to library",
-    "menuLabel": "Help",
-    "settingsLink": "Help & guides",
-    "settingsLinkHint": "Open the tutorial library"
+    "title": "도움말 및 가이드",
+    "subtitle": "저널을 시작하기 위한 단계별 안내입니다. 언제든 이용할 수 있습니다.",
+    "sectionStart": "시작하기",
+    "sectionFurther": "더 알아보기",
+    "estimatedMinutes": "{{count}}분",
+    "stub": "미리보기",
+    "search": "가이드 검색",
+    "noResults": "검색과 일치하는 가이드가 없습니다.",
+    "backToLibrary": "라이브러리로 돌아가기",
+    "menuLabel": "도움말",
+    "settingsLink": "도움말 및 가이드",
+    "settingsLinkHint": "튜토리얼 라이브러리 열기"
   },
   "status": {
-    "not_started": "Not started",
-    "in_progress": "In progress",
-    "completed": "Completed",
-    "skipped": "Skipped"
+    "not_started": "시작 안 함",
+    "in_progress": "진행 중",
+    "completed": "완료",
+    "skipped": "건너뜀"
   },
   "viewer": {
-    "stepOf": "Step {{current}} of {{total}}",
-    "previous": "Previous",
-    "next": "Next",
-    "finish": "Finish",
-    "skipStep": "Skip this step",
-    "skipTutorial": "Skip tutorial",
-    "imagePlaceholder": "Screenshot coming soon for this step."
+    "stepOf": "{{total}}단계 중 {{current}}단계",
+    "previous": "이전",
+    "next": "다음",
+    "finish": "완료",
+    "skipStep": "이 단계 건너뛰기",
+    "skipTutorial": "튜토리얼 건너뛰기",
+    "imagePlaceholder": "이 단계의 스크린샷은 곧 제공됩니다."
   },
   "autoPrompt": {
-    "title": "Welcome — getting started guide",
-    "description": "A short path to create an account, import trades, read the dashboard, and open the journal.",
-    "hint": "You can always find this guide under Help, even if you dismiss this reminder.",
-    "start": "Start",
-    "later": "Later",
-    "dismissAuto": "Don’t show this automatically again"
+    "title": "환영합니다 — 시작 가이드",
+    "description": "계좌 생성, 거래 가져오기, 대시보드 확인, 저널 열기까지의 짧은 경로입니다.",
+    "hint": "이 알림을 닫아도 도움말에서 언제든 이 가이드를 찾을 수 있습니다.",
+    "start": "시작",
+    "later": "나중에",
+    "dismissAuto": "자동으로 다시 제안하지 않음"
   },
   "banner": {
-    "resume": "Resume the getting started guide",
-    "dismiss": "Dismiss"
+    "resume": "시작 가이드 이어하기",
+    "dismiss": "숨기기"
   },
   "tutorials": {
     "getting-started": {
-      "title": "Getting started",
-      "summary": "Trading account, import, dashboard, and journal.",
+      "title": "첫걸음",
+      "summary": "거래 계좌, 가져오기, 대시보드, 저널.",
       "steps": {
         "account": {
-          "title": "Create a trading account",
-          "body": "Open Trading accounts, then create an account (broker, currency, capital).\nThis is the foundation for linking trades and tracking PnL.",
-          "alt": "Trading accounts page with the create-account form"
+          "title": "거래 계좌 만들기",
+          "body": "거래 계좌를 연 다음 계좌를 만듭니다(브로커, 통화, 자본).\n거래를 연결하고 PnL을 추적하는 기반입니다.",
+          "alt": "계좌 생성 양식이 있는 거래 계좌 페이지"
         },
         "import": {
-          "title": "Import or enter trades",
-          "body": "From Trades or the dashboard, import a CSV or enter a trade.\nThe format guide stays available in the import dialog.",
-          "alt": "Trade import dialog with the format guide"
+          "title": "거래 가져오기 또는 입력",
+          "body": "거래 또는 대시보드에서 CSV를 가져오거나 거래를 입력합니다.\n가져오기 창에서 형식 가이드를 계속 사용할 수 있습니다.",
+          "alt": "형식 가이드가 있는 거래 가져오기 창"
         },
         "dashboard": {
-          "title": "Read the dashboard",
-          "body": "The dashboard summarizes your period: PnL, results, and activity.\nAdjust the period and account filters as needed.",
-          "alt": "Dashboard with performance metrics"
+          "title": "대시보드 읽기",
+          "body": "대시보드는 기간을 요약합니다: PnL, 결과, 활동.\n기간과 계좌를 조정해 보기를 필터링하세요.",
+          "alt": "성과 지표가 있는 대시보드"
         },
         "journal": {
-          "title": "Open the daily journal",
-          "body": "The daily journal and day questions help you learn from each session.\nCome back to Help whenever you want to resume this guide.",
-          "alt": "Daily journal page"
+          "title": "오늘 저널 열기",
+          "body": "일일 저널과 오늘의 질문은 각 세션에서 배우도록 돕습니다.\n가이드를 이어가려면 여기로 돌아오세요.",
+          "alt": "일일 저널 페이지"
         }
       }
     },
     "import-trades": {
-      "title": "Import trades",
-      "summary": "CSV, columns, and checks before confirmation.",
+      "title": "거래 가져오기",
+      "summary": "CSV, 열, 확인 전 검사.",
       "steps": {
         "open-import": {
-          "title": "Open import",
-          "body": "From the Trades page, start Import. Pick the target account, then your CSV file.",
-          "alt": "Import button on the Trades page"
+          "title": "가져오기 열기",
+          "body": "거래 페이지에서 가져오기를 시작합니다. 대상 계좌를 선택한 다음 CSV 파일을 지정합니다.",
+          "alt": "거래 페이지의 가져오기 버튼"
         },
         "format": {
-          "title": "Check the format",
-          "body": "Use the built-in format guide, fix columns if needed, then confirm the preview.",
-          "alt": "CSV format guide in the import dialog"
+          "title": "형식 확인",
+          "body": "내장 형식 가이드를 확인하고 필요하면 열을 수정한 뒤 미리보기를 확정합니다.",
+          "alt": "가져오기 창의 CSV 형식 가이드"
         }
       }
     },
     "calendar": {
-      "title": "PnL calendar",
-      "summary": "Month view of day-by-day results.",
+      "title": "PnL 캘린더",
+      "summary": "일별 결과의 월간 보기.",
       "steps": {
         "overview": {
-          "title": "Overview",
-          "body": "The calendar colors each day by PnL. Move between months to spot streaks.",
-          "alt": "Monthly PnL calendar"
+          "title": "개요",
+          "body": "캘린더는 PnL에 따라 각 날짜에 색을 입힙니다. 월을 옮겨 가며 연속을 파악하세요.",
+          "alt": "월간 PnL 캘린더"
         },
         "day-detail": {
-          "title": "Day detail",
-          "body": "Click a day to see related trades and jump into the journal.",
-          "alt": "Calendar day detail"
+          "title": "일 상세",
+          "body": "날짜를 클릭하면 관련 거래를 보고 저널로 이어갈 수 있습니다.",
+          "alt": "캘린더 일 상세"
         }
       }
     }

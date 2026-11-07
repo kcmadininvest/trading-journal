@@ -1,101 +1,101 @@
 {
   "hub": {
-    "title": "Help & guides",
-    "subtitle": "Step-by-step walkthroughs to get started. Available anytime.",
-    "sectionStart": "Getting started",
-    "sectionFurther": "Go further",
-    "estimatedMinutes": "{{count}} min",
-    "stub": "Preview",
-    "search": "Search guides",
-    "noResults": "No guide matches your search.",
-    "backToLibrary": "Back to library",
-    "menuLabel": "Help",
-    "settingsLink": "Help & guides",
-    "settingsLinkHint": "Open the tutorial library"
+    "title": "Hilfe & Anleitungen",
+    "subtitle": "Schritt-für-Schritt-Anleitungen zum Einstieg. Jederzeit verfügbar.",
+    "sectionStart": "Erfolgreich starten",
+    "sectionFurther": "Weiterführend",
+    "estimatedMinutes": "{{count}} Min.",
+    "stub": "Vorschau",
+    "search": "Anleitung suchen",
+    "noResults": "Keine Anleitung entspricht Ihrer Suche.",
+    "backToLibrary": "Zurück zur Bibliothek",
+    "menuLabel": "Hilfe",
+    "settingsLink": "Hilfe & Anleitungen",
+    "settingsLinkHint": "Tutorial-Bibliothek öffnen"
   },
   "status": {
-    "not_started": "Not started",
-    "in_progress": "In progress",
-    "completed": "Completed",
-    "skipped": "Skipped"
+    "not_started": "Nicht begonnen",
+    "in_progress": "In Bearbeitung",
+    "completed": "Abgeschlossen",
+    "skipped": "Übersprungen"
   },
   "viewer": {
-    "stepOf": "Step {{current}} of {{total}}",
-    "previous": "Previous",
-    "next": "Next",
-    "finish": "Finish",
-    "skipStep": "Skip this step",
-    "skipTutorial": "Skip tutorial",
-    "imagePlaceholder": "Screenshot coming soon for this step."
+    "stepOf": "Schritt {{current}} von {{total}}",
+    "previous": "Zurück",
+    "next": "Weiter",
+    "finish": "Fertig",
+    "skipStep": "Diesen Schritt überspringen",
+    "skipTutorial": "Tutorial überspringen",
+    "imagePlaceholder": "Screenshot für diesen Schritt folgt in Kürze."
   },
   "autoPrompt": {
-    "title": "Welcome — getting started guide",
-    "description": "A short path to create an account, import trades, read the dashboard, and open the journal.",
-    "hint": "You can always find this guide under Help, even if you dismiss this reminder.",
-    "start": "Start",
-    "later": "Later",
-    "dismissAuto": "Don’t show this automatically again"
+    "title": "Willkommen — Einstiegsguide",
+    "description": "Ein kurzer Weg: Konto anlegen, Trades importieren, Dashboard lesen und Journal öffnen.",
+    "hint": "Diesen Guide finden Sie jederzeit unter Hilfe — auch wenn Sie diese Erinnerung schließen.",
+    "start": "Starten",
+    "later": "Später",
+    "dismissAuto": "Nicht mehr automatisch vorschlagen"
   },
   "banner": {
-    "resume": "Resume the getting started guide",
-    "dismiss": "Dismiss"
+    "resume": "Einstiegsguide fortsetzen",
+    "dismiss": "Ausblenden"
   },
   "tutorials": {
     "getting-started": {
-      "title": "Getting started",
-      "summary": "Trading account, import, dashboard, and journal.",
+      "title": "Erste Schritte",
+      "summary": "Trading-Konto, Import, Dashboard und Journal.",
       "steps": {
         "account": {
-          "title": "Create a trading account",
-          "body": "Open Trading accounts, then create an account (broker, currency, capital).\nThis is the foundation for linking trades and tracking PnL.",
-          "alt": "Trading accounts page with the create-account form"
+          "title": "Trading-Konto anlegen",
+          "body": "Öffnen Sie Trading-Konten und legen Sie ein Konto an (Broker, Währung, Kapital).\nDas ist die Basis, um Trades zuzuordnen und den PnL zu verfolgen.",
+          "alt": "Seite Trading-Konten mit dem Formular zur Kontoerstellung"
         },
         "import": {
-          "title": "Import or enter trades",
-          "body": "From Trades or the dashboard, import a CSV or enter a trade.\nThe format guide stays available in the import dialog.",
-          "alt": "Trade import dialog with the format guide"
+          "title": "Trades importieren oder eingeben",
+          "body": "Über Trades oder das Dashboard importieren Sie eine CSV-Datei oder geben einen Trade ein.\nDer Formatleitfaden bleibt im Importfenster verfügbar.",
+          "alt": "Importfenster für Trades mit Formatleitfaden"
         },
         "dashboard": {
-          "title": "Read the dashboard",
-          "body": "The dashboard summarizes your period: PnL, results, and activity.\nAdjust the period and account filters as needed.",
-          "alt": "Dashboard with performance metrics"
+          "title": "Dashboard lesen",
+          "body": "Das Dashboard fasst Ihren Zeitraum zusammen: PnL, Ergebnisse und Aktivität.\nPassen Sie Zeitraum und Konto an, um die Ansicht zu filtern.",
+          "alt": "Dashboard mit Leistungskennzahlen"
         },
         "journal": {
-          "title": "Open the daily journal",
-          "body": "The daily journal and day questions help you learn from each session.\nCome back to Help whenever you want to resume this guide.",
-          "alt": "Daily journal page"
+          "title": "Tagesjournal öffnen",
+          "body": "Tagesjournal und Tagesfragen helfen, aus jeder Session zu lernen.\nKehren Sie hierher zurück, wenn Sie den Guide fortsetzen möchten.",
+          "alt": "Seite Tagesjournal"
         }
       }
     },
     "import-trades": {
-      "title": "Import trades",
-      "summary": "CSV, columns, and checks before confirmation.",
+      "title": "Trades importieren",
+      "summary": "CSV, Spalten und Prüfungen vor der Bestätigung.",
       "steps": {
         "open-import": {
-          "title": "Open import",
-          "body": "From the Trades page, start Import. Pick the target account, then your CSV file.",
-          "alt": "Import button on the Trades page"
+          "title": "Import öffnen",
+          "body": "Auf der Seite Trades starten Sie Import. Wählen Sie das Zielkonto und dann die CSV-Datei.",
+          "alt": "Import-Schaltfläche auf der Seite Trades"
         },
         "format": {
-          "title": "Check the format",
-          "body": "Use the built-in format guide, fix columns if needed, then confirm the preview.",
-          "alt": "CSV format guide in the import dialog"
+          "title": "Format prüfen",
+          "body": "Nutzen Sie den integrierten Formatleitfaden, korrigieren Sie bei Bedarf Spalten und bestätigen Sie die Vorschau.",
+          "alt": "CSV-Formatleitfaden im Importfenster"
         }
       }
     },
     "calendar": {
-      "title": "PnL calendar",
-      "summary": "Month view of day-by-day results.",
+      "title": "PnL-Kalender",
+      "summary": "Monatsansicht der täglichen Ergebnisse.",
       "steps": {
         "overview": {
-          "title": "Overview",
-          "body": "The calendar colors each day by PnL. Move between months to spot streaks.",
-          "alt": "Monthly PnL calendar"
+          "title": "Übersicht",
+          "body": "Der Kalender färbt jeden Tag nach PnL. Wechseln Sie zwischen Monaten, um Serien zu erkennen.",
+          "alt": "Monatlicher PnL-Kalender"
         },
         "day-detail": {
-          "title": "Day detail",
-          "body": "Click a day to see related trades and jump into the journal.",
-          "alt": "Calendar day detail"
+          "title": "Tagesdetail",
+          "body": "Klicken Sie einen Tag, um zugehörige Trades zu sehen und zum Journal zu wechseln.",
+          "alt": "Detail eines Kalendertags"
         }
       }
     }
