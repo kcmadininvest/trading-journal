@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { BookOpen } from 'lucide-react';
 import { User, authService } from '../../services/auth';
 import { Tooltip } from '../ui';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
@@ -196,9 +197,7 @@ const Header: React.FC<HeaderProps> = ({
                 aria-label={t('help:hub.menuLabel', { defaultValue: 'Aide' })}
                 data-testid="header-help-button"
               >
-                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+                <BookOpen className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={2} aria-hidden />
               </button>
             </Tooltip>
             
