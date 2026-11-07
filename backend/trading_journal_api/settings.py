@@ -209,6 +209,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 if not DEBUG:
     # Redirection HTTPS
     SECURE_SSL_REDIRECT = True
+    # Sondage local HTTP (supervision / curl 127.0.0.1) sans forcer HTTPS
+    SECURE_REDIRECT_EXEMPT = [r'^api/health/?$']
     
     # HTTP Strict Transport Security (HSTS) - Géré par Apache
     # Désactivé dans Django pour éviter les doublons
