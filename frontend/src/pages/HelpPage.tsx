@@ -128,9 +128,12 @@ const HelpPage: React.FC<HelpPageProps> = ({ initialSlug = null, onNavigateHash 
             <button
               type="button"
               onClick={closeTutorial}
-              className="mb-4 text-sm text-blue-700 dark:text-blue-300 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+              className="mb-4 inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:focus:ring-offset-gray-800"
             >
-              ← {t('help:hub.backToLibrary')}
+              <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              {t('help:hub.backToLibrary')}
             </button>
             <TutorialViewer
               tutorial={activeTutorial}

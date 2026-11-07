@@ -116,23 +116,23 @@ const TutorialViewer: React.FC<TutorialViewerProps> = ({
 
   return (
     <article className="flex flex-col gap-4" data-testid={`tutorial-viewer-${tutorial.slug}`}>
-      <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-gray-500 dark:text-gray-400" aria-live="polite">
           {t('viewer.stepOf', { current: stepIndex + 1, total })}
         </p>
         {allowSkip && (
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={handleSkipStep}
-              className="text-sm text-gray-600 dark:text-gray-300 underline-offset-2 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-1"
+              className="inline-flex items-center rounded-lg bg-gray-100 px-3 py-2 text-sm font-medium text-gray-800 transition-colors hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 dark:focus:ring-offset-gray-800"
             >
               {t('viewer.skipStep')}
             </button>
             <button
               type="button"
               onClick={handleSkipTutorial}
-              className="text-sm text-gray-600 dark:text-gray-300 underline-offset-2 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-1"
+              className="inline-flex items-center rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:focus:ring-offset-gray-800"
             >
               {t('viewer.skipTutorial')}
             </button>
@@ -165,19 +165,19 @@ const TutorialViewer: React.FC<TutorialViewerProps> = ({
         </div>
       </div>
 
-      <div className="flex flex-wrap justify-between gap-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+      <div className="flex flex-wrap justify-between gap-2 border-t border-gray-100 pt-3 dark:border-gray-700">
         <button
           type="button"
           onClick={handlePrev}
           disabled={stepIndex === 0}
-          className="px-4 py-2 text-sm font-medium rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 disabled:opacity-40 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="inline-flex items-center rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-800 transition-colors hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 dark:focus:ring-offset-gray-800"
         >
           {t('viewer.previous')}
         </button>
         <button
           type="button"
           onClick={handleNext}
-          className="px-4 py-2 text-sm font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
         >
           {isLast ? t('viewer.finish') : t('viewer.next')}
         </button>
