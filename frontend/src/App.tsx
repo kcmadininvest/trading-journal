@@ -17,6 +17,13 @@ import { ComplianceRefreshProvider } from './contexts/ComplianceRefreshContext';
 import { ImageLightboxProvider } from './contexts/ImageLightboxContext';
 import { useBootstrap } from './hooks/useBootstrap';
 import { useTradingAccounts } from './hooks/useTradingAccounts';
+import { usePreferences } from './hooks/usePreferences';
+import TutorialAutoPrompt from './components/help/TutorialAutoPrompt';
+import {
+  P0_SLUG,
+  isP0Incomplete,
+  TutorialsProgress,
+} from './tutorials/catalog';
 const CalendarPage = lazy(() => import('./pages/CalendarPage'));
 const UserManagementPage = lazy(() => import('./pages/UserManagementPage'));
 const TradesPage = lazy(() => import('./pages/TradesPage'));
@@ -47,6 +54,7 @@ const MarketReplayPopup = lazy(() => import('./pages/MarketReplayPopup'));
 const BillingPage = lazy(() => import('./pages/BillingPage'));
 const SubscriptionRequiredPage = lazy(() => import('./pages/SubscriptionRequiredPage'));
 const StrategiesPage = lazy(() => import('./pages/StrategiesPage'));
+const HelpPage = lazy(() => import('./pages/HelpPage'));
 
 const DETACHED_POPUP_PATHS = new Set([
   '/calculator-popup',
@@ -85,6 +93,7 @@ const ALWAYS_ACCESSIBLE_PAGES = new Set([
   'trades',
   'transactions',
   'settings',
+  'help',
 ]);
 
 const VALID_HASH_PAGES = [
@@ -114,24 +123,51 @@ const VALID_HASH_PAGES = [
   'billing-success',
   'billing-cancel',
   'subscription-required',
+  'help',
 ] as const;
 
-function getPageFromHash(): string {
+function parseHashPath(): { page: string; helpSlug: string | null } {
   const hashRaw = window.location.hash.replace('#', '').trim();
-  const hash = hashRaw.split('?')[0];
-  if (hash && (VALID_HASH_PAGES as readonly string[]).includes(hash)) {
-    return hash;
+  const path = hashRaw.split('?')[0];
+  if (path === 'help' || path.startsWith('help/')) {
+    const parts = path.split('/').filter(Boolean);
+    return { page: 'help', helpSlug: parts[1] || null };
+  }
+  if (path && (VALID_HASH_PAGES as readonly string[]).includes(path)) {
+    return { page: path, helpSlug: null };
+  }
+  return { page: '', helpSlug: null };
+}
+
+function isValidAppHashPath(path: string): boolean {
+  if (path === 'help' || path.startsWith('help/')) return true;
+  return (VALID_HASH_PAGES as readonly string[]).includes(path);
+}
+
+function getPageFromHash(): string {
+  const parsed = parseHashPath();
+  if (parsed.page) {
+    return parsed.page;
   }
   return authService.isAuthenticated() ? 'dashboard' : 'home';
 }
 
+function getHelpSlugFromHash(): string | null {
+  return parseHashPath().helpSlug;
+}
+
 function App() {
   const { t } = useI18nTranslation();
+  const { preferences, mergePreferences, loading: preferencesLoading } = usePreferences();
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(getPageFromHash);
   const currentPageRef = useRef(currentPage);
+  const [helpSlug, setHelpSlug] = useState<string | null>(getHelpSlugFromHash);
   const [showAccountCreationPrompt, setShowAccountCreationPrompt] = useState(false);
+  const [showTutorialAutoPrompt, setShowTutorialAutoPrompt] = useState(false);
+  const [showTutorialBanner, setShowTutorialBanner] = useState(false);
+  const tutorialAutoPromptShownRef = useRef(false);
   const [billingStatus, setBillingStatus] = useState<SubscriptionStatus | null>(null);
   const [billingLoading, setBillingLoading] = useState(false);
   const [billingError, setBillingError] = useState<string | null>(null);
@@ -404,64 +440,95 @@ function App() {
       return; // Ne pas gérer la navigation si l'utilisateur n'est pas connecté
     }
 
-    // Gérer la navigation par hash
+    const applyParsedHash = (parsed: { page: string; helpSlug: string | null }) => {
+      if (!parsed.page) return;
+      if (lockedPremiumPages.has(parsed.page)) {
+        setCurrentPage('subscription-required');
+        setHelpSlug(null);
+        window.location.hash = 'subscription-required';
+        return;
+      }
+      setHelpSlug(parsed.page === 'help' ? parsed.helpSlug : null);
+      if (parsed.page !== currentPageRef.current) {
+        setCurrentPage(parsed.page);
+      }
+    };
+
     const handleHashChange = () => {
       const hashRaw = window.location.hash.replace('#', '').trim();
       const hash = hashRaw.split('?')[0];
       const page = currentPageRef.current;
-      
-      // Si on a un hash valide et qu'il est différent de la page actuelle
-      if (hash && (VALID_HASH_PAGES as readonly string[]).includes(hash) && hash !== page) {
-        if (lockedPremiumPages.has(hash)) {
-          setCurrentPage('subscription-required');
-          window.location.hash = 'subscription-required';
-          return;
-        }
-        setCurrentPage(hash);
+      const parsed = parseHashPath();
+
+      if (hash && isValidAppHashPath(hash)) {
+        applyParsedHash(parsed);
         return;
       }
-      
+
       // Si pas de hash ou hash invalide, et qu'on n'est pas déjà sur dashboard, aller au dashboard
-      if ((!hash || !(VALID_HASH_PAGES as readonly string[]).includes(hash)) && page !== 'dashboard') {
-        // Éviter les boucles en vérifiant le hash actuel
+      if ((!hash || !isValidAppHashPath(hash)) && page !== 'dashboard') {
         if (window.location.hash !== '#dashboard') {
           window.location.hash = 'dashboard';
           setCurrentPage('dashboard');
+          setHelpSlug(null);
         }
       }
     };
 
-    // Écouter les changements de hash
     window.addEventListener('hashchange', handleHashChange);
-    
-    // Initialiser la page selon le hash actuel au premier rendu
+
     const currentHashRaw = window.location.hash.replace('#', '').trim();
     const currentHash = currentHashRaw.split('?')[0];
     const page = currentPageRef.current;
-    
-    if (currentHash && (VALID_HASH_PAGES as readonly string[]).includes(currentHash)) {
-      if (lockedPremiumPages.has(currentHash)) {
-        window.location.hash = 'subscription-required';
-        setCurrentPage('subscription-required');
-        return;
-      }
-      // Si le hash est valide et différent de la page actuelle, mettre à jour
-      if (currentHash !== page) {
-        setCurrentPage(currentHash);
-      }
-    } else if (!currentHash || !(VALID_HASH_PAGES as readonly string[]).includes(currentHash)) {
-      // Si pas de hash valide, aller au dashboard seulement si on n'y est pas déjà
+
+    if (currentHash && isValidAppHashPath(currentHash)) {
+      applyParsedHash(parseHashPath());
+    } else if (!currentHash || !isValidAppHashPath(currentHash)) {
       if (page !== 'dashboard') {
         window.location.hash = 'dashboard';
         setCurrentPage('dashboard');
+        setHelpSlug(null);
       }
     }
 
-    // Nettoyage lors du démontage du composant
     return () => {
       window.removeEventListener('hashchange', handleHashChange);
     };
   }, [currentUser, lockedPremiumPages]); // Ne pas inclure currentPage pour éviter les boucles
+
+  // Prompt auto P0 (first login) — même contenu que #help/getting-started
+  useEffect(() => {
+    if (!currentUser) {
+      tutorialAutoPromptShownRef.current = false;
+      setShowTutorialAutoPrompt(false);
+      return;
+    }
+    // Attendre les préférences serveur (évite un flash avec les defaults locaux)
+    if (preferencesLoading || showAccountCreationPrompt) {
+      return;
+    }
+    if (preferences.tutorials_auto_prompt_dismissed) {
+      setShowTutorialAutoPrompt(false);
+      return;
+    }
+    const progress = (preferences.tutorials_progress || {}) as TutorialsProgress;
+    if (!isP0Incomplete(progress)) {
+      setShowTutorialAutoPrompt(false);
+      setShowTutorialBanner(false);
+      return;
+    }
+    if (tutorialAutoPromptShownRef.current) {
+      return;
+    }
+    tutorialAutoPromptShownRef.current = true;
+    setShowTutorialAutoPrompt(true);
+  }, [
+    currentUser,
+    preferencesLoading,
+    preferences.tutorials_auto_prompt_dismissed,
+    preferences.tutorials_progress,
+    showAccountCreationPrompt,
+  ]);
 
   // Gérer les événements de changement d'utilisateur - séparé pour éviter les conflits
   useEffect(() => {
@@ -711,6 +778,20 @@ function App() {
               />
               </LazyPage>
             );
+          case 'help':
+            return (
+              <LazyPage>
+                <HelpPage
+                  initialSlug={helpSlug}
+                  onNavigateHash={(hash) => {
+                    window.location.hash = hash;
+                    const parsed = parseHashPath();
+                    setCurrentPage('help');
+                    setHelpSlug(parsed.helpSlug);
+                  }}
+                />
+              </LazyPage>
+            );
           case 'legal-notice':
             return <LazyPage><LegalNoticePage /></LazyPage>;
           case 'dashboard':
@@ -719,10 +800,39 @@ function App() {
         }
   };
 
+  const navigateToHelp = (slug?: string | null) => {
+    const hash = slug ? `help/${slug}` : 'help';
+    window.location.hash = hash;
+    setCurrentPage('help');
+    setHelpSlug(slug || null);
+  };
+
+  const dismissTutorialAutoPrompt = async (permanent: boolean) => {
+    setShowTutorialAutoPrompt(false);
+    if (permanent) {
+      mergePreferences({ tutorials_auto_prompt_dismissed: true });
+      try {
+        await userService.updatePreferences({ tutorials_auto_prompt_dismissed: true });
+      } catch {
+        // ignore
+      }
+      setShowTutorialBanner(false);
+      return;
+    }
+    setShowTutorialBanner(true);
+  };
+
   const handleNavigate = (page: string) => {
+    if (page === 'help' || page.startsWith('help/')) {
+      const slug = page.startsWith('help/') ? page.slice('help/'.length) || null : null;
+      navigateToHelp(slug);
+      return;
+    }
+
     if (lockedPremiumPages.has(page)) {
       window.location.hash = 'subscription-required';
       setCurrentPage('subscription-required');
+      setHelpSlug(null);
       return;
     }
 
@@ -735,6 +845,7 @@ function App() {
     // Cela évitera que handleHashChange ne redirige
     window.location.hash = page;
     setCurrentPage(page);
+    setHelpSlug(null);
   };
 
   const handleLogout = () => {
@@ -785,37 +896,73 @@ function App() {
           billingStatusLabel={billingStatusLabel}
           premiumRestrictionsEnabled={premiumRestrictionsEnabled}
           topBanner={
-            premiumRestrictionsEnabled && billingStatus && !currentUser.is_admin ? (
-              <div
-                className="w-full border-b border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-900/30 px-3 sm:px-6 py-2.5"
-                aria-live="polite"
-              >
-                <div className="mx-auto max-w-7xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                  <p className="text-sm text-blue-900 dark:text-blue-100">
-                    {billingStatus.access_state === 'trialing'
-                      ? t('billing:banner.trialDaysLeft', { count: billingStatus.trial_days_left })
-                      : billingStatus.access_state === 'inactive'
-                        ? t('billing:banner.trialEnded')
-                        : t('billing:banner.active')}
-                  </p>
-                  {(billingStatus.access_state === 'trialing' || billingStatus.access_state === 'inactive') && (
-                    <button
-                      type="button"
-                      className="self-start sm:self-auto rounded-lg bg-blue-600 text-white text-sm font-medium px-3 py-1.5 hover:bg-blue-700 transition"
-                      onClick={() => handleNavigate('billing')}
-                      disabled={billingLoading}
-                    >
-                      {billingLoading ? t('billing:cta.loading') : t('billing:cta.subscribe')}
-                    </button>
+            <>
+              {showTutorialBanner &&
+                !preferences.tutorials_auto_prompt_dismissed &&
+                isP0Incomplete((preferences.tutorials_progress || {}) as TutorialsProgress) && (
+                  <div
+                    className="w-full border-b border-sky-200 dark:border-sky-900 bg-sky-50 dark:bg-sky-900/30 px-3 sm:px-6 py-2.5"
+                    aria-live="polite"
+                    data-testid="tutorial-resume-banner"
+                  >
+                    <div className="mx-auto max-w-7xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                      <p className="text-sm text-sky-900 dark:text-sky-100">
+                        {t('help:banner.resume')}
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          className="rounded-lg bg-sky-600 text-white text-sm font-medium px-3 py-1.5 hover:bg-sky-700 transition focus:outline-none focus:ring-2 focus:ring-sky-500"
+                          onClick={() => {
+                            setShowTutorialBanner(false);
+                            navigateToHelp(P0_SLUG);
+                          }}
+                        >
+                          {t('help:autoPrompt.start')}
+                        </button>
+                        <button
+                          type="button"
+                          className="rounded-lg bg-transparent text-sky-900 dark:text-sky-100 text-sm font-medium px-3 py-1.5 hover:bg-sky-100/80 dark:hover:bg-sky-800/50 transition focus:outline-none focus:ring-2 focus:ring-sky-500"
+                          onClick={() => setShowTutorialBanner(false)}
+                        >
+                          {t('help:banner.dismiss')}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              {premiumRestrictionsEnabled && billingStatus && !currentUser.is_admin ? (
+                <div
+                  className="w-full border-b border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-900/30 px-3 sm:px-6 py-2.5"
+                  aria-live="polite"
+                >
+                  <div className="mx-auto max-w-7xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                    <p className="text-sm text-blue-900 dark:text-blue-100">
+                      {billingStatus.access_state === 'trialing'
+                        ? t('billing:banner.trialDaysLeft', { count: billingStatus.trial_days_left })
+                        : billingStatus.access_state === 'inactive'
+                          ? t('billing:banner.trialEnded')
+                          : t('billing:banner.active')}
+                    </p>
+                    {(billingStatus.access_state === 'trialing' || billingStatus.access_state === 'inactive') && (
+                      <button
+                        type="button"
+                        className="self-start sm:self-auto rounded-lg bg-blue-600 text-white text-sm font-medium px-3 py-1.5 hover:bg-blue-700 transition"
+                        onClick={() => handleNavigate('billing')}
+                        disabled={billingLoading}
+                      >
+                        {billingLoading ? t('billing:cta.loading') : t('billing:cta.subscribe')}
+                      </button>
+                    )}
+                  </div>
+                  {billingError && (
+                    <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                      {t('billing:errors.statusUnavailable')}
+                    </p>
                   )}
                 </div>
-                {billingError && (
-                  <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
-                    {t('billing:errors.statusUnavailable')}
-                  </p>
-                )}
-              </div>
-            ) : null
+              ) : null}
+            </>
           }
         >
           {renderPage()}
@@ -835,6 +982,21 @@ function App() {
           defaultValue: 'Votre session a expiré. Veuillez vous reconnecter pour continuer.',
         })}
         confirmButtonText={t('auth:sessionExpired.confirm', { defaultValue: 'Se reconnecter' })}
+      />
+
+      <TutorialAutoPrompt
+        isOpen={showTutorialAutoPrompt && !showAccountCreationPrompt}
+        onStart={() => {
+          setShowTutorialAutoPrompt(false);
+          setShowTutorialBanner(false);
+          navigateToHelp(P0_SLUG);
+        }}
+        onLater={() => {
+          void dismissTutorialAutoPrompt(false);
+        }}
+        onDismissAuto={() => {
+          void dismissTutorialAutoPrompt(true);
+        }}
       />
 
       {showAccountCreationPrompt && (

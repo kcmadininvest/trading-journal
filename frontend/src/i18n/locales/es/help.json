@@ -1,0 +1,103 @@
+{
+  "hub": {
+    "title": "Ayuda y guías",
+    "subtitle": "Recorridos paso a paso para empezar con el diario. Disponibles en cualquier momento.",
+    "sectionStart": "Para empezar bien",
+    "sectionFurther": "Ir más allá",
+    "estimatedMinutes": "{{count}} min",
+    "stub": "Vista previa",
+    "search": "Buscar una guía",
+    "noResults": "Ninguna guía coincide con tu búsqueda.",
+    "backToLibrary": "Volver a la biblioteca",
+    "menuLabel": "Ayuda",
+    "settingsLink": "Ayuda y guías",
+    "settingsLinkHint": "Abrir la biblioteca de tutoriales"
+  },
+  "status": {
+    "not_started": "No empezado",
+    "in_progress": "En curso",
+    "completed": "Completado",
+    "skipped": "Omitido"
+  },
+  "viewer": {
+    "stepOf": "Paso {{current}} de {{total}}",
+    "previous": "Anterior",
+    "next": "Siguiente",
+    "finish": "Terminar",
+    "skipStep": "Saltar este paso",
+    "skipTutorial": "Saltar el tutorial",
+    "imagePlaceholder": "Captura disponible pronto para este paso."
+  },
+  "autoPrompt": {
+    "title": "Bienvenido — guía de inicio",
+    "description": "Un recorrido corto para crear una cuenta, importar operaciones, leer el panel y abrir el diario.",
+    "hint": "Siempre podrás encontrar esta guía en Ayuda, aunque ignores este recordatorio.",
+    "start": "Empezar",
+    "later": "Más tarde",
+    "dismissAuto": "No volver a proponérmelo automáticamente"
+  },
+  "banner": {
+    "resume": "Reanudar la guía de inicio",
+    "dismiss": "Ocultar"
+  },
+  "tutorials": {
+    "getting-started": {
+      "title": "Primeros pasos",
+      "summary": "Cuenta de trading, importación, panel y diario.",
+      "steps": {
+        "account": {
+          "title": "Crear una cuenta de trading",
+          "body": "Abre Cuentas de trading y crea una cuenta (broker, divisa, capital).\nEs la base para vincular tus operaciones y seguir el PnL.",
+          "alt": "Página Cuentas de trading con el formulario de creación de cuenta"
+        },
+        "import": {
+          "title": "Importar o introducir operaciones",
+          "body": "Desde Operaciones o el panel, importa un CSV o introduce una operación.\nLa guía de formato sigue disponible en la ventana de importación.",
+          "alt": "Ventana de importación de operaciones con la guía de formato"
+        },
+        "dashboard": {
+          "title": "Leer el panel",
+          "body": "El panel resume tu periodo: PnL, resultados y actividad.\nAjusta el periodo y la cuenta para filtrar la vista.",
+          "alt": "Panel con indicadores de rendimiento"
+        },
+        "journal": {
+          "title": "Abrir el diario del día",
+          "body": "El diario diario y las preguntas del día ayudan a capitalizar cada sesión.\nVuelve aquí cuando quieras retomar la guía.",
+          "alt": "Página del diario diario"
+        }
+      }
+    },
+    "import-trades": {
+      "title": "Importar operaciones",
+      "summary": "CSV, columnas y comprobaciones antes de validar.",
+      "steps": {
+        "open-import": {
+          "title": "Abrir la importación",
+          "body": "Desde la página Operaciones, inicia Importar. Elige la cuenta de destino y luego el archivo CSV.",
+          "alt": "Botón Importar en la página Operaciones"
+        },
+        "format": {
+          "title": "Comprobar el formato",
+          "body": "Consulta la guía de formato integrada, corrige las columnas si hace falta y valida la vista previa.",
+          "alt": "Guía de formato CSV en la ventana de importación"
+        }
+      }
+    },
+    "calendar": {
+      "title": "Calendario PnL",
+      "summary": "Vista mensual de resultados día a día.",
+      "steps": {
+        "overview": {
+          "title": "Vista general",
+          "body": "El calendario colorea cada día según el PnL. Navega entre meses para detectar rachas.",
+          "alt": "Calendario PnL mensual"
+        },
+        "day-detail": {
+          "title": "Detalle de un día",
+          "body": "Haz clic en un día para ver las operaciones asociadas y pasar al diario.",
+          "alt": "Detalle de un día del calendario"
+        }
+      }
+    }
+  }
+}

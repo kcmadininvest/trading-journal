@@ -5,5 +5,6 @@ export { default as PageSizeSelector } from './PageSizeSelector';
 export { default as PaginationControls } from './PaginationControls';
 export { default as DeleteConfirmModal } from './DeleteConfirmModal';
 export { default as ConfirmModal } from './ConfirmModal';
+export { default as AccessibleDialog } from './AccessibleDialog';
 export { SettingsStyleToggle } from './SettingsStyleToggle';
 export { default as ImageUpload } from './ImageUpload';

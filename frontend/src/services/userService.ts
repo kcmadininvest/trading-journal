@@ -101,6 +101,13 @@ export interface UserPreferences {
   daily_journal_view_mode?: 'grid' | 'list';
   /** Questions du jour : section des positions repliée. */
   journal_questions_positions_collapsed?: boolean;
+  /** Progression des tutoriels (slug → status / stepIndex). */
+  tutorials_progress?: Record<
+    string,
+    { status: string; stepIndex?: number; updatedAt?: string }
+  >;
+  /** Coupe uniquement le prompt auto first-login / bannière. */
+  tutorials_auto_prompt_dismissed?: boolean;
   created_at?: string;
   updated_at?: string;
 }

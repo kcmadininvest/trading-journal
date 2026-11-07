@@ -3,7 +3,8 @@
   "private": true,
   "scripts": {
     "test": "playwright test",
-    "test:spike": "playwright test --config=playwright.spike.config.ts"
+    "test:spike": "playwright test --config=playwright.spike.config.ts",
+    "tutorials:screenshots": "playwright test --config=playwright.tutorials.config.ts"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.0"

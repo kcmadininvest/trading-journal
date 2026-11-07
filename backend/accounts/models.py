@@ -299,6 +299,23 @@ class UserPreferences(models.Model):
         verbose_name=_('Questions des positions repliées'),
         help_text=str(_('Replier la section des réponses par position sur la page Questions du jour.')),
     )
+    tutorials_progress = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name=_('Progression des tutoriels'),
+        help_text=str(_(
+            'Carte slug → {status, stepIndex, updatedAt}. '
+            'Ne retire jamais l’accès au hub Aide.'
+        )),
+    )
+    tutorials_auto_prompt_dismissed = models.BooleanField(
+        default=False,
+        verbose_name=_('Rappel auto tutoriels désactivé'),
+        help_text=str(_(
+            'Coupe uniquement le prompt / bannière automatiques au login ; '
+            'le menu Aide reste toujours accessible.'
+        )),
+    )
 
     # Métadonnées
     created_at = models.DateTimeField(

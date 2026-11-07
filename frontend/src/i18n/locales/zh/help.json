@@ -1,0 +1,103 @@
+{
+  "hub": {
+    "title": "帮助与指南",
+    "subtitle": "分步上手日记功能。随时可在帮助中打开。",
+    "sectionStart": "快速入门",
+    "sectionFurther": "进阶",
+    "estimatedMinutes": "{{count}} 分钟",
+    "stub": "预览",
+    "search": "搜索指南",
+    "noResults": "没有匹配的指南。",
+    "backToLibrary": "返回指南库",
+    "menuLabel": "帮助",
+    "settingsLink": "帮助与指南",
+    "settingsLinkHint": "打开教程库"
+  },
+  "status": {
+    "not_started": "未开始",
+    "in_progress": "进行中",
+    "completed": "已完成",
+    "skipped": "已跳过"
+  },
+  "viewer": {
+    "stepOf": "第 {{current}} 步，共 {{total}} 步",
+    "previous": "上一步",
+    "next": "下一步",
+    "finish": "完成",
+    "skipStep": "跳过此步",
+    "skipTutorial": "跳过教程",
+    "imagePlaceholder": "此步骤截图即将提供。"
+  },
+  "autoPrompt": {
+    "title": "欢迎 — 入门指南",
+    "description": "简短路径：创建交易账户、导入交易、查看仪表盘并打开日记。",
+    "hint": "即使关闭此提醒，也可随时在帮助中找到本指南。",
+    "start": "开始",
+    "later": "稍后",
+    "dismissAuto": "不再自动提示"
+  },
+  "banner": {
+    "resume": "继续入门指南",
+    "dismiss": "隐藏"
+  },
+  "tutorials": {
+    "getting-started": {
+      "title": "入门",
+      "summary": "交易账户、导入、仪表盘与日记。",
+      "steps": {
+        "account": {
+          "title": "创建交易账户",
+          "body": "打开交易账户，然后创建账户（券商、货币、资金）。\n这是关联交易并跟踪盈亏的基础。",
+          "alt": "带有创建账户表单的交易账户页面"
+        },
+        "import": {
+          "title": "导入或录入交易",
+          "body": "在交易页或仪表盘导入 CSV，或手动录入一笔交易。\n导入窗口中仍可使用格式指南。",
+          "alt": "带格式指南的交易导入窗口"
+        },
+        "dashboard": {
+          "title": "阅读仪表盘",
+          "body": "仪表盘汇总你的时间段：盈亏、结果与活动。\n调整时间段与账户以过滤视图。",
+          "alt": "带有绩效指标的仪表盘"
+        },
+        "journal": {
+          "title": "打开当日日记",
+          "body": "每日日记与当日问题帮助你从每场交易中学习。\n需要继续本指南时回到这里即可。",
+          "alt": "每日日记页面"
+        }
+      }
+    },
+    "import-trades": {
+      "title": "导入交易",
+      "summary": "CSV、列与确认前检查。",
+      "steps": {
+        "open-import": {
+          "title": "打开导入",
+          "body": "在交易页启动导入。选择目标账户，然后选择 CSV 文件。",
+          "alt": "交易页上的导入按钮"
+        },
+        "format": {
+          "title": "检查格式",
+          "body": "查看内置格式指南，必要时修正列，然后确认预览。",
+          "alt": "导入窗口中的 CSV 格式指南"
+        }
+      }
+    },
+    "calendar": {
+      "title": "盈亏日历",
+      "summary": "按日结果的月视图。",
+      "steps": {
+        "overview": {
+          "title": "概览",
+          "body": "日历按盈亏为每天上色。在月份间切换以发现连续表现。",
+          "alt": "月度盈亏日历"
+        },
+        "day-detail": {
+          "title": "单日详情",
+          "body": "点击某一天可查看相关交易并进入日记。",
+          "alt": "日历单日详情"
+        }
+      }
+    }
+  }
+}

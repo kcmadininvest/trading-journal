@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { BookOpen } from 'lucide-react';
 import { User, authService } from '../../services/auth';
 import { Tooltip } from '../ui';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
@@ -183,6 +184,22 @@ const Header: React.FC<HeaderProps> = ({
             </div>
 
             <HeaderThemeSwitcher />
+
+            <Tooltip content={t('help:hub.menuLabel', { defaultValue: 'Aide' })} position="left">
+              <button
+                type="button"
+                onClick={() => onNavigate('help')}
+                className={`inline-flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-blue-950 ${
+                  currentPage === 'help'
+                    ? 'text-white bg-gray-700'
+                    : 'text-gray-300 hover:text-white hover:bg-gray-700'
+                }`}
+                aria-label={t('help:hub.menuLabel', { defaultValue: 'Aide' })}
+                data-testid="header-help-button"
+              >
+                <BookOpen className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={2} aria-hidden />
+              </button>
+            </Tooltip>
             
             {/* Logout button */}
             <Tooltip content={t('navigation:header.logout')} position="left">

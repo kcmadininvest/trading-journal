@@ -53,6 +53,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:prerender-seo": "node scripts/test-prerender-seo.mjs",
+    "tutorials:screenshots": "npm --prefix ../e2e run tutorials:screenshots",
     "postinstall": "update-browserslist-db"
   },
   "devDependencies": {

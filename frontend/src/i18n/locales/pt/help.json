@@ -1,0 +1,103 @@
+{
+  "hub": {
+    "title": "Ajuda e guias",
+    "subtitle": "Percursos passo a passo para começar o diário. Disponíveis a qualquer momento.",
+    "sectionStart": "Para bem começar",
+    "sectionFurther": "Ir mais longe",
+    "estimatedMinutes": "{{count}} min",
+    "stub": "Pré-visualização",
+    "search": "Pesquisar um guia",
+    "noResults": "Nenhum guia corresponde à sua pesquisa.",
+    "backToLibrary": "Voltar à biblioteca",
+    "menuLabel": "Ajuda",
+    "settingsLink": "Ajuda e guias",
+    "settingsLinkHint": "Abrir a biblioteca de tutoriais"
+  },
+  "status": {
+    "not_started": "Não iniciado",
+    "in_progress": "Em curso",
+    "completed": "Concluído",
+    "skipped": "Ignorado"
+  },
+  "viewer": {
+    "stepOf": "Passo {{current}} de {{total}}",
+    "previous": "Anterior",
+    "next": "Seguinte",
+    "finish": "Terminar",
+    "skipStep": "Saltar este passo",
+    "skipTutorial": "Saltar o tutorial",
+    "imagePlaceholder": "Captura em breve disponível para este passo."
+  },
+  "autoPrompt": {
+    "title": "Bem-vindo — guia de início",
+    "description": "Um percurso curto para criar uma conta, importar trades, ler o painel e abrir o diário.",
+    "hint": "Pode sempre encontrar este guia em Ajuda, mesmo que ignore este lembrete.",
+    "start": "Começar",
+    "later": "Mais tarde",
+    "dismissAuto": "Não voltar a propor automaticamente"
+  },
+  "banner": {
+    "resume": "Retomar o guia de início",
+    "dismiss": "Ocultar"
+  },
+  "tutorials": {
+    "getting-started": {
+      "title": "Primeiros passos",
+      "summary": "Conta de trading, importação, painel e diário.",
+      "steps": {
+        "account": {
+          "title": "Criar uma conta de trading",
+          "body": "Abra Contas de trading e crie uma conta (broker, moeda, capital).\nÉ a base para associar os seus trades e acompanhar o PnL.",
+          "alt": "Página Contas de trading com o formulário de criação de conta"
+        },
+        "import": {
+          "title": "Importar ou introduzir trades",
+          "body": "Em Trades ou no painel, importe um CSV ou introduza um trade.\nO guia de formato continua disponível na janela de importação.",
+          "alt": "Janela de importação de trades com o guia de formato"
+        },
+        "dashboard": {
+          "title": "Ler o painel",
+          "body": "O painel resume o seu período: PnL, resultados e atividade.\nAjuste o período e a conta para filtrar a vista.",
+          "alt": "Painel com indicadores de desempenho"
+        },
+        "journal": {
+          "title": "Abrir o diário do dia",
+          "body": "O diário diário e as perguntas do dia ajudam a capitalizar cada sessão.\nVolte aqui quando quiser retomar o guia.",
+          "alt": "Página do diário diário"
+        }
+      }
+    },
+    "import-trades": {
+      "title": "Importar trades",
+      "summary": "CSV, colunas e verificações antes da validação.",
+      "steps": {
+        "open-import": {
+          "title": "Abrir a importação",
+          "body": "Na página Trades, inicie Importar. Escolha a conta de destino e depois o ficheiro CSV.",
+          "alt": "Botão Importar na página Trades"
+        },
+        "format": {
+          "title": "Verificar o formato",
+          "body": "Consulte o guia de formato integrado, corrija as colunas se necessário e valide a pré-visualização.",
+          "alt": "Guia de formato CSV na janela de importação"
+        }
+      }
+    },
+    "calendar": {
+      "title": "Calendário PnL",
+      "summary": "Vista mensal dos resultados dia a dia.",
+      "steps": {
+        "overview": {
+          "title": "Visão geral",
+          "body": "O calendário colore cada dia segundo o PnL. Navegue entre meses para identificar séries.",
+          "alt": "Calendário PnL mensal"
+        },
+        "day-detail": {
+          "title": "Detalhe de um dia",
+          "body": "Clique num dia para ver os trades associados e seguir para o diário.",
+          "alt": "Detalhe de um dia do calendário"
+        }
+      }
+    }
+  }
+}

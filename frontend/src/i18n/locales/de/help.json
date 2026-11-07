@@ -1,0 +1,103 @@
+{
+  "hub": {
+    "title": "Hilfe & Anleitungen",
+    "subtitle": "Schritt-für-Schritt-Anleitungen zum Einstieg. Jederzeit verfügbar.",
+    "sectionStart": "Erfolgreich starten",
+    "sectionFurther": "Weiterführend",
+    "estimatedMinutes": "{{count}} Min.",
+    "stub": "Vorschau",
+    "search": "Anleitung suchen",
+    "noResults": "Keine Anleitung entspricht Ihrer Suche.",
+    "backToLibrary": "Zurück zur Bibliothek",
+    "menuLabel": "Hilfe",
+    "settingsLink": "Hilfe & Anleitungen",
+    "settingsLinkHint": "Tutorial-Bibliothek öffnen"
+  },
+  "status": {
+    "not_started": "Nicht begonnen",
+    "in_progress": "In Bearbeitung",
+    "completed": "Abgeschlossen",
+    "skipped": "Übersprungen"
+  },
+  "viewer": {
+    "stepOf": "Schritt {{current}} von {{total}}",
+    "previous": "Zurück",
+    "next": "Weiter",
+    "finish": "Fertig",
+    "skipStep": "Diesen Schritt überspringen",
+    "skipTutorial": "Tutorial überspringen",
+    "imagePlaceholder": "Screenshot für diesen Schritt folgt in Kürze."
+  },
+  "autoPrompt": {
+    "title": "Willkommen — Einstiegsguide",
+    "description": "Ein kurzer Weg: Konto anlegen, Trades importieren, Dashboard lesen und Journal öffnen.",
+    "hint": "Diesen Guide finden Sie jederzeit unter Hilfe — auch wenn Sie diese Erinnerung schließen.",
+    "start": "Starten",
+    "later": "Später",
+    "dismissAuto": "Nicht mehr automatisch vorschlagen"
+  },
+  "banner": {
+    "resume": "Einstiegsguide fortsetzen",
+    "dismiss": "Ausblenden"
+  },
+  "tutorials": {
+    "getting-started": {
+      "title": "Erste Schritte",
+      "summary": "Trading-Konto, Import, Dashboard und Journal.",
+      "steps": {
+        "account": {
+          "title": "Trading-Konto anlegen",
+          "body": "Öffnen Sie Trading-Konten und legen Sie ein Konto an (Broker, Währung, Kapital).\nDas ist die Basis, um Trades zuzuordnen und den PnL zu verfolgen.",
+          "alt": "Seite Trading-Konten mit dem Formular zur Kontoerstellung"
+        },
+        "import": {
+          "title": "Trades importieren oder eingeben",
+          "body": "Über Trades oder das Dashboard importieren Sie eine CSV-Datei oder geben einen Trade ein.\nDer Formatleitfaden bleibt im Importfenster verfügbar.",
+          "alt": "Importfenster für Trades mit Formatleitfaden"
+        },
+        "dashboard": {
+          "title": "Dashboard lesen",
+          "body": "Das Dashboard fasst Ihren Zeitraum zusammen: PnL, Ergebnisse und Aktivität.\nPassen Sie Zeitraum und Konto an, um die Ansicht zu filtern.",
+          "alt": "Dashboard mit Leistungskennzahlen"
+        },
+        "journal": {
+          "title": "Tagesjournal öffnen",
+          "body": "Tagesjournal und Tagesfragen helfen, aus jeder Session zu lernen.\nKehren Sie hierher zurück, wenn Sie den Guide fortsetzen möchten.",
+          "alt": "Seite Tagesjournal"
+        }
+      }
+    },
+    "import-trades": {
+      "title": "Trades importieren",
+      "summary": "CSV, Spalten und Prüfungen vor der Bestätigung.",
+      "steps": {
+        "open-import": {
+          "title": "Import öffnen",
+          "body": "Auf der Seite Trades starten Sie Import. Wählen Sie das Zielkonto und dann die CSV-Datei.",
+          "alt": "Import-Schaltfläche auf der Seite Trades"
+        },
+        "format": {
+          "title": "Format prüfen",
+          "body": "Nutzen Sie den integrierten Formatleitfaden, korrigieren Sie bei Bedarf Spalten und bestätigen Sie die Vorschau.",
+          "alt": "CSV-Formatleitfaden im Importfenster"
+        }
+      }
+    },
+    "calendar": {
+      "title": "PnL-Kalender",
+      "summary": "Monatsansicht der täglichen Ergebnisse.",
+      "steps": {
+        "overview": {
+          "title": "Übersicht",
+          "body": "Der Kalender färbt jeden Tag nach PnL. Wechseln Sie zwischen Monaten, um Serien zu erkennen.",
+          "alt": "Monatlicher PnL-Kalender"
+        },
+        "day-detail": {
+          "title": "Tagesdetail",
+          "body": "Klicken Sie einen Tag, um zugehörige Trades zu sehen und zum Journal zu wechseln.",
+          "alt": "Detail eines Kalendertags"
+        }
+      }
+    }
+  }
+}

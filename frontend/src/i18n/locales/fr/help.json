@@ -1,0 +1,103 @@
+{
+  "hub": {
+    "title": "Aide et guides",
+    "subtitle": "Parcours pas à pas pour prendre en main le journal. Accessibles à tout moment.",
+    "sectionStart": "Pour bien démarrer",
+    "sectionFurther": "Aller plus loin",
+    "estimatedMinutes": "{{count}} min",
+    "stub": "Aperçu",
+    "search": "Rechercher un guide",
+    "noResults": "Aucun guide ne correspond à votre recherche.",
+    "backToLibrary": "Retour à la bibliothèque",
+    "menuLabel": "Aide",
+    "settingsLink": "Aide et guides",
+    "settingsLinkHint": "Ouvrir la bibliothèque de tutoriels"
+  },
+  "status": {
+    "not_started": "Non commencé",
+    "in_progress": "En cours",
+    "completed": "Terminé",
+    "skipped": "Passé"
+  },
+  "viewer": {
+    "stepOf": "Étape {{current}} sur {{total}}",
+    "previous": "Précédent",
+    "next": "Suivant",
+    "finish": "Terminer",
+    "skipStep": "Passer cette étape",
+    "skipTutorial": "Passer le tuto",
+    "imagePlaceholder": "Capture bientôt disponible pour cette étape."
+  },
+  "autoPrompt": {
+    "title": "Bienvenue — guide de démarrage",
+    "description": "Un court parcours pour créer un compte, importer des trades, lire le tableau de bord et ouvrir le journal.",
+    "hint": "Vous pourrez toujours retrouver ce guide dans Aide, même si vous ignorez ce rappel.",
+    "start": "Commencer",
+    "later": "Plus tard",
+    "dismissAuto": "Ne plus me le proposer automatiquement"
+  },
+  "banner": {
+    "resume": "Reprendre le guide de démarrage",
+    "dismiss": "Masquer"
+  },
+  "tutorials": {
+    "getting-started": {
+      "title": "Premiers pas",
+      "summary": "Compte de trading, import, tableau de bord et journal.",
+      "steps": {
+        "account": {
+          "title": "Créer un compte de trading",
+          "body": "Ouvrez Comptes de trading, puis créez un compte (broker, devise, capital).\nC’est la base pour rattacher vos trades et suivre le PnL.",
+          "alt": "Page Comptes de trading avec le formulaire de création d’un compte"
+        },
+        "import": {
+          "title": "Importer ou saisir des trades",
+          "body": "Depuis Trades ou le tableau de bord, importez un CSV ou saisissez un trade.\nLe guide de format reste disponible dans la fenêtre d’import.",
+          "alt": "Fenêtre d’import de trades avec le guide de format"
+        },
+        "dashboard": {
+          "title": "Lire le tableau de bord",
+          "body": "Le tableau de bord résume votre période : PnL, résultats et activité.\nAjustez la période et le compte pour filtrer la vue.",
+          "alt": "Tableau de bord avec indicateurs de performance"
+        },
+        "journal": {
+          "title": "Ouvrir le journal du jour",
+          "body": "Le journal quotidien et les questions du jour aident à capitaliser sur chaque séance.\nRevenez ici quand vous voulez reprendre le guide.",
+          "alt": "Page Journal quotidien"
+        }
+      }
+    },
+    "import-trades": {
+      "title": "Importer des trades",
+      "summary": "CSV, colonnes et contrôles avant validation.",
+      "steps": {
+        "open-import": {
+          "title": "Ouvrir l’import",
+          "body": "Depuis la page Trades, lancez Importer. Choisissez le compte cible puis le fichier CSV.",
+          "alt": "Bouton Importer sur la page Trades"
+        },
+        "format": {
+          "title": "Vérifier le format",
+          "body": "Consultez le guide de format intégré, corrigez les colonnes si besoin, puis validez l’aperçu.",
+          "alt": "Guide de format CSV dans la fenêtre d’import"
+        }
+      }
+    },
+    "calendar": {
+      "title": "Calendrier PnL",
+      "summary": "Vue mensuelle des résultats jour par jour.",
+      "steps": {
+        "overview": {
+          "title": "Vue d’ensemble",
+          "body": "Le calendrier colore chaque jour selon le PnL. Naviguez entre les mois pour repérer vos séries.",
+          "alt": "Calendrier PnL mensuel"
+        },
+        "day-detail": {
+          "title": "Détail d’un jour",
+          "body": "Cliquez un jour pour voir les trades associés et enchaîner vers le journal.",
+          "alt": "Détail d’un jour du calendrier"
+        }
+      }
+    }
+  }
+}

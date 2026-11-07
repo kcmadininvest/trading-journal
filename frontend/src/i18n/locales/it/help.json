@@ -1,0 +1,103 @@
+{
+  "hub": {
+    "title": "Aiuto e guide",
+    "subtitle": "Percorsi passo passo per iniziare con il diario. Disponibili in qualsiasi momento.",
+    "sectionStart": "Per iniziare bene",
+    "sectionFurther": "Andare oltre",
+    "estimatedMinutes": "{{count}} min",
+    "stub": "Anteprima",
+    "search": "Cerca una guida",
+    "noResults": "Nessuna guida corrisponde alla ricerca.",
+    "backToLibrary": "Torna alla libreria",
+    "menuLabel": "Aiuto",
+    "settingsLink": "Aiuto e guide",
+    "settingsLinkHint": "Apri la libreria dei tutorial"
+  },
+  "status": {
+    "not_started": "Non iniziato",
+    "in_progress": "In corso",
+    "completed": "Completato",
+    "skipped": "Saltato"
+  },
+  "viewer": {
+    "stepOf": "Passo {{current}} di {{total}}",
+    "previous": "Precedente",
+    "next": "Successivo",
+    "finish": "Termina",
+    "skipStep": "Salta questo passo",
+    "skipTutorial": "Salta il tutorial",
+    "imagePlaceholder": "Screenshot disponibile a breve per questo passo."
+  },
+  "autoPrompt": {
+    "title": "Benvenuto — guida introduttiva",
+    "description": "Un percorso breve per creare un conto, importare i trade, leggere la dashboard e aprire il diario.",
+    "hint": "Potrai sempre ritrovare questa guida in Aiuto, anche se ignori questo promemoria.",
+    "start": "Inizia",
+    "later": "Più tardi",
+    "dismissAuto": "Non propormelo più automaticamente"
+  },
+  "banner": {
+    "resume": "Riprendi la guida introduttiva",
+    "dismiss": "Nascondi"
+  },
+  "tutorials": {
+    "getting-started": {
+      "title": "Primi passi",
+      "summary": "Conto di trading, import, dashboard e diario.",
+      "steps": {
+        "account": {
+          "title": "Creare un conto di trading",
+          "body": "Apri Conti di trading e crea un conto (broker, valuta, capitale).\nÈ la base per collegare i trade e seguire il PnL.",
+          "alt": "Pagina Conti di trading con il modulo di creazione conto"
+        },
+        "import": {
+          "title": "Importare o inserire i trade",
+          "body": "Da Trade o dalla dashboard, importa un CSV o inserisci un trade.\nLa guida al formato resta disponibile nella finestra di importazione.",
+          "alt": "Finestra di importazione trade con la guida al formato"
+        },
+        "dashboard": {
+          "title": "Leggere la dashboard",
+          "body": "La dashboard riassume il periodo: PnL, risultati e attività.\nRegola periodo e conto per filtrare la vista.",
+          "alt": "Dashboard con indicatori di performance"
+        },
+        "journal": {
+          "title": "Aprire il diario del giorno",
+          "body": "Il diario giornaliero e le domande del giorno aiutano a capitalizzare ogni sessione.\nTorna qui quando vuoi riprendere la guida.",
+          "alt": "Pagina Diario giornaliero"
+        }
+      }
+    },
+    "import-trades": {
+      "title": "Importare i trade",
+      "summary": "CSV, colonne e controlli prima della conferma.",
+      "steps": {
+        "open-import": {
+          "title": "Aprire l’importazione",
+          "body": "Dalla pagina Trade avvia Importa. Scegli il conto di destinazione e poi il file CSV.",
+          "alt": "Pulsante Importa nella pagina Trade"
+        },
+        "format": {
+          "title": "Verificare il formato",
+          "body": "Consulta la guida al formato integrata, correggi le colonne se serve e conferma l’anteprima.",
+          "alt": "Guida al formato CSV nella finestra di importazione"
+        }
+      }
+    },
+    "calendar": {
+      "title": "Calendario PnL",
+      "summary": "Vista mensile dei risultati giorno per giorno.",
+      "steps": {
+        "overview": {
+          "title": "Panoramica",
+          "body": "Il calendario colora ogni giorno in base al PnL. Spostati tra i mesi per individuare le serie.",
+          "alt": "Calendario PnL mensile"
+        },
+        "day-detail": {
+          "title": "Dettaglio di un giorno",
+          "body": "Clicca un giorno per vedere i trade collegati e passare al diario.",
+          "alt": "Dettaglio di un giorno del calendario"
+        }
+      }
+    }
+  }
+}

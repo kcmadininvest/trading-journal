@@ -678,6 +678,24 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
       }
     >
       <div className="space-y-6">
+        <div className="rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50/80 dark:bg-blue-950/30 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+              {t('help:hub.settingsLink')}
+            </p>
+            <p className="text-xs text-blue-800/80 dark:text-blue-200/80 mt-0.5">
+              {t('help:hub.settingsLinkHint')}
+            </p>
+          </div>
+          <a
+            href="#help"
+            className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            data-testid="settings-help-link"
+          >
+            {t('help:hub.settingsLink')}
+          </a>
+        </div>
+
         {/* Section Profil */}
         {activeTab === 'profile' && (
           <SettingsSection
