@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { usePreferences } from '../hooks/usePreferences';
 import userService, { UserPreferences } from '../services/userService';
+import { PageShell } from '../components/layout';
 import TutorialViewer from '../components/help/TutorialViewer';
 import {
   TUTORIALS,
@@ -86,7 +87,7 @@ const HelpPage: React.FC<HelpPageProps> = ({ initialSlug = null, onNavigateHash 
         <button
           type="button"
           onClick={() => openTutorial(tut.slug)}
-          className="w-full text-left rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 hover:border-blue-400 dark:hover:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+          className="w-full text-left rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition-colors hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-blue-500"
           data-testid={`help-card-${tut.slug}`}
         >
           <div className="flex flex-wrap items-start justify-between gap-2">
@@ -112,65 +113,70 @@ const HelpPage: React.FC<HelpPageProps> = ({ initialSlug = null, onNavigateHash 
   };
 
   return (
-    <main className="mx-auto max-w-4xl px-3 sm:px-6 py-6" data-testid="help-page">
-      <header className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{t('help:hub.title')}</h1>
-        <p className="mt-2 text-gray-600 dark:text-gray-400">{t('help:hub.subtitle')}</p>
-      </header>
+    <PageShell>
+      <div data-testid="help-page" className="max-w-full">
+        <header className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{t('help:hub.title')}</h1>
+          <p className="mt-2 text-gray-600 dark:text-gray-400">{t('help:hub.subtitle')}</p>
+        </header>
 
-      {activeTutorial ? (
-        <section aria-label={t(`help:tutorials.${activeTutorial.slug}.title`)} className="mb-8">
-          <button
-            type="button"
-            onClick={closeTutorial}
-            className="mb-4 text-sm text-blue-700 dark:text-blue-300 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+        {activeTutorial ? (
+          <section
+            aria-label={t(`help:tutorials.${activeTutorial.slug}.title`)}
+            className="mb-8 overflow-hidden rounded-lg border border-gray-200 bg-white p-4 shadow dark:border-gray-700 dark:bg-gray-800 sm:p-6"
           >
-            ← {t('help:hub.backToLibrary')}
-          </button>
-          <TutorialViewer
-            tutorial={activeTutorial}
-            progressEntry={progress[activeTutorial.slug]}
-            onProgressChange={(entry) => void persistProgress(activeTutorial.slug, entry)}
-            onClose={closeTutorial}
-          />
-        </section>
-      ) : (
-        <>
-          {TUTORIALS.length > 8 && (
-            <div className="mb-4">
-              <label htmlFor="help-filter" className="sr-only">
-                {t('help:hub.search')}
-              </label>
-              <input
-                id="help-filter"
-                type="search"
-                value={filter}
-                onChange={(e) => setFilter(e.target.value)}
-                placeholder={t('help:hub.search')}
-                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          )}
-
-          <section className="mb-8" aria-labelledby="help-section-start">
-            <h2 id="help-section-start" className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">
-              {t('help:hub.sectionStart')}
-            </h2>
-            <ul className="space-y-3">{starters.map(renderCard)}</ul>
+            <button
+              type="button"
+              onClick={closeTutorial}
+              className="mb-4 text-sm text-blue-700 dark:text-blue-300 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+            >
+              ← {t('help:hub.backToLibrary')}
+            </button>
+            <TutorialViewer
+              tutorial={activeTutorial}
+              progressEntry={progress[activeTutorial.slug]}
+              onProgressChange={(entry) => void persistProgress(activeTutorial.slug, entry)}
+              onClose={closeTutorial}
+            />
           </section>
-
-          <section aria-labelledby="help-section-further">
-            <h2 id="help-section-further" className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">
-              {t('help:hub.sectionFurther')}
-            </h2>
-            <ul className="space-y-3">{further.map(renderCard)}</ul>
-            {further.length === 0 && filtered.length === 0 && (
-              <p className="text-sm text-gray-500">{t('help:hub.noResults')}</p>
+        ) : (
+          <>
+            {TUTORIALS.length > 8 && (
+              <div className="mb-4">
+                <label htmlFor="help-filter" className="sr-only">
+                  {t('help:hub.search')}
+                </label>
+                <input
+                  id="help-filter"
+                  type="search"
+                  value={filter}
+                  onChange={(e) => setFilter(e.target.value)}
+                  placeholder={t('help:hub.search')}
+                  className="w-full max-w-md rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
             )}
-          </section>
-        </>
-      )}
-    </main>
+
+            <section className="mb-8" aria-labelledby="help-section-start">
+              <h2 id="help-section-start" className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">
+                {t('help:hub.sectionStart')}
+              </h2>
+              <ul className="space-y-3">{starters.map(renderCard)}</ul>
+            </section>
+
+            <section aria-labelledby="help-section-further">
+              <h2 id="help-section-further" className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">
+                {t('help:hub.sectionFurther')}
+              </h2>
+              <ul className="space-y-3">{further.map(renderCard)}</ul>
+              {further.length === 0 && filtered.length === 0 && (
+                <p className="text-sm text-gray-500">{t('help:hub.noResults')}</p>
+              )}
+            </section>
+          </>
+        )}
+      </div>
+    </PageShell>
   );
 };
 
