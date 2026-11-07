@@ -144,8 +144,8 @@ const TutorialViewer: React.FC<TutorialViewerProps> = ({
         {t(titleKey)}
       </h2>
 
-      <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
-        <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 overflow-hidden min-h-[180px] flex items-center justify-center">
+      <div className="grid gap-4 lg:grid-cols-5 lg:items-start">
+        <div className="lg:col-span-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 overflow-hidden min-h-[240px] flex items-center justify-center">
           {imgFailed || !imageSrc ? (
             <p className="text-sm text-gray-500 dark:text-gray-400 p-6 text-center">
               {t('viewer.imagePlaceholder')}
@@ -155,12 +155,12 @@ const TutorialViewer: React.FC<TutorialViewerProps> = ({
               key={imageSrc}
               src={imageSrc}
               alt={t(altKey)}
-              className="w-full h-auto object-contain max-h-[320px]"
+              className="w-full h-auto object-contain max-h-[min(70vh,560px)]"
               onError={handleImageError}
             />
           )}
         </div>
-        <div className="prose prose-sm dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 whitespace-pre-line">
+        <div className="lg:col-span-2 prose prose-sm dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 whitespace-pre-line">
           {t(bodyKey)}
         </div>
       </div>

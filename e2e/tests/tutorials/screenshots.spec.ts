@@ -13,12 +13,13 @@
  *        cd e2e && npm run tutorials:screenshots
  *
  * Sortie : frontend/public/tutorials/<locale>/<slug>-step-<n>.png
- * Chaque locale est capturée après bascule réelle de la langue app (Header),
- * pas seulement via ?lang= (écrasé par les préférences une fois connecté).
+ * Chaque locale est capturée après bascule réelle de la langue app (Header).
+ * On attend le contenu métier (pas le spinner Suspense) avant screenshot.
  */
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 const DEMO_EMAIL = process.env.TUTORIAL_DEMO_EMAIL || 'tutorial-demo@example.invalid';
 const DEMO_PASSWORD =
@@ -32,14 +33,73 @@ const LOCALES = [
   { code: 'en', label: 'English' },
 ] as const;
 
-const STEPS: Array<{ slug: string; step: number; hash: string }> = [
-  { slug: 'getting-started', step: 1, hash: '#accounts' },
-  { slug: 'getting-started', step: 2, hash: '#trades' },
-  { slug: 'getting-started', step: 3, hash: '#dashboard' },
-  { slug: 'getting-started', step: 4, hash: '#daily-journal' },
+type LocaleCode = (typeof LOCALES)[number]['code'];
+
+const STEPS: Array<{
+  slug: string;
+  step: number;
+  hash: string;
+  ready: (page: Page, locale: LocaleCode) => Promise<void>;
+}> = [
+  {
+    slug: 'getting-started',
+    step: 1,
+    hash: '#accounts',
+    ready: async (page, locale) => {
+      const label = locale === 'fr' ? /Nouveau compte/i : /New Account/i;
+      await expect(page.getByRole('button', { name: label }).first()).toBeVisible({
+        timeout: 60_000,
+      });
+      // Compte seedé : peut être dans un panneau desktop hors viewport mobile-first
+      await expect(page.locator('main').getByText(/Demo Futures|Futures Account/i).first()).toBeAttached({
+        timeout: 30_000,
+      });
+    },
+  },
+  {
+    slug: 'getting-started',
+    step: 2,
+    hash: '#trades',
+    ready: async (page) => {
+      await expect(page.locator('main')).toBeVisible({ timeout: 30_000 });
+      // Doublons mobile/desktop : attached suffit (visible=false sur le clone caché)
+      await expect(page.locator('main').getByText(/NQH6|ESH6/i).first()).toBeAttached({
+        timeout: 60_000,
+      });
+    },
+  },
+  {
+    slug: 'getting-started',
+    step: 3,
+    hash: '#dashboard',
+    ready: async (page, locale) => {
+      const region =
+        locale === 'fr' ? /Filtres du tableau de bord/i : /Dashboard filters/i;
+      await expect(page.getByRole('region', { name: region })).toBeVisible({
+        timeout: 60_000,
+      });
+      await expect(page.getByText(/Total Trades|TOTAL TRADES|Total trades/i).first()).toBeVisible({
+        timeout: 60_000,
+      });
+    },
+  },
+  {
+    slug: 'getting-started',
+    step: 4,
+    hash: '#daily-journal',
+    ready: async (page, locale) => {
+      const create = locale === 'fr' ? /Cr[eé]er/i : /Create/i;
+      await expect(page.getByRole('button', { name: create }).first()).toBeVisible({
+        timeout: 60_000,
+      });
+      await expect(
+        page.getByText(/Nouvelle entr|New entr|Entrees|Entries|Mois|Months/i).first()
+      ).toBeVisible({ timeout: 60_000 });
+    },
+  },
 ];
 
-async function dismissOverlays(page: import('@playwright/test').Page) {
+async function dismissOverlays(page: Page) {
   for (let i = 0; i < 3; i += 1) {
     const later = page.getByRole('button', { name: /Plus tard|Later|Don’t show|Ne plus/i }).first();
     if (await later.isVisible().catch(() => false)) {
@@ -57,7 +117,42 @@ async function dismissOverlays(page: import('@playwright/test').Page) {
   }
 }
 
-async function login(page: import('@playwright/test').Page) {
+async function waitSpinnersGone(page: Page) {
+  // Pas d'evaluateAll ici : peut rester coincé si React remonte pendant la nav hash.
+  // On plafonne à ~8s puis on continue (ticker / loaders décoratifs possibles).
+  const spins = page.locator('.animate-spin');
+  const deadline = Date.now() + 8_000;
+  while (Date.now() < deadline) {
+    const count = await spins.count().catch(() => 0);
+    if (count === 0) return;
+    let anyVisible = false;
+    for (let i = 0; i < count; i += 1) {
+      if (await spins.nth(i).isVisible().catch(() => false)) {
+        anyVisible = true;
+        break;
+      }
+    }
+    if (!anyVisible) return;
+    await page.waitForTimeout(250);
+  }
+}
+
+/** Navigation hash SPA sans attendre `load` (évite les blocages HMR / WS). */
+async function goHash(page: Page, hash: string) {
+  const target = hash.startsWith('#') ? hash : `#${hash}`;
+  const url = page.url();
+  if (url.includes(target)) {
+    await page.waitForTimeout(200);
+    return;
+  }
+  await page.evaluate((h) => {
+    window.location.hash = h;
+  }, target);
+  await page.waitForFunction((h) => window.location.hash === h, target, { timeout: 15_000 });
+  await page.waitForTimeout(400);
+}
+
+async function login(page: Page) {
   await page.goto('/');
   await page.getByRole('button', { name: /Se connecter|Log in|Sign in/i }).first().click();
   await page.getByLabel(/Email/i).fill(DEMO_EMAIL);
@@ -68,18 +163,11 @@ async function login(page: import('@playwright/test').Page) {
   await dismissOverlays(page);
 }
 
-/** Bascule la langue via le sélecteur Header (persiste aussi côté préférences). */
-async function setUiLanguage(
-  page: import('@playwright/test').Page,
-  locale: (typeof LOCALES)[number]
-) {
+async function setUiLanguage(page: Page, locale: (typeof LOCALES)[number]) {
   const langButton = page.getByRole('button', { name: /Language|Langue|Idioma|Sprache/i }).first();
   await langButton.click();
   await page.getByRole('button', { name: locale.label }).click();
   await page.waitForTimeout(800);
-  // Vérifie que i18n a bien basculé
-  const htmlLang = await page.evaluate(() => document.documentElement.lang || '');
-  // Certaines configs ne posent pas lang sur <html> ; on attend aussi un libellé UI
   if (locale.code === 'en') {
     await expect(page.getByRole('button', { name: /Help/i }).first()).toBeVisible({
       timeout: 15_000,
@@ -89,7 +177,66 @@ async function setUiLanguage(
       timeout: 15_000,
     });
   }
-  void htmlLang;
+}
+
+/** Rejette les captures quasi blanches (page encore en chargement / spinner). */
+function assertScreenshotNotBlank(filePath: string) {
+  const script = `
+from PIL import Image
+im = Image.open(${JSON.stringify(filePath)}).convert("L")
+w, h = im.size
+assert w >= 1400 and h >= 800, f"trop petit: {w}x{h}"
+# Échantillonnage (pas tous les pixels) : évite de bloquer sur 3200x2000
+step = max(1, (w * h) // 80_000)
+pixels = list(im.getdata())[::step]
+mean = sum(pixels) / len(pixels)
+var = sum((p - mean) ** 2 for p in pixels) / len(pixels)
+dark_ratio = sum(1 for p in pixels if p < 200) / len(pixels)
+# UI claire = mean élevé OK ; un loader blanc n'a ni contraste ni chrome sombre
+assert var > 600, f"trop uniforme var={var:.1f} mean={mean:.1f}"
+assert dark_ratio > 0.03, f"pas assez de contraste UI dark_ratio={dark_ratio:.3f}"
+print(f"ok {w}x{h} mean={mean:.1f} var={var:.1f} dark={dark_ratio:.3f}")
+`;
+  execFileSync('python3', ['-c', script], { stdio: 'inherit' });
+}
+
+async function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T | undefined> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<undefined>((resolve) => {
+        timer = setTimeout(() => {
+          // eslint-disable-next-line no-console
+          console.warn(`[tutorials] timeout ${label} after ${ms}ms`);
+          resolve(undefined);
+        }, ms);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
+async function captureStep(page: Page, target: string) {
+  await expect(page.locator('main').first()).toBeVisible({ timeout: 30_000 });
+  // Pas de scrollIntoViewIfNeeded : sur #trades le layout bouge (table) et l’action ne résout jamais.
+  await page.waitForTimeout(800);
+  // eslint-disable-next-line no-console
+  console.log(`[tutorials] screenshot → ${target}`);
+  await withTimeout(
+    page.screenshot({
+      path: target,
+      fullPage: false,
+      animations: 'disabled',
+    }),
+    30_000,
+    'screenshot'
+  );
+  if (!fs.existsSync(target)) {
+    throw new Error(`screenshot manquant: ${target}`);
+  }
+  assertScreenshotNotBlank(target);
 }
 
 test.describe('Tutorials screenshots (manual)', () => {
@@ -108,22 +255,43 @@ test.describe('Tutorials screenshots (manual)', () => {
       digestsByLocale[locale.code] = [];
 
       for (const step of STEPS) {
-        await page.goto(`/${step.hash}`);
-        await page.waitForLoadState('networkidle');
-        await page.waitForTimeout(1000);
+        // eslint-disable-next-line no-console
+        console.log(`[tutorials] ${locale.code} step ${step.step} → ${step.hash}`);
+        await goHash(page, step.hash);
         await dismissOverlays(page);
+        // eslint-disable-next-line no-console
+        console.log(`[tutorials] ${locale.code} step ${step.step} settled, waiting ready`);
+        await waitSpinnersGone(page);
+        await step.ready(page, locale.code);
+        // eslint-disable-next-line no-console
+        console.log(`[tutorials] ${locale.code} step ${step.step} ready ok`);
+        await waitSpinnersGone(page);
 
         const target = path.join(localeDir, `${step.slug}-step-${step.step}.png`);
-        await page.screenshot({
-          path: target,
-          fullPage: false,
-        });
+
+        let lastError: unknown;
+        for (let attempt = 1; attempt <= 3; attempt += 1) {
+          try {
+            await page.waitForTimeout(500 * attempt);
+            await captureStep(page, target);
+            lastError = undefined;
+            break;
+          } catch (err) {
+            // eslint-disable-next-line no-console
+            console.warn(`[tutorials] ${locale.code} step ${step.step} attempt ${attempt} failed`, err);
+            lastError = err;
+          }
+        }
+        if (lastError) {
+          throw lastError;
+        }
         expect(fs.existsSync(target)).toBeTruthy();
         digestsByLocale[locale.code].push(fs.readFileSync(target).toString('binary'));
+        // eslint-disable-next-line no-console
+        console.log(`[tutorials] wrote ${target}`);
       }
     }
 
-    // Les jeux FR et EN ne doivent pas être identiques (UI localisée).
     const frJoined = digestsByLocale.fr.join('|');
     const enJoined = digestsByLocale.en.join('|');
     expect(frJoined).not.toEqual(enJoined);

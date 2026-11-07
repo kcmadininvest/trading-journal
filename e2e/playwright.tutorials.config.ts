@@ -16,7 +16,7 @@ export default defineConfig({
   fullyParallel: false,
   workers: 1,
   retries: 0,
-  timeout: 180_000,
+  timeout: 360_000,
   reporter: [['list']],
   use: {
     baseURL,
@@ -24,11 +24,18 @@ export default defineConfig({
     timezoneId: 'Europe/Paris',
     screenshot: 'off',
     trace: 'off',
+    // Captures lisibles dans le viewer (pas le 1280×720 Desktop Chrome par défaut)
+    viewport: { width: 1600, height: 1000 },
+    deviceScaleFactor: 2,
   },
   projects: [
     {
       name: 'tutorials-chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1600, height: 1000 },
+        deviceScaleFactor: 2,
+      },
     },
   ],
   webServer: [
