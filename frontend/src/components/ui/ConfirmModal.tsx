@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useId, useRef } from 'react';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 
 export type ConfirmModalVariant = 'default' | 'warning';
@@ -69,6 +69,31 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
   const { t } = useI18nTranslation();
   const vs = VARIANT_STYLES[variant];
   const widthClass = size === 'xl' ? 'max-w-xl' : 'max-w-lg';
+  const titleId = useId();
+  const descriptionId = useId();
+  const panelRef = useRef<HTMLDivElement>(null);
+  const previouslyFocused = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    previouslyFocused.current = document.activeElement as HTMLElement | null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    panelRef.current?.focus();
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !isLoading) {
+        e.preventDefault();
+        onClose();
+      }
+    };
+    document.addEventListener('keydown', onKeyDown, true);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown, true);
+      document.body.style.overflow = previousOverflow;
+      previouslyFocused.current?.focus?.();
+    };
+  }, [isOpen, isLoading, onClose]);
 
   if (!isOpen) return null;
 
@@ -101,7 +126,13 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
       onClick={handleBackdropClick}
     >
       <div
-        className={`bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full ${widthClass} transform transition-all duration-300 animate-in zoom-in-95 slide-in-from-bottom-4 border border-gray-100 dark:border-gray-700 overflow-hidden`}
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        aria-describedby={descriptionId}
+        tabIndex={-1}
+        className={`bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full ${widthClass} transform transition-all duration-300 animate-in zoom-in-95 slide-in-from-bottom-4 border border-gray-100 dark:border-gray-700 overflow-hidden outline-none`}
         onClick={(e) => e.stopPropagation()}
       >
         <div
@@ -139,7 +170,7 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
                 </svg>
               )}
             </div>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 pr-10">{defaultTitle}</h2>
+            <h2 id={titleId} className="text-xl font-bold text-gray-900 dark:text-gray-100 pr-10">{defaultTitle}</h2>
           </div>
 
           {!isLoading && (
@@ -158,7 +189,7 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
         </div>
 
         <div className="p-6">
-          <div className="mb-6">
+          <div id={descriptionId} className="mb-6">
             {typeof defaultMessage === 'string' ? (
               <p className="text-gray-600 dark:text-gray-400 whitespace-pre-line">{defaultMessage}</p>
             ) : (

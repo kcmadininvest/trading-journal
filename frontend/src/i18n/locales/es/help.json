@@ -1,0 +1,103 @@
+{
+  "hub": {
+    "title": "Help & guides",
+    "subtitle": "Step-by-step walkthroughs to get started. Available anytime.",
+    "sectionStart": "Getting started",
+    "sectionFurther": "Go further",
+    "estimatedMinutes": "{{count}} min",
+    "stub": "Preview",
+    "search": "Search guides",
+    "noResults": "No guide matches your search.",
+    "backToLibrary": "Back to library",
+    "menuLabel": "Help",
+    "settingsLink": "Help & guides",
+    "settingsLinkHint": "Open the tutorial library"
+  },
+  "status": {
+    "not_started": "Not started",
+    "in_progress": "In progress",
+    "completed": "Completed",
+    "skipped": "Skipped"
+  },
+  "viewer": {
+    "stepOf": "Step {{current}} of {{total}}",
+    "previous": "Previous",
+    "next": "Next",
+    "finish": "Finish",
+    "skipStep": "Skip this step",
+    "skipTutorial": "Skip tutorial",
+    "imagePlaceholder": "Screenshot coming soon for this step."
+  },
+  "autoPrompt": {
+    "title": "Welcome — getting started guide",
+    "description": "A short path to create an account, import trades, read the dashboard, and open the journal.",
+    "hint": "You can always find this guide under Help, even if you dismiss this reminder.",
+    "start": "Start",
+    "later": "Later",
+    "dismissAuto": "Don’t show this automatically again"
+  },
+  "banner": {
+    "resume": "Resume the getting started guide",
+    "dismiss": "Dismiss"
+  },
+  "tutorials": {
+    "getting-started": {
+      "title": "Getting started",
+      "summary": "Trading account, import, dashboard, and journal.",
+      "steps": {
+        "account": {
+          "title": "Create a trading account",
+          "body": "Open Trading accounts, then create an account (broker, currency, capital).\nThis is the foundation for linking trades and tracking PnL.",
+          "alt": "Trading accounts page with the create-account form"
+        },
+        "import": {
+          "title": "Import or enter trades",
+          "body": "From Trades or the dashboard, import a CSV or enter a trade.\nThe format guide stays available in the import dialog.",
+          "alt": "Trade import dialog with the format guide"
+        },
+        "dashboard": {
+          "title": "Read the dashboard",
+          "body": "The dashboard summarizes your period: PnL, results, and activity.\nAdjust the period and account filters as needed.",
+          "alt": "Dashboard with performance metrics"
+        },
+        "journal": {
+          "title": "Open the daily journal",
+          "body": "The daily journal and day questions help you learn from each session.\nCome back to Help whenever you want to resume this guide.",
+          "alt": "Daily journal page"
+        }
+      }
+    },
+    "import-trades": {
+      "title": "Import trades",
+      "summary": "CSV, columns, and checks before confirmation.",
+      "steps": {
+        "open-import": {
+          "title": "Open import",
+          "body": "From the Trades page, start Import. Pick the target account, then your CSV file.",
+          "alt": "Import button on the Trades page"
+        },
+        "format": {
+          "title": "Check the format",
+          "body": "Use the built-in format guide, fix columns if needed, then confirm the preview.",
+          "alt": "CSV format guide in the import dialog"
+        }
+      }
+    },
+    "calendar": {
+      "title": "PnL calendar",
+      "summary": "Month view of day-by-day results.",
+      "steps": {
+        "overview": {
+          "title": "Overview",
+          "body": "The calendar colors each day by PnL. Move between months to spot streaks.",
+          "alt": "Monthly PnL calendar"
+        },
+        "day-detail": {
+          "title": "Day detail",
+          "body": "Click a day to see related trades and jump into the journal.",
+          "alt": "Calendar day detail"
+        }
+      }
+    }
+  }
+}

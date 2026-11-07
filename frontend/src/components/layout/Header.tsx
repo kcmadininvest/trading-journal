@@ -183,6 +183,24 @@ const Header: React.FC<HeaderProps> = ({
             </div>
 
             <HeaderThemeSwitcher />
+
+            <Tooltip content={t('help:hub.menuLabel', { defaultValue: 'Aide' })} position="left">
+              <button
+                type="button"
+                onClick={() => onNavigate('help')}
+                className={`inline-flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-blue-950 ${
+                  currentPage === 'help'
+                    ? 'text-white bg-gray-700'
+                    : 'text-gray-300 hover:text-white hover:bg-gray-700'
+                }`}
+                aria-label={t('help:hub.menuLabel', { defaultValue: 'Aide' })}
+                data-testid="header-help-button"
+              >
+                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </button>
+            </Tooltip>
             
             {/* Logout button */}
             <Tooltip content={t('navigation:header.logout')} position="left">

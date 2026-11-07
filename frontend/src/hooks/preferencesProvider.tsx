@@ -104,6 +104,8 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
     daily_journal_table_editor: true,
     daily_journal_view_mode: 'grid',
     journal_questions_positions_collapsed: false,
+    tutorials_progress: {},
+    tutorials_auto_prompt_dismissed: false,
   });
   const [loading, setLoading] = useState(true);
   const { data: bootstrap, isError: bootstrapError, isLoading: bootstrapLoading } = useBootstrap(
@@ -122,6 +124,8 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
       daily_journal_table_editor: prefs.daily_journal_table_editor !== false,
       daily_journal_view_mode: prefs.daily_journal_view_mode === 'list' ? 'list' : 'grid',
       journal_questions_positions_collapsed: !!prefs.journal_questions_positions_collapsed,
+      tutorials_progress: prefs.tutorials_progress || {},
+      tutorials_auto_prompt_dismissed: !!prefs.tutorials_auto_prompt_dismissed,
     });
     const effectiveTheme: ThemePreference = isThemePreference(prefs.theme) ? prefs.theme : 'light';
     applyThemePreference(effectiveTheme);
@@ -196,6 +200,7 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
     const handleAuthChange = async () => {
       if (authService.isAuthenticated()) {
+        setLoading(true);
         await refreshPreferences();
       } else {
         const defaultFontSize = getInitialFontSize();

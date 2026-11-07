@@ -215,6 +215,15 @@ import ptBacktestJournal from './locales/pt/backtestJournal.json';
 import jaBacktestJournal from './locales/ja/backtestJournal.json';
 import koBacktestJournal from './locales/ko/backtestJournal.json';
 import zhBacktestJournal from './locales/zh/backtestJournal.json';
+import frHelp from './locales/fr/help.json';
+import enHelp from './locales/en/help.json';
+import esHelp from './locales/es/help.json';
+import deHelp from './locales/de/help.json';
+import itHelp from './locales/it/help.json';
+import ptHelp from './locales/pt/help.json';
+import jaHelp from './locales/ja/help.json';
+import koHelp from './locales/ko/help.json';
+import zhHelp from './locales/zh/help.json';
 
 // Custom detector qui utilise navigator.languages pour respecter l'ordre de préférence (comme YouTube)
 const customNavigatorLanguagesDetector = {
@@ -289,6 +298,7 @@ const resources = {
     historicalData: frHistoricalData,
     marketReplay: frMarketReplay,
     backtestJournal: frBacktestJournal,
+    help: frHelp,
   },
   en: {
     common: enCommon,
@@ -320,6 +330,7 @@ const resources = {
     historicalData: enHistoricalData,
     marketReplay: enMarketReplay,
     backtestJournal: enBacktestJournal,
+    help: enHelp,
   },
   es: {
     common: esCommon,
@@ -351,6 +362,7 @@ const resources = {
     historicalData: esHistoricalData,
     marketReplay: esMarketReplay,
     backtestJournal: esBacktestJournal,
+    help: esHelp,
   },
   de: {
     common: deCommon,
@@ -382,6 +394,7 @@ const resources = {
     historicalData: deHistoricalData,
     marketReplay: deMarketReplay,
     backtestJournal: deBacktestJournal,
+    help: deHelp,
   },
   it: {
     common: itCommon,
@@ -402,6 +415,7 @@ const resources = {
     trading_activity: enTradingActivity,
     marketReplay: enMarketReplay,
     backtestJournal: itBacktestJournal,
+    help: itHelp,
   },
   pt: {
     common: ptCommon,
@@ -422,6 +436,7 @@ const resources = {
     trading_activity: enTradingActivity,
     marketReplay: enMarketReplay,
     backtestJournal: ptBacktestJournal,
+    help: ptHelp,
   },
   ja: {
     common: jaCommon,
@@ -442,6 +457,7 @@ const resources = {
     trading_activity: enTradingActivity,
     marketReplay: enMarketReplay,
     backtestJournal: jaBacktestJournal,
+    help: jaHelp,
   },
   ko: {
     common: koCommon,
@@ -462,6 +478,7 @@ const resources = {
     trading_activity: enTradingActivity,
     marketReplay: enMarketReplay,
     backtestJournal: koBacktestJournal,
+    help: koHelp,
   },
   zh: {
     common: zhCommon,
@@ -482,6 +499,7 @@ const resources = {
     trading_activity: enTradingActivity,
     marketReplay: enMarketReplay,
     backtestJournal: zhBacktestJournal,
+    help: zhHelp,
   },
 };
 
@@ -545,7 +563,7 @@ i18n
     fallbackLng: getDefaultLanguage(),
     supportedLngs: ['fr', 'en', 'es', 'de', 'it', 'pt', 'ja', 'ko', 'zh'],
     defaultNS: 'common',
-    ns: ['common', 'trades', 'settings', 'navigation', 'dashboard', 'calendar', 'strategies', 'statistics', 'analytics', 'users', 'accounts', 'auth', 'home', 'strategy', 'positionStrategies', 'goals', 'transactions', 'legal', 'about', 'features', 'contact', 'calculator', 'billing', 'replay', 'trading_activity', 'journalQuestions', 'historicalData', 'marketReplay', 'backtestJournal'],
+    ns: ['common', 'trades', 'settings', 'navigation', 'dashboard', 'calendar', 'strategies', 'statistics', 'analytics', 'users', 'accounts', 'auth', 'home', 'strategy', 'positionStrategies', 'goals', 'transactions', 'legal', 'about', 'features', 'contact', 'calculator', 'billing', 'replay', 'trading_activity', 'journalQuestions', 'historicalData', 'marketReplay', 'backtestJournal', 'help'],
     
     interpolation: {
       escapeValue: false, // React échappe déjà les valeurs

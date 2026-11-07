@@ -1,0 +1,35 @@
+import { describe, expect, it } from 'vitest';
+import {
+  P0_SLUG,
+  TUTORIALS,
+  TUTORIAL_BY_SLUG,
+  getTutorialStatus,
+  isP0Incomplete,
+  tutorialImagePath,
+} from './catalog';
+
+describe('tutorials catalog', () => {
+  it('exposes getting-started as P0 with 4 steps', () => {
+    expect(P0_SLUG).toBe('getting-started');
+    const p0 = TUTORIAL_BY_SLUG[P0_SLUG];
+    expect(p0).toBeDefined();
+    expect(p0.steps).toHaveLength(4);
+  });
+
+  it('includes secondary stubs', () => {
+    const stubs = TUTORIALS.filter((t) => t.stub);
+    expect(stubs.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('tracks progress helpers', () => {
+    expect(isP0Incomplete({})).toBe(true);
+    expect(isP0Incomplete({ 'getting-started': { status: 'completed' } })).toBe(false);
+    expect(getTutorialStatus({}, 'import-trades')).toBe('not_started');
+  });
+
+  it('builds image paths', () => {
+    expect(tutorialImagePath('fr-FR', 'getting-started', 2)).toBe(
+      '/tutorials/fr/getting-started-step-2.png'
+    );
+  });
+});
