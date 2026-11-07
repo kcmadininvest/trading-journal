@@ -65,16 +65,25 @@ def set_jwt_cookies(
 
 
 def clear_jwt_cookies(response: Response) -> Response:
+    """Efface tj_access / tj_refresh.
+
+    Django 4.2 ``delete_cookie`` n'accepte pas ``secure=`` (ajouté en 5.0).
+    On expire donc via ``set_cookie`` pour pouvoir conserver ``secure`` / ``httponly``
+    (requis pour supprimer des cookies Secure en production).
+    """
     secure = _cookie_secure()
     samesite = _cookie_samesite()
-    response.delete_cookie(ACCESS_COOKIE_NAME, path='/', samesite=samesite)
-    response.delete_cookie(REFRESH_COOKIE_NAME, path='/', samesite=samesite)
-    # Aussi tenter sans samesite pour navigateurs anciens
-    response.delete_cookie(ACCESS_COOKIE_NAME, path='/')
-    response.delete_cookie(REFRESH_COOKIE_NAME, path='/')
-    if secure:
-        response.delete_cookie(ACCESS_COOKIE_NAME, path='/', secure=True, samesite=samesite)
-        response.delete_cookie(REFRESH_COOKIE_NAME, path='/', secure=True, samesite=samesite)
+    for name in (ACCESS_COOKIE_NAME, REFRESH_COOKIE_NAME):
+        response.set_cookie(
+            name,
+            value='',
+            max_age=0,
+            expires='Thu, 01 Jan 1970 00:00:00 GMT',
+            path='/',
+            secure=secure,
+            httponly=True,
+            samesite=samesite,
+        )
     return response
 
 
