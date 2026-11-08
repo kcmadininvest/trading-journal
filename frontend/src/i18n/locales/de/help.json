@@ -69,11 +69,11 @@
     },
     "import-trades": {
       "title": "Trades importieren",
-      "summary": "Wozu: Trades aus einer CSV laden, statt sie einzeln einzugeben. Spalten und Prüfungen vor der Bestätigung.",
+      "summary": "Trades aus einer CSV laden, statt sie einzeln einzugeben. Spalten und Prüfungen vor der Bestätigung.",
       "steps": {
         "open-import": {
           "title": "Import öffnen",
-          "body": "Wozu: eine Trade-Historie schnell aus einer CSV importieren, statt jede Ausführung manuell einzugeben.\nAuf der Seite Trades starten Sie Import. Wählen Sie das Zielkonto und dann die CSV-Datei.",
+          "body": "Eine Trade-Historie schnell aus einer CSV importieren, statt jede Ausführung manuell einzugeben.\nAuf der Seite Trades starten Sie Import. Wählen Sie das Zielkonto und dann die CSV-Datei.",
           "alt": "Import-Schaltfläche auf der Seite Trades"
         },
         "format": {
@@ -85,11 +85,11 @@
     },
     "calendar": {
       "title": "PnL-Kalender",
-      "summary": "Wozu: PnL Tag für Tag sehen, um Gewinn- oder Verlustserien zu erkennen.",
+      "summary": "PnL Tag für Tag sehen, um Gewinn- oder Verlustserien zu erkennen.",
       "steps": {
         "overview": {
           "title": "Übersicht",
-          "body": "Wozu: auf einen Blick das Tagesergebnis sehen und Monatstrends erkennen.\nDer Kalender färbt jeden Tag nach PnL. Wechseln Sie zwischen Monaten, um Serien zu erkennen.",
+          "body": "Auf einen Blick das Tagesergebnis sehen und Monatstrends erkennen.\nDer Kalender färbt jeden Tag nach PnL. Wechseln Sie zwischen Monaten, um Serien zu erkennen.",
           "alt": "Monatlicher PnL-Kalender"
         },
         "day-detail": {
@@ -101,11 +101,11 @@
     },
     "api-connections": {
       "title": "API-Verbindungen",
-      "summary": "Wozu: einen Broker anbinden, um Trades automatisch zu synchronisieren – ohne jedes Mal neu zu importieren.",
+      "summary": "Einen Broker anbinden, um Trades automatisch zu synchronisieren – ohne jedes Mal neu zu importieren.",
       "steps": {
         "open-settings": {
           "title": "API-Verbindungen öffnen",
-          "body": "Wozu: Ihren Broker (z. B. TopStepX) verbinden, damit Trades per Synchronisieren automatisch geholt werden.\nGehen Sie zu Einstellungen → Trading und scrollen Sie zum Block API-Verbindungen.\nHeute ist nur TopStepX verfügbar; weitere Verbindungen können später hinzukommen.",
+          "body": "Ihren Broker (z. B. TopStepX) verbinden, damit Trades per Synchronisieren automatisch geholt werden.\nGehen Sie zu Einstellungen → Trading und scrollen Sie zum Block API-Verbindungen.\nHeute ist nur TopStepX verfügbar; weitere Verbindungen können später hinzukommen.",
           "alt": "Einstellungen Registerkarte Trading mit Block API-Verbindungen und TopStepX-Karte"
         },
         "credentials": {
@@ -127,11 +127,11 @@
     },
     "journal-questions": {
       "title": "Journal-Fragen",
-      "summary": "Wozu: Ihre Trading-Revue mit wiederverwendbaren Tages- und Positionsfragen strukturieren.",
+      "summary": "Ihre Trading-Revue mit wiederverwendbaren Tages- und Positionsfragen strukturieren.",
       "steps": {
         "flow": {
           "title": "Den Ablauf verstehen",
-          "body": "Wozu: jede Sitzung mit festen Fragen (Mindset, Plan, Trade-Note…) festhalten statt verstreuter Freitextnotizen.\nDrei Schichten greifen ineinander:\n1) Vorlagen = wiederverwendbare Bibliothek.\n2) Tages- und Positionsfragebogen = einsatzbereite Kopien.\n3) Antworten = Fragen-Seite (Tag) und pro Trade.\nÖffnen Sie Einstellungen → Fragebogen für die drei Registerkarten.",
+          "body": "Jede Sitzung mit festen Fragen (Mindset, Plan, Trade-Note…) festhalten statt verstreuter Freitextnotizen.\nDrei Schichten greifen ineinander:\n1) Vorlagen = wiederverwendbare Bibliothek.\n2) Tages- und Positionsfragebogen = einsatzbereite Kopien.\n3) Antworten = Fragen-Seite (Tag) und pro Trade.\nÖffnen Sie Einstellungen → Fragebogen für die drei Registerkarten.",
           "alt": "Einstellungen Fragen mit Registerkarten Vorlagen, Tagesfragebogen und Positionsfragebogen"
         },
         "templates": {
@@ -153,11 +153,11 @@
     },
     "transactions-profitability": {
       "title": "Transaktionen und Rentabilität",
-      "summary": "Wozu: Kontocash (Ein-/Auszahlungen) und die echte Aktivitätsrentabilität (Ausgaben, Gutschriften, Steuern) verfolgen.",
+      "summary": "Kontocash (Ein-/Auszahlungen) und die echte Aktivitätsrentabilität (Ausgaben, Gutschriften, Steuern) verfolgen.",
       "steps": {
         "flow": {
           "title": "Zwei Seiten unter Verwaltung",
-          "body": "Wozu: Kontocash (Transaktionen) von der Geschäftsbilanz der Aktivität (Rentabilität: Ausgaben, Gutschriften, Steuern) trennen.\nIm Menü Verwaltung gibt es zwei ergänzende Einträge:\n1) Transaktionen = Ein- und Auszahlungen auf einem Handelskonto.\n2) Aktivitätsrentabilität = Geschäftsbilanz (Ausgaben, Gutschriften aus Auszahlungen, Steuerzahlungen).\nVerwechseln Sie Kontocash nicht mit der Aktivitätsrentabilität.",
+          "body": "Kontocash (Transaktionen) von der Geschäftsbilanz der Aktivität (Rentabilität: Ausgaben, Gutschriften, Steuern) trennen.\nIm Menü Verwaltung gibt es zwei ergänzende Einträge:\n1) Transaktionen = Ein- und Auszahlungen auf einem Handelskonto.\n2) Aktivitätsrentabilität = Geschäftsbilanz (Ausgaben, Gutschriften aus Auszahlungen, Steuerzahlungen).\nVerwechseln Sie Kontocash nicht mit der Aktivitätsrentabilität.",
           "alt": "Menü Verwaltung mit Transaktionen und Aktivitätsrentabilität"
         },
         "transactions": {

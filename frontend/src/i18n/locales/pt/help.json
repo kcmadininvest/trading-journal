@@ -69,11 +69,11 @@
     },
     "import-trades": {
       "title": "Importar trades",
-      "summary": "Para que serve: carregar trades a partir de um CSV sem os introduzir um a um. Colunas e controlos antes da validação.",
+      "summary": "Carregar trades a partir de um CSV sem os introduzir um a um. Colunas e controlos antes da validação.",
       "steps": {
         "open-import": {
           "title": "Abrir a importação",
-          "body": "Para que serve: importar rapidamente um histórico de trades a partir de um CSV em vez de os digitar à mão.\nNa página Trades, inicie Importar. Escolha a conta de destino e depois o ficheiro CSV.",
+          "body": "Importar rapidamente um histórico de trades a partir de um CSV em vez de os digitar à mão.\nNa página Trades, inicie Importar. Escolha a conta de destino e depois o ficheiro CSV.",
           "alt": "Botão Importar na página Trades"
         },
         "format": {
@@ -85,11 +85,11 @@
     },
     "calendar": {
       "title": "Calendário PnL",
-      "summary": "Para que serve: ver o PnL dia a dia para detetar sequências vencedoras ou perdedoras.",
+      "summary": "Ver o PnL dia a dia para detetar sequências vencedoras ou perdedoras.",
       "steps": {
         "overview": {
           "title": "Visão geral",
-          "body": "Para que serve: ver de relance o resultado de cada dia e as tendências do mês.\nO calendário colore cada dia segundo o PnL. Navegue entre meses para identificar séries.",
+          "body": "Ver de relance o resultado de cada dia e as tendências do mês.\nO calendário colore cada dia segundo o PnL. Navegue entre meses para identificar séries.",
           "alt": "Calendário PnL mensal"
         },
         "day-detail": {
@@ -101,11 +101,11 @@
     },
     "api-connections": {
       "title": "Ligações API",
-      "summary": "Para que serve: ligar um broker para sincronizar trades automaticamente, sem reimportar de cada vez.",
+      "summary": "Ligar um broker para sincronizar trades automaticamente, sem reimportar de cada vez.",
       "steps": {
         "open-settings": {
           "title": "Abrir Ligações API",
-          "body": "Para que serve: ligar o seu broker (ex. TopStepX) para obter trades automaticamente com Sincronizar.\nVá a Definições → Trading e desça até ao bloco Ligações API.\nHoje só o TopStepX está disponível; outras ligações poderão ser adicionadas mais tarde.",
+          "body": "Ligar o seu broker (ex. TopStepX) para obter trades automaticamente com Sincronizar.\nVá a Definições → Trading e desça até ao bloco Ligações API.\nHoje só o TopStepX está disponível; outras ligações poderão ser adicionadas mais tarde.",
           "alt": "Definições separador Trading com o bloco Ligações API e o cartão TopStepX"
         },
         "credentials": {
@@ -127,11 +127,11 @@
     },
     "journal-questions": {
       "title": "Perguntas do diário",
-      "summary": "Para que serve: estruturar a sua revisão de trading com perguntas reutilizáveis (dia e posições).",
+      "summary": "Estruturar a sua revisão de trading com perguntas reutilizáveis (dia e posições).",
       "steps": {
         "flow": {
           "title": "Compreender a sequência",
-          "body": "Para que serve: capitalizar cada sessão com perguntas fixas (mindset, plano, nota do trade…) em vez de notas soltas.\nTrês camadas encadeiam-se:\n1) Modelos = biblioteca reutilizável.\n2) Questionário do dia e de posições = cópias prontas a usar.\n3) Respostas = página Perguntas (dia) e por trade.\nAbra Definições → Questionário para ver os três separadores.",
+          "body": "Capitalizar cada sessão com perguntas fixas (mindset, plano, nota do trade…) em vez de notas soltas.\nTrês camadas encadeiam-se:\n1) Modelos = biblioteca reutilizável.\n2) Questionário do dia e de posições = cópias prontas a usar.\n3) Respostas = página Perguntas (dia) e por trade.\nAbra Definições → Questionário para ver os três separadores.",
           "alt": "Definições Perguntas com separadores Modelos, Questionário do dia e Questionário posições"
         },
         "templates": {
@@ -153,11 +153,11 @@
     },
     "transactions-profitability": {
       "title": "Transações e rentabilidade",
-      "summary": "Para que serve: acompanhar o cash da conta (depósitos/levantamentos) e a rentabilidade real da atividade (despesas, créditos, impostos).",
+      "summary": "Acompanhar o cash da conta (depósitos/levantamentos) e a rentabilidade real da atividade (despesas, créditos, impostos).",
       "steps": {
         "flow": {
           "title": "Duas páginas em Gestão",
-          "body": "Para que serve: separar o cash da conta de trading (Transações) do balanço operacional (Rentabilidade: despesas, créditos, fiscalidade).\nNo menu Gestão há duas entradas complementares:\n1) Transações = depósitos e levantamentos numa conta de trading.\n2) Rentabilidade da atividade = balanço operacional (despesas, créditos de levantamentos, pagamentos fiscais).\nNão misture o cash da conta com a rentabilidade da atividade.",
+          "body": "Separar o cash da conta de trading (Transações) do balanço operacional (Rentabilidade: despesas, créditos, fiscalidade).\nNo menu Gestão há duas entradas complementares:\n1) Transações = depósitos e levantamentos numa conta de trading.\n2) Rentabilidade da atividade = balanço operacional (despesas, créditos de levantamentos, pagamentos fiscais).\nNão misture o cash da conta com a rentabilidade da atividade.",
           "alt": "Menu Gestão aberto com Transações e Rentabilidade da atividade"
         },
         "transactions": {

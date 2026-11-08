@@ -69,11 +69,11 @@
     },
     "import-trades": {
       "title": "Importer des trades",
-      "summary": "À quoi ça sert : charger des trades depuis un CSV sans les saisir un par un. Colonnes et contrôles avant validation.",
+      "summary": "Charger des trades depuis un CSV sans les saisir un par un. Colonnes et contrôles avant validation.",
       "steps": {
         "open-import": {
           "title": "Ouvrir l’import",
-          "body": "À quoi ça sert : importer rapidement un historique de trades depuis un fichier CSV, plutôt que de tout saisir à la main.\nDepuis la page Trades, lancez Importer. Choisissez le compte cible puis le fichier CSV.",
+          "body": "Importer rapidement un historique de trades depuis un fichier CSV, plutôt que de tout saisir à la main.\nDepuis la page Trades, lancez Importer. Choisissez le compte cible puis le fichier CSV.",
           "alt": "Bouton Importer sur la page Trades"
         },
         "format": {
@@ -85,11 +85,11 @@
     },
     "calendar": {
       "title": "Calendrier PnL",
-      "summary": "À quoi ça sert : voir le PnL jour par jour pour repérer vos séries gagnantes ou perdantes.",
+      "summary": "Voir le PnL jour par jour pour repérer vos séries gagnantes ou perdantes.",
       "steps": {
         "overview": {
           "title": "Vue d’ensemble",
-          "body": "À quoi ça sert : visualiser d’un coup d’œil le résultat de chaque journée et repérer les tendances sur le mois.\nLe calendrier colore chaque jour selon le PnL. Naviguez entre les mois pour repérer vos séries.",
+          "body": "Visualiser d’un coup d’œil le résultat de chaque journée et repérer les tendances sur le mois.\nLe calendrier colore chaque jour selon le PnL. Naviguez entre les mois pour repérer vos séries.",
           "alt": "Calendrier PnL mensuel"
         },
         "day-detail": {
@@ -101,11 +101,11 @@
     },
     "api-connections": {
       "title": "Connexions API",
-      "summary": "À quoi ça sert : relier un broker pour synchroniser automatiquement les trades, sans réimporter à chaque fois.",
+      "summary": "Relier un broker pour synchroniser automatiquement les trades, sans réimporter à chaque fois.",
       "steps": {
         "open-settings": {
           "title": "Ouvrir Connexions API",
-          "body": "À quoi ça sert : connecter votre broker (ex. TopStepX) pour récupérer les trades automatiquement via Synchroniser.\nAllez dans Paramètres → Trading, puis descendez jusqu’au bloc Connexions API.\nAujourd’hui seul TopStepX est disponible ; d’autres connexions pourront s’ajouter plus tard.",
+          "body": "Connecter votre broker (ex. TopStepX) pour récupérer les trades automatiquement via Synchroniser.\nAllez dans Paramètres → Trading, puis descendez jusqu’au bloc Connexions API.\nAujourd’hui seul TopStepX est disponible ; d’autres connexions pourront s’ajouter plus tard.",
           "alt": "Paramètres onglet Trading avec le bloc Connexions API et la carte TopStepX"
         },
         "credentials": {
@@ -127,11 +127,11 @@
     },
     "journal-questions": {
       "title": "Questions du journal",
-      "summary": "À quoi ça sert : structurer votre revue de trading avec des questions réutilisables (journée et positions).",
+      "summary": "Structurer votre revue de trading avec des questions réutilisables (journée et positions).",
       "steps": {
         "flow": {
           "title": "Comprendre l’enchaînement",
-          "body": "À quoi ça sert : capitaliser chaque séance grâce à des questions fixes (mindset, plan, note du trade…) plutôt que des notes libres dispersées.\nTrois couches s’enchaînent :\n1) Modèles = bibliothèque réutilisable.\n2) Questionnaire du jour et Questionnaire positions = copies de questions prêtes à l’emploi.\n3) Réponses = page Questions (jour) et réponses par trade.\nOuvrez Paramètres → Questionnaire pour voir les trois onglets.",
+          "body": "Capitaliser chaque séance grâce à des questions fixes (mindset, plan, note du trade…) plutôt que des notes libres dispersées.\nTrois couches s’enchaînent :\n1) Modèles = bibliothèque réutilisable.\n2) Questionnaire du jour et Questionnaire positions = copies de questions prêtes à l’emploi.\n3) Réponses = page Questions (jour) et réponses par trade.\nOuvrez Paramètres → Questionnaire pour voir les trois onglets.",
           "alt": "Paramètres Questions avec les onglets Modèles, Questionnaire du jour et Questionnaire positions"
         },
         "templates": {
@@ -153,11 +153,11 @@
     },
     "transactions-profitability": {
       "title": "Transactions et rentabilité",
-      "summary": "À quoi ça sert : suivre le cash du compte (dépôts/retraits) et la rentabilité réelle de l’activité (dépenses, crédits, impôts).",
+      "summary": "Suivre le cash du compte (dépôts/retraits) et la rentabilité réelle de l’activité (dépenses, crédits, impôts).",
       "steps": {
         "flow": {
           "title": "Deux pages dans Gestion",
-          "body": "À quoi ça sert : séparer le cash du compte de trading (Transactions) du bilan métier de votre activité (Rentabilité : dépenses, crédits, fiscalité).\nDans le menu Gestion vous avez deux entrées complémentaires :\n1) Transactions = dépôts et retraits sur un compte de trading.\n2) Rentabilité activité = bilan métier (dépenses, crédits issus des retraits, paiements fiscaux).\nNe confondez pas le cash du compte et la rentabilité de l’activité.",
+          "body": "Séparer le cash du compte de trading (Transactions) du bilan métier de votre activité (Rentabilité : dépenses, crédits, fiscalité).\nDans le menu Gestion vous avez deux entrées complémentaires :\n1) Transactions = dépôts et retraits sur un compte de trading.\n2) Rentabilité activité = bilan métier (dépenses, crédits issus des retraits, paiements fiscaux).\nNe confondez pas le cash du compte et la rentabilité de l’activité.",
           "alt": "Menu Gestion ouvert avec Transactions et Rentabilité activité"
         },
         "transactions": {
