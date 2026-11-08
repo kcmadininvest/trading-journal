@@ -14,13 +14,34 @@ from datetime import timedelta
 from decimal import Decimal
 
 from django.core.management.base import BaseCommand
+from django.db.models import Q
 from django.utils import timezone
 
 from accounts.models import User, UserPreferences
-from trades.models import ImportedTrade, TradingAccount
+from daily_journal.models import (
+    Questionnaire,
+    QuestionnaireQuestion,
+    QuestionTemplate,
+)
+from integrations.credentials_crypto import build_secrets_hint, encrypt_json
+from integrations.models import UserApiIntegration
+from backtest_journal.models import (
+    ManualBacktestCampaign,
+    ManualBacktestStrategy,
+    ManualBacktestVersion,
+)
+from trades.models import AccountTransaction, ImportedTrade, PositionStrategy, TradingAccount
+from trading_activity.models import (
+    TradingActivityCredit,
+    TradingActivityExpense,
+    TradingActivityExpenseCategory,
+)
 
 DEMO_EMAIL = 'tutorial-demo@example.invalid'
 DEMO_USERNAME = 'tutorial_demo'
+# Clé fictive uniquement pour captures (jamais utilisée contre l’API broker dans Playwright).
+DEMO_TOPSTEPX_API_KEY = 'tuto-demo-api-key-xxxx'
+DEMO_TOPSTEPX_USERNAME = 'tutorial_demo_topstep'
 
 
 class Command(BaseCommand):
@@ -46,8 +67,15 @@ class Command(BaseCommand):
         )
 
         if options['reset']:
-            User.objects.filter(email=DEMO_EMAIL).delete()
-            User.objects.filter(username=DEMO_USERNAME).delete()
+            # ManualBacktestStrategy.position_strategy est PROTECT : supprimer
+            # campagnes → journaux backtest avant le User (sinon ProtectedError).
+            demo_users = User.objects.filter(
+                Q(email=DEMO_EMAIL) | Q(username=DEMO_USERNAME)
+            )
+            for demo_user in demo_users:
+                ManualBacktestCampaign.objects.filter(user=demo_user).delete()
+                ManualBacktestStrategy.objects.filter(user=demo_user).delete()
+            demo_users.delete()
             self.stdout.write('Ancien compte démo supprimé.')
 
         user, created = User.objects.get_or_create(
@@ -87,6 +115,51 @@ class Command(BaseCommand):
                 'currency': 'USD',
                 'initial_capital': Decimal('50000.00'),
                 'status': 'active',
+                'is_default': False,
+            },
+        )
+        if account.is_default:
+            account.is_default = False
+            account.save(update_fields=['is_default', 'updated_at'])
+
+        topstep_account, _ = TradingAccount.objects.get_or_create(
+            user=user,
+            name='Demo TopStep Account',
+            defaults={
+                'account_type': 'topstep',
+                'currency': 'USD',
+                'initial_capital': Decimal('150000.00'),
+                'status': 'active',
+                'broker_account_id': '999001',
+                'is_default': True,
+            },
+        )
+        changed_fields: list[str] = []
+        if topstep_account.account_type != 'topstep':
+            topstep_account.account_type = 'topstep'
+            changed_fields.append('account_type')
+        if topstep_account.status != 'active':
+            topstep_account.status = 'active'
+            changed_fields.append('status')
+        if not topstep_account.broker_account_id:
+            topstep_account.broker_account_id = '999001'
+            changed_fields.append('broker_account_id')
+        if not topstep_account.is_default:
+            topstep_account.is_default = True
+            changed_fields.append('is_default')
+        if changed_fields:
+            topstep_account.save(update_fields=[*changed_fields, 'updated_at'])
+
+        secrets = {'api_key': DEMO_TOPSTEPX_API_KEY}
+        UserApiIntegration.objects.update_or_create(
+            user=user,
+            provider='topstepx',
+            defaults={
+                'external_username': DEMO_TOPSTEPX_USERNAME,
+                'secrets_encrypted': encrypt_json(secrets),
+                'secrets_hint': build_secrets_hint(secrets),
+                'is_connected': True,
+                'last_validated_at': timezone.now(),
             },
         )
 
@@ -101,9 +174,10 @@ class Command(BaseCommand):
             external_id = f'TUTO-DEMO-{idx + 1}'
             entered = now - timedelta(days=idx + 1, hours=2)
             exited = entered + timedelta(minutes=25)
+            # Trades sur le compte TopStep (défaut) pour Sync UI + captures trades/calendrier.
             ImportedTrade.objects.update_or_create(
                 user=user,
-                trading_account=account,
+                trading_account=topstep_account,
                 external_trade_id=external_id,
                 defaults={
                     'contract_name': contract,
@@ -118,10 +192,199 @@ class Command(BaseCommand):
                     'point_value': Decimal('20') if contract.startswith('NQ') else Decimal('50'),
                 },
             )
+            ImportedTrade.objects.filter(
+                user=user,
+                trading_account=account,
+                external_trade_id=external_id,
+            ).delete()
+
+        # Questions : modèles → questionnaires jour / positions (enchaînement du tuto Aide)
+        day_tpl, _ = QuestionTemplate.objects.update_or_create(
+            user=user,
+            label='Comment était ton mindset ?',
+            defaults={
+                'help_text': 'Modèle démo pour le questionnaire du jour.',
+                'answer_type': 'text',
+                'config': {},
+                'is_active': True,
+            },
+        )
+        plan_tpl, _ = QuestionTemplate.objects.update_or_create(
+            user=user,
+            label='As-tu suivi le plan ?',
+            defaults={
+                'help_text': 'Modèle démo oui/non.',
+                'answer_type': 'boolean',
+                'config': {},
+                'is_active': True,
+            },
+        )
+        grade_tpl, _ = QuestionTemplate.objects.update_or_create(
+            user=user,
+            label='Note du trade',
+            defaults={
+                'help_text': 'Modèle démo pour le questionnaire positions.',
+                'answer_type': 'scale',
+                'config': {'min': 1, 'max': 5, 'step': 1},
+                'is_active': True,
+            },
+        )
+
+        day_q = Questionnaire.get_or_create_for_scope(user, 'day')
+        pos_q = Questionnaire.get_or_create_for_scope(user, 'position')
+
+        def ensure_instance(questionnaire, template, order: int) -> None:
+            QuestionnaireQuestion.objects.update_or_create(
+                questionnaire=questionnaire,
+                source_template=template,
+                defaults={
+                    'label': template.label,
+                    'help_text': template.help_text,
+                    'answer_type': template.answer_type,
+                    'config': template.config or {},
+                    'required': False,
+                    'order': order,
+                    'is_active': True,
+                    'show_if': None,
+                },
+            )
+
+        ensure_instance(day_q, day_tpl, 0)
+        ensure_instance(day_q, plan_tpl, 1)
+        ensure_instance(pos_q, grade_tpl, 0)
+        ensure_instance(pos_q, plan_tpl, 1)
+
+        # Transactions + rentabilité activité (tuto Aide)
+        AccountTransaction.objects.filter(
+            user=user,
+            description__startswith='TUTO-DEMO',
+        ).delete()
+        TradingActivityExpense.objects.filter(user=user, label__startswith='TUTO-DEMO').delete()
+        TradingActivityCredit.objects.filter(user=user, notes__startswith='TUTO-DEMO').delete()
+
+        deposit_tx = AccountTransaction.objects.create(
+            user=user,
+            trading_account=topstep_account,
+            transaction_type='deposit',
+            amount=Decimal('10000.00'),
+            transaction_date=now - timedelta(days=5),
+            description='TUTO-DEMO dépôt initial',
+        )
+        withdrawal_tx = AccountTransaction.objects.create(
+            user=user,
+            trading_account=topstep_account,
+            transaction_type='withdrawal',
+            amount=Decimal('1500.00'),
+            transaction_date=now - timedelta(days=2),
+            description='TUTO-DEMO retrait vers banque',
+        )
+        _ = deposit_tx  # utilisé pour l’historique Transactions
+
+        category, _ = TradingActivityExpenseCategory.objects.get_or_create(
+            user=user,
+            name='Data / plateforme',
+        )
+        TradingActivityExpense.objects.create(
+            user=user,
+            date=(now - timedelta(days=3)).date(),
+            primary_currency='USD',
+            subtotal=Decimal('80.00'),
+            vat_amount=Decimal('0.00'),
+            total=Decimal('80.00'),
+            category=category,
+            label='TUTO-DEMO abonnement data',
+            notes='Dépense démo tutoriel',
+        )
+        credit = TradingActivityCredit.objects.create(
+            user=user,
+            date=(now - timedelta(days=2)).date(),
+            primary_currency='USD',
+            amount=Decimal('1500.00'),
+            notes='TUTO-DEMO crédit lié au retrait',
+        )
+        credit.linked_account_transactions.set([withdrawal_tx])
+
+        # Gestion de stratégie + journal de backtest / Market Replay (tutos Aide).
+        # Recréer à chaque seed : title non unique (versions) + PROTECT backtest.
+        ManualBacktestCampaign.objects.filter(user=user, name__startswith='TUTO-DEMO').delete()
+        ManualBacktestStrategy.objects.filter(
+            user=user,
+            name__startswith='TUTO-DEMO',
+        ).delete()
+        PositionStrategy.objects.filter(
+            user=user,
+            title='TUTO-DEMO OR Retrace',
+            parent_strategy__isnull=False,
+        ).delete()
+        PositionStrategy.objects.filter(user=user, title='TUTO-DEMO OR Retrace').delete()
+
+        strategy_content = {
+            'sections': [
+                {
+                    'title': 'Setup',
+                    'rules': [
+                        'Opening range formé',
+                        'Retest de la borne avec volume',
+                    ],
+                },
+                {
+                    'title': 'Entrée',
+                    'rules': [
+                        'Entrée au retest',
+                        'Stop sous / au-dessus de l’OR',
+                    ],
+                },
+                {
+                    'title': 'Invalidation',
+                    'rules': ['Clôture au-delà de l’OR contre le sens'],
+                },
+            ],
+        }
+        position = PositionStrategy.objects.create(
+            user=user,
+            title='TUTO-DEMO OR Retrace',
+            status='active',
+            is_current=True,
+            description='Stratégie démo pour captures tutoriel.',
+            strategy_content=strategy_content,
+            version_notes='TUTO-DEMO v1',
+        )
+        # Seconde version pour le modal Historique des versions
+        position = position.create_new_version(
+            new_content=strategy_content,
+            version_notes='TUTO-DEMO v2 — règles clarifiées',
+        )
+
+        bt_strategy = ManualBacktestStrategy.objects.create(
+            user=user,
+            position_strategy=position,
+            name=position.title,
+            description='Journal démo tutoriel',
+            default_instrument='NQ',
+            status='active',
+        )
+        bt_version = ManualBacktestVersion.objects.create(
+            strategy=bt_strategy,
+            version=1,
+            setup_rules='TUTO-DEMO setup',
+            entry_rules='TUTO-DEMO entry',
+        )
+        ManualBacktestCampaign.objects.create(
+            user=user,
+            strategy_version=bt_version,
+            name='TUTO-DEMO NQ campagne',
+            instrument='NQ',
+            period_start=(now - timedelta(days=90)).date(),
+            period_end=(now + timedelta(days=30)).date(),
+            timezone='America/New_York',
+            status='IN_PROGRESS',
+            notes='Campagne démo tutoriel',
+        )
 
         action = 'créé' if created else 'mis à jour'
         self.stdout.write(self.style.SUCCESS(
-            f'Utilisateur démo {DEMO_EMAIL} {action} (id={user.pk}, account={account.pk}).'
+            f'Utilisateur démo {DEMO_EMAIL} {action} '
+            f'(id={user.pk}, account={account.pk}, topstep={topstep_account.pk}).'
         ))
         self.stdout.write(
             'Mot de passe : valeur fournie / TUTORIAL_DEMO_PASSWORD / TutorialDemo!234'

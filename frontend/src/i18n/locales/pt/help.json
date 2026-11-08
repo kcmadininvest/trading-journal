@@ -2,8 +2,8 @@
   "hub": {
     "title": "Ajuda e guias",
     "subtitle": "Percursos passo a passo para começar o diário. Disponíveis a qualquer momento.",
-    "sectionStart": "Para bem começar",
-    "sectionFurther": "Ir mais longe",
+    "sectionStart": "Para começar",
+    "sectionFurther": "Trades e desempenho",
     "estimatedMinutes": "{{count}} min",
     "stub": "Pré-visualização",
     "search": "Pesquisar um guia",
@@ -11,7 +11,14 @@
     "backToLibrary": "Voltar à biblioteca",
     "menuLabel": "Ajuda",
     "settingsLink": "Ajuda e guias",
-    "settingsLinkHint": "Abrir a biblioteca de tutoriais"
+    "settingsLinkHint": "Abrir a biblioteca de tutoriais",
+    "sections": {
+      "getting-started": "Para começar",
+      "workspace": "Conta e preferências",
+      "trades-pnl": "Trades e desempenho",
+      "journal": "Diário e revisão",
+      "strategies": "Estratégias e backtest"
+    }
   },
   "status": {
     "not_started": "Não iniciado",
@@ -69,11 +76,11 @@
     },
     "import-trades": {
       "title": "Importar trades",
-      "summary": "CSV, colunas e verificações antes da validação.",
+      "summary": "Carregar trades a partir de um CSV sem os introduzir um a um. Colunas e controlos antes da validação.",
       "steps": {
         "open-import": {
           "title": "Abrir a importação",
-          "body": "Na página Trades, inicie Importar. Escolha a conta de destino e depois o ficheiro CSV.",
+          "body": "Importar rapidamente um histórico de trades a partir de um CSV em vez de os digitar à mão.\nNa página Trades, inicie Importar. Escolha a conta de destino e depois o ficheiro CSV.",
           "alt": "Botão Importar na página Trades"
         },
         "format": {
@@ -85,17 +92,252 @@
     },
     "calendar": {
       "title": "Calendário PnL",
-      "summary": "Vista mensal dos resultados dia a dia.",
+      "summary": "Ver o PnL dia a dia para detetar sequências vencedoras ou perdedoras.",
       "steps": {
         "overview": {
           "title": "Visão geral",
-          "body": "O calendário colore cada dia segundo o PnL. Navegue entre meses para identificar séries.",
+          "body": "Ver de relance o resultado de cada dia e as tendências do mês.\nO calendário colore cada dia segundo o PnL. Navegue entre meses para identificar séries.",
           "alt": "Calendário PnL mensal"
         },
         "day-detail": {
           "title": "Detalhe de um dia",
           "body": "Clique num dia para ver os trades associados e seguir para o diário.",
           "alt": "Detalhe de um dia do calendário"
+        }
+      }
+    },
+    "api-connections": {
+      "title": "Ligações API",
+      "summary": "Ligar um broker para sincronizar trades automaticamente, sem reimportar de cada vez.",
+      "steps": {
+        "open-settings": {
+          "title": "Abrir Ligações API",
+          "body": "Ligar o seu broker (ex. TopStepX) para obter trades automaticamente com Sincronizar.\nVá a Definições → Trading e desça até ao bloco Ligações API.\nHoje só o TopStepX está disponível; outras ligações poderão ser adicionadas mais tarde.",
+          "alt": "Definições separador Trading com o bloco Ligações API e o cartão TopStepX"
+        },
+        "credentials": {
+          "title": "Introduzir as credenciais",
+          "body": "Introduza o nome de utilizador e a chave API do seu broker (ex. TopStepX: Definições → API na plataforma).\nA ligação Documentação API do cartão abre a ajuda do fornecedor. Nunca partilhe a sua chave.",
+          "alt": "Cartão TopStepX em modo de edição da chave API"
+        },
+        "test-connection": {
+          "title": "Testar a ligação",
+          "body": "Guarde e use Testar a ligação. O distintivo passa a Configurado ou Ligado conforme o resultado.\nSem uma ligação válida, a sincronização de trades permanece indisponível.",
+          "alt": "Cartão TopStepX com distintivo Ligado e botões Guardar / Testar"
+        },
+        "sync-account": {
+          "title": "Sincronizar uma conta",
+          "body": "Na página Trades (ou calendário), selecione uma conta do tipo correspondente (ex. TopStep) e use Sincronizar quando a integração estiver OK.\nA sync pode coexistir com a importação CSV e não substitui trades existentes.",
+          "alt": "Página Trades com uma conta TopStep e o botão Sincronizar"
+        }
+      }
+    },
+    "journal-questions": {
+      "title": "Perguntas do diário",
+      "summary": "Estruturar a sua revisão de trading com perguntas reutilizáveis (dia e posições).",
+      "steps": {
+        "flow": {
+          "title": "Compreender a sequência",
+          "body": "Capitalizar cada sessão com perguntas fixas (mindset, plano, nota do trade…) em vez de notas soltas.\nTrês camadas encadeiam-se:\n1) Modelos = biblioteca reutilizável.\n2) Questionário do dia e de posições = cópias prontas a usar.\n3) Respostas = página Perguntas (dia) e por trade.\nAbra Definições → Questionário para ver os três separadores.",
+          "alt": "Definições Perguntas com separadores Modelos, Questionário do dia e Questionário posições"
+        },
+        "templates": {
+          "title": "Criar modelos",
+          "body": "Em Modelos de perguntas, crie enunciados reutilizáveis (sim/não, texto, escala…).\nAdicionar um modelo a um questionário cria uma cópia independente.",
+          "alt": "Biblioteca de modelos de perguntas nas Definições"
+        },
+        "questionnaires": {
+          "title": "Preencher os questionários",
+          "body": "Questionário do dia: uma vez por dia e conta.\nQuestionário posições: uma vez por trade.\nAdicione perguntas a partir dos modelos em cada separador.",
+          "alt": "Questionário do dia com perguntas configuradas"
+        },
+        "answer-daily": {
+          "title": "Responder no dia a dia",
+          "body": "Abra Perguntas do dia: escolha conta e data, depois responda.\nAs respostas de posições aparecem sob o formulário do dia (ou no diário / detalhe do trade).",
+          "alt": "Página Perguntas do dia com o formulário de respostas"
+        }
+      }
+    },
+    "transactions-profitability": {
+      "title": "Transações e rentabilidade",
+      "summary": "Acompanhar o cash da conta (depósitos/levantamentos) e a rentabilidade real da atividade (despesas, créditos, impostos).",
+      "steps": {
+        "flow": {
+          "title": "Duas páginas em Gestão",
+          "body": "Separar o cash da conta de trading (Transações) do balanço operacional (Rentabilidade: despesas, créditos, fiscalidade).\nNo menu Gestão há duas entradas complementares:\n1) Transações = depósitos e levantamentos numa conta de trading.\n2) Rentabilidade da atividade = balanço operacional (despesas, créditos de levantamentos, pagamentos fiscais).\nNão misture o cash da conta com a rentabilidade da atividade.",
+          "alt": "Menu Gestão aberto com Transações e Rentabilidade da atividade"
+        },
+        "transactions": {
+          "title": "Gerir depósitos e levantamentos",
+          "body": "Abra Transações: escolha a conta e depois Novo depósito ou Novo levantamento.\nO histórico lista os movimentos; o saldo da conta reflete-os.",
+          "alt": "Página Transações com histórico e botões depósito / levantamento"
+        },
+        "profitability": {
+          "title": "Ver a rentabilidade da atividade",
+          "body": "Abra Rentabilidade da atividade: Saldos por moeda mostra créditos, despesas e saldo.\nOs separadores Débito / Crédito / Pagamentos fiscais servem para o detalhe.",
+          "alt": "Página Rentabilidade da atividade com saldos por moeda"
+        },
+        "link-credits": {
+          "title": "Ligar levantamentos e créditos",
+          "body": "No separador Crédito, adicione um crédito e ligue-o a um ou vários levantamentos de Transações.\nAssim o cash saído da conta alimenta o balanço da atividade.",
+          "alt": "Separador Crédito com um levantamento ligado"
+        }
+      }
+    },
+    "backtest-market-replay": {
+      "title": "Diário de backtest e Market Replay",
+      "summary": "Registar observações de backtest e reproduzir velas históricas. É necessária uma subscrição de broker (ex. TopStepX) para dados de mercado.",
+      "steps": {
+        "flow": {
+          "title": "Duas ferramentas em Estratégias",
+          "body": "O diário de backtest e o Market Replay funcionam em conjunto: o diário guarda observações por campanha; o replay reproduz a sessão para trades manuais.\nPré-requisito: ligação API do broker (Definições → Trading) e subscrição ativa para descarregar velas históricas.",
+          "alt": "Menu Estratégias com Diário de backtest e Market Replay"
+        },
+        "backtest-journal": {
+          "title": "Abrir o diário de backtest",
+          "body": "No Diário de backtest, escolha uma estratégia de posição e uma campanha (instrumento + período).\nAdicione observações (setup, entrada, saída).",
+          "alt": "Página Diário de backtest com estratégia e campanha"
+        },
+        "historical-data": {
+          "title": "Descarregar dados históricos",
+          "body": "Antes do replay, abra Dados históricos para descarregar velas (TopStepX).\nSem subscrição de broker e API configurada, não há velas para o Market Replay.",
+          "alt": "Página Dados históricos para descarregar velas"
+        },
+        "market-replay": {
+          "title": "Reproduzir uma sessão",
+          "body": "Abra Market Replay: escolha instrumento e sessão com dados, reproduza, coloque entrada / stop / alvo e Enviar para o diário.\nA observação entra na campanha ligada.",
+          "alt": "Página Market Replay com controlos e painel de posição"
+        }
+      }
+    },
+    "position-strategies": {
+      "title": "Gestão de estratégia",
+      "summary": "Definir regras de tomada de posição (secções, checklist) e seguir o histórico de versões.",
+      "steps": {
+        "flow": {
+          "title": "Onde encontrar",
+          "body": "Gestão de estratégia (menu Estratégias) é o playbook: secções, regras, estado ativo/rascunho/arquivado.\nTambém alimenta o diário de backtest e os filtros do painel.",
+          "alt": "Menu Estratégias com Gestão de estratégia"
+        },
+        "list": {
+          "title": "Percorrer as estratégias",
+          "body": "A página lista estratégias com filtros (ativas, rascunhos, arquivadas) e pesquisa.\nUse Nova estratégia ou Ver / Editar / Versões num cartão.",
+          "alt": "Lista de estratégias de posição"
+        },
+        "edit-sections": {
+          "title": "Escrever secções e regras",
+          "body": "No formulário, adicione secções (Setup, Entrada, Invalidação) e regras checklist.\nReordene e depois Guarde.",
+          "alt": "Formulário de edição com secções e regras"
+        },
+        "versions": {
+          "title": "Histórico de versões",
+          "body": "Gravações importantes podem criar uma versão. Abra Versões para comparar ou restaurar.\nAssim a evolução do playbook fica registada.",
+          "alt": "Modal Histórico de versões"
+        }
+      }
+    },
+    "trading-accounts": {
+      "title": "Contas de trading",
+      "summary": "Create, organize and switch between accounts to separate your trading environments.",
+      "steps": {
+        "list": {
+          "title": "Browse your accounts",
+          "body": "Trading accounts lists your environments (futures, prop firm, demo…).\nEach account has its currency, capital and status.",
+          "alt": "Trading accounts list"
+        },
+        "create": {
+          "title": "Add an account",
+          "body": "Use New Account to set broker, currency and starting capital.\nTrades, cash movements and API sync attach to that account.",
+          "alt": "New Account button on Accounts page"
+        },
+        "switch": {
+          "title": "Switch active account",
+          "body": "The header account selector filters dashboard, trades and calendar.\nPick the right account before reviewing a period.",
+          "alt": "Account selector in the header"
+        }
+      }
+    },
+    "display-settings": {
+      "title": "Preferências de exibição",
+      "summary": "Language, timezone, date/number formats and font so the journal matches your conventions.",
+      "steps": {
+        "open-display": {
+          "title": "Open Display",
+          "body": "In Settings, open the Display tab.\nThese choices apply across the UI (tables, charts, exports).",
+          "alt": "Settings Display tab"
+        },
+        "locale-timezone": {
+          "title": "Language and timezone",
+          "body": "Choose UI language and the timezone for your user-facing dates.\nMarket timezones still apply when the domain requires them.",
+          "alt": "Language and timezone controls"
+        },
+        "formats": {
+          "title": "Formats and font",
+          "body": "Adjust number and date formats, then font if needed.\nSave to apply immediately.",
+          "alt": "Number/date formats and font"
+        }
+      }
+    },
+    "trades": {
+      "title": "Meus trades",
+      "summary": "Browse, filter and open trade details for review and tagging.",
+      "steps": {
+        "list": {
+          "title": "Trades list",
+          "body": "My Trades shows the history for the selected account.\nScan contracts, side, PnL and dates.",
+          "alt": "Trades table with seeded rows"
+        },
+        "filters": {
+          "title": "Filter the view",
+          "body": "Narrow by dates, contract, profitability or position strategy.\nFilters help isolate a series before analysis.",
+          "alt": "My Trades page filters"
+        },
+        "detail": {
+          "title": "Open a trade",
+          "body": "Click a row for details (fills, notes, links).\nUse it to correct or enrich an entry.",
+          "alt": "Selected trade detail or row"
+        }
+      }
+    },
+    "dashboard-filters": {
+      "title": "Painel em detalhe",
+      "summary": "Period, account and KPIs so you can read performance without getting lost.",
+      "steps": {
+        "overview": {
+          "title": "Overview",
+          "body": "The dashboard groups PnL, activity and period widgets.\nAlways check account and period first.",
+          "alt": "Dashboard with KPIs"
+        },
+        "period-account": {
+          "title": "Period and account",
+          "body": "Use the filter bar to change period and account.\nThe view recomputes for that scope.",
+          "alt": "Dashboard period and account filters"
+        },
+        "widgets": {
+          "title": "Read the indicators",
+          "body": "Total trades, win rate, curves: every widget follows active filters.\nCross-check with calendar or My Trades to dig deeper.",
+          "alt": "Dashboard performance widgets"
+        }
+      }
+    },
+    "daily-journal": {
+      "title": "Diário diário",
+      "summary": "Write and find session notes, separate from questionnaires.",
+      "steps": {
+        "open": {
+          "title": "Open the journal",
+          "body": "Journal groups entries by month.\nCreate a note to capture today’s session.",
+          "alt": "Daily journal page"
+        },
+        "filters": {
+          "title": "Find an entry",
+          "body": "Filter by account, dates or text search.\nUseful for reviewing a streak or preparing a weekly recap.",
+          "alt": "Journal filters and search"
+        },
+        "entry": {
+          "title": "Write or edit",
+          "body": "Open an entry to write in markdown, add context and save.\nCome back later to refine with a cool head.",
+          "alt": "Journal entry editor"
         }
       }
     }

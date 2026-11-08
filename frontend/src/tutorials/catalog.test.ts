@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   P0_SLUG,
+  TUTORIALS,
   TUTORIAL_BY_SLUG,
+  TUTORIAL_SECTION_ORDER,
   getTutorialStatus,
   isP0Incomplete,
   tutorialImageCandidates,
@@ -14,12 +16,53 @@ describe('tutorials catalog', () => {
     const p0 = TUTORIAL_BY_SLUG[P0_SLUG];
     expect(p0).toBeDefined();
     expect(p0.steps).toHaveLength(4);
+    expect(p0.section).toBe('getting-started');
   });
 
-  it('marks secondary tutorials as ready once captures exist', () => {
-    expect(TUTORIAL_BY_SLUG['import-trades']?.stub).toBeFalsy();
-    expect(TUTORIAL_BY_SLUG.calendar?.stub).toBeFalsy();
-    expect(TUTORIAL_BY_SLUG.calendar?.steps).toHaveLength(2);
+  it('groups tutorials into thematic sections', () => {
+    expect(TUTORIAL_SECTION_ORDER).toEqual([
+      'getting-started',
+      'workspace',
+      'trades-pnl',
+      'journal',
+      'strategies',
+    ]);
+    for (const tut of TUTORIALS) {
+      expect(TUTORIAL_SECTION_ORDER).toContain(tut.section);
+      expect(tut.stub).toBeFalsy();
+      expect(tut.steps.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('exposes high-priority and existing go-further tutorials', () => {
+    const expected = [
+      'trading-accounts',
+      'display-settings',
+      'trades',
+      'dashboard-filters',
+      'daily-journal',
+      'import-trades',
+      'calendar',
+      'api-connections',
+      'journal-questions',
+      'transactions-profitability',
+      'position-strategies',
+      'backtest-market-replay',
+    ];
+    for (const slug of expected) {
+      expect(TUTORIAL_BY_SLUG[slug]?.stub).toBeFalsy();
+      expect(TUTORIAL_BY_SLUG[slug]?.steps.length).toBeGreaterThan(0);
+    }
+    expect(TUTORIAL_BY_SLUG['trading-accounts']?.section).toBe('workspace');
+    expect(TUTORIAL_BY_SLUG['display-settings']?.section).toBe('workspace');
+    expect(TUTORIAL_BY_SLUG['trades']?.section).toBe('trades-pnl');
+    expect(TUTORIAL_BY_SLUG['dashboard-filters']?.section).toBe('trades-pnl');
+    expect(TUTORIAL_BY_SLUG['daily-journal']?.section).toBe('journal');
+    expect(TUTORIAL_BY_SLUG['position-strategies']?.section).toBe('strategies');
+    const strategies = TUTORIALS.filter((t) => t.section === 'strategies').map((t) => t.slug);
+    expect(strategies.indexOf('position-strategies')).toBeLessThan(
+      strategies.indexOf('backtest-market-replay')
+    );
   });
 
   it('tracks progress helpers', () => {

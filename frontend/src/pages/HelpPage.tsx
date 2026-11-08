@@ -7,6 +7,7 @@ import TutorialViewer from '../components/help/TutorialViewer';
 import {
   TUTORIALS,
   TUTORIAL_BY_SLUG,
+  TUTORIAL_SECTION_ORDER,
   TutorialProgressEntry,
   TutorialsProgress,
   getTutorialStatus,
@@ -76,37 +77,39 @@ const HelpPage: React.FC<HelpPageProps> = ({ initialSlug = null, onNavigateHash 
     });
   }, [filter, t]);
 
-  const starters = filtered.filter((x) => x.section === 'getting-started');
-  const further = filtered.filter((x) => x.section === 'go-further');
+  const sections = TUTORIAL_SECTION_ORDER.map((sectionId) => ({
+    id: sectionId,
+    tutorials: filtered.filter((x) => x.section === sectionId),
+  })).filter((section) => section.tutorials.length > 0);
   const activeTutorial: TutorialDef | null = activeSlug ? TUTORIAL_BY_SLUG[activeSlug] || null : null;
 
   const renderCard = (tut: TutorialDef) => {
     const status = getTutorialStatus(progress, tut.slug);
     return (
-      <li key={tut.slug}>
+      <li key={tut.slug} className="min-w-0 h-full">
         <button
           type="button"
           onClick={() => openTutorial(tut.slug)}
-          className="w-full text-left rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition-colors hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-blue-500"
+          className="flex h-full w-full flex-col text-left rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition-colors hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-blue-500"
           data-testid={`help-card-${tut.slug}`}
         >
-          <div className="flex flex-wrap items-start justify-between gap-2">
-            <div>
-              <h3 className="font-semibold text-gray-900 dark:text-gray-100">
-                {t(`help:tutorials.${tut.slug}.title`)}
-              </h3>
-              <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                {t(`help:tutorials.${tut.slug}.summary`)}
-              </p>
-              <p className="mt-2 text-xs text-gray-500 dark:text-gray-500">
-                {t('help:hub.estimatedMinutes', { count: tut.estimatedMinutes })}
-                {tut.stub ? ` · ${t('help:hub.stub')}` : ''}
-              </p>
-            </div>
-            <span className={`text-xs font-medium px-2 py-1 rounded-full ${statusBadgeClass(status)}`}>
+          <div className="flex items-start justify-between gap-3">
+            <h3 className="min-w-0 flex-1 font-semibold text-gray-900 dark:text-gray-100">
+              {t(`help:tutorials.${tut.slug}.title`)}
+            </h3>
+            <span
+              className={`shrink-0 text-xs font-medium px-2 py-1 rounded-full ${statusBadgeClass(status)}`}
+            >
               {t(`help:status.${status}`)}
             </span>
           </div>
+          <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+            {t(`help:tutorials.${tut.slug}.summary`)}
+          </p>
+          <p className="mt-2 text-xs text-gray-500 dark:text-gray-500">
+            {t('help:hub.estimatedMinutes', { count: tut.estimatedMinutes })}
+            {tut.stub ? ` · ${t('help:hub.stub')}` : ''}
+          </p>
         </button>
       </li>
     );
@@ -160,22 +163,29 @@ const HelpPage: React.FC<HelpPageProps> = ({ initialSlug = null, onNavigateHash 
               </div>
             )}
 
-            <section className="mb-8" aria-labelledby="help-section-start">
-              <h2 id="help-section-start" className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">
-                {t('help:hub.sectionStart')}
-              </h2>
-              <ul className="space-y-3">{starters.map(renderCard)}</ul>
-            </section>
-
-            <section aria-labelledby="help-section-further">
-              <h2 id="help-section-further" className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">
-                {t('help:hub.sectionFurther')}
-              </h2>
-              <ul className="space-y-3">{further.map(renderCard)}</ul>
-              {further.length === 0 && filtered.length === 0 && (
-                <p className="text-sm text-gray-500">{t('help:hub.noResults')}</p>
-              )}
-            </section>
+            {sections.map((section) => (
+              <section
+                key={section.id}
+                className="mb-8"
+                aria-labelledby={`help-section-${section.id}`}
+                data-testid={`help-section-${section.id}`}
+              >
+                <h2
+                  id={`help-section-${section.id}`}
+                  className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3"
+                >
+                  {t(`help:hub.sections.${section.id}`, {
+                    defaultValue: section.id,
+                  })}
+                </h2>
+                <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
+                  {section.tutorials.map(renderCard)}
+                </ul>
+              </section>
+            ))}
+            {sections.length === 0 && (
+              <p className="text-sm text-gray-500">{t('help:hub.noResults')}</p>
+            )}
           </>
         )}
       </div>

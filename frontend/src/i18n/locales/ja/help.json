@@ -3,7 +3,7 @@
     "title": "ヘルプとガイド",
     "subtitle": "ジャーナルを使い始めるためのステップバイステップ。いつでも参照できます。",
     "sectionStart": "はじめに",
-    "sectionFurther": "さらに進む",
+    "sectionFurther": "トレードとパフォーマンス",
     "estimatedMinutes": "{{count}} 分",
     "stub": "プレビュー",
     "search": "ガイドを検索",
@@ -11,7 +11,14 @@
     "backToLibrary": "ライブラリに戻る",
     "menuLabel": "ヘルプ",
     "settingsLink": "ヘルプとガイド",
-    "settingsLinkHint": "チュートリアルライブラリを開く"
+    "settingsLinkHint": "チュートリアルライブラリを開く",
+    "sections": {
+      "getting-started": "はじめに",
+      "workspace": "アカウントと設定",
+      "trades-pnl": "トレードとパフォーマンス",
+      "journal": "ジャーナルと振り返り",
+      "strategies": "戦略とバックテスト"
+    }
   },
   "status": {
     "not_started": "未開始",
@@ -69,11 +76,11 @@
     },
     "import-trades": {
       "title": "トレードを取り込む",
-      "summary": "CSV、列、確定前の確認。",
+      "summary": "CSVからトレードを一括読み込みし、手入力を避ける。確定前の列と確認。",
       "steps": {
         "open-import": {
           "title": "取込を開く",
-          "body": "トレードページから「取込」を開始します。対象口座を選び、CSV ファイルを指定します。",
+          "body": "CSVからトレード履歴を素早く取り込み、1件ずつ手入力しないようにします。\nトレードページから「取込」を開始します。対象口座を選び、CSV ファイルを指定します。",
           "alt": "トレードページの取込ボタン"
         },
         "format": {
@@ -85,17 +92,252 @@
     },
     "calendar": {
       "title": "PnLカレンダー",
-      "summary": "日ごとの結果の月表示。",
+      "summary": "日ごとのPnLを見て勝ち負けの連続を把握する。",
       "steps": {
         "overview": {
           "title": "概要",
-          "body": "カレンダーは PnL に応じて各日を色分けします。月を切り替えて連続を把握します。",
+          "body": "各日の結果を一目で確認し、月の傾向を見つけるための機能です。\nカレンダーは PnL に応じて各日を色分けします。月を切り替えて連続を把握します。",
           "alt": "月次 PnL カレンダー"
         },
         "day-detail": {
           "title": "日の詳細",
           "body": "日をクリックすると関連トレードを確認し、ジャーナルへ進めます。",
           "alt": "カレンダーの日詳細"
+        }
+      }
+    },
+    "api-connections": {
+      "title": "API接続",
+      "summary": "ブローカーを接続し、都度インポートせずにトレードを自動同期する。",
+      "steps": {
+        "open-settings": {
+          "title": "API接続を開く",
+          "body": "ブローカー（例: TopStepX）を接続し、同期でトレードを自動取得します。\n設定 → Trading を開き、API接続ブロックまでスクロールします。\n現在利用できるのは TopStepX のみです。今後ほかの接続が追加される可能性があります。",
+          "alt": "設定の Trading タブにある API接続ブロックと TopStepX カード"
+        },
+        "credentials": {
+          "title": "認証情報を入力",
+          "body": "ブローカーのユーザー名と API キーを入力します（例: TopStepX はプラットフォームの 設定 → API）。\nカードの API ドキュメントリンクから提供元のヘルプを開けます。キーは共有しないでください。",
+          "alt": "APIキー編集モードの TopStepX カード"
+        },
+        "test-connection": {
+          "title": "接続をテスト",
+          "body": "保存してから接続をテストします。結果に応じてバッジが「設定済み」または「接続済み」になります。\n有効な接続がなければトレード同期は利用できません。",
+          "alt": "接続済みバッジと保存 / テストボタンがある TopStepX カード"
+        },
+        "sync-account": {
+          "title": "口座を同期",
+          "body": "Trades ページ（またはカレンダー）で対応する口座（例: TopStep）を選び、連携が完了したら同期を使います。\nAPI同期は CSV インポートと併用でき、既存トレードを上書きしません。",
+          "alt": "TopStep 口座と同期ボタンがある Trades ページ"
+        }
+      }
+    },
+    "journal-questions": {
+      "title": "ジャーナルの質問",
+      "summary": "日次・ポジション用の再利用可能な質問でトレーディング振り返りを整える。",
+      "steps": {
+        "flow": {
+          "title": "流れを理解する",
+          "body": "マインドセットや計画など固定の質問で各セッションを残し、散らばった自由メモを減らします。\n3層がつながります。\n1) テンプレート = 再利用ライブラリ。\n2) 日次質問票とポジション質問票 = すぐ使えるコピー。\n3) 回答 = 質問ページ（日次）とトレードごと。\n設定 → アンケートで3つのタブを確認します。",
+          "alt": "設定の質問画面（テンプレート／日次／ポジションのタブ）"
+        },
+        "templates": {
+          "title": "テンプレートを作る",
+          "body": "質問テンプレートで再利用できる項目を作ります（はい/いいえ、テキスト、尺度など）。\n質問票へ追加すると独立したコピーになります。",
+          "alt": "設定内の質問テンプレート一覧"
+        },
+        "questionnaires": {
+          "title": "質問票を整える",
+          "body": "日次質問票: 取引日×口座ごとに1回。\nポジション質問票: トレードごとに1回。\n各タブでテンプレートから質問を追加します。",
+          "alt": "設定済みの質問がある日次質問票"
+        },
+        "answer-daily": {
+          "title": "毎日回答する",
+          "body": "日次の質問ページを開き、口座と日付を選んで回答します。\nポジション回答は日次フォームの下（またはジャーナル／トレード詳細）に表示されます。",
+          "alt": "回答フォームがある日次質問ページ"
+        }
+      }
+    },
+    "transactions-profitability": {
+      "title": "取引と収益性",
+      "summary": "口座の現金（入出金）と活動の実質収益性（費用・クレジット・税金）を追う。",
+      "steps": {
+        "flow": {
+          "title": "管理メニューの2ページ",
+          "body": "取引口座のキャッシュ（取引）と事業台帳（活動収益性: 費用・クレジット・税）を分けて管理します。\n管理メニューには補完し合う2項目があります。\n1) 取引 = 取引口座への入出金。\n2) 活動収益性 = 事業台帳（費用、出金由来のクレジット、税・社会保険料）。\n口座のキャッシュと活動の収益性を混同しないでください。",
+          "alt": "取引と活動収益性を示す管理メニュー"
+        },
+        "transactions": {
+          "title": "入出金を管理する",
+          "body": "取引を開き、口座を選んでから新規入金または新規出金を使います。\n履歴に動きが並び、口座残高に反映されます。",
+          "alt": "履歴と入出金ボタンがある取引ページ"
+        },
+        "profitability": {
+          "title": "活動収益性を見る",
+          "body": "活動収益性を開き、通貨別残高でクレジット・費用・残高を確認します。\n借方 / 貸方 / 税・社会保険タブで詳細を入力します。",
+          "alt": "通貨別残高がある活動収益性ページ"
+        },
+        "link-credits": {
+          "title": "出金とクレジットを紐付ける",
+          "body": "貸方タブでクレジットを追加し、取引の出金に紐付けます。\n口座から出た資金が活動台帳に入ります。",
+          "alt": "紐付いた出金がある貸方タブ"
+        }
+      }
+    },
+    "backtest-market-replay": {
+      "title": "バックテスト日記とMarket Replay",
+      "summary": "バックテスト観察を記録し、過去足を再生します。市場データにはブローカー契約（例: TopStepX）が必要です。",
+      "steps": {
+        "flow": {
+          "title": "戦略メニューの2ツール",
+          "body": "バックテスト日記とMarket Replayは対です。日記はキャンペーン別に観察を保管し、リプレイは手動トレード用にセッションを再生します。\n前提: ブローカーAPI（設定 → Trading）と、過去足ダウンロード用の有効なブローカー契約。",
+          "alt": "バックテスト日記とMarket Replayがある戦略メニュー"
+        },
+        "backtest-journal": {
+          "title": "バックテスト日記を開く",
+          "body": "バックテスト日記でポジション戦略とキャンペーン（銘柄＋期間）を選びます。\nセットアップ・エントリー・決済などの観察を追加します。",
+          "alt": "戦略とキャンペーンがあるバックテスト日記"
+        },
+        "historical-data": {
+          "title": "過去データをダウンロード",
+          "body": "リプレイ前に履歴データで足をダウンロードします（TopStepX）。\nブローカー契約とAPI設定がないとMarket Replay用の足はありません。",
+          "alt": "足をダウンロードする履歴データページ"
+        },
+        "market-replay": {
+          "title": "セッションを再生する",
+          "body": "Market Replayを開き、銘柄とデータのあるセッションを選び、再生してエントリー／ストップ／目標を置き、日記へ送信します。\n観察はリンクしたキャンペーンに入ります。",
+          "alt": "再生コントロールとポジションパネルがあるMarket Replay"
+        }
+      }
+    },
+    "position-strategies": {
+      "title": "戦略管理",
+      "summary": "ポジション取得ルール（セクション・チェックリスト）を定義し、版履歴を追います。",
+      "steps": {
+        "flow": {
+          "title": "場所",
+          "body": "戦略管理（戦略メニュー）はプレイブックです。セクション、ルール、有効/下書き/アーカイブ。\nバックテスト日記やダッシュボードのフィルタにも使います。",
+          "alt": "戦略管理がある戦略メニュー"
+        },
+        "list": {
+          "title": "戦略を一覧する",
+          "body": "ページではフィルタ（有効・下書き・アーカイブ）と検索で戦略を一覧します。\n新規戦略、またはカードの表示/編集/版を使います。",
+          "alt": "ポジション戦略の一覧"
+        },
+        "edit-sections": {
+          "title": "セクションとルールを書く",
+          "body": "フォームでセクション（Setup・Entry・Invalidationなど）とチェックリスト規則を追加します。\n並べ替えて保存します。",
+          "alt": "セクションとルールの編集フォーム"
+        },
+        "versions": {
+          "title": "版履歴",
+          "body": "重要な保存で新しい版が作れます。版を開いて比較や復元ができます。\n過去を消さずプレイブックの進化を残せます。",
+          "alt": "版履歴モーダル"
+        }
+      }
+    },
+    "trading-accounts": {
+      "title": "取引口座",
+      "summary": "Create, organize and switch between accounts to separate your trading environments.",
+      "steps": {
+        "list": {
+          "title": "Browse your accounts",
+          "body": "Trading accounts lists your environments (futures, prop firm, demo…).\nEach account has its currency, capital and status.",
+          "alt": "Trading accounts list"
+        },
+        "create": {
+          "title": "Add an account",
+          "body": "Use New Account to set broker, currency and starting capital.\nTrades, cash movements and API sync attach to that account.",
+          "alt": "New Account button on Accounts page"
+        },
+        "switch": {
+          "title": "Switch active account",
+          "body": "The header account selector filters dashboard, trades and calendar.\nPick the right account before reviewing a period.",
+          "alt": "Account selector in the header"
+        }
+      }
+    },
+    "display-settings": {
+      "title": "表示設定",
+      "summary": "Language, timezone, date/number formats and font so the journal matches your conventions.",
+      "steps": {
+        "open-display": {
+          "title": "Open Display",
+          "body": "In Settings, open the Display tab.\nThese choices apply across the UI (tables, charts, exports).",
+          "alt": "Settings Display tab"
+        },
+        "locale-timezone": {
+          "title": "Language and timezone",
+          "body": "Choose UI language and the timezone for your user-facing dates.\nMarket timezones still apply when the domain requires them.",
+          "alt": "Language and timezone controls"
+        },
+        "formats": {
+          "title": "Formats and font",
+          "body": "Adjust number and date formats, then font if needed.\nSave to apply immediately.",
+          "alt": "Number/date formats and font"
+        }
+      }
+    },
+    "trades": {
+      "title": "マイトレード",
+      "summary": "Browse, filter and open trade details for review and tagging.",
+      "steps": {
+        "list": {
+          "title": "Trades list",
+          "body": "My Trades shows the history for the selected account.\nScan contracts, side, PnL and dates.",
+          "alt": "Trades table with seeded rows"
+        },
+        "filters": {
+          "title": "Filter the view",
+          "body": "Narrow by dates, contract, profitability or position strategy.\nFilters help isolate a series before analysis.",
+          "alt": "My Trades page filters"
+        },
+        "detail": {
+          "title": "Open a trade",
+          "body": "Click a row for details (fills, notes, links).\nUse it to correct or enrich an entry.",
+          "alt": "Selected trade detail or row"
+        }
+      }
+    },
+    "dashboard-filters": {
+      "title": "ダッシュボード詳細",
+      "summary": "Period, account and KPIs so you can read performance without getting lost.",
+      "steps": {
+        "overview": {
+          "title": "Overview",
+          "body": "The dashboard groups PnL, activity and period widgets.\nAlways check account and period first.",
+          "alt": "Dashboard with KPIs"
+        },
+        "period-account": {
+          "title": "Period and account",
+          "body": "Use the filter bar to change period and account.\nThe view recomputes for that scope.",
+          "alt": "Dashboard period and account filters"
+        },
+        "widgets": {
+          "title": "Read the indicators",
+          "body": "Total trades, win rate, curves: every widget follows active filters.\nCross-check with calendar or My Trades to dig deeper.",
+          "alt": "Dashboard performance widgets"
+        }
+      }
+    },
+    "daily-journal": {
+      "title": "デイリージャーナル",
+      "summary": "Write and find session notes, separate from questionnaires.",
+      "steps": {
+        "open": {
+          "title": "Open the journal",
+          "body": "Journal groups entries by month.\nCreate a note to capture today’s session.",
+          "alt": "Daily journal page"
+        },
+        "filters": {
+          "title": "Find an entry",
+          "body": "Filter by account, dates or text search.\nUseful for reviewing a streak or preparing a weekly recap.",
+          "alt": "Journal filters and search"
+        },
+        "entry": {
+          "title": "Write or edit",
+          "body": "Open an entry to write in markdown, add context and save.\nCome back later to refine with a cool head.",
+          "alt": "Journal entry editor"
         }
       }
     }

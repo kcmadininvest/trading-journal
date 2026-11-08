@@ -2,8 +2,8 @@
   "hub": {
     "title": "帮助与指南",
     "subtitle": "分步上手日记功能。随时可在帮助中打开。",
-    "sectionStart": "快速入门",
-    "sectionFurther": "进阶",
+    "sectionStart": "入门",
+    "sectionFurther": "交易与表现",
     "estimatedMinutes": "{{count}} 分钟",
     "stub": "预览",
     "search": "搜索指南",
@@ -11,7 +11,14 @@
     "backToLibrary": "返回指南库",
     "menuLabel": "帮助",
     "settingsLink": "帮助与指南",
-    "settingsLinkHint": "打开教程库"
+    "settingsLinkHint": "打开教程库",
+    "sections": {
+      "getting-started": "入门",
+      "workspace": "账户与偏好",
+      "trades-pnl": "交易与表现",
+      "journal": "日志与复盘",
+      "strategies": "策略与回测"
+    }
   },
   "status": {
     "not_started": "未开始",
@@ -69,11 +76,11 @@
     },
     "import-trades": {
       "title": "导入交易",
-      "summary": "CSV、列与确认前检查。",
+      "summary": "从 CSV 批量导入交易，避免逐笔手输。确认前检查列与校验。",
       "steps": {
         "open-import": {
           "title": "打开导入",
-          "body": "在交易页启动导入。选择目标账户，然后选择 CSV 文件。",
+          "body": "从 CSV 快速导入交易历史，而不是逐笔手工录入。\n在交易页启动导入。选择目标账户，然后选择 CSV 文件。",
           "alt": "交易页上的导入按钮"
         },
         "format": {
@@ -85,17 +92,252 @@
     },
     "calendar": {
       "title": "盈亏日历",
-      "summary": "按日结果的月视图。",
+      "summary": "按日查看 PnL，发现连续盈亏。",
       "steps": {
         "overview": {
           "title": "概览",
-          "body": "日历按盈亏为每天上色。在月份间切换以发现连续表现。",
+          "body": "一眼看到每天的结果，并发现整月趋势。\n日历按盈亏为每天上色。在月份间切换以发现连续表现。",
           "alt": "月度盈亏日历"
         },
         "day-detail": {
           "title": "单日详情",
           "body": "点击某一天可查看相关交易并进入日记。",
           "alt": "日历单日详情"
+        }
+      }
+    },
+    "api-connections": {
+      "title": "API 连接",
+      "summary": "连接券商以自动同步交易，无需每次重新导入。",
+      "steps": {
+        "open-settings": {
+          "title": "打开 API 连接",
+          "body": "连接券商（如 TopStepX），用同步自动拉取交易。\n进入设置 → Trading，然后滚动到 API 连接区块。\n目前仅支持 TopStepX；之后可能添加更多连接。",
+          "alt": "设置 Trading 选项卡中的 API 连接区块与 TopStepX 卡片"
+        },
+        "credentials": {
+          "title": "填写凭证",
+          "body": "输入券商提供的用户名和 API 密钥（例如 TopStepX：平台上的设置 → API）。\n卡片上的 API 文档链接会打开提供商帮助。切勿分享密钥。",
+          "alt": "处于 API 密钥编辑模式的 TopStepX 卡片"
+        },
+        "test-connection": {
+          "title": "测试连接",
+          "body": "保存后使用测试连接。徽章会根据结果变为已配置或已连接。\n没有有效连接时，交易同步不可用。",
+          "alt": "带有已连接徽章以及保存 / 测试按钮的 TopStepX 卡片"
+        },
+        "sync-account": {
+          "title": "同步账户",
+          "body": "在交易页（或日历）选择对应类型的账户（例如 TopStep），集成就绪后使用同步。\nAPI 同步可与 CSV 导入并存，且不会覆盖已有交易。",
+          "alt": "带有 TopStep 账户和同步按钮的交易页"
+        }
+      }
+    },
+    "journal-questions": {
+      "title": "日记问题",
+      "summary": "用可复用的日/仓位问题结构化交易复盘。",
+      "steps": {
+        "flow": {
+          "title": "理解流程",
+          "body": "用固定问题（心态、计划、交易评分…）沉淀每场交易，减少零散笔记。\n三层环环相扣：\n1) 模板 = 可复用库。\n2) 日问卷与仓位问卷 = 可用的问题副本。\n3) 作答 = 问题页（日）与每笔交易。\n打开设置 → 问卷即可看到三个选项卡。",
+          "alt": "设置中的问题页，含模板、日问卷、仓位问卷选项卡"
+        },
+        "templates": {
+          "title": "创建模板",
+          "body": "在问题模板中创建可复用题干（是/否、文本、量表等）。\n把模板加入问卷会生成独立副本。",
+          "alt": "设置中的问题模板库"
+        },
+        "questionnaires": {
+          "title": "配置问卷",
+          "body": "日问卷：每个交易日×账户一次。\n仓位问卷：每笔交易一次。\n在各选项卡从模板添加问题。",
+          "alt": "已配置问题的日问卷"
+        },
+        "answer-daily": {
+          "title": "每日作答",
+          "body": "打开日问题页：选择账户与日期后作答。\n仓位答卷显示在日表单下方（或日记/交易详情）。",
+          "alt": "带作答表单的日问题页"
+        }
+      }
+    },
+    "transactions-profitability": {
+      "title": "交易与盈利能力",
+      "summary": "跟踪账户现金（存取款）与活动真实盈利能力（费用、贷记、税费）。",
+      "steps": {
+        "flow": {
+          "title": "管理菜单中的两个页面",
+          "body": "把交易账户现金（交易）与业务台账（活动盈利能力：费用、贷记、税费）分开管理。\n管理菜单有两个互补入口：\n1) 交易 = 交易账户的存取款。\n2) 活动盈利能力 = 业务台账（费用、来自取款的贷记、税费支付）。\n请勿把账户现金与活动盈利能力混为一谈。",
+          "alt": "打开的管理菜单，含交易与活动盈利能力"
+        },
+        "transactions": {
+          "title": "管理存取款",
+          "body": "打开交易：选择账户，然后使用新建存款或新建取款。\n历史列出资金变动，账户余额会体现它们。",
+          "alt": "含历史与存取款按钮的交易页面"
+        },
+        "profitability": {
+          "title": "查看活动盈利能力",
+          "body": "打开活动盈利能力：按货币余额显示贷记、费用与余额。\n借方 / 贷方 / 税费与社保页签用于录入明细。",
+          "alt": "含按货币余额的活动盈利能力页面"
+        },
+        "link-credits": {
+          "title": "关联取款与贷记",
+          "body": "在贷方页签添加贷记，并将其关联到交易中的一笔或多笔取款。\n这样离开账户的现金会进入活动台账。",
+          "alt": "含已关联取款的贷方页签"
+        }
+      }
+    },
+    "backtest-market-replay": {
+      "title": "回测日记与 Market Replay",
+      "summary": "记录回测观察并回放历史K线。市场数据需要券商订阅（如 TopStepX）。",
+      "steps": {
+        "flow": {
+          "title": "策略菜单下的两个工具",
+          "body": "回测日记与 Market Replay 配套使用：日记按活动保存观察；回放用于手动下单练习。\n前提：券商 API（设置 → Trading）以及用于下载历史K线的有效券商订阅。",
+          "alt": "含回测日记与 Market Replay 的策略菜单"
+        },
+        "backtest-journal": {
+          "title": "打开回测日记",
+          "body": "在回测日记中选择仓位策略与活动（品种+周期）。\n添加观察（形态、入场、出场）以沉淀手动测试。",
+          "alt": "含策略与活动的回测日记页"
+        },
+        "historical-data": {
+          "title": "下载历史数据",
+          "body": "回放前打开历史数据下载K线（TopStepX）。\n没有券商订阅和已配置的 API，就没有可供 Market Replay 使用的K线。",
+          "alt": "用于下载K线的历史数据页"
+        },
+        "market-replay": {
+          "title": "回放一场交易时段",
+          "body": "打开 Market Replay：选择品种与有数据的时段，播放，放置入场/止损/目标，然后发送到日记。\n观察会进入已关联的回测活动。",
+          "alt": "含播放控件与仓位面板的 Market Replay"
+        }
+      }
+    },
+    "position-strategies": {
+      "title": "策略管理",
+      "summary": "定义仓位规则（分区、清单）并跟踪版本历史。",
+      "steps": {
+        "flow": {
+          "title": "在哪里找",
+          "body": "策略管理（策略菜单）是你的交易手册：分区、规则、启用/草稿/归档状态。\n也用于回测日记和仪表盘筛选。",
+          "alt": "含策略管理的策略菜单"
+        },
+        "list": {
+          "title": "浏览策略",
+          "body": "页面列出策略，可按启用/草稿/归档筛选并搜索。\n用新建策略，或在卡片上查看/编辑/版本。",
+          "alt": "仓位策略列表"
+        },
+        "edit-sections": {
+          "title": "编写分区与规则",
+          "body": "在表单中添加分区（如 Setup、入场、失效）和清单规则。\n可调整顺序后保存。",
+          "alt": "含分区与规则的编辑表单"
+        },
+        "versions": {
+          "title": "版本历史",
+          "body": "重要保存可生成新版本。打开版本可比较或恢复。\n保留手册演变而不覆盖过去。",
+          "alt": "版本历史弹窗"
+        }
+      }
+    },
+    "trading-accounts": {
+      "title": "交易账户",
+      "summary": "Create, organize and switch between accounts to separate your trading environments.",
+      "steps": {
+        "list": {
+          "title": "Browse your accounts",
+          "body": "Trading accounts lists your environments (futures, prop firm, demo…).\nEach account has its currency, capital and status.",
+          "alt": "Trading accounts list"
+        },
+        "create": {
+          "title": "Add an account",
+          "body": "Use New Account to set broker, currency and starting capital.\nTrades, cash movements and API sync attach to that account.",
+          "alt": "New Account button on Accounts page"
+        },
+        "switch": {
+          "title": "Switch active account",
+          "body": "The header account selector filters dashboard, trades and calendar.\nPick the right account before reviewing a period.",
+          "alt": "Account selector in the header"
+        }
+      }
+    },
+    "display-settings": {
+      "title": "显示偏好",
+      "summary": "Language, timezone, date/number formats and font so the journal matches your conventions.",
+      "steps": {
+        "open-display": {
+          "title": "Open Display",
+          "body": "In Settings, open the Display tab.\nThese choices apply across the UI (tables, charts, exports).",
+          "alt": "Settings Display tab"
+        },
+        "locale-timezone": {
+          "title": "Language and timezone",
+          "body": "Choose UI language and the timezone for your user-facing dates.\nMarket timezones still apply when the domain requires them.",
+          "alt": "Language and timezone controls"
+        },
+        "formats": {
+          "title": "Formats and font",
+          "body": "Adjust number and date formats, then font if needed.\nSave to apply immediately.",
+          "alt": "Number/date formats and font"
+        }
+      }
+    },
+    "trades": {
+      "title": "我的交易",
+      "summary": "Browse, filter and open trade details for review and tagging.",
+      "steps": {
+        "list": {
+          "title": "Trades list",
+          "body": "My Trades shows the history for the selected account.\nScan contracts, side, PnL and dates.",
+          "alt": "Trades table with seeded rows"
+        },
+        "filters": {
+          "title": "Filter the view",
+          "body": "Narrow by dates, contract, profitability or position strategy.\nFilters help isolate a series before analysis.",
+          "alt": "My Trades page filters"
+        },
+        "detail": {
+          "title": "Open a trade",
+          "body": "Click a row for details (fills, notes, links).\nUse it to correct or enrich an entry.",
+          "alt": "Selected trade detail or row"
+        }
+      }
+    },
+    "dashboard-filters": {
+      "title": "仪表盘详解",
+      "summary": "Period, account and KPIs so you can read performance without getting lost.",
+      "steps": {
+        "overview": {
+          "title": "Overview",
+          "body": "The dashboard groups PnL, activity and period widgets.\nAlways check account and period first.",
+          "alt": "Dashboard with KPIs"
+        },
+        "period-account": {
+          "title": "Period and account",
+          "body": "Use the filter bar to change period and account.\nThe view recomputes for that scope.",
+          "alt": "Dashboard period and account filters"
+        },
+        "widgets": {
+          "title": "Read the indicators",
+          "body": "Total trades, win rate, curves: every widget follows active filters.\nCross-check with calendar or My Trades to dig deeper.",
+          "alt": "Dashboard performance widgets"
+        }
+      }
+    },
+    "daily-journal": {
+      "title": "每日日志",
+      "summary": "Write and find session notes, separate from questionnaires.",
+      "steps": {
+        "open": {
+          "title": "Open the journal",
+          "body": "Journal groups entries by month.\nCreate a note to capture today’s session.",
+          "alt": "Daily journal page"
+        },
+        "filters": {
+          "title": "Find an entry",
+          "body": "Filter by account, dates or text search.\nUseful for reviewing a streak or preparing a weekly recap.",
+          "alt": "Journal filters and search"
+        },
+        "entry": {
+          "title": "Write or edit",
+          "body": "Open an entry to write in markdown, add context and save.\nCome back later to refine with a cool head.",
+          "alt": "Journal entry editor"
         }
       }
     }

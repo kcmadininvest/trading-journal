@@ -3,7 +3,21 @@
  * Les textes i18n vivent sous le namespace `help`.
  */
 
-export type TutorialSection = 'getting-started' | 'go-further';
+export type TutorialSection =
+  | 'getting-started'
+  | 'workspace'
+  | 'trades-pnl'
+  | 'journal'
+  | 'strategies';
+
+/** Ordre d’affichage des sections dans le hub Aide. */
+export const TUTORIAL_SECTION_ORDER: TutorialSection[] = [
+  'getting-started',
+  'workspace',
+  'trades-pnl',
+  'journal',
+  'strategies',
+];
 
 export type TutorialStatus = 'not_started' | 'in_progress' | 'completed' | 'skipped';
 
@@ -25,6 +39,7 @@ export interface TutorialDef {
 }
 
 export const TUTORIALS: TutorialDef[] = [
+  // —— Pour bien démarrer ——
   {
     slug: 'getting-started',
     section: 'getting-started',
@@ -36,9 +51,54 @@ export const TUTORIALS: TutorialDef[] = [
       { id: 'journal', imageStep: 4 },
     ],
   },
+
+  // —— Compte & préférences ——
+  {
+    slug: 'trading-accounts',
+    section: 'workspace',
+    estimatedMinutes: 4,
+    steps: [
+      { id: 'list', imageStep: 1 },
+      { id: 'create', imageStep: 2 },
+      { id: 'switch', imageStep: 3 },
+    ],
+  },
+  {
+    slug: 'display-settings',
+    section: 'workspace',
+    estimatedMinutes: 4,
+    steps: [
+      { id: 'open-display', imageStep: 1 },
+      { id: 'locale-timezone', imageStep: 2 },
+      { id: 'formats', imageStep: 3 },
+    ],
+  },
+  {
+    slug: 'api-connections',
+    section: 'workspace',
+    estimatedMinutes: 4,
+    steps: [
+      { id: 'open-settings', imageStep: 1 },
+      { id: 'credentials', imageStep: 2 },
+      { id: 'test-connection', imageStep: 3 },
+      { id: 'sync-account', imageStep: 4 },
+    ],
+  },
+
+  // —— Trades & performance ——
+  {
+    slug: 'trades',
+    section: 'trades-pnl',
+    estimatedMinutes: 4,
+    steps: [
+      { id: 'list', imageStep: 1 },
+      { id: 'filters', imageStep: 2 },
+      { id: 'detail', imageStep: 3 },
+    ],
+  },
   {
     slug: 'import-trades',
-    section: 'go-further',
+    section: 'trades-pnl',
     estimatedMinutes: 4,
     steps: [
       { id: 'open-import', imageStep: 1 },
@@ -46,12 +106,80 @@ export const TUTORIALS: TutorialDef[] = [
     ],
   },
   {
+    slug: 'dashboard-filters',
+    section: 'trades-pnl',
+    estimatedMinutes: 4,
+    steps: [
+      { id: 'overview', imageStep: 1 },
+      { id: 'period-account', imageStep: 2 },
+      { id: 'widgets', imageStep: 3 },
+    ],
+  },
+  {
     slug: 'calendar',
-    section: 'go-further',
+    section: 'trades-pnl',
     estimatedMinutes: 3,
     steps: [
       { id: 'overview', imageStep: 1 },
       { id: 'day-detail', imageStep: 2 },
+    ],
+  },
+  {
+    slug: 'transactions-profitability',
+    section: 'trades-pnl',
+    estimatedMinutes: 5,
+    steps: [
+      { id: 'flow', imageStep: 1 },
+      { id: 'transactions', imageStep: 2 },
+      { id: 'profitability', imageStep: 3 },
+      { id: 'link-credits', imageStep: 4 },
+    ],
+  },
+
+  // —— Journal & revue ——
+  {
+    slug: 'daily-journal',
+    section: 'journal',
+    estimatedMinutes: 4,
+    steps: [
+      { id: 'open', imageStep: 1 },
+      { id: 'filters', imageStep: 2 },
+      { id: 'entry', imageStep: 3 },
+    ],
+  },
+  {
+    slug: 'journal-questions',
+    section: 'journal',
+    estimatedMinutes: 5,
+    steps: [
+      { id: 'flow', imageStep: 1 },
+      { id: 'templates', imageStep: 2 },
+      { id: 'questionnaires', imageStep: 3 },
+      { id: 'answer-daily', imageStep: 4 },
+    ],
+  },
+
+  // —— Stratégies & backtest ——
+  {
+    slug: 'position-strategies',
+    section: 'strategies',
+    estimatedMinutes: 5,
+    steps: [
+      { id: 'flow', imageStep: 1 },
+      { id: 'list', imageStep: 2 },
+      { id: 'edit-sections', imageStep: 3 },
+      { id: 'versions', imageStep: 4 },
+    ],
+  },
+  {
+    slug: 'backtest-market-replay',
+    section: 'strategies',
+    estimatedMinutes: 6,
+    steps: [
+      { id: 'flow', imageStep: 1 },
+      { id: 'backtest-journal', imageStep: 2 },
+      { id: 'historical-data', imageStep: 3 },
+      { id: 'market-replay', imageStep: 4 },
     ],
   },
 ];

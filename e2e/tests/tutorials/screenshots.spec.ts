@@ -24,6 +24,11 @@ import { expect, test, type Page } from '@playwright/test';
 const DEMO_EMAIL = process.env.TUTORIAL_DEMO_EMAIL || 'tutorial-demo@example.invalid';
 const DEMO_PASSWORD =
   process.env.TUTORIAL_DEMO_PASSWORD || 'TutorialDemo!234';
+/** Filtre optionnel : `TUTORIAL_ONLY_SLUG=trades` ou `a,b,c` pour limiter les captures. */
+const ONLY_SLUGS = (process.env.TUTORIAL_ONLY_SLUG || '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
 
 const repoRoot = path.resolve(__dirname, '../../..');
 const outRoot = path.join(repoRoot, 'frontend/public/tutorials');
@@ -98,6 +103,290 @@ const STEPS: Array<{
     },
   },
   {
+    slug: 'trading-accounts',
+    step: 1,
+    hash: '#accounts',
+    ready: async (page, locale) => {
+      await expect(
+        page.getByRole('button', {
+          name: locale === 'fr' ? /Nouveau compte/i : /New Account/i,
+        }).first()
+      ).toBeVisible({ timeout: 60_000 });
+      await expect(appMain(page).getByText(/Demo Futures|Demo TopStep|Futures Account/i).first()).toBeAttached({
+        timeout: 30_000,
+      });
+    },
+  },
+  {
+    slug: 'trading-accounts',
+    step: 2,
+    hash: '#accounts',
+    ready: async (page, locale) => {
+      const createBtn = page.getByRole('button', {
+        name: locale === 'fr' ? /Nouveau compte/i : /New Account/i,
+      }).first();
+      await expect(createBtn).toBeVisible({ timeout: 60_000 });
+      await createBtn.click();
+      await expect(
+        page
+          .getByText(
+            locale === 'fr'
+              ? /Nom du compte|Type de compte|Capital|Devise/i
+              : /Account name|Account type|Capital|Currency/i
+          )
+          .first()
+      ).toBeVisible({ timeout: 15_000 });
+    },
+  },
+  {
+    slug: 'trading-accounts',
+    step: 3,
+    hash: '#dashboard',
+    ready: async (page, locale) => {
+      // Sélecteur de compte dans les filtres dashboard (pas le banner).
+      const region =
+        locale === 'fr' ? /Filtres du tableau de bord/i : /Dashboard filters/i;
+      await expect(page.getByRole('region', { name: region })).toBeVisible({
+        timeout: 60_000,
+      });
+      const trigger = page
+        .getByRole('region', { name: region })
+        .getByRole('button')
+        .filter({ hasText: /Demo TopStep|Demo Futures|Tous les comptes|All accounts/i })
+        .first();
+      await expect(trigger).toBeVisible({ timeout: 30_000 });
+      await trigger.click();
+      await page.waitForTimeout(400);
+      await expect(page.getByText(/Demo TopStep Account|Demo Futures Account/i).nth(1)).toBeAttached({
+        timeout: 15_000,
+      });
+    },
+  },
+  {
+    slug: 'display-settings',
+    step: 1,
+    hash: '#settings',
+    ready: async (page, locale) => {
+      await openDisplaySettings(page, locale);
+      await expect(
+        appMain(page).getByText(
+          locale === 'fr' ? /Préférences d['’]affichage/i : /Display preferences/i
+        ).first()
+      ).toBeVisible({ timeout: 30_000 });
+    },
+  },
+  {
+    slug: 'display-settings',
+    step: 2,
+    hash: '#settings',
+    ready: async (page, locale) => {
+      await openDisplaySettings(page, locale);
+      await expect(
+        appMain(page).getByText(locale === 'fr' ? /^Langue$/i : /^Language$/i).first()
+      ).toBeVisible({ timeout: 30_000 });
+      await expect(
+        appMain(page).getByText(locale === 'fr' ? /Fuseau horaire/i : /Timezone|Time zone/i).first()
+      ).toBeAttached({ timeout: 15_000 });
+    },
+  },
+  {
+    slug: 'display-settings',
+    step: 3,
+    hash: '#settings',
+    ready: async (page, locale) => {
+      await openDisplaySettings(page, locale);
+      await expect(
+        appMain(page).getByText(locale === 'fr' ? /^Thème$/i : /^Theme$/i).first()
+      ).toBeVisible({ timeout: 30_000 });
+      await expect(
+        appMain(page)
+          .getByText(locale === 'fr' ? /^Police$/i : /Font Family|Font/i)
+          .first()
+      ).toBeAttached();
+      const fontSize = appMain(page)
+        .getByText(locale === 'fr' ? /Taille de (la )?police|Taille/i : /Font Size/i)
+        .first();
+      if (await fontSize.isVisible().catch(() => false)) {
+        await fontSize.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+      }
+    },
+  },
+  {
+    slug: 'trades',
+    step: 1,
+    hash: '#trades',
+    ready: async (page) => {
+      await expect(appMain(page).getByText(/NQH6|ESH6/i).first()).toBeAttached({
+        timeout: 60_000,
+      });
+    },
+  },
+  {
+    slug: 'trades',
+    step: 2,
+    hash: '#trades',
+    ready: async (page, locale) => {
+      await expect(appMain(page).getByText(/NQH6|ESH6/i).first()).toBeAttached({
+        timeout: 60_000,
+      });
+      await expect(
+        appMain(page)
+          .getByText(
+            locale === 'fr'
+              ? /Instrument|Date de début|PnL|Stratégie/i
+              : /Instrument|Start date|PnL|Strategy/i
+          )
+          .first()
+      ).toBeAttached({ timeout: 30_000 });
+    },
+  },
+  {
+    slug: 'trades',
+    step: 3,
+    hash: '#trades',
+    ready: async (page, locale) => {
+      // Doublons mobile/desktop : cibler une pastille instrument visible.
+      const instrument = appMain(page)
+        .getByText(/NQH6|ESH6/i)
+        .locator('visible=true')
+        .first();
+      await expect(instrument).toBeVisible({ timeout: 60_000 });
+      await instrument.click();
+      await page.waitForTimeout(500);
+      await expect(
+        page
+          .getByText(
+            locale === 'fr'
+              ? /Détail|Notes|Exécutions|Commission|Modifier|Supprimer|NQH6|ESH6/i
+              : /Detail|Notes|Fills|Commission|Edit|Delete|NQH6|ESH6/i
+          )
+          .first()
+      ).toBeAttached({ timeout: 15_000 });
+    },
+  },
+  {
+    slug: 'dashboard-filters',
+    step: 1,
+    hash: '#dashboard',
+    ready: async (page, locale) => {
+      const region =
+        locale === 'fr' ? /Filtres du tableau de bord/i : /Dashboard filters/i;
+      await expect(page.getByRole('region', { name: region })).toBeVisible({
+        timeout: 60_000,
+      });
+      await expect(page.getByText(/Total Trades|TOTAL TRADES|Total trades/i).first()).toBeVisible({
+        timeout: 60_000,
+      });
+    },
+  },
+  {
+    slug: 'dashboard-filters',
+    step: 2,
+    hash: '#dashboard',
+    ready: async (page, locale) => {
+      const region =
+        locale === 'fr' ? /Filtres du tableau de bord/i : /Dashboard filters/i;
+      await expect(page.getByRole('region', { name: region })).toBeVisible({
+        timeout: 60_000,
+      });
+      await expect(
+        page
+          .getByText(locale === 'fr' ? /Période|Compte|Ce mois|7 jours/i : /Period|Account|This month|7 days/i)
+          .first()
+      ).toBeAttached({ timeout: 30_000 });
+    },
+  },
+  {
+    slug: 'dashboard-filters',
+    step: 3,
+    hash: '#dashboard',
+    ready: async (page) => {
+      await expect(page.getByText(/Total Trades|TOTAL TRADES|Total trades/i).first()).toBeVisible({
+        timeout: 60_000,
+      });
+      await expect(
+        page.getByText(/Win|PnL|Profit|Expectancy|Profit Factor|Facteur/i).first()
+      ).toBeAttached({ timeout: 30_000 });
+    },
+  },
+  {
+    slug: 'daily-journal',
+    step: 1,
+    hash: '#daily-journal',
+    ready: async (page, locale) => {
+      const create = locale === 'fr' ? /Cr[eé]er/i : /Create/i;
+      await expect(page.getByRole('button', { name: create }).first()).toBeVisible({
+        timeout: 60_000,
+      });
+      await expect(
+        page.getByText(/Nouvelle entr|New entr|Entrees|Entries|Mois|Months/i).first()
+      ).toBeVisible({ timeout: 60_000 });
+    },
+  },
+  {
+    slug: 'daily-journal',
+    step: 2,
+    hash: '#daily-journal',
+    ready: async (page, locale) => {
+      await expect(
+        page
+          .getByText(
+            locale === 'fr'
+              ? /Rechercher|Date debut|Date de début|Compte de trading/i
+              : /Search|Start date|Trading account/i
+          )
+          .first()
+      ).toBeVisible({ timeout: 60_000 });
+    },
+  },
+  {
+    slug: 'daily-journal',
+    step: 3,
+    hash: '#daily-journal',
+    ready: async (page, locale) => {
+      // Zone « Nouvelle entrée » : date + Créer (DateInput custom, pas type=date).
+      await expect(
+        appMain(page)
+          .getByText(locale === 'fr' ? /Nouvelle entr/i : /New entr/i)
+          .locator('visible=true')
+          .first()
+      ).toBeVisible({ timeout: 60_000 });
+      const create = appMain(page)
+        .getByRole('button', { name: locale === 'fr' ? /Cr[eé]er/i : /Create/i })
+        .locator('visible=true')
+        .first();
+      await expect(create).toBeVisible({ timeout: 15_000 });
+      // Remplir via calendrier du DateInput adjacent
+      const dateField = create.locator('xpath=preceding-sibling::*[1]//input').first();
+      if (await dateField.isVisible().catch(() => false)) {
+        await dateField.click();
+        await page.waitForTimeout(300);
+        // Cliquer un jour du calendrier popup s’il est ouvert
+        const dayBtn = page.locator('button').filter({ hasText: /^15$/ }).first();
+        if (await dayBtn.isVisible().catch(() => false)) {
+          await dayBtn.click();
+          await page.waitForTimeout(200);
+        } else {
+          await dateField.fill(locale === 'fr' ? '07/11/2026' : '11/07/2026');
+          await dateField.press('Enter');
+        }
+      }
+      if (await create.isEnabled().catch(() => false)) {
+        await create.click();
+        await page.waitForTimeout(600);
+      }
+      await expect(
+        page
+          .getByText(
+            locale === 'fr'
+              ? /Enregistrer|Edition du journal|Édition du journal|Fermer|Nouvelle entr/i
+              : /Save|Editing|Close|New entr/i
+          )
+          .first()
+      ).toBeAttached({ timeout: 20_000 });
+    },
+  },
+  {
     slug: 'import-trades',
     step: 1,
     hash: '#trades',
@@ -161,6 +450,396 @@ const STEPS: Array<{
       await expect(page.getByText(/NQH6|ESH6/i).first()).toBeVisible({ timeout: 30_000 });
     },
   },
+  {
+    slug: 'api-connections',
+    step: 1,
+    hash: '#settings',
+    ready: async (page, locale) => {
+      await closeImportModal(page);
+      await closeDayTradesModal(page);
+      await openTradingApiSection(page, locale);
+      await setApiKeyEditMode(page, locale, false);
+      await expect(page.getByText(/TopStepX/i).first()).toBeVisible({ timeout: 30_000 });
+      await expect(
+        page.getByText(locale === 'fr' ? /Connecté|Configuré/i : /Connected|Configured/i).first()
+      ).toBeVisible({ timeout: 15_000 });
+    },
+  },
+  {
+    slug: 'api-connections',
+    step: 2,
+    hash: '#settings',
+    ready: async (page, locale) => {
+      await openTradingApiSection(page, locale);
+      await setApiKeyEditMode(page, locale, true);
+      await expect(
+        page.getByPlaceholder(locale === 'fr' ? /Collez votre clé API/i : /Paste your API key/i)
+      ).toBeVisible({ timeout: 15_000 });
+    },
+  },
+  {
+    slug: 'api-connections',
+    step: 3,
+    hash: '#settings',
+    ready: async (page, locale) => {
+      await openTradingApiSection(page, locale);
+      await setApiKeyEditMode(page, locale, false);
+      await expect(
+        page.getByRole('button', {
+          name: locale === 'fr' ? /Tester la connexion/i : /Test connection/i,
+        })
+      ).toBeVisible({ timeout: 15_000 });
+      await expect(
+        page.getByText(locale === 'fr' ? /^Connecté$/i : /^Connected$/i).first()
+      ).toBeVisible({ timeout: 15_000 });
+    },
+  },
+  {
+    slug: 'api-connections',
+    step: 4,
+    // Sync desktop : barre d’actions Trades (compte TopStep = défaut seed).
+    hash: '#trades',
+    ready: async (_page, _locale) => {
+      await closeImportModal(_page);
+      await selectDemoTopStepAccount(_page);
+      await expect(
+        _page.getByRole('button', { name: /Synchroniser|\bSync(?:hronize|ing)?\b/i }).first()
+      ).toBeVisible({ timeout: 60_000 });
+      await expect(appMain(_page).getByText(/Demo TopStep Account/i).first()).toBeVisible({
+        timeout: 15_000,
+      });
+    },
+  },
+  {
+    slug: 'journal-questions',
+    step: 1,
+    hash: '#settings',
+    ready: async (page, locale) => {
+      await openQuestionsSettings(page, locale, 'templates');
+      // Vue d’ensemble de l’enchaînement : les 3 onglets visibles
+      await expect(
+        appMain(page).getByRole('button', {
+          name: locale === 'fr' ? /Modèles de questions/i : /Question templates/i,
+        })
+      ).toBeVisible({ timeout: 15_000 });
+      await expect(
+        appMain(page).getByRole('button', {
+          name: locale === 'fr' ? /Questionnaire du jour/i : /Daily questionnaire/i,
+        })
+      ).toBeVisible();
+      await expect(
+        appMain(page).getByRole('button', {
+          name: locale === 'fr' ? /Questionnaire positions/i : /Position questionnaire/i,
+        })
+      ).toBeVisible();
+    },
+  },
+  {
+    slug: 'journal-questions',
+    step: 2,
+    hash: '#settings',
+    ready: async (page, locale) => {
+      await openQuestionsSettings(page, locale, 'templates');
+      await expect(appMain(page).getByText(/Comment était ton mindset|As-tu suivi le plan/i).first()).toBeVisible({
+        timeout: 30_000,
+      });
+      await expect(
+        appMain(page).getByRole('button', {
+          name: locale === 'fr' ? /Nouveau modèle/i : /New template/i,
+        })
+      ).toBeVisible();
+    },
+  },
+  {
+    slug: 'journal-questions',
+    step: 3,
+    hash: '#settings',
+    ready: async (page, locale) => {
+      await openQuestionsSettings(page, locale, 'day');
+      await expect(appMain(page).getByText(/Comment était ton mindset|As-tu suivi le plan/i).first()).toBeVisible({
+        timeout: 30_000,
+      });
+      await expect(
+        appMain(page)
+          .getByText(
+            locale === 'fr'
+              ? /Questions posées une fois par journée/i
+              : /Questions asked once per trading day/i
+          )
+          .first()
+      ).toBeVisible();
+    },
+  },
+  {
+    slug: 'journal-questions',
+    step: 4,
+    hash: '#journal-questions',
+    ready: async (page, locale) => {
+      await closeImportModal(page);
+      await selectDemoTopStepAccount(page);
+      await expect(
+        appMain(page).getByText(/Comment était ton mindset|As-tu suivi le plan/i).first()
+      ).toBeVisible({ timeout: 60_000 });
+      await expect(
+        page.getByRole('link', {
+          name: locale === 'fr' ? /Configurer les questions/i : /Configure questions/i,
+        })
+      ).toBeVisible();
+    },
+  },
+  {
+    slug: 'transactions-profitability',
+    step: 1,
+    hash: '#dashboard',
+    ready: async (page, locale) => {
+      await openManagementMenu(page, locale);
+      await expect(
+        page.getByRole('button', { name: locale === 'fr' ? /^Transactions$/i : /^Transactions$/i })
+      ).toBeVisible({ timeout: 15_000 });
+      await expect(
+        page.getByRole('button', {
+          name: locale === 'fr' ? /Rentabilité activité/i : /Activity profitability/i,
+        })
+      ).toBeVisible();
+    },
+  },
+  {
+    slug: 'transactions-profitability',
+    step: 2,
+    hash: '#transactions',
+    ready: async (page, locale) => {
+      await closeImportModal(page);
+      await selectDemoTopStepAccount(page);
+      await expect(
+        appMain(page).getByRole('heading', {
+          name: locale === 'fr' ? /Historique des transactions/i : /Transaction History/i,
+        })
+      ).toBeVisible({ timeout: 30_000 });
+      await expect(
+        appMain(page).getByRole('button', {
+          name: locale === 'fr' ? /Nouveau dépôt/i : /New Deposit/i,
+        })
+      ).toBeVisible();
+      // Doublons mobile/desktop : attached suffit
+      await expect(appMain(page).getByText(/TUTO-DEMO/i).first()).toBeAttached({ timeout: 30_000 });
+      await expect(appMain(page).getByText(/10[.,\s]?000/i).first()).toBeAttached();
+    },
+  },
+  {
+    slug: 'transactions-profitability',
+    step: 3,
+    hash: '#trading-activity',
+    ready: async (page, locale) => {
+      await expect(
+        appMain(page).getByRole('heading', {
+          name: locale === 'fr' ? /Soldes par devise/i : /Balances by currency/i,
+        })
+      ).toBeVisible({ timeout: 60_000 });
+      await expect(
+        appMain(page).getByRole('tab', {
+          name: locale === 'fr' ? /^Débit$/i : /^Debit$/i,
+        })
+      ).toBeVisible({ timeout: 30_000 });
+      await expect(appMain(page).getByText(/USD/i).first()).toBeVisible();
+    },
+  },
+  {
+    slug: 'transactions-profitability',
+    step: 4,
+    hash: '#trading-activity',
+    ready: async (page, locale) => {
+      await expect(
+        appMain(page).getByRole('heading', {
+          name: locale === 'fr' ? /Soldes par devise/i : /Balances by currency/i,
+        })
+      ).toBeVisible({ timeout: 60_000 });
+      const creditTab = appMain(page).getByRole('tab', {
+        name: locale === 'fr' ? /^Crédit$/i : /^Credit$/i,
+      });
+      await expect(creditTab).toBeVisible({ timeout: 30_000 });
+      await creditTab.click();
+      await expect(
+        appMain(page)
+          .getByText(locale === 'fr' ? /Retraits liés/i : /Linked withdrawals/i)
+          .first()
+      ).toBeAttached({ timeout: 30_000 });
+      await expect(appMain(page).getByText(/Demo TopStep Account/i).first()).toBeAttached({
+        timeout: 30_000,
+      });
+      await expect(appMain(page).getByText(/1[.,\s]?500/i).first()).toBeAttached();
+    },
+  },
+  {
+    slug: 'position-strategies',
+    step: 1,
+    hash: '#dashboard',
+    ready: async (page, locale) => {
+      await openStrategiesMenu(page, locale);
+      await expect(
+        page.getByRole('button', {
+          name: locale === 'fr' ? /Gestion de Stratégie/i : /Strategy Management/i,
+        })
+      ).toBeVisible({ timeout: 15_000 });
+    },
+  },
+  {
+    slug: 'position-strategies',
+    step: 2,
+    hash: '#position-strategies',
+    ready: async (page, locale) => {
+      // Pas de h1 page dans le main — titre sync header ; repères liste + CTA.
+      await expect(
+        appMain(page).getByRole('button', {
+          name: locale === 'fr' ? /Nouvelle stratégie/i : /New strategy/i,
+        })
+      ).toBeVisible({ timeout: 60_000 });
+      await expect(
+        appMain(page).getByRole('heading', { name: /TUTO-DEMO OR Retrace/i })
+      ).toBeVisible({ timeout: 30_000 });
+    },
+  },
+  {
+    slug: 'position-strategies',
+    step: 3,
+    hash: '#position-strategies',
+    ready: async (page, locale) => {
+      await expect(
+        appMain(page).getByRole('heading', { name: /TUTO-DEMO OR Retrace/i })
+      ).toBeVisible({ timeout: 60_000 });
+      // Bouton Modifier = icône crayon (Tooltip, pas d’accessible name / title).
+      const editBtn = appMain(page)
+        .locator('button')
+        .filter({ has: page.locator('path[d^="M11 5H6"]') })
+        .first();
+      if (await editBtn.isVisible().catch(() => false)) {
+        await editBtn.click();
+      } else {
+        await appMain(page)
+          .getByRole('button', {
+            name: locale === 'fr' ? /Nouvelle stratégie/i : /New strategy/i,
+          })
+          .click();
+      }
+      await expect(
+        page
+          .getByRole('heading', {
+            name:
+              locale === 'fr'
+                ? /Modifier la stratégie|Nouvelle stratégie/i
+                : /Edit strategy|New strategy/i,
+          })
+          .first()
+      ).toBeVisible({ timeout: 30_000 });
+      await expect(
+        page
+          .getByText(
+            locale === 'fr'
+              ? /Sections de la stratégie|Ajouter une section/i
+              : /Strategy sections|Add a section/i
+          )
+          .first()
+      ).toBeAttached({ timeout: 15_000 });
+    },
+  },
+  {
+    slug: 'position-strategies',
+    step: 4,
+    hash: '#position-strategies',
+    ready: async (page, locale) => {
+      const cancel = page.getByRole('button', {
+        name: locale === 'fr' ? /^Annuler$/i : /^Cancel$/i,
+      });
+      if (await cancel.isVisible().catch(() => false)) {
+        await cancel.click();
+        await page.waitForTimeout(400);
+      }
+      await expect(
+        appMain(page).getByRole('heading', { name: /TUTO-DEMO OR Retrace/i })
+      ).toBeVisible({ timeout: 60_000 });
+      // Bouton Versions = horloge + compteur (nom accessible = le chiffre).
+      const versionsBtn = appMain(page).getByRole('button', { name: /^[0-9]+$/ }).first();
+      await expect(versionsBtn).toBeVisible({ timeout: 15_000 });
+      await versionsBtn.click();
+      await expect(
+        page.getByRole('heading', {
+          name: locale === 'fr' ? /Historique des versions/i : /Version history/i,
+        })
+      ).toBeVisible({ timeout: 30_000 });
+      await expect(page.getByText(/TUTO-DEMO|v\s*\d+|Version\s*\d+/i).first()).toBeAttached();
+    },
+  },  {
+    slug: 'backtest-market-replay',
+    step: 1,
+    hash: '#dashboard',
+    ready: async (page, locale) => {
+      await openStrategiesMenu(page, locale);
+      await expect(
+        page.getByRole('button', {
+          name: locale === 'fr' ? /Journal de backtest/i : /Backtest journal/i,
+        })
+      ).toBeVisible({ timeout: 15_000 });
+      await expect(
+        page.getByRole('button', { name: /Market Replay/i })
+      ).toBeVisible();
+    },
+  },
+  {
+    slug: 'backtest-market-replay',
+    step: 2,
+    hash: '#backtest-journal',
+    ready: async (page, locale) => {
+      await expect(
+        appMain(page).getByRole('heading', {
+          name: locale === 'fr' ? /Journal de backtest/i : /Backtest journal/i,
+        })
+      ).toBeVisible({ timeout: 60_000 });
+      await expect(appMain(page).getByText(/TUTO-DEMO OR Retrace/i).first()).toBeAttached({
+        timeout: 30_000,
+      });
+    },
+  },
+  {
+    slug: 'backtest-market-replay',
+    step: 3,
+    hash: '#historical-data',
+    ready: async (page, locale) => {
+      // Pas de h1 « Données historiques » dans le main — le titre vit dans le header.
+      await expect(
+        appMain(page).getByRole('heading', {
+          name: locale === 'fr' ? /Mise à jour automatique/i : /Automatic update/i,
+        })
+      ).toBeVisible({ timeout: 60_000 });
+      await expect(
+        appMain(page)
+          .getByText(
+            locale === 'fr'
+              ? /Téléchargement historique|TopStepX|Lancer le téléchargement/i
+              : /Historical backfill|TopStepX|Start download/i
+          )
+          .first()
+      ).toBeAttached({ timeout: 30_000 });
+    },
+  },
+  {
+    slug: 'backtest-market-replay',
+    step: 4,
+    hash: '#market-replay',
+    ready: async (page, locale) => {
+      await expect(
+        appMain(page).getByRole('heading', { name: /Market Replay/i })
+      ).toBeVisible({ timeout: 60_000 });
+      await expect(
+        appMain(page)
+          .getByText(
+            locale === 'fr'
+              ? /Choisissez un actif|Rejouez l’historique|Lecture/i
+              : /Choose an instrument|Replay|Play/i
+          )
+          .first()
+      ).toBeAttached({ timeout: 30_000 });
+    },
+  },
+
 ];
 
 /** Évite le <main> de l’overlay ESLint Vite (`window window-collapsed`). */
@@ -226,6 +905,18 @@ async function closeDayTradesModal(page: Page) {
   await closeFixedModal(page, /Trades du jour|Day Trades/i);
 }
 
+async function closeStrategyModals(page: Page) {
+  await closeFixedModal(page, /Historique des versions|Version history/i);
+  await closeFixedModal(page, /Modifier la stratégie|Edit strategy|Nouvelle stratégie|New strategy/i);
+  // Trade detail + formulaire compte éventuels
+  await closeFixedModal(page, /Détail du trade|Trade detail|Trade Details|Modifier le trade|Edit trade/i);
+  const closeJournal = page.getByRole('button', { name: /Fermer|Close/i }).first();
+  if (await closeJournal.isVisible().catch(() => false)) {
+    await closeJournal.click().catch(() => undefined);
+    await page.waitForTimeout(200);
+  }
+}
+
 async function openDayTradesModal(page: Page, locale: LocaleCode) {
   const title = locale === 'fr' ? /Trades du jour/i : /Day Trades/i;
   const heading = page.getByRole('heading', { name: title });
@@ -238,6 +929,169 @@ async function openDayTradesModal(page: Page, locale: LocaleCode) {
   await expect(viewTrades).toBeVisible({ timeout: 60_000 });
   await viewTrades.click();
   await expect(heading).toBeVisible({ timeout: 15_000 });
+}
+
+/** Settings : onglet Affichage (sidebar). */
+async function openDisplaySettings(page: Page, locale: LocaleCode) {
+  await goHash(page, '#settings');
+  await dismissOverlays(page);
+  const settingsNav = appMain(page).getByRole('navigation').first();
+  const displayTab = settingsNav.getByRole('button', {
+    name: locale === 'fr' ? /^Affichage$/i : /^Display$/i,
+  });
+  await expect(displayTab).toBeVisible({ timeout: 30_000 });
+  await displayTab.click();
+  await expect(
+    appMain(page)
+      .getByText(locale === 'fr' ? /Préférences d['’]affichage/i : /Display preferences/i)
+      .first()
+  ).toBeVisible({ timeout: 30_000 });
+}
+
+/** Settings ne réécoute pas toujours `?tab=` une fois monté → clic onglet Trading (sidebar). */
+async function openTradingApiSection(page: Page, locale: LocaleCode) {
+  await goHash(page, '#settings');
+  await dismissOverlays(page);
+  // Ne pas cibler le menu Header « Trading » (même libellé) — rester dans la sidebar Settings.
+  const settingsNav = appMain(page).getByRole('navigation').first();
+  const tradingTab = settingsNav.getByRole('button', { name: /^Trading$/i });
+  await expect(tradingTab).toBeVisible({ timeout: 30_000 });
+  await tradingTab.click();
+  const sectionTitle =
+    locale === 'fr' ? /Connexions API/i : /API connections/i;
+  await expect(appMain(page).getByText(sectionTitle).first()).toBeVisible({
+    timeout: 30_000,
+  });
+  await expect(appMain(page).getByText(/TopStepX/i).first()).toBeVisible({
+    timeout: 30_000,
+  });
+  // Bloc API souvent sous la fold — evaluate (pas scrollIntoViewIfNeeded, qui a déjà bloqué ailleurs)
+  await appMain(page)
+    .getByText(sectionTitle)
+    .first()
+    .evaluate((el) => {
+      el.scrollIntoView({ block: 'center', inline: 'nearest' });
+    });
+  await page.waitForTimeout(300);
+}
+
+async function openManagementMenu(page: Page, locale: LocaleCode) {
+  await dismissOverlays(page);
+  const label = locale === 'fr' ? /^Gestion$/i : /^Management$/i;
+  const trigger = page.getByRole('banner').getByRole('button', { name: label });
+  await expect(trigger).toBeVisible({ timeout: 30_000 });
+  // Hover ouvre le menu ; un clic supplémentaire le refermerait (toggle).
+  await trigger.hover();
+  await page.waitForTimeout(250);
+  const profitability = page.getByRole('button', {
+    name: locale === 'fr' ? /Rentabilité activité/i : /Activity profitability/i,
+  });
+  if (!(await profitability.isVisible().catch(() => false))) {
+    await trigger.click();
+  }
+  await expect(profitability).toBeVisible({ timeout: 10_000 });
+  await expect(
+    page.getByRole('button', { name: /^Transactions$/i })
+  ).toBeVisible();
+}
+
+async function openStrategiesMenu(page: Page, locale: LocaleCode) {
+  await dismissOverlays(page);
+  // Fermer un éventuel autre menu (Gestion…) qui resterait ouvert.
+  await page.mouse.move(8, 8);
+  await page.waitForTimeout(300);
+  const label = locale === 'fr' ? /^Stratégies$/i : /^Strategies$/i;
+  const trigger = page.getByRole('banner').getByRole('button', { name: label });
+  await expect(trigger).toBeVisible({ timeout: 30_000 });
+  const backtest = page.getByRole('button', {
+    name: locale === 'fr' ? /Journal de backtest/i : /Backtest journal/i,
+  });
+  // Clic unique pour ouvrir (évite le toggle hover+click).
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    if (await backtest.isVisible().catch(() => false)) break;
+    await trigger.click();
+    await page.waitForTimeout(300);
+  }
+  await expect(backtest).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByRole('button', { name: /Market Replay/i })).toBeVisible();
+}
+
+type QuestionsSection = 'templates' | 'day' | 'position';
+
+async function openQuestionsSettings(page: Page, locale: LocaleCode, section: QuestionsSection) {
+  await goHash(page, '#settings');
+  await dismissOverlays(page);
+  // Sidebar Settings : libellé `settings:questionnaire` (FR/EN « Questionnaire »)
+  const settingsNav = appMain(page).getByRole('navigation').first();
+  const questionsTab = settingsNav.getByRole('button', { name: /^Questionnaire$/i });
+  await expect(questionsTab).toBeVisible({ timeout: 30_000 });
+  await questionsTab.click();
+
+  const sectionLabel =
+    section === 'templates'
+      ? locale === 'fr'
+        ? /Modèles de questions/i
+        : /Question templates/i
+      : section === 'day'
+        ? locale === 'fr'
+          ? /Questionnaire du jour/i
+          : /Daily questionnaire/i
+        : locale === 'fr'
+          ? /Questionnaire positions/i
+          : /Position questionnaire/i;
+
+  const sectionBtn = appMain(page).getByRole('button', { name: sectionLabel });
+  await expect(sectionBtn).toBeVisible({ timeout: 30_000 });
+  await sectionBtn.click();
+  await page.waitForTimeout(300);
+}
+
+async function selectAccountByName(page: Page, nameRe: RegExp) {
+  // Le sélecteur de compte n’existe pas sur toutes les pages (ex. Settings).
+  const trigger = appMain(page)
+    .getByRole('button')
+    .filter({ hasText: /Demo Futures|Demo TopStep|Tous les comptes|All accounts/i })
+    .first();
+  if (!(await trigger.isVisible().catch(() => false))) {
+    return;
+  }
+  if (nameRe.test(await trigger.innerText())) {
+    return;
+  }
+  await trigger.click();
+  const listbox = page.getByRole('listbox');
+  await expect(listbox).toBeVisible({ timeout: 15_000 });
+  const option = listbox.getByRole('button', { name: nameRe }).first();
+  await expect(option).toBeVisible({ timeout: 15_000 });
+  await option.click();
+  await expect(listbox).toBeHidden({ timeout: 10_000 });
+  await expect(trigger).toContainText(nameRe, { timeout: 15_000 });
+}
+
+async function selectDemoTopStepAccount(page: Page) {
+  await selectAccountByName(page, /Demo TopStep Account/i);
+}
+
+async function setApiKeyEditMode(page: Page, locale: LocaleCode, editing: boolean) {
+  const root = appMain(page);
+  const changeLabel = locale === 'fr' ? /^Modifier$/i : /^Change$/i;
+  const cancelLabel = locale === 'fr' ? /Annuler la modification/i : /Cancel edit/i;
+  const placeholder = root.getByPlaceholder(
+    locale === 'fr' ? /Collez votre clé API/i : /Paste your API key/i
+  );
+  const isEditing = await placeholder.isVisible().catch(() => false);
+
+  if (editing && !isEditing) {
+    const changeBtn = root.getByRole('button', { name: changeLabel }).first();
+    await expect(changeBtn).toBeVisible({ timeout: 15_000 });
+    await changeBtn.click();
+    await expect(placeholder).toBeVisible({ timeout: 10_000 });
+  } else if (!editing && isEditing) {
+    const cancelBtn = root.getByRole('button', { name: cancelLabel }).first();
+    await expect(cancelBtn).toBeVisible({ timeout: 10_000 });
+    await cancelBtn.click();
+    await expect(placeholder).toBeHidden({ timeout: 10_000 });
+  }
 }
 
 async function dismissOverlays(page: Page) {
@@ -307,6 +1161,7 @@ async function login(page: Page) {
 async function setUiLanguage(page: Page, locale: (typeof LOCALES)[number]) {
   await closeImportModal(page);
   await closeDayTradesModal(page);
+  await closeStrategyModals(page);
   await dismissOverlays(page);
   const langButton = page.getByRole('button', { name: /Language|Langue|Idioma|Sprache/i }).first();
   await langButton.click();
@@ -384,7 +1239,7 @@ async function captureStep(page: Page, target: string) {
 }
 
 test.describe('Tutorials screenshots (manual)', () => {
-  test('capture getting-started + import-trades + calendar FR+EN', async ({
+  test('capture tutorials FR+EN (incl. transactions-profitability)', async ({
     page,
     browserName,
   }) => {
@@ -396,12 +1251,23 @@ test.describe('Tutorials screenshots (manual)', () => {
 
     for (const locale of LOCALES) {
       await setUiLanguage(page, locale);
+      // Compte défaut seed = TopStep (trades + Sync). Réaffirmer après bascule langue.
+      await goHash(page, '#trades');
+      await dismissOverlays(page);
+      await selectDemoTopStepAccount(page);
 
       const localeDir = path.join(outRoot, locale.code);
       fs.mkdirSync(localeDir, { recursive: true });
       digestsByLocale[locale.code] = [];
 
-      for (const step of STEPS) {
+      const stepsToCapture = ONLY_SLUGS.length
+        ? STEPS.filter((s) => ONLY_SLUGS.includes(s.slug))
+        : STEPS;
+      if (ONLY_SLUGS.length && stepsToCapture.length === 0) {
+        throw new Error(`TUTORIAL_ONLY_SLUG inconnu: ${ONLY_SLUGS.join(',')}`);
+      }
+
+      for (const step of stepsToCapture) {
         // eslint-disable-next-line no-console
         console.log(`[tutorials] ${locale.code} ${step.slug}#${step.step} → ${step.hash}`);
         await goHash(page, step.hash);
@@ -443,6 +1309,7 @@ test.describe('Tutorials screenshots (manual)', () => {
 
       await closeImportModal(page);
       await closeDayTradesModal(page);
+      await closeStrategyModals(page);
     }
 
     const frJoined = digestsByLocale.fr.join('|');
@@ -452,7 +1319,17 @@ test.describe('Tutorials screenshots (manual)', () => {
     await setUiLanguage(page, LOCALES[0]);
     await goHash(page, '#help');
     await expect(page.getByTestId('help-page')).toBeVisible({ timeout: 30_000 });
-    await page.getByTestId('help-card-calendar').click();
-    await expect(page.getByTestId('tutorial-viewer-calendar')).toBeVisible();
+    await expect(page.getByTestId('help-section-workspace')).toBeVisible();
+    await expect(page.getByTestId('help-section-trades-pnl')).toBeVisible();
+    await expect(page.getByTestId('help-section-journal')).toBeVisible();
+    await expect(page.getByTestId('help-section-strategies')).toBeVisible();
+    await expect(page.getByTestId('help-card-trading-accounts')).toBeVisible();
+    await expect(page.getByTestId('help-card-display-settings')).toBeVisible();
+    await expect(page.getByTestId('help-card-trades')).toBeVisible();
+    await expect(page.getByTestId('help-card-dashboard-filters')).toBeVisible();
+    await expect(page.getByTestId('help-card-daily-journal')).toBeVisible();
+    await expect(page.getByTestId('help-card-position-strategies')).toBeVisible();
+    await page.getByTestId('help-card-daily-journal').click();
+    await expect(page.getByTestId('tutorial-viewer-daily-journal')).toBeVisible();
   });
 });

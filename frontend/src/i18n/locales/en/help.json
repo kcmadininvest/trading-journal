@@ -3,7 +3,7 @@
     "title": "Help & guides",
     "subtitle": "Step-by-step walkthroughs to get started. Available anytime.",
     "sectionStart": "Getting started",
-    "sectionFurther": "Go further",
+    "sectionFurther": "Trades & performance",
     "estimatedMinutes": "{{count}} min",
     "stub": "Preview",
     "search": "Search guides",
@@ -11,7 +11,14 @@
     "backToLibrary": "Back to library",
     "menuLabel": "Help",
     "settingsLink": "Help & guides",
-    "settingsLinkHint": "Open the tutorial library"
+    "settingsLinkHint": "Open the tutorial library",
+    "sections": {
+      "getting-started": "Getting started",
+      "workspace": "Account & preferences",
+      "trades-pnl": "Trades & performance",
+      "journal": "Journal & review",
+      "strategies": "Strategies & backtest"
+    }
   },
   "status": {
     "not_started": "Not started",
@@ -69,11 +76,11 @@
     },
     "import-trades": {
       "title": "Import trades",
-      "summary": "CSV, columns, and checks before confirmation.",
+      "summary": "Load trades from a CSV instead of entering them one by one. Columns and checks before confirmation.",
       "steps": {
         "open-import": {
           "title": "Open import",
-          "body": "From the Trades page, start Import. Pick the target account, then your CSV file.",
+          "body": "Quickly import a trade history from a CSV file instead of typing every fill by hand.\nFrom the Trades page, start Import. Pick the target account, then your CSV file.",
           "alt": "Import button on the Trades page"
         },
         "format": {
@@ -85,17 +92,252 @@
     },
     "calendar": {
       "title": "PnL calendar",
-      "summary": "Month view of day-by-day results.",
+      "summary": "See PnL day by day to spot winning or losing streaks.",
       "steps": {
         "overview": {
           "title": "Overview",
-          "body": "The calendar colors each day by PnL. Move between months to spot streaks.",
+          "body": "Get a month-at-a-glance view of each day’s result and spot trends.\nThe calendar colors each day by PnL. Move between months to spot streaks.",
           "alt": "Monthly PnL calendar"
         },
         "day-detail": {
           "title": "Day detail",
           "body": "Click a day to see related trades and jump into the journal.",
           "alt": "Calendar day detail"
+        }
+      }
+    },
+    "api-connections": {
+      "title": "API connections",
+      "summary": "Link a broker to sync trades automatically, without re-importing each time.",
+      "steps": {
+        "open-settings": {
+          "title": "Open API connections",
+          "body": "Connect your broker (e.g. TopStepX) so trades can be pulled automatically with Sync.\nGo to Settings → Trading, then scroll to the API connections block.\nToday only TopStepX is available; more connections may be added later.",
+          "alt": "Settings Trading tab with the API connections block and TopStepX card"
+        },
+        "credentials": {
+          "title": "Enter your credentials",
+          "body": "Enter the username and API key from your broker (e.g. TopStepX: Settings → API on the platform).\nThe Documentation API link on the card opens the provider help. Never share your key.",
+          "alt": "TopStepX card in API key edit mode"
+        },
+        "test-connection": {
+          "title": "Test the connection",
+          "body": "Save, then use Test connection. The badge becomes Configured or Connected depending on the result.\nWithout a valid connection, trade sync stays unavailable.",
+          "alt": "TopStepX card with Connected badge and Save / Test buttons"
+        },
+        "sync-account": {
+          "title": "Sync an account",
+          "body": "On the Trades page (or calendar), select a matching account type (e.g. TopStep), then use Sync once the integration is OK.\nAPI sync can coexist with CSV import; it does not overwrite existing trades.",
+          "alt": "Trades page with a TopStep account and the Sync button"
+        }
+      }
+    },
+    "journal-questions": {
+      "title": "Journal questions",
+      "summary": "Structure your trading review with reusable day and position questions.",
+      "steps": {
+        "flow": {
+          "title": "Understand the flow",
+          "body": "Capture each session with fixed prompts (mindset, plan, trade grade…) instead of scattered free-form notes.\nThree layers chain together:\n1) Templates = reusable library.\n2) Day questionnaire and Position questionnaire = ready-to-use question copies.\n3) Answers = Questions page (day) and per-trade answers.\nOpen Settings → Questionnaire to see the three tabs.",
+          "alt": "Questions settings with Templates, Day questionnaire, and Position questionnaire tabs"
+        },
+        "templates": {
+          "title": "Create templates",
+          "body": "In Question templates, create reusable prompts (yes/no, text, scale…).\nAdding a template to a questionnaire creates an independent copy: editing the template does not overwrite questions already placed.",
+          "alt": "Question templates library in Settings"
+        },
+        "questionnaires": {
+          "title": "Fill the questionnaires",
+          "body": "Day questionnaire: once per trading day and account.\nPosition questionnaire: once per trade.\nAdd questions from templates (or create new ones) in each tab.",
+          "alt": "Day questionnaire with configured questions"
+        },
+        "answer-daily": {
+          "title": "Answer every day",
+          "body": "Open Day questions (#journal-questions): pick the account and date, then answer.\nPosition answers show below the day form (or via compliance / trade detail). You can also reach them from the journal.",
+          "alt": "Day questions page with the answers form"
+        }
+      }
+    },
+    "transactions-profitability": {
+      "title": "Transactions and profitability",
+      "summary": "Track account cash (deposits/withdrawals) and real activity profitability (expenses, credits, taxes).",
+      "steps": {
+        "flow": {
+          "title": "Two pages under Management",
+          "body": "Separate trading-account cash (Transactions) from your business ledger (Activity profitability: expenses, credits, tax).\nIn the Management menu you have two complementary entries:\n1) Transactions = deposits and withdrawals on a trading account.\n2) Activity profitability = business ledger (expenses, credits from withdrawals, tax payments).\nDo not mix account cash movements with activity profitability.",
+          "alt": "Management menu open with Transactions and Activity profitability"
+        },
+        "transactions": {
+          "title": "Manage deposits and withdrawals",
+          "body": "Open Transactions: pick the account, then New Deposit or New Withdrawal.\nHistory lists cash moves; account balance reflects them (with trade PnL).",
+          "alt": "Transactions page with history and deposit / withdrawal buttons"
+        },
+        "profitability": {
+          "title": "View activity profitability",
+          "body": "Open Activity profitability: Balances by currency shows credits, expenses, and balance.\nDebit / Credit / Tax and social payments tabs are for detailed entries.",
+          "alt": "Activity profitability page with balances by currency"
+        },
+        "link-credits": {
+          "title": "Link withdrawals to credits",
+          "body": "On the Credit tab, add a credit and link it to one or more Transactions withdrawals.\nCash leaving the account then feeds the activity ledger without confusing double entry.",
+          "alt": "Credit tab with a linked withdrawal"
+        }
+      }
+    },
+    "backtest-market-replay": {
+      "title": "Backtest journal and Market Replay",
+      "summary": "Log backtest observations and replay historical candles. A broker subscription (e.g. TopStepX) is required for market data.",
+      "steps": {
+        "flow": {
+          "title": "Two tools under Strategies",
+          "body": "Backtest journal and Market Replay work together: the journal stores observations by campaign; replay plays the session so you can place manual trades.\nPrerequisite: a broker API connection (Settings → Trading) and an active broker subscription to download historical candles.",
+          "alt": "Strategies menu with Backtest journal and Market Replay"
+        },
+        "backtest-journal": {
+          "title": "Open the backtest journal",
+          "body": "In Backtest journal, pick a position strategy then a campaign (instrument + period).\nAdd observations (setup, entry, exit) to capture your manual tests.",
+          "alt": "Backtest journal page with a strategy and campaign"
+        },
+        "historical-data": {
+          "title": "Download historical data",
+          "body": "Before replay, open Historical data to download candles (TopStepX).\nWithout a broker subscription and a configured API integration, no candles are available for Market Replay.",
+          "alt": "Historical data page to download candles"
+        },
+        "market-replay": {
+          "title": "Replay a session",
+          "body": "Open Market Replay: pick the instrument and a session with data, press play, place entry / stop / target, then Send to journal.\nThe observation joins the linked campaign in the backtest journal.",
+          "alt": "Market Replay page with playback controls and position panel"
+        }
+      }
+    },
+    "position-strategies": {
+      "title": "Strategy management",
+      "summary": "Define your position-taking rules (sections, checklist) and track their version history.",
+      "steps": {
+        "flow": {
+          "title": "Where to find it",
+          "body": "Strategy Management (Strategies menu) is your trading playbook: sections, rules, active/draft/archived status.\nThese strategies also feed the backtest journal and dashboard filters.",
+          "alt": "Strategies menu with Strategy Management"
+        },
+        "list": {
+          "title": "Browse your strategies",
+          "body": "The page lists strategies with filters (active, drafts, archived) and search.\nUse New strategy to create one, or View / Edit / Versions on a card.",
+          "alt": "List of position strategies"
+        },
+        "edit-sections": {
+          "title": "Write sections and rules",
+          "body": "In the form, add sections (e.g. Setup, Entry, Invalidation) and checklist rules.\nYou can reorder sections and rules, then Save.",
+          "alt": "Edit form with sections and rules"
+        },
+        "versions": {
+          "title": "Version history",
+          "body": "Important saves can create a new version. Open Versions to compare, restore, or review history.\nKeep your playbook evolution without overwriting the past.",
+          "alt": "Version history modal"
+        }
+      }
+    },
+    "trading-accounts": {
+      "title": "Trading accounts",
+      "summary": "Create, organize and switch between accounts to separate your trading environments.",
+      "steps": {
+        "list": {
+          "title": "Browse your accounts",
+          "body": "Trading accounts lists your environments (futures, prop firm, demo…).\nEach account has its currency, capital and status.",
+          "alt": "Trading accounts list"
+        },
+        "create": {
+          "title": "Add an account",
+          "body": "Use New Account to set broker, currency and starting capital.\nTrades, cash movements and API sync attach to that account.",
+          "alt": "New Account button on Accounts page"
+        },
+        "switch": {
+          "title": "Switch active account",
+          "body": "The dashboard account selector (filter bar) scopes the whole app.\nPick the right account before reviewing a period.",
+          "alt": "Account selector in the dashboard filter bar"
+        }
+      }
+    },
+    "display-settings": {
+      "title": "Display preferences",
+      "summary": "Language, timezone, theme and font so the journal matches your conventions.",
+      "steps": {
+        "open-display": {
+          "title": "Open Display",
+          "body": "In Settings, open the Display tab.\nThese choices apply across the UI (tables, charts, exports).",
+          "alt": "Settings Display tab"
+        },
+        "locale-timezone": {
+          "title": "Language and timezone",
+          "body": "Choose UI language and the timezone for your user-facing dates.\nMarket timezones still apply when the domain requires them.",
+          "alt": "Language and timezone controls"
+        },
+        "formats": {
+          "title": "Theme and font",
+          "body": "Adjust theme, font size and typeface.\nDate and number formats are also under Settings → Trading.",
+          "alt": "Theme, size and font in Display"
+        }
+      }
+    },
+    "trades": {
+      "title": "My trades",
+      "summary": "Browse, filter and open trade details for review and tagging.",
+      "steps": {
+        "list": {
+          "title": "Trades list",
+          "body": "My Trades shows the history for the selected account.\nScan contracts, side, PnL and dates.",
+          "alt": "Trades table with seeded rows"
+        },
+        "filters": {
+          "title": "Filter the view",
+          "body": "Narrow by dates, contract, profitability or position strategy.\nFilters help isolate a series before analysis.",
+          "alt": "My Trades page filters"
+        },
+        "detail": {
+          "title": "Open a trade",
+          "body": "Click a row for details (fills, notes, links).\nUse it to correct or enrich an entry.",
+          "alt": "Selected trade detail or row"
+        }
+      }
+    },
+    "dashboard-filters": {
+      "title": "Dashboard in depth",
+      "summary": "Period, account and KPIs so you can read performance without getting lost.",
+      "steps": {
+        "overview": {
+          "title": "Overview",
+          "body": "The dashboard groups PnL, activity and period widgets.\nAlways check account and period first.",
+          "alt": "Dashboard with KPIs"
+        },
+        "period-account": {
+          "title": "Period and account",
+          "body": "Use the filter bar to change period and account.\nThe view recomputes for that scope.",
+          "alt": "Dashboard period and account filters"
+        },
+        "widgets": {
+          "title": "Read the indicators",
+          "body": "Total trades, win rate, curves: every widget follows active filters.\nCross-check with calendar or My Trades to dig deeper.",
+          "alt": "Dashboard performance widgets"
+        }
+      }
+    },
+    "daily-journal": {
+      "title": "Daily journal",
+      "summary": "Write and find session notes, separate from questionnaires.",
+      "steps": {
+        "open": {
+          "title": "Open the journal",
+          "body": "Journal groups entries by month.\nCreate a note to capture today’s session.",
+          "alt": "Daily journal page"
+        },
+        "filters": {
+          "title": "Find an entry",
+          "body": "Filter by account, dates or text search.\nUseful for reviewing a streak or preparing a weekly recap.",
+          "alt": "Journal filters and search"
+        },
+        "entry": {
+          "title": "Write or edit",
+          "body": "Open an entry to write in markdown, add context and save.\nCome back later to refine with a cool head.",
+          "alt": "Journal entry editor"
         }
       }
     }
