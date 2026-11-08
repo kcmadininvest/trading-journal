@@ -90,23 +90,23 @@ const HelpPage: React.FC<HelpPageProps> = ({ initialSlug = null, onNavigateHash 
           className="flex h-full w-full flex-col text-left rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition-colors hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-blue-500"
           data-testid={`help-card-${tut.slug}`}
         >
-          <div className="flex flex-wrap items-start justify-between gap-2">
-            <div>
-              <h3 className="font-semibold text-gray-900 dark:text-gray-100">
-                {t(`help:tutorials.${tut.slug}.title`)}
-              </h3>
-              <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                {t(`help:tutorials.${tut.slug}.summary`)}
-              </p>
-              <p className="mt-2 text-xs text-gray-500 dark:text-gray-500">
-                {t('help:hub.estimatedMinutes', { count: tut.estimatedMinutes })}
-                {tut.stub ? ` · ${t('help:hub.stub')}` : ''}
-              </p>
-            </div>
-            <span className={`text-xs font-medium px-2 py-1 rounded-full ${statusBadgeClass(status)}`}>
+          <div className="flex items-start justify-between gap-3">
+            <h3 className="min-w-0 flex-1 font-semibold text-gray-900 dark:text-gray-100">
+              {t(`help:tutorials.${tut.slug}.title`)}
+            </h3>
+            <span
+              className={`shrink-0 text-xs font-medium px-2 py-1 rounded-full ${statusBadgeClass(status)}`}
+            >
               {t(`help:status.${status}`)}
             </span>
           </div>
+          <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+            {t(`help:tutorials.${tut.slug}.summary`)}
+          </p>
+          <p className="mt-2 text-xs text-gray-500 dark:text-gray-500">
+            {t('help:hub.estimatedMinutes', { count: tut.estimatedMinutes })}
+            {tut.stub ? ` · ${t('help:hub.stub')}` : ''}
+          </p>
         </button>
       </li>
     );
