@@ -23,6 +23,12 @@ from .models import (
     TradingActivityTaxPaymentType,
     TradingActivityTaxPayment,
 )
+from .ordering import (
+    CREDIT_ORDERING_FIELDS,
+    EXPENSE_ORDERING_FIELDS,
+    TAX_PAYMENT_ORDERING_FIELDS,
+    apply_ledger_ordering,
+)
 from .serializers import (
     TradingActivityCreditSerializer,
     TradingActivityExpenseCategorySerializer,
@@ -185,10 +191,8 @@ class TradingActivityExpenseViewSet(viewsets.ModelViewSet):
     pagination_class = CustomPageNumberPagination
 
     def get_queryset(self):
-        qs = (
-            TradingActivityExpense.objects.filter(user=self.request.user)
-            .select_related('category')
-            .order_by('-date', '-created_at')
+        qs = TradingActivityExpense.objects.filter(user=self.request.user).select_related(
+            'category'
         )
         qp = self.request.query_params
 
@@ -209,7 +213,7 @@ class TradingActivityExpenseViewSet(viewsets.ModelViewSet):
                 Q(invoice_reference__icontains=q) | Q(label__icontains=q) | Q(notes__icontains=q)
             )
 
-        return qs
+        return apply_ledger_ordering(qs, qp.get('ordering'), EXPENSE_ORDERING_FIELDS)
 
 
 class TradingActivityCreditViewSet(viewsets.ModelViewSet):
@@ -218,13 +222,9 @@ class TradingActivityCreditViewSet(viewsets.ModelViewSet):
     pagination_class = CustomPageNumberPagination
 
     def get_queryset(self):
-        qs = (
-            TradingActivityCredit.objects.filter(user=self.request.user)
-            .prefetch_related(
-                'linked_account_transactions',
-                'linked_account_transactions__trading_account',
-            )
-            .order_by('-date', '-created_at')
+        qs = TradingActivityCredit.objects.filter(user=self.request.user).prefetch_related(
+            'linked_account_transactions',
+            'linked_account_transactions__trading_account',
         )
         qp = self.request.query_params
 
@@ -239,7 +239,7 @@ class TradingActivityCreditViewSet(viewsets.ModelViewSet):
         if q:
             qs = qs.filter(Q(notes__icontains=q))
 
-        return qs
+        return apply_ledger_ordering(qs, qp.get('ordering'), CREDIT_ORDERING_FIELDS)
 
 
 class TradingActivityTaxPaymentViewSet(viewsets.ModelViewSet):
@@ -248,9 +248,7 @@ class TradingActivityTaxPaymentViewSet(viewsets.ModelViewSet):
     pagination_class = CustomPageNumberPagination
 
     def get_queryset(self):
-        qs = TradingActivityTaxPayment.objects.filter(user=self.request.user).order_by(
-            '-date', '-created_at'
-        )
+        qs = TradingActivityTaxPayment.objects.filter(user=self.request.user)
         qp = self.request.query_params
 
         date_from = _parse_iso_date_param(qp.get('date_from'), param='date_from')
@@ -270,7 +268,7 @@ class TradingActivityTaxPaymentViewSet(viewsets.ModelViewSet):
                 Q(reference__icontains=q) | Q(label__icontains=q) | Q(notes__icontains=q)
             )
 
-        return qs
+        return apply_ledger_ordering(qs, qp.get('ordering'), TAX_PAYMENT_ORDERING_FIELDS)
 
 
 class CurrencySuggestionsView(APIView):

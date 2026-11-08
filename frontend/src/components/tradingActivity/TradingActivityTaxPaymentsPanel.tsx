@@ -14,11 +14,13 @@ import {
 import { formatDate, type DateFormatType } from '../../utils/dateFormat';
 import { formatNumber, getNumberFormatExample, type NumberFormatType } from '../../utils/numberFormat';
 import { TradingActivityLedgerDeleteAction } from './TradingActivityLedgerDeleteAction';
+import { TradingActivitySortableTh } from './TradingActivitySortableTh';
 import {
   buildTaxPaymentTypeSelectOptions,
   taxPaymentTypeLabel,
   type TradingActivityT,
 } from './taxPaymentTypeUtils';
+import type { LedgerSortDirection } from '../../utils/tradingActivityLedgerSort';
 export type { TradingActivityT } from './taxPaymentTypeUtils';
 
 const MODAL_SELECT_CLASS =
@@ -396,6 +398,9 @@ export function TradingActivityTaxPaymentsLedgerPanel({
   page,
   pageSize,
   pageSizeOptions,
+  sortField,
+  sortDirection,
+  onSort,
   onPageChange,
   onPageSizeChange,
   onEdit,
@@ -416,6 +421,9 @@ export function TradingActivityTaxPaymentsLedgerPanel({
   page: number;
   pageSize: number;
   pageSizeOptions: readonly number[];
+  sortField: string;
+  sortDirection: LedgerSortDirection;
+  onSort: (field: string) => void;
   onPageChange: (p: number) => void;
   onPageSizeChange: (size: number) => void;
   onEdit: (row: TradingActivityTaxPayment) => void;
@@ -457,11 +465,41 @@ export function TradingActivityTaxPaymentsLedgerPanel({
           <table className="min-w-full text-sm">
             <thead className="bg-gray-50 text-left text-gray-600 dark:bg-gray-900/50 dark:text-gray-300">
               <tr>
-                <th className="px-3 py-2">{t('table.date')}</th>
-                <th className="px-3 py-2">{t('table.paymentType')}</th>
-                <th className="px-3 py-2">{t('table.label')}</th>
-                <th className="px-3 py-2">{t('table.amount')}</th>
-                <th className="px-3 py-2">{t('table.ref')}</th>
+                <TradingActivitySortableTh
+                  label={t('table.date')}
+                  field="date"
+                  activeField={sortField}
+                  direction={sortDirection}
+                  onSort={onSort}
+                />
+                <TradingActivitySortableTh
+                  label={t('table.paymentType')}
+                  field="payment_type"
+                  activeField={sortField}
+                  direction={sortDirection}
+                  onSort={onSort}
+                />
+                <TradingActivitySortableTh
+                  label={t('table.label')}
+                  field="label"
+                  activeField={sortField}
+                  direction={sortDirection}
+                  onSort={onSort}
+                />
+                <TradingActivitySortableTh
+                  label={t('table.amount')}
+                  field="amount"
+                  activeField={sortField}
+                  direction={sortDirection}
+                  onSort={onSort}
+                />
+                <TradingActivitySortableTh
+                  label={t('table.ref')}
+                  field="reference"
+                  activeField={sortField}
+                  direction={sortDirection}
+                  onSort={onSort}
+                />
                 <th className="w-14 px-3 py-2">
                   <span className="sr-only">{t('actions.delete')}</span>
                 </th>

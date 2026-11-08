@@ -21,6 +21,15 @@ _JOURNAL_PERIOD_PRESETS = frozenset({
 })
 _YMD_RE = re.compile(r'^\d{4}-\d{2}-\d{2}$')
 
+# Aligné sur trading_activity.ordering (éviter import cross-app au chargement)
+_TRADING_ACTIVITY_LEDGER_SORT_TABS = frozenset({'debit', 'credit', 'tax'})
+_TRADING_ACTIVITY_LEDGER_SORT_FIELDS = {
+    'debit': frozenset({'date', 'category', 'label', 'total', 'invoice_reference'}),
+    'credit': frozenset({'date', 'amount'}),
+    'tax': frozenset({'date', 'payment_type', 'label', 'amount', 'reference'}),
+}
+_TRADING_ACTIVITY_LEDGER_SORT_DIRECTIONS = frozenset({'asc', 'desc'})
+
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
     """
@@ -513,6 +522,31 @@ class UserPreferencesSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('Code devise non supporté pour la rentabilité activité.')
         return code
 
+    def validate_trading_activity_ledger_sort(self, value):
+        if value is None:
+            return {}
+        if not isinstance(value, dict):
+            raise serializers.ValidationError(
+                'trading_activity_ledger_sort doit être un objet JSON.'
+            )
+        cleaned = {}
+        for raw_tab, raw_entry in value.items():
+            if not isinstance(raw_tab, str) or raw_tab not in _TRADING_ACTIVITY_LEDGER_SORT_TABS:
+                raise serializers.ValidationError(f'Onglet de tri invalide: {raw_tab!r}.')
+            if not isinstance(raw_entry, dict):
+                raise serializers.ValidationError(
+                    f'Entrée de tri invalide pour {raw_tab} (objet attendu).'
+                )
+            field = raw_entry.get('field')
+            direction = raw_entry.get('direction')
+            allowed_fields = _TRADING_ACTIVITY_LEDGER_SORT_FIELDS[raw_tab]
+            if not isinstance(field, str) or field not in allowed_fields:
+                raise serializers.ValidationError(f'Champ de tri invalide pour {raw_tab}.')
+            if not isinstance(direction, str) or direction not in _TRADING_ACTIVITY_LEDGER_SORT_DIRECTIONS:
+                raise serializers.ValidationError(f'Direction de tri invalide pour {raw_tab}.')
+            cleaned[raw_tab] = {'field': field, 'direction': direction}
+        return cleaned
+
     class Meta:
         model = UserPreferences
         fields = (
@@ -524,6 +558,7 @@ class UserPreferencesSerializer(serializers.ModelSerializer):
             'daily_journal_table_editor', 'daily_journal_view_mode',
             'journal_questions_positions_collapsed',
             'tutorials_progress', 'tutorials_auto_prompt_dismissed',
+            'trading_activity_ledger_sort',
             'created_at', 'updated_at',
         )
         read_only_fields = ('created_at', 'updated_at')
