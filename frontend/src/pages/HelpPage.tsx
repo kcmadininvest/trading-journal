@@ -83,11 +83,11 @@ const HelpPage: React.FC<HelpPageProps> = ({ initialSlug = null, onNavigateHash 
   const renderCard = (tut: TutorialDef) => {
     const status = getTutorialStatus(progress, tut.slug);
     return (
-      <li key={tut.slug}>
+      <li key={tut.slug} className="min-w-0 h-full">
         <button
           type="button"
           onClick={() => openTutorial(tut.slug)}
-          className="w-full text-left rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition-colors hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-blue-500"
+          className="flex h-full w-full flex-col text-left rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition-colors hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-blue-500"
           data-testid={`help-card-${tut.slug}`}
         >
           <div className="flex flex-wrap items-start justify-between gap-2">
@@ -171,7 +171,10 @@ const HelpPage: React.FC<HelpPageProps> = ({ initialSlug = null, onNavigateHash 
               <h2 id="help-section-further" className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">
                 {t('help:hub.sectionFurther')}
               </h2>
-              <ul className="space-y-3">{further.map(renderCard)}</ul>
+              {/* Grille 1×2 (1 col mobile, 2 cols dès sm) — 3 tutos go-further. */}
+              <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
+                {further.map(renderCard)}
+              </ul>
               {further.length === 0 && filtered.length === 0 && (
                 <p className="text-sm text-gray-500">{t('help:hub.noResults')}</p>
               )}
