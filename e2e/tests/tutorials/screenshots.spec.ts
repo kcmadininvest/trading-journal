@@ -298,6 +298,88 @@ const STEPS: Array<{
       ).toBeVisible();
     },
   },
+  {
+    slug: 'transactions-profitability',
+    step: 1,
+    hash: '#dashboard',
+    ready: async (page, locale) => {
+      await openManagementMenu(page, locale);
+      await expect(
+        page.getByRole('button', { name: locale === 'fr' ? /^Transactions$/i : /^Transactions$/i })
+      ).toBeVisible({ timeout: 15_000 });
+      await expect(
+        page.getByRole('button', {
+          name: locale === 'fr' ? /Rentabilité activité/i : /Activity profitability/i,
+        })
+      ).toBeVisible();
+    },
+  },
+  {
+    slug: 'transactions-profitability',
+    step: 2,
+    hash: '#transactions',
+    ready: async (page, locale) => {
+      await closeImportModal(page);
+      await selectDemoTopStepAccount(page);
+      await expect(
+        appMain(page).getByRole('heading', {
+          name: locale === 'fr' ? /Historique des transactions/i : /Transaction History/i,
+        })
+      ).toBeVisible({ timeout: 30_000 });
+      await expect(
+        appMain(page).getByRole('button', {
+          name: locale === 'fr' ? /Nouveau dépôt/i : /New Deposit/i,
+        })
+      ).toBeVisible();
+      // Doublons mobile/desktop : attached suffit
+      await expect(appMain(page).getByText(/TUTO-DEMO/i).first()).toBeAttached({ timeout: 30_000 });
+      await expect(appMain(page).getByText(/10[.,\s]?000/i).first()).toBeAttached();
+    },
+  },
+  {
+    slug: 'transactions-profitability',
+    step: 3,
+    hash: '#trading-activity',
+    ready: async (page, locale) => {
+      await expect(
+        appMain(page).getByRole('heading', {
+          name: locale === 'fr' ? /Soldes par devise/i : /Balances by currency/i,
+        })
+      ).toBeVisible({ timeout: 60_000 });
+      await expect(
+        appMain(page).getByRole('tab', {
+          name: locale === 'fr' ? /^Débit$/i : /^Debit$/i,
+        })
+      ).toBeVisible({ timeout: 30_000 });
+      await expect(appMain(page).getByText(/USD/i).first()).toBeVisible();
+    },
+  },
+  {
+    slug: 'transactions-profitability',
+    step: 4,
+    hash: '#trading-activity',
+    ready: async (page, locale) => {
+      await expect(
+        appMain(page).getByRole('heading', {
+          name: locale === 'fr' ? /Soldes par devise/i : /Balances by currency/i,
+        })
+      ).toBeVisible({ timeout: 60_000 });
+      const creditTab = appMain(page).getByRole('tab', {
+        name: locale === 'fr' ? /^Crédit$/i : /^Credit$/i,
+      });
+      await expect(creditTab).toBeVisible({ timeout: 30_000 });
+      await creditTab.click();
+      await expect(
+        appMain(page)
+          .getByText(locale === 'fr' ? /Retraits liés/i : /Linked withdrawals/i)
+          .first()
+      ).toBeAttached({ timeout: 30_000 });
+      await expect(appMain(page).getByText(/Demo TopStep Account/i).first()).toBeAttached({
+        timeout: 30_000,
+      });
+      await expect(appMain(page).getByText(/1[.,\s]?500/i).first()).toBeAttached();
+    },
+  },
 ];
 
 /** Évite le <main> de l’overlay ESLint Vite (`window window-collapsed`). */
@@ -402,6 +484,26 @@ async function openTradingApiSection(page: Page, locale: LocaleCode) {
       el.scrollIntoView({ block: 'center', inline: 'nearest' });
     });
   await page.waitForTimeout(300);
+}
+
+async function openManagementMenu(page: Page, locale: LocaleCode) {
+  await dismissOverlays(page);
+  const label = locale === 'fr' ? /^Gestion$/i : /^Management$/i;
+  const trigger = page.getByRole('banner').getByRole('button', { name: label });
+  await expect(trigger).toBeVisible({ timeout: 30_000 });
+  // Hover ouvre le menu ; un clic supplémentaire le refermerait (toggle).
+  await trigger.hover();
+  await page.waitForTimeout(250);
+  const profitability = page.getByRole('button', {
+    name: locale === 'fr' ? /Rentabilité activité/i : /Activity profitability/i,
+  });
+  if (!(await profitability.isVisible().catch(() => false))) {
+    await trigger.click();
+  }
+  await expect(profitability).toBeVisible({ timeout: 10_000 });
+  await expect(
+    page.getByRole('button', { name: /^Transactions$/i })
+  ).toBeVisible();
 }
 
 type QuestionsSection = 'templates' | 'day' | 'position';
@@ -626,7 +728,7 @@ async function captureStep(page: Page, target: string) {
 }
 
 test.describe('Tutorials screenshots (manual)', () => {
-  test('capture getting-started + import-trades + calendar + api-connections + journal-questions FR+EN', async ({
+  test('capture tutorials FR+EN (incl. transactions-profitability)', async ({
     page,
     browserName,
   }) => {
@@ -700,7 +802,8 @@ test.describe('Tutorials screenshots (manual)', () => {
     await expect(page.getByTestId('help-page')).toBeVisible({ timeout: 30_000 });
     await expect(page.getByTestId('help-card-api-connections')).toBeVisible();
     await expect(page.getByTestId('help-card-journal-questions')).toBeVisible();
-    await page.getByTestId('help-card-journal-questions').click();
-    await expect(page.getByTestId('tutorial-viewer-journal-questions')).toBeVisible();
+    await expect(page.getByTestId('help-card-transactions-profitability')).toBeVisible();
+    await page.getByTestId('help-card-transactions-profitability').click();
+    await expect(page.getByTestId('tutorial-viewer-transactions-profitability')).toBeVisible();
   });
 });

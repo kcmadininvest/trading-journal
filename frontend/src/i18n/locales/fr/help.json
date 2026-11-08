@@ -150,6 +150,32 @@
           "alt": "Page Questions du jour avec le formulaire de réponses"
         }
       }
+    },
+    "transactions-profitability": {
+      "title": "Transactions et rentabilité",
+      "summary": "Dépôts/retraits de compte, puis rentabilité d’activité (dépenses, crédits, impôts).",
+      "steps": {
+        "flow": {
+          "title": "Deux pages dans Gestion",
+          "body": "Dans le menu Gestion vous avez deux entrées complémentaires :\n1) Transactions = dépôts et retraits sur un compte de trading.\n2) Rentabilité activité = bilan métier (dépenses, crédits issus des retraits, paiements fiscaux).\nNe confondez pas le cash du compte et la rentabilité de l’activité.",
+          "alt": "Menu Gestion ouvert avec Transactions et Rentabilité activité"
+        },
+        "transactions": {
+          "title": "Gérer dépôts et retraits",
+          "body": "Ouvrez Transactions : choisissez le compte, puis Nouveau dépôt ou Nouveau retrait.\nL’historique liste les mouvements ; le solde du compte en tient compte (avec le PnL des trades).",
+          "alt": "Page Transactions avec historique et boutons dépôt / retrait"
+        },
+        "profitability": {
+          "title": "Voir la rentabilité d’activité",
+          "body": "Ouvrez Rentabilité activité : le résumé Soldes par devise montre crédits, dépenses et solde.\nLes onglets Débit / Crédit / Paiements fiscaux et sociaux servent à saisir le détail.",
+          "alt": "Page Rentabilité activité avec soldes par devise"
+        },
+        "link-credits": {
+          "title": "Lier retraits et crédits",
+          "body": "Dans l’onglet Crédit, ajoutez un crédit et liez-le à un ou plusieurs retraits de Transactions.\nAinsi le cash sorti du compte alimente le bilan d’activité sans double saisie confuse.",
+          "alt": "Onglet Crédit avec un retrait lié"
+        }
+      }
     }
   }
 }

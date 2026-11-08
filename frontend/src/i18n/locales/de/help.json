@@ -150,6 +150,32 @@
           "alt": "Seite Tagesfragen mit dem Antwortformular"
         }
       }
+    },
+    "transactions-profitability": {
+      "title": "Transaktionen und Rentabilität",
+      "summary": "Kontoein-/auszahlungen, dann Aktivitätsrentabilität (Ausgaben, Gutschriften, Steuern).",
+      "steps": {
+        "flow": {
+          "title": "Zwei Seiten unter Verwaltung",
+          "body": "Im Menü Verwaltung gibt es zwei ergänzende Einträge:\n1) Transaktionen = Ein- und Auszahlungen auf einem Handelskonto.\n2) Aktivitätsrentabilität = Geschäftsbilanz (Ausgaben, Gutschriften aus Auszahlungen, Steuerzahlungen).\nVerwechseln Sie Kontocash nicht mit der Aktivitätsrentabilität.",
+          "alt": "Menü Verwaltung mit Transaktionen und Aktivitätsrentabilität"
+        },
+        "transactions": {
+          "title": "Ein- und Auszahlungen verwalten",
+          "body": "Öffnen Sie Transaktionen: Konto wählen, dann Neue Einzahlung oder Neue Auszahlung.\nDie Historie listet Bewegungen; der Kontostand berücksichtigt sie.",
+          "alt": "Seite Transaktionen mit Historie und Ein-/Auszahlungsbuttons"
+        },
+        "profitability": {
+          "title": "Aktivitätsrentabilität ansehen",
+          "body": "Öffnen Sie Aktivitätsrentabilität: Salden nach Währung zeigen Gutschriften, Ausgaben und Saldo.\nRegister Debit / Credit / Steuer- und Sozialzahlungen dienen der Erfassung.",
+          "alt": "Seite Aktivitätsrentabilität mit Salden nach Währung"
+        },
+        "link-credits": {
+          "title": "Auszahlungen mit Gutschriften verknüpfen",
+          "body": "Im Register Credit fügen Sie eine Gutschrift hinzu und verknüpfen sie mit einer oder mehreren Auszahlungen aus Transaktionen.\nSo fließt das vom Konto abgezogene Geld in die Aktivitätsbilanz.",
+          "alt": "Register Credit mit verknüpfter Auszahlung"
+        }
+      }
     }
   }
 }

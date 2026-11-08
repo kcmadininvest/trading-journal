@@ -150,6 +150,32 @@
           "alt": "Página Perguntas do dia com o formulário de respostas"
         }
       }
+    },
+    "transactions-profitability": {
+      "title": "Transações e rentabilidade",
+      "summary": "Depósitos/levantamentos de conta, depois rentabilidade da atividade (despesas, créditos, impostos).",
+      "steps": {
+        "flow": {
+          "title": "Duas páginas em Gestão",
+          "body": "No menu Gestão há duas entradas complementares:\n1) Transações = depósitos e levantamentos numa conta de trading.\n2) Rentabilidade da atividade = balanço operacional (despesas, créditos de levantamentos, pagamentos fiscais).\nNão misture o cash da conta com a rentabilidade da atividade.",
+          "alt": "Menu Gestão aberto com Transações e Rentabilidade da atividade"
+        },
+        "transactions": {
+          "title": "Gerir depósitos e levantamentos",
+          "body": "Abra Transações: escolha a conta e depois Novo depósito ou Novo levantamento.\nO histórico lista os movimentos; o saldo da conta reflete-os.",
+          "alt": "Página Transações com histórico e botões depósito / levantamento"
+        },
+        "profitability": {
+          "title": "Ver a rentabilidade da atividade",
+          "body": "Abra Rentabilidade da atividade: Saldos por moeda mostra créditos, despesas e saldo.\nOs separadores Débito / Crédito / Pagamentos fiscais servem para o detalhe.",
+          "alt": "Página Rentabilidade da atividade com saldos por moeda"
+        },
+        "link-credits": {
+          "title": "Ligar levantamentos e créditos",
+          "body": "No separador Crédito, adicione um crédito e ligue-o a um ou vários levantamentos de Transações.\nAssim o cash saído da conta alimenta o balanço da atividade.",
+          "alt": "Separador Crédito com um levantamento ligado"
+        }
+      }
     }
   }
 }

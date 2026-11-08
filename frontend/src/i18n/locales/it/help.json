@@ -150,6 +150,32 @@
           "alt": "Pagina Domande del giorno con il modulo risposte"
         }
       }
+    },
+    "transactions-profitability": {
+      "title": "Transazioni e redditività",
+      "summary": "Depositi/prelievi del conto, poi redditività dell’attività (spese, crediti, imposte).",
+      "steps": {
+        "flow": {
+          "title": "Due pagine in Gestione",
+          "body": "Nel menu Gestione ci sono due voci complementari:\n1) Transazioni = depositi e prelievi su un conto di trading.\n2) Redditività attività = bilancio operativo (spese, crediti da prelievi, pagamenti fiscali).\nNon confondere il cash del conto con la redditività dell’attività.",
+          "alt": "Menu Gestione aperto con Transazioni e Redditività attività"
+        },
+        "transactions": {
+          "title": "Gestire depositi e prelievi",
+          "body": "Aprite Transazioni: scegliete il conto, poi Nuovo deposito o Nuovo prelievo.\nLa cronologia elenca i movimenti; il saldo del conto li riflette.",
+          "alt": "Pagina Transazioni con cronologia e pulsanti deposito / prelievo"
+        },
+        "profitability": {
+          "title": "Vedere la redditività dell’attività",
+          "body": "Aprite Redditività attività: Saldi per valuta mostra crediti, spese e saldo.\nLe schede Debito / Credito / Pagamenti fiscali servono al dettaglio.",
+          "alt": "Pagina Redditività attività con saldi per valuta"
+        },
+        "link-credits": {
+          "title": "Collegare prelievi e crediti",
+          "body": "Nella scheda Credito, aggiungete un credito e collegatelo a uno o più prelievi di Transazioni.\nCosì il cash uscito dal conto alimenta il bilancio dell’attività.",
+          "alt": "Scheda Credito con un prelievo collegato"
+        }
+      }
     }
   }
 }

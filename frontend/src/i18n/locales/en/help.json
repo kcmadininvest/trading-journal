@@ -150,6 +150,32 @@
           "alt": "Day questions page with the answers form"
         }
       }
+    },
+    "transactions-profitability": {
+      "title": "Transactions and profitability",
+      "summary": "Account deposits/withdrawals, then activity profitability (expenses, credits, taxes).",
+      "steps": {
+        "flow": {
+          "title": "Two pages under Management",
+          "body": "In the Management menu you have two complementary entries:\n1) Transactions = deposits and withdrawals on a trading account.\n2) Activity profitability = business ledger (expenses, credits from withdrawals, tax payments).\nDo not mix account cash movements with activity profitability.",
+          "alt": "Management menu open with Transactions and Activity profitability"
+        },
+        "transactions": {
+          "title": "Manage deposits and withdrawals",
+          "body": "Open Transactions: pick the account, then New Deposit or New Withdrawal.\nHistory lists cash moves; account balance reflects them (with trade PnL).",
+          "alt": "Transactions page with history and deposit / withdrawal buttons"
+        },
+        "profitability": {
+          "title": "View activity profitability",
+          "body": "Open Activity profitability: Balances by currency shows credits, expenses, and balance.\nDebit / Credit / Tax and social payments tabs are for detailed entries.",
+          "alt": "Activity profitability page with balances by currency"
+        },
+        "link-credits": {
+          "title": "Link withdrawals to credits",
+          "body": "On the Credit tab, add a credit and link it to one or more Transactions withdrawals.\nCash leaving the account then feeds the activity ledger without confusing double entry.",
+          "alt": "Credit tab with a linked withdrawal"
+        }
+      }
     }
   }
 }

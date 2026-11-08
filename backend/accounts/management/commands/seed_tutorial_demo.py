@@ -24,7 +24,12 @@ from daily_journal.models import (
 )
 from integrations.credentials_crypto import build_secrets_hint, encrypt_json
 from integrations.models import UserApiIntegration
-from trades.models import ImportedTrade, TradingAccount
+from trades.models import AccountTransaction, ImportedTrade, TradingAccount
+from trading_activity.models import (
+    TradingActivityCredit,
+    TradingActivityExpense,
+    TradingActivityExpenseCategory,
+)
 
 DEMO_EMAIL = 'tutorial-demo@example.invalid'
 DEMO_USERNAME = 'tutorial_demo'
@@ -235,6 +240,56 @@ class Command(BaseCommand):
         ensure_instance(day_q, plan_tpl, 1)
         ensure_instance(pos_q, grade_tpl, 0)
         ensure_instance(pos_q, plan_tpl, 1)
+
+        # Transactions + rentabilité activité (tuto Aide)
+        AccountTransaction.objects.filter(
+            user=user,
+            description__startswith='TUTO-DEMO',
+        ).delete()
+        TradingActivityExpense.objects.filter(user=user, label__startswith='TUTO-DEMO').delete()
+        TradingActivityCredit.objects.filter(user=user, notes__startswith='TUTO-DEMO').delete()
+
+        deposit_tx = AccountTransaction.objects.create(
+            user=user,
+            trading_account=topstep_account,
+            transaction_type='deposit',
+            amount=Decimal('10000.00'),
+            transaction_date=now - timedelta(days=5),
+            description='TUTO-DEMO dépôt initial',
+        )
+        withdrawal_tx = AccountTransaction.objects.create(
+            user=user,
+            trading_account=topstep_account,
+            transaction_type='withdrawal',
+            amount=Decimal('1500.00'),
+            transaction_date=now - timedelta(days=2),
+            description='TUTO-DEMO retrait vers banque',
+        )
+        _ = deposit_tx  # utilisé pour l’historique Transactions
+
+        category, _ = TradingActivityExpenseCategory.objects.get_or_create(
+            user=user,
+            name='Data / plateforme',
+        )
+        TradingActivityExpense.objects.create(
+            user=user,
+            date=(now - timedelta(days=3)).date(),
+            primary_currency='USD',
+            subtotal=Decimal('80.00'),
+            vat_amount=Decimal('0.00'),
+            total=Decimal('80.00'),
+            category=category,
+            label='TUTO-DEMO abonnement data',
+            notes='Dépense démo tutoriel',
+        )
+        credit = TradingActivityCredit.objects.create(
+            user=user,
+            date=(now - timedelta(days=2)).date(),
+            primary_currency='USD',
+            amount=Decimal('1500.00'),
+            notes='TUTO-DEMO crédit lié au retrait',
+        )
+        credit.linked_account_transactions.set([withdrawal_tx])
 
         action = 'créé' if created else 'mis à jour'
         self.stdout.write(self.style.SUCCESS(

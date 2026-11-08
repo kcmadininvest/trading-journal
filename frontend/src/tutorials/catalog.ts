@@ -76,6 +76,17 @@ export const TUTORIALS: TutorialDef[] = [
       { id: 'answer-daily', imageStep: 4 },
     ],
   },
+  {
+    slug: 'transactions-profitability',
+    section: 'go-further',
+    estimatedMinutes: 5,
+    steps: [
+      { id: 'flow', imageStep: 1 },
+      { id: 'transactions', imageStep: 2 },
+      { id: 'profitability', imageStep: 3 },
+      { id: 'link-credits', imageStep: 4 },
+    ],
+  },
 ];
 
 export const TUTORIAL_BY_SLUG: Record<string, TutorialDef> = Object.fromEntries(

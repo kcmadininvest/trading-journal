@@ -150,6 +150,32 @@
           "alt": "Página Preguntas del día con el formulario de respuestas"
         }
       }
+    },
+    "transactions-profitability": {
+      "title": "Transacciones y rentabilidad",
+      "summary": "Depósitos/retiradas de cuenta, luego rentabilidad de actividad (gastos, créditos, impuestos).",
+      "steps": {
+        "flow": {
+          "title": "Dos páginas en Gestión",
+          "body": "En el menú Gestión hay dos entradas complementarias:\n1) Transacciones = depósitos y retiradas de una cuenta.\n2) Rentabilidad de actividad = libro de negocio (gastos, créditos de retiradas, pagos fiscales).\nNo mezcle el efectivo de la cuenta con la rentabilidad de la actividad.",
+          "alt": "Menú Gestión abierto con Transacciones y Rentabilidad de actividad"
+        },
+        "transactions": {
+          "title": "Gestionar depósitos y retiradas",
+          "body": "Abra Transacciones: elija la cuenta y luego Nuevo depósito o Nueva retirada.\nEl historial lista los movimientos; el saldo de la cuenta los refleja.",
+          "alt": "Página Transacciones con historial y botones depósito / retirada"
+        },
+        "profitability": {
+          "title": "Ver la rentabilidad de actividad",
+          "body": "Abra Rentabilidad de actividad: Saldos por divisa muestra créditos, gastos y saldo.\nLas pestañas Débito / Crédito / Pagos fiscales sirven para el detalle.",
+          "alt": "Página Rentabilidad de actividad con saldos por divisa"
+        },
+        "link-credits": {
+          "title": "Vincular retiradas y créditos",
+          "body": "En la pestaña Crédito, añada un crédito y vincúlelo a una o varias retiradas de Transacciones.\nAsí el efectivo salido de la cuenta alimenta el libro de actividad.",
+          "alt": "Pestaña Crédito con una retirada vinculada"
+        }
+      }
     }
   }
 }
