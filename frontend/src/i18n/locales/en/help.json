@@ -202,6 +202,32 @@
           "alt": "Market Replay page with playback controls and position panel"
         }
       }
+    },
+    "position-strategies": {
+      "title": "Strategy management",
+      "summary": "Define your position-taking rules (sections, checklist) and track their version history.",
+      "steps": {
+        "flow": {
+          "title": "Where to find it",
+          "body": "Strategy Management (Strategies menu) is your trading playbook: sections, rules, active/draft/archived status.\nThese strategies also feed the backtest journal and dashboard filters.",
+          "alt": "Strategies menu with Strategy Management"
+        },
+        "list": {
+          "title": "Browse your strategies",
+          "body": "The page lists strategies with filters (active, drafts, archived) and search.\nUse New strategy to create one, or View / Edit / Versions on a card.",
+          "alt": "List of position strategies"
+        },
+        "edit-sections": {
+          "title": "Write sections and rules",
+          "body": "In the form, add sections (e.g. Setup, Entry, Invalidation) and checklist rules.\nYou can reorder sections and rules, then Save.",
+          "alt": "Edit form with sections and rules"
+        },
+        "versions": {
+          "title": "Version history",
+          "body": "Important saves can create a new version. Open Versions to compare, restore, or review history.\nKeep your playbook evolution without overwriting the past.",
+          "alt": "Version history modal"
+        }
+      }
     }
   }
 }

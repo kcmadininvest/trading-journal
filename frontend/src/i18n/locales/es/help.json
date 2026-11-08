@@ -202,6 +202,32 @@
           "alt": "Página Market Replay con controles y panel de posición"
         }
       }
+    },
+    "position-strategies": {
+      "title": "Gestión de estrategia",
+      "summary": "Definir reglas de toma de posición (secciones, checklist) y seguir el historial de versiones.",
+      "steps": {
+        "flow": {
+          "title": "Dónde encontrarla",
+          "body": "Gestión de estrategia (menú Estrategias) es su playbook: secciones, reglas, estado activo/borrador/archivado.\nTambién alimenta el diario de backtest y los filtros del panel.",
+          "alt": "Menú Estrategias con Gestión de estrategia"
+        },
+        "list": {
+          "title": "Recorrer sus estrategias",
+          "body": "La página lista estrategias con filtros (activas, borradores, archivadas) y búsqueda.\nUse Nueva estrategia o Ver / Editar / Versiones en una tarjeta.",
+          "alt": "Lista de estrategias de posición"
+        },
+        "edit-sections": {
+          "title": "Escribir secciones y reglas",
+          "body": "En el formulario, añada secciones (Setup, Entrada, Invalidación) y reglas checklist.\nPuede reordenar y luego Guardar.",
+          "alt": "Formulario de edición con secciones y reglas"
+        },
+        "versions": {
+          "title": "Historial de versiones",
+          "body": "Los guardados importantes pueden crear una versión. Abra Versiones para comparar o restaurar.\nConserve la evolución del playbook sin borrar el pasado.",
+          "alt": "Modal Historial de versiones"
+        }
+      }
     }
   }
 }

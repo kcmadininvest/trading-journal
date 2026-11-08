@@ -24,6 +24,8 @@ import { expect, test, type Page } from '@playwright/test';
 const DEMO_EMAIL = process.env.TUTORIAL_DEMO_EMAIL || 'tutorial-demo@example.invalid';
 const DEMO_PASSWORD =
   process.env.TUTORIAL_DEMO_PASSWORD || 'TutorialDemo!234';
+/** Filtre optionnel : `TUTORIAL_ONLY_SLUG=position-strategies` ne capture que ce tuto. */
+const ONLY_SLUG = (process.env.TUTORIAL_ONLY_SLUG || '').trim();
 
 const repoRoot = path.resolve(__dirname, '../../..');
 const outRoot = path.join(repoRoot, 'frontend/public/tutorials');
@@ -452,6 +454,105 @@ const STEPS: Array<{
       ).toBeAttached({ timeout: 30_000 });
     },
   },
+  {
+    slug: 'position-strategies',
+    step: 1,
+    hash: '#dashboard',
+    ready: async (page, locale) => {
+      await openStrategiesMenu(page, locale);
+      await expect(
+        page.getByRole('button', {
+          name: locale === 'fr' ? /Gestion de Stratégie/i : /Strategy Management/i,
+        })
+      ).toBeVisible({ timeout: 15_000 });
+    },
+  },
+  {
+    slug: 'position-strategies',
+    step: 2,
+    hash: '#position-strategies',
+    ready: async (page, locale) => {
+      // Pas de h1 page dans le main — titre sync header ; repères liste + CTA.
+      await expect(
+        appMain(page).getByRole('button', {
+          name: locale === 'fr' ? /Nouvelle stratégie/i : /New strategy/i,
+        })
+      ).toBeVisible({ timeout: 60_000 });
+      await expect(
+        appMain(page).getByRole('heading', { name: /TUTO-DEMO OR Retrace/i })
+      ).toBeVisible({ timeout: 30_000 });
+    },
+  },
+  {
+    slug: 'position-strategies',
+    step: 3,
+    hash: '#position-strategies',
+    ready: async (page, locale) => {
+      await expect(
+        appMain(page).getByRole('heading', { name: /TUTO-DEMO OR Retrace/i })
+      ).toBeVisible({ timeout: 60_000 });
+      // Bouton Modifier = icône crayon (Tooltip, pas d’accessible name / title).
+      const editBtn = appMain(page)
+        .locator('button')
+        .filter({ has: page.locator('path[d^="M11 5H6"]') })
+        .first();
+      if (await editBtn.isVisible().catch(() => false)) {
+        await editBtn.click();
+      } else {
+        await appMain(page)
+          .getByRole('button', {
+            name: locale === 'fr' ? /Nouvelle stratégie/i : /New strategy/i,
+          })
+          .click();
+      }
+      await expect(
+        page
+          .getByRole('heading', {
+            name:
+              locale === 'fr'
+                ? /Modifier la stratégie|Nouvelle stratégie/i
+                : /Edit strategy|New strategy/i,
+          })
+          .first()
+      ).toBeVisible({ timeout: 30_000 });
+      await expect(
+        page
+          .getByText(
+            locale === 'fr'
+              ? /Sections de la stratégie|Ajouter une section/i
+              : /Strategy sections|Add a section/i
+          )
+          .first()
+      ).toBeAttached({ timeout: 15_000 });
+    },
+  },
+  {
+    slug: 'position-strategies',
+    step: 4,
+    hash: '#position-strategies',
+    ready: async (page, locale) => {
+      const cancel = page.getByRole('button', {
+        name: locale === 'fr' ? /^Annuler$/i : /^Cancel$/i,
+      });
+      if (await cancel.isVisible().catch(() => false)) {
+        await cancel.click();
+        await page.waitForTimeout(400);
+      }
+      await expect(
+        appMain(page).getByRole('heading', { name: /TUTO-DEMO OR Retrace/i })
+      ).toBeVisible({ timeout: 60_000 });
+      // Bouton Versions = horloge + compteur (nom accessible = le chiffre).
+      const versionsBtn = appMain(page).getByRole('button', { name: /^[0-9]+$/ }).first();
+      await expect(versionsBtn).toBeVisible({ timeout: 15_000 });
+      await versionsBtn.click();
+      await expect(
+        page.getByRole('heading', {
+          name: locale === 'fr' ? /Historique des versions/i : /Version history/i,
+        })
+      ).toBeVisible({ timeout: 30_000 });
+      await expect(page.getByText(/TUTO-DEMO|v\s*\d+|Version\s*\d+/i).first()).toBeAttached();
+    },
+  },
 ];
 
 /** Évite le <main> de l’overlay ESLint Vite (`window window-collapsed`). */
@@ -515,6 +616,11 @@ async function closeImportModal(page: Page) {
 
 async function closeDayTradesModal(page: Page) {
   await closeFixedModal(page, /Trades du jour|Day Trades/i);
+}
+
+async function closeStrategyModals(page: Page) {
+  await closeFixedModal(page, /Historique des versions|Version history/i);
+  await closeFixedModal(page, /Modifier la stratégie|Edit strategy|Nouvelle stratégie|New strategy/i);
 }
 
 async function openDayTradesModal(page: Page, locale: LocaleCode) {
@@ -744,6 +850,7 @@ async function login(page: Page) {
 async function setUiLanguage(page: Page, locale: (typeof LOCALES)[number]) {
   await closeImportModal(page);
   await closeDayTradesModal(page);
+  await closeStrategyModals(page);
   await dismissOverlays(page);
   const langButton = page.getByRole('button', { name: /Language|Langue|Idioma|Sprache/i }).first();
   await langButton.click();
@@ -842,7 +949,14 @@ test.describe('Tutorials screenshots (manual)', () => {
       fs.mkdirSync(localeDir, { recursive: true });
       digestsByLocale[locale.code] = [];
 
-      for (const step of STEPS) {
+      const stepsToCapture = ONLY_SLUG
+        ? STEPS.filter((s) => s.slug === ONLY_SLUG)
+        : STEPS;
+      if (ONLY_SLUG && stepsToCapture.length === 0) {
+        throw new Error(`TUTORIAL_ONLY_SLUG inconnu: ${ONLY_SLUG}`);
+      }
+
+      for (const step of stepsToCapture) {
         // eslint-disable-next-line no-console
         console.log(`[tutorials] ${locale.code} ${step.slug}#${step.step} → ${step.hash}`);
         await goHash(page, step.hash);
@@ -884,6 +998,7 @@ test.describe('Tutorials screenshots (manual)', () => {
 
       await closeImportModal(page);
       await closeDayTradesModal(page);
+      await closeStrategyModals(page);
     }
 
     const frJoined = digestsByLocale.fr.join('|');
@@ -897,7 +1012,8 @@ test.describe('Tutorials screenshots (manual)', () => {
     await expect(page.getByTestId('help-card-journal-questions')).toBeVisible();
     await expect(page.getByTestId('help-card-transactions-profitability')).toBeVisible();
     await expect(page.getByTestId('help-card-backtest-market-replay')).toBeVisible();
-    await page.getByTestId('help-card-backtest-market-replay').click();
-    await expect(page.getByTestId('tutorial-viewer-backtest-market-replay')).toBeVisible();
+    await expect(page.getByTestId('help-card-position-strategies')).toBeVisible();
+    await page.getByTestId('help-card-position-strategies').click();
+    await expect(page.getByTestId('tutorial-viewer-position-strategies')).toBeVisible();
   });
 });

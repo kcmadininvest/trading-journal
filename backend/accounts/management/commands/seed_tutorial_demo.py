@@ -14,6 +14,7 @@ from datetime import timedelta
 from decimal import Decimal
 
 from django.core.management.base import BaseCommand
+from django.db.models import Q
 from django.utils import timezone
 
 from accounts.models import User, UserPreferences
@@ -66,8 +67,15 @@ class Command(BaseCommand):
         )
 
         if options['reset']:
-            User.objects.filter(email=DEMO_EMAIL).delete()
-            User.objects.filter(username=DEMO_USERNAME).delete()
+            # ManualBacktestStrategy.position_strategy est PROTECT : supprimer
+            # campagnes → journaux backtest avant le User (sinon ProtectedError).
+            demo_users = User.objects.filter(
+                Q(email=DEMO_EMAIL) | Q(username=DEMO_USERNAME)
+            )
+            for demo_user in demo_users:
+                ManualBacktestCampaign.objects.filter(user=demo_user).delete()
+                ManualBacktestStrategy.objects.filter(user=demo_user).delete()
+            demo_users.delete()
             self.stdout.write('Ancien compte démo supprimé.')
 
         user, created = User.objects.get_or_create(
@@ -296,49 +304,81 @@ class Command(BaseCommand):
         )
         credit.linked_account_transactions.set([withdrawal_tx])
 
-        # Journal de backtest + Market Replay (tuto Aide)
-        position, _ = PositionStrategy.objects.update_or_create(
+        # Gestion de stratégie + journal de backtest / Market Replay (tutos Aide).
+        # Recréer à chaque seed : title non unique (versions) + PROTECT backtest.
+        ManualBacktestCampaign.objects.filter(user=user, name__startswith='TUTO-DEMO').delete()
+        ManualBacktestStrategy.objects.filter(
+            user=user,
+            name__startswith='TUTO-DEMO',
+        ).delete()
+        PositionStrategy.objects.filter(
             user=user,
             title='TUTO-DEMO OR Retrace',
-            defaults={
-                'status': 'active',
-                'is_current': True,
-                'description': 'Stratégie démo pour captures tutoriel.',
-                'strategy_content': {
-                    'sections': [{'title': 'Setup', 'rules': ['Opening range retrace']}],
+            parent_strategy__isnull=False,
+        ).delete()
+        PositionStrategy.objects.filter(user=user, title='TUTO-DEMO OR Retrace').delete()
+
+        strategy_content = {
+            'sections': [
+                {
+                    'title': 'Setup',
+                    'rules': [
+                        'Opening range formé',
+                        'Retest de la borne avec volume',
+                    ],
                 },
-            },
+                {
+                    'title': 'Entrée',
+                    'rules': [
+                        'Entrée au retest',
+                        'Stop sous / au-dessus de l’OR',
+                    ],
+                },
+                {
+                    'title': 'Invalidation',
+                    'rules': ['Clôture au-delà de l’OR contre le sens'],
+                },
+            ],
+        }
+        position = PositionStrategy.objects.create(
+            user=user,
+            title='TUTO-DEMO OR Retrace',
+            status='active',
+            is_current=True,
+            description='Stratégie démo pour captures tutoriel.',
+            strategy_content=strategy_content,
+            version_notes='TUTO-DEMO v1',
         )
-        bt_strategy, _ = ManualBacktestStrategy.objects.update_or_create(
+        # Seconde version pour le modal Historique des versions
+        position = position.create_new_version(
+            new_content=strategy_content,
+            version_notes='TUTO-DEMO v2 — règles clarifiées',
+        )
+
+        bt_strategy = ManualBacktestStrategy.objects.create(
             user=user,
             position_strategy=position,
-            defaults={
-                'name': position.title,
-                'description': 'Journal démo tutoriel',
-                'default_instrument': 'NQ',
-                'status': 'active',
-            },
+            name=position.title,
+            description='Journal démo tutoriel',
+            default_instrument='NQ',
+            status='active',
         )
-        bt_version, _ = ManualBacktestVersion.objects.get_or_create(
+        bt_version = ManualBacktestVersion.objects.create(
             strategy=bt_strategy,
             version=1,
-            defaults={
-                'setup_rules': 'TUTO-DEMO setup',
-                'entry_rules': 'TUTO-DEMO entry',
-            },
+            setup_rules='TUTO-DEMO setup',
+            entry_rules='TUTO-DEMO entry',
         )
-        ManualBacktestCampaign.objects.update_or_create(
+        ManualBacktestCampaign.objects.create(
             user=user,
             strategy_version=bt_version,
             name='TUTO-DEMO NQ campagne',
-            defaults={
-                'instrument': 'NQ',
-                'period_start': (now - timedelta(days=90)).date(),
-                'period_end': (now + timedelta(days=30)).date(),
-                'timezone': 'America/New_York',
-                'status': 'IN_PROGRESS',
-                'notes': 'Campagne démo tutoriel',
-            },
+            instrument='NQ',
+            period_start=(now - timedelta(days=90)).date(),
+            period_end=(now + timedelta(days=30)).date(),
+            timezone='America/New_York',
+            status='IN_PROGRESS',
+            notes='Campagne démo tutoriel',
         )
 
         action = 'créé' if created else 'mis à jour'

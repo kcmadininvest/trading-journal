@@ -202,6 +202,32 @@
           "alt": "Market Replay mit Steuerung und Positionspanel"
         }
       }
+    },
+    "position-strategies": {
+      "title": "Strategieverwaltung",
+      "summary": "Positionsregeln (Abschnitte, Checkliste) festlegen und die Versionshistorie verfolgen.",
+      "steps": {
+        "flow": {
+          "title": "Wo finden",
+          "body": "Strategieverwaltung (Menü Strategien) ist Ihr Playbook: Abschnitte, Regeln, Status aktiv/Entwurf/archiviert.\nSie speist auch das Backtest-Journal und Dashboard-Filter.",
+          "alt": "Menü Strategien mit Strategieverwaltung"
+        },
+        "list": {
+          "title": "Strategien durchsehen",
+          "body": "Die Seite listet Strategien mit Filtern (aktiv, Entwürfe, archiviert) und Suche.\nNeue Strategie oder Ansehen / Bearbeiten / Versionen auf einer Karte.",
+          "alt": "Liste der Positionsstrategien"
+        },
+        "edit-sections": {
+          "title": "Abschnitte und Regeln schreiben",
+          "body": "Im Formular Abschnitte (Setup, Einstieg, Invalidierung) und Checklistenregeln hinzufügen.\nNeu ordnen, dann Speichern.",
+          "alt": "Bearbeitungsformular mit Abschnitten und Regeln"
+        },
+        "versions": {
+          "title": "Versionshistorie",
+          "body": "Wichtige Speicherungen können eine neue Version erzeugen. Öffnen Sie Versionen zum Vergleichen oder Wiederherstellen.\nSo bleibt die Playbook-Entwicklung erhalten.",
+          "alt": "Modal Versionshistorie"
+        }
+      }
     }
   }
 }

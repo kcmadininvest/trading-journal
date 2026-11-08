@@ -202,6 +202,32 @@
           "alt": "Page Market Replay avec contrôles de lecture et panneau position"
         }
       }
+    },
+    "position-strategies": {
+      "title": "Gestion de stratégie",
+      "summary": "Définir vos règles de prise de position (sections, checklist) et suivre leur historique de versions.",
+      "steps": {
+        "flow": {
+          "title": "Où la trouver",
+          "body": "Gestion de Stratégie (menu Stratégies) sert à écrire votre playbook de trading : sections, règles, statut actif/brouillon/archivé.\nCes stratégies alimentent aussi le journal de backtest et les filtres du tableau de bord.",
+          "alt": "Menu Stratégies avec Gestion de Stratégie"
+        },
+        "list": {
+          "title": "Parcourir vos stratégies",
+          "body": "La page liste vos stratégies avec filtres (actives, brouillons, archivées) et la recherche.\nUtilisez Nouvelle stratégie pour en créer une, ou les actions Voir / Modifier / Versions sur une carte.",
+          "alt": "Liste des stratégies de prise de position"
+        },
+        "edit-sections": {
+          "title": "Écrire sections et règles",
+          "body": "Dans le formulaire, ajoutez des sections (ex. Setup, Entrée, Invalidation) et des règles checklist.\nVous pouvez réordonner sections et règles, puis Enregistrer.",
+          "alt": "Formulaire d’édition avec sections et règles"
+        },
+        "versions": {
+          "title": "Historique des versions",
+          "body": "Chaque enregistrement important peut créer une nouvelle version. Ouvrez Versions pour comparer, restaurer ou revoir l’historique.\nGardez ainsi l’évolution de votre playbook sans écraser le passé.",
+          "alt": "Modal Historique des versions"
+        }
+      }
     }
   }
 }
