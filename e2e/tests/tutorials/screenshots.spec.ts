@@ -383,78 +383,6 @@ const STEPS: Array<{
     },
   },
   {
-    slug: 'backtest-market-replay',
-    step: 1,
-    hash: '#dashboard',
-    ready: async (page, locale) => {
-      await openStrategiesMenu(page, locale);
-      await expect(
-        page.getByRole('button', {
-          name: locale === 'fr' ? /Journal de backtest/i : /Backtest journal/i,
-        })
-      ).toBeVisible({ timeout: 15_000 });
-      await expect(
-        page.getByRole('button', { name: /Market Replay/i })
-      ).toBeVisible();
-    },
-  },
-  {
-    slug: 'backtest-market-replay',
-    step: 2,
-    hash: '#backtest-journal',
-    ready: async (page, locale) => {
-      await expect(
-        appMain(page).getByRole('heading', {
-          name: locale === 'fr' ? /Journal de backtest/i : /Backtest journal/i,
-        })
-      ).toBeVisible({ timeout: 60_000 });
-      await expect(appMain(page).getByText(/TUTO-DEMO OR Retrace/i).first()).toBeAttached({
-        timeout: 30_000,
-      });
-    },
-  },
-  {
-    slug: 'backtest-market-replay',
-    step: 3,
-    hash: '#historical-data',
-    ready: async (page, locale) => {
-      // Pas de h1 « Données historiques » dans le main — le titre vit dans le header.
-      await expect(
-        appMain(page).getByRole('heading', {
-          name: locale === 'fr' ? /Mise à jour automatique/i : /Automatic update/i,
-        })
-      ).toBeVisible({ timeout: 60_000 });
-      await expect(
-        appMain(page)
-          .getByText(
-            locale === 'fr'
-              ? /Téléchargement historique|TopStepX|Lancer le téléchargement/i
-              : /Historical backfill|TopStepX|Start download/i
-          )
-          .first()
-      ).toBeAttached({ timeout: 30_000 });
-    },
-  },
-  {
-    slug: 'backtest-market-replay',
-    step: 4,
-    hash: '#market-replay',
-    ready: async (page, locale) => {
-      await expect(
-        appMain(page).getByRole('heading', { name: /Market Replay/i })
-      ).toBeVisible({ timeout: 60_000 });
-      await expect(
-        appMain(page)
-          .getByText(
-            locale === 'fr'
-              ? /Choisissez un actif|Rejouez l’historique|Lecture/i
-              : /Choose an instrument|Replay|Play/i
-          )
-          .first()
-      ).toBeAttached({ timeout: 30_000 });
-    },
-  },
-  {
     slug: 'position-strategies',
     step: 1,
     hash: '#dashboard',
@@ -552,7 +480,79 @@ const STEPS: Array<{
       ).toBeVisible({ timeout: 30_000 });
       await expect(page.getByText(/TUTO-DEMO|v\s*\d+|Version\s*\d+/i).first()).toBeAttached();
     },
+  },  {
+    slug: 'backtest-market-replay',
+    step: 1,
+    hash: '#dashboard',
+    ready: async (page, locale) => {
+      await openStrategiesMenu(page, locale);
+      await expect(
+        page.getByRole('button', {
+          name: locale === 'fr' ? /Journal de backtest/i : /Backtest journal/i,
+        })
+      ).toBeVisible({ timeout: 15_000 });
+      await expect(
+        page.getByRole('button', { name: /Market Replay/i })
+      ).toBeVisible();
+    },
   },
+  {
+    slug: 'backtest-market-replay',
+    step: 2,
+    hash: '#backtest-journal',
+    ready: async (page, locale) => {
+      await expect(
+        appMain(page).getByRole('heading', {
+          name: locale === 'fr' ? /Journal de backtest/i : /Backtest journal/i,
+        })
+      ).toBeVisible({ timeout: 60_000 });
+      await expect(appMain(page).getByText(/TUTO-DEMO OR Retrace/i).first()).toBeAttached({
+        timeout: 30_000,
+      });
+    },
+  },
+  {
+    slug: 'backtest-market-replay',
+    step: 3,
+    hash: '#historical-data',
+    ready: async (page, locale) => {
+      // Pas de h1 « Données historiques » dans le main — le titre vit dans le header.
+      await expect(
+        appMain(page).getByRole('heading', {
+          name: locale === 'fr' ? /Mise à jour automatique/i : /Automatic update/i,
+        })
+      ).toBeVisible({ timeout: 60_000 });
+      await expect(
+        appMain(page)
+          .getByText(
+            locale === 'fr'
+              ? /Téléchargement historique|TopStepX|Lancer le téléchargement/i
+              : /Historical backfill|TopStepX|Start download/i
+          )
+          .first()
+      ).toBeAttached({ timeout: 30_000 });
+    },
+  },
+  {
+    slug: 'backtest-market-replay',
+    step: 4,
+    hash: '#market-replay',
+    ready: async (page, locale) => {
+      await expect(
+        appMain(page).getByRole('heading', { name: /Market Replay/i })
+      ).toBeVisible({ timeout: 60_000 });
+      await expect(
+        appMain(page)
+          .getByText(
+            locale === 'fr'
+              ? /Choisissez un actif|Rejouez l’historique|Lecture/i
+              : /Choose an instrument|Replay|Play/i
+          )
+          .first()
+      ).toBeAttached({ timeout: 30_000 });
+    },
+  },
+
 ];
 
 /** Évite le <main> de l’overlay ESLint Vite (`window window-collapsed`). */

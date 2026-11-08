@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   P0_SLUG,
+  TUTORIALS,
   TUTORIAL_BY_SLUG,
   getTutorialStatus,
   isP0Incomplete,
@@ -29,12 +30,16 @@ describe('tutorials catalog', () => {
     expect(TUTORIAL_BY_SLUG['transactions-profitability']?.stub).toBeFalsy();
     expect(TUTORIAL_BY_SLUG['transactions-profitability']?.section).toBe('go-further');
     expect(TUTORIAL_BY_SLUG['transactions-profitability']?.steps).toHaveLength(4);
-    expect(TUTORIAL_BY_SLUG['backtest-market-replay']?.stub).toBeFalsy();
-    expect(TUTORIAL_BY_SLUG['backtest-market-replay']?.section).toBe('go-further');
-    expect(TUTORIAL_BY_SLUG['backtest-market-replay']?.steps).toHaveLength(4);
     expect(TUTORIAL_BY_SLUG['position-strategies']?.stub).toBeFalsy();
     expect(TUTORIAL_BY_SLUG['position-strategies']?.section).toBe('go-further');
     expect(TUTORIAL_BY_SLUG['position-strategies']?.steps).toHaveLength(4);
+    expect(TUTORIAL_BY_SLUG['backtest-market-replay']?.stub).toBeFalsy();
+    expect(TUTORIAL_BY_SLUG['backtest-market-replay']?.section).toBe('go-further');
+    expect(TUTORIAL_BY_SLUG['backtest-market-replay']?.steps).toHaveLength(4);
+    const goFurther = TUTORIALS.filter((t) => t.section === 'go-further').map((t) => t.slug);
+    expect(goFurther.indexOf('position-strategies')).toBeLessThan(
+      goFurther.indexOf('backtest-market-replay')
+    );
   });
 
   it('tracks progress helpers', () => {
