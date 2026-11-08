@@ -164,14 +164,15 @@ const HelpPage: React.FC<HelpPageProps> = ({ initialSlug = null, onNavigateHash 
               <h2 id="help-section-start" className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">
                 {t('help:hub.sectionStart')}
               </h2>
-              <ul className="space-y-3">{starters.map(renderCard)}</ul>
+              <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
+                {starters.map(renderCard)}
+              </ul>
             </section>
 
             <section aria-labelledby="help-section-further">
               <h2 id="help-section-further" className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">
                 {t('help:hub.sectionFurther')}
               </h2>
-              {/* Grille 1×2 (1 col mobile, 2 cols dès sm) — 3 tutos go-further. */}
               <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
                 {further.map(renderCard)}
               </ul>
