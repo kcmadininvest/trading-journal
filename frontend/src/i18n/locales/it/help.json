@@ -69,11 +69,11 @@
     },
     "import-trades": {
       "title": "Importare i trade",
-      "summary": "CSV, colonne e controlli prima della conferma.",
+      "summary": "A cosa serve: caricare i trade da un CSV senza inserirli uno per uno. Colonne e controlli prima della conferma.",
       "steps": {
         "open-import": {
           "title": "Aprire l’importazione",
-          "body": "Dalla pagina Trade avvia Importa. Scegli il conto di destinazione e poi il file CSV.",
+          "body": "A cosa serve: importare rapidamente uno storico di trade da un CSV invece di digitarli a mano.\nDalla pagina Trade avvia Importa. Scegli il conto di destinazione e poi il file CSV.",
           "alt": "Pulsante Importa nella pagina Trade"
         },
         "format": {
@@ -85,11 +85,11 @@
     },
     "calendar": {
       "title": "Calendario PnL",
-      "summary": "Vista mensile dei risultati giorno per giorno.",
+      "summary": "A cosa serve: vedere il PnL giorno per giorno per individuare serie vincenti o perdenti.",
       "steps": {
         "overview": {
           "title": "Panoramica",
-          "body": "Il calendario colora ogni giorno in base al PnL. Spostati tra i mesi per individuare le serie.",
+          "body": "A cosa serve: vedere a colpo d’occhio il risultato di ogni giornata e le tendenze del mese.\nIl calendario colora ogni giorno in base al PnL. Spostati tra i mesi per individuare le serie.",
           "alt": "Calendario PnL mensile"
         },
         "day-detail": {
@@ -101,11 +101,11 @@
     },
     "api-connections": {
       "title": "Connessioni API",
-      "summary": "Collega un broker per preparare le sincronizzazioni automatiche.",
+      "summary": "A cosa serve: collegare un broker per sincronizzare i trade automaticamente, senza reimportare ogni volta.",
       "steps": {
         "open-settings": {
           "title": "Apri Connessioni API",
-          "body": "Vai in Impostazioni → Trading, poi scorri fino al blocco Connessioni API.\nOggi è disponibile solo TopStepX; altre connessioni potranno aggiungersi in seguito.",
+          "body": "A cosa serve: collegare il broker (es. TopStepX) per recuperare i trade automaticamente con Sincronizza.\nVai in Impostazioni → Trading, poi scorri fino al blocco Connessioni API.\nOggi è disponibile solo TopStepX; altre connessioni potranno aggiungersi in seguito.",
           "alt": "Impostazioni scheda Trading con il blocco Connessioni API e la scheda TopStepX"
         },
         "credentials": {
@@ -127,11 +127,11 @@
     },
     "journal-questions": {
       "title": "Domande del diario",
-      "summary": "Modelli, questionari giorno/posizioni, poi risposte quotidiane.",
+      "summary": "A cosa serve: strutturare la revisione di trading con domande riutilizzabili (giorno e posizioni).",
       "steps": {
         "flow": {
           "title": "Capire la sequenza",
-          "body": "Tre livelli si concatenano:\n1) Modelli = libreria riutilizzabile.\n2) Questionario del giorno e delle posizioni = copie pronte all’uso.\n3) Risposte = pagina Domande (giorno) e per trade.\nApri Impostazioni → Questionario per vedere le tre schede.",
+          "body": "A cosa serve: capitalizzare ogni sessione con domande fisse (mindset, piano, voto del trade…) invece di note sparse.\nTre livelli si concatenano:\n1) Modelli = libreria riutilizzabile.\n2) Questionario del giorno e delle posizioni = copie pronte all’uso.\n3) Risposte = pagina Domande (giorno) e per trade.\nApri Impostazioni → Questionario per vedere le tre schede.",
           "alt": "Impostazioni Domande con schede Modelli, Questionario del giorno e Questionario posizioni"
         },
         "templates": {
@@ -153,11 +153,11 @@
     },
     "transactions-profitability": {
       "title": "Transazioni e redditività",
-      "summary": "Depositi/prelievi del conto, poi redditività dell’attività (spese, crediti, imposte).",
+      "summary": "A cosa serve: seguire il cash del conto (depositi/prelievi) e la redditività reale dell’attività (spese, crediti, imposte).",
       "steps": {
         "flow": {
           "title": "Due pagine in Gestione",
-          "body": "Nel menu Gestione ci sono due voci complementari:\n1) Transazioni = depositi e prelievi su un conto di trading.\n2) Redditività attività = bilancio operativo (spese, crediti da prelievi, pagamenti fiscali).\nNon confondere il cash del conto con la redditività dell’attività.",
+          "body": "A cosa serve: separare il cash del conto di trading (Transazioni) dal bilancio operativo (Redditività: spese, crediti, fiscalità).\nNel menu Gestione ci sono due voci complementari:\n1) Transazioni = depositi e prelievi su un conto di trading.\n2) Redditività attività = bilancio operativo (spese, crediti da prelievi, pagamenti fiscali).\nNon confondere il cash del conto con la redditività dell’attività.",
           "alt": "Menu Gestione aperto con Transazioni e Redditività attività"
         },
         "transactions": {

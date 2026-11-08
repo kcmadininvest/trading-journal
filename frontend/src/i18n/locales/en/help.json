@@ -69,11 +69,11 @@
     },
     "import-trades": {
       "title": "Import trades",
-      "summary": "CSV, columns, and checks before confirmation.",
+      "summary": "What it is for: load trades from a CSV instead of entering them one by one. Columns and checks before confirmation.",
       "steps": {
         "open-import": {
           "title": "Open import",
-          "body": "From the Trades page, start Import. Pick the target account, then your CSV file.",
+          "body": "What it is for: quickly import a trade history from a CSV file instead of typing every fill by hand.\nFrom the Trades page, start Import. Pick the target account, then your CSV file.",
           "alt": "Import button on the Trades page"
         },
         "format": {
@@ -85,11 +85,11 @@
     },
     "calendar": {
       "title": "PnL calendar",
-      "summary": "Month view of day-by-day results.",
+      "summary": "What it is for: see PnL day by day to spot winning or losing streaks.",
       "steps": {
         "overview": {
           "title": "Overview",
-          "body": "The calendar colors each day by PnL. Move between months to spot streaks.",
+          "body": "What it is for: get a month-at-a-glance view of each day’s result and spot trends.\nThe calendar colors each day by PnL. Move between months to spot streaks.",
           "alt": "Monthly PnL calendar"
         },
         "day-detail": {
@@ -101,11 +101,11 @@
     },
     "api-connections": {
       "title": "API connections",
-      "summary": "Link a broker to prepare automatic sync.",
+      "summary": "What it is for: link a broker to sync trades automatically, without re-importing each time.",
       "steps": {
         "open-settings": {
           "title": "Open API connections",
-          "body": "Go to Settings → Trading, then scroll to the API connections block.\nToday only TopStepX is available; more connections may be added later.",
+          "body": "What it is for: connect your broker (e.g. TopStepX) so trades can be pulled automatically with Sync.\nGo to Settings → Trading, then scroll to the API connections block.\nToday only TopStepX is available; more connections may be added later.",
           "alt": "Settings Trading tab with the API connections block and TopStepX card"
         },
         "credentials": {
@@ -127,11 +127,11 @@
     },
     "journal-questions": {
       "title": "Journal questions",
-      "summary": "Templates, day/position questionnaires, then daily answers.",
+      "summary": "What it is for: structure your trading review with reusable day and position questions.",
       "steps": {
         "flow": {
           "title": "Understand the flow",
-          "body": "Three layers chain together:\n1) Templates = reusable library.\n2) Day questionnaire and Position questionnaire = ready-to-use question copies.\n3) Answers = Questions page (day) and per-trade answers.\nOpen Settings → Questionnaire to see the three tabs.",
+          "body": "What it is for: capture each session with fixed prompts (mindset, plan, trade grade…) instead of scattered free-form notes.\nThree layers chain together:\n1) Templates = reusable library.\n2) Day questionnaire and Position questionnaire = ready-to-use question copies.\n3) Answers = Questions page (day) and per-trade answers.\nOpen Settings → Questionnaire to see the three tabs.",
           "alt": "Questions settings with Templates, Day questionnaire, and Position questionnaire tabs"
         },
         "templates": {
@@ -153,11 +153,11 @@
     },
     "transactions-profitability": {
       "title": "Transactions and profitability",
-      "summary": "Account deposits/withdrawals, then activity profitability (expenses, credits, taxes).",
+      "summary": "What it is for: track account cash (deposits/withdrawals) and real activity profitability (expenses, credits, taxes).",
       "steps": {
         "flow": {
           "title": "Two pages under Management",
-          "body": "In the Management menu you have two complementary entries:\n1) Transactions = deposits and withdrawals on a trading account.\n2) Activity profitability = business ledger (expenses, credits from withdrawals, tax payments).\nDo not mix account cash movements with activity profitability.",
+          "body": "What it is for: separate trading-account cash (Transactions) from your business ledger (Activity profitability: expenses, credits, tax).\nIn the Management menu you have two complementary entries:\n1) Transactions = deposits and withdrawals on a trading account.\n2) Activity profitability = business ledger (expenses, credits from withdrawals, tax payments).\nDo not mix account cash movements with activity profitability.",
           "alt": "Management menu open with Transactions and Activity profitability"
         },
         "transactions": {
