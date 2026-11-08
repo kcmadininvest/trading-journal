@@ -124,6 +124,32 @@
           "alt": "Página Trades com uma conta TopStep e o botão Sincronizar"
         }
       }
+    },
+    "journal-questions": {
+      "title": "Perguntas do diário",
+      "summary": "Modelos, questionários dia/posições e respostas diárias.",
+      "steps": {
+        "flow": {
+          "title": "Compreender a sequência",
+          "body": "Três camadas encadeiam-se:\n1) Modelos = biblioteca reutilizável.\n2) Questionário do dia e de posições = cópias prontas a usar.\n3) Respostas = página Perguntas (dia) e por trade.\nAbra Definições → Questionário para ver os três separadores.",
+          "alt": "Definições Perguntas com separadores Modelos, Questionário do dia e Questionário posições"
+        },
+        "templates": {
+          "title": "Criar modelos",
+          "body": "Em Modelos de perguntas, crie enunciados reutilizáveis (sim/não, texto, escala…).\nAdicionar um modelo a um questionário cria uma cópia independente.",
+          "alt": "Biblioteca de modelos de perguntas nas Definições"
+        },
+        "questionnaires": {
+          "title": "Preencher os questionários",
+          "body": "Questionário do dia: uma vez por dia e conta.\nQuestionário posições: uma vez por trade.\nAdicione perguntas a partir dos modelos em cada separador.",
+          "alt": "Questionário do dia com perguntas configuradas"
+        },
+        "answer-daily": {
+          "title": "Responder no dia a dia",
+          "body": "Abra Perguntas do dia: escolha conta e data, depois responda.\nAs respostas de posições aparecem sob o formulário do dia (ou no diário / detalhe do trade).",
+          "alt": "Página Perguntas do dia com o formulário de respostas"
+        }
+      }
     }
   }
 }

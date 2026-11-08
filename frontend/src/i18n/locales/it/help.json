@@ -124,6 +124,32 @@
           "alt": "Pagina Trade con un conto TopStep e il pulsante Sincronizza"
         }
       }
+    },
+    "journal-questions": {
+      "title": "Domande del diario",
+      "summary": "Modelli, questionari giorno/posizioni, poi risposte quotidiane.",
+      "steps": {
+        "flow": {
+          "title": "Capire la sequenza",
+          "body": "Tre livelli si concatenano:\n1) Modelli = libreria riutilizzabile.\n2) Questionario del giorno e delle posizioni = copie pronte all’uso.\n3) Risposte = pagina Domande (giorno) e per trade.\nApri Impostazioni → Questionario per vedere le tre schede.",
+          "alt": "Impostazioni Domande con schede Modelli, Questionario del giorno e Questionario posizioni"
+        },
+        "templates": {
+          "title": "Creare modelli",
+          "body": "Nei Modelli di domande crea enunciati riutilizzabili (sì/no, testo, scala…).\nAggiungere un modello a un questionario crea una copia indipendente.",
+          "alt": "Libreria dei modelli di domande nelle Impostazioni"
+        },
+        "questionnaires": {
+          "title": "Compilare i questionari",
+          "body": "Questionario del giorno: una volta per giornata e conto.\nQuestionario posizioni: una volta per trade.\nAggiungi domande dai modelli in ogni scheda.",
+          "alt": "Questionario del giorno con domande configurate"
+        },
+        "answer-daily": {
+          "title": "Rispondere ogni giorno",
+          "body": "Apri Domande del giorno: scegli conto e data, poi rispondi.\nLe risposte posizione compaiono sotto il modulo del giorno (o dal diario / dettaglio trade).",
+          "alt": "Pagina Domande del giorno con il modulo risposte"
+        }
+      }
     }
   }
 }

@@ -221,6 +221,83 @@ const STEPS: Array<{
       });
     },
   },
+  {
+    slug: 'journal-questions',
+    step: 1,
+    hash: '#settings',
+    ready: async (page, locale) => {
+      await openQuestionsSettings(page, locale, 'templates');
+      // Vue d’ensemble de l’enchaînement : les 3 onglets visibles
+      await expect(
+        appMain(page).getByRole('button', {
+          name: locale === 'fr' ? /Modèles de questions/i : /Question templates/i,
+        })
+      ).toBeVisible({ timeout: 15_000 });
+      await expect(
+        appMain(page).getByRole('button', {
+          name: locale === 'fr' ? /Questionnaire du jour/i : /Daily questionnaire/i,
+        })
+      ).toBeVisible();
+      await expect(
+        appMain(page).getByRole('button', {
+          name: locale === 'fr' ? /Questionnaire positions/i : /Position questionnaire/i,
+        })
+      ).toBeVisible();
+    },
+  },
+  {
+    slug: 'journal-questions',
+    step: 2,
+    hash: '#settings',
+    ready: async (page, locale) => {
+      await openQuestionsSettings(page, locale, 'templates');
+      await expect(appMain(page).getByText(/Comment était ton mindset|As-tu suivi le plan/i).first()).toBeVisible({
+        timeout: 30_000,
+      });
+      await expect(
+        appMain(page).getByRole('button', {
+          name: locale === 'fr' ? /Nouveau modèle/i : /New template/i,
+        })
+      ).toBeVisible();
+    },
+  },
+  {
+    slug: 'journal-questions',
+    step: 3,
+    hash: '#settings',
+    ready: async (page, locale) => {
+      await openQuestionsSettings(page, locale, 'day');
+      await expect(appMain(page).getByText(/Comment était ton mindset|As-tu suivi le plan/i).first()).toBeVisible({
+        timeout: 30_000,
+      });
+      await expect(
+        appMain(page)
+          .getByText(
+            locale === 'fr'
+              ? /Questions posées une fois par journée/i
+              : /Questions asked once per trading day/i
+          )
+          .first()
+      ).toBeVisible();
+    },
+  },
+  {
+    slug: 'journal-questions',
+    step: 4,
+    hash: '#journal-questions',
+    ready: async (page, locale) => {
+      await closeImportModal(page);
+      await selectDemoTopStepAccount(page);
+      await expect(
+        appMain(page).getByText(/Comment était ton mindset|As-tu suivi le plan/i).first()
+      ).toBeVisible({ timeout: 60_000 });
+      await expect(
+        page.getByRole('link', {
+          name: locale === 'fr' ? /Configurer les questions/i : /Configure questions/i,
+        })
+      ).toBeVisible();
+    },
+  },
 ];
 
 /** Évite le <main> de l’overlay ESLint Vite (`window window-collapsed`). */
@@ -324,6 +401,36 @@ async function openTradingApiSection(page: Page, locale: LocaleCode) {
     .evaluate((el) => {
       el.scrollIntoView({ block: 'center', inline: 'nearest' });
     });
+  await page.waitForTimeout(300);
+}
+
+type QuestionsSection = 'templates' | 'day' | 'position';
+
+async function openQuestionsSettings(page: Page, locale: LocaleCode, section: QuestionsSection) {
+  await goHash(page, '#settings');
+  await dismissOverlays(page);
+  // Sidebar Settings : libellé `settings:questionnaire` (FR/EN « Questionnaire »)
+  const settingsNav = appMain(page).getByRole('navigation').first();
+  const questionsTab = settingsNav.getByRole('button', { name: /^Questionnaire$/i });
+  await expect(questionsTab).toBeVisible({ timeout: 30_000 });
+  await questionsTab.click();
+
+  const sectionLabel =
+    section === 'templates'
+      ? locale === 'fr'
+        ? /Modèles de questions/i
+        : /Question templates/i
+      : section === 'day'
+        ? locale === 'fr'
+          ? /Questionnaire du jour/i
+          : /Daily questionnaire/i
+        : locale === 'fr'
+          ? /Questionnaire positions/i
+          : /Position questionnaire/i;
+
+  const sectionBtn = appMain(page).getByRole('button', { name: sectionLabel });
+  await expect(sectionBtn).toBeVisible({ timeout: 30_000 });
+  await sectionBtn.click();
   await page.waitForTimeout(300);
 }
 
@@ -519,7 +626,7 @@ async function captureStep(page: Page, target: string) {
 }
 
 test.describe('Tutorials screenshots (manual)', () => {
-  test('capture getting-started + import-trades + calendar + api-connections FR+EN', async ({
+  test('capture getting-started + import-trades + calendar + api-connections + journal-questions FR+EN', async ({
     page,
     browserName,
   }) => {
@@ -592,7 +699,8 @@ test.describe('Tutorials screenshots (manual)', () => {
     await goHash(page, '#help');
     await expect(page.getByTestId('help-page')).toBeVisible({ timeout: 30_000 });
     await expect(page.getByTestId('help-card-api-connections')).toBeVisible();
-    await page.getByTestId('help-card-api-connections').click();
-    await expect(page.getByTestId('tutorial-viewer-api-connections')).toBeVisible();
+    await expect(page.getByTestId('help-card-journal-questions')).toBeVisible();
+    await page.getByTestId('help-card-journal-questions').click();
+    await expect(page.getByTestId('tutorial-viewer-journal-questions')).toBeVisible();
   });
 });

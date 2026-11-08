@@ -124,6 +124,32 @@
           "alt": "Página Operaciones con una cuenta TopStep y el botón Sincronizar"
         }
       }
+    },
+    "journal-questions": {
+      "title": "Preguntas del diario",
+      "summary": "Plantillas, cuestionarios día/posiciones y respuestas diarias.",
+      "steps": {
+        "flow": {
+          "title": "Entender la secuencia",
+          "body": "Hay tres capas encadenadas:\n1) Plantillas = biblioteca reutilizable.\n2) Cuestionario del día y de posiciones = copias listas para usar.\n3) Respuestas = página Preguntas (día) y por operación.\nAbre Ajustes → Cuestionario para ver las tres pestañas.",
+          "alt": "Ajustes Preguntas con las pestañas Plantillas, Cuestionario del día y Cuestionario posiciones"
+        },
+        "templates": {
+          "title": "Crear plantillas",
+          "body": "En Plantillas de preguntas, crea enunciados reutilizables (sí/no, texto, escala…).\nAñadir una plantilla a un cuestionario crea una copia independiente.",
+          "alt": "Biblioteca de plantillas de preguntas en Ajustes"
+        },
+        "questionnaires": {
+          "title": "Completar los cuestionarios",
+          "body": "Cuestionario del día: una vez por día y cuenta.\nCuestionario posiciones: una vez por operación.\nAñade preguntas desde plantillas en cada pestaña.",
+          "alt": "Cuestionario del día con preguntas configuradas"
+        },
+        "answer-daily": {
+          "title": "Responder a diario",
+          "body": "Abre Preguntas del día: elige cuenta y fecha, luego responde.\nLas respuestas de posiciones aparecen bajo el formulario del día (o desde el diario / detalle).",
+          "alt": "Página Preguntas del día con el formulario de respuestas"
+        }
+      }
     }
   }
 }

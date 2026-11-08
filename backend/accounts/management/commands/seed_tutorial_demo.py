@@ -17,6 +17,11 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 
 from accounts.models import User, UserPreferences
+from daily_journal.models import (
+    Questionnaire,
+    QuestionnaireQuestion,
+    QuestionTemplate,
+)
 from integrations.credentials_crypto import build_secrets_hint, encrypt_json
 from integrations.models import UserApiIntegration
 from trades.models import ImportedTrade, TradingAccount
@@ -174,6 +179,62 @@ class Command(BaseCommand):
                 trading_account=account,
                 external_trade_id=external_id,
             ).delete()
+
+        # Questions : modèles → questionnaires jour / positions (enchaînement du tuto Aide)
+        day_tpl, _ = QuestionTemplate.objects.update_or_create(
+            user=user,
+            label='Comment était ton mindset ?',
+            defaults={
+                'help_text': 'Modèle démo pour le questionnaire du jour.',
+                'answer_type': 'text',
+                'config': {},
+                'is_active': True,
+            },
+        )
+        plan_tpl, _ = QuestionTemplate.objects.update_or_create(
+            user=user,
+            label='As-tu suivi le plan ?',
+            defaults={
+                'help_text': 'Modèle démo oui/non.',
+                'answer_type': 'boolean',
+                'config': {},
+                'is_active': True,
+            },
+        )
+        grade_tpl, _ = QuestionTemplate.objects.update_or_create(
+            user=user,
+            label='Note du trade',
+            defaults={
+                'help_text': 'Modèle démo pour le questionnaire positions.',
+                'answer_type': 'scale',
+                'config': {'min': 1, 'max': 5, 'step': 1},
+                'is_active': True,
+            },
+        )
+
+        day_q = Questionnaire.get_or_create_for_scope(user, 'day')
+        pos_q = Questionnaire.get_or_create_for_scope(user, 'position')
+
+        def ensure_instance(questionnaire, template, order: int) -> None:
+            QuestionnaireQuestion.objects.update_or_create(
+                questionnaire=questionnaire,
+                source_template=template,
+                defaults={
+                    'label': template.label,
+                    'help_text': template.help_text,
+                    'answer_type': template.answer_type,
+                    'config': template.config or {},
+                    'required': False,
+                    'order': order,
+                    'is_active': True,
+                    'show_if': None,
+                },
+            )
+
+        ensure_instance(day_q, day_tpl, 0)
+        ensure_instance(day_q, plan_tpl, 1)
+        ensure_instance(pos_q, grade_tpl, 0)
+        ensure_instance(pos_q, plan_tpl, 1)
 
         action = 'créé' if created else 'mis à jour'
         self.stdout.write(self.style.SUCCESS(

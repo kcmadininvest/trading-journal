@@ -124,6 +124,32 @@
           "alt": "Trades page with a TopStep account and the Sync button"
         }
       }
+    },
+    "journal-questions": {
+      "title": "Journal questions",
+      "summary": "Templates, day/position questionnaires, then daily answers.",
+      "steps": {
+        "flow": {
+          "title": "Understand the flow",
+          "body": "Three layers chain together:\n1) Templates = reusable library.\n2) Day questionnaire and Position questionnaire = ready-to-use question copies.\n3) Answers = Questions page (day) and per-trade answers.\nOpen Settings → Questionnaire to see the three tabs.",
+          "alt": "Questions settings with Templates, Day questionnaire, and Position questionnaire tabs"
+        },
+        "templates": {
+          "title": "Create templates",
+          "body": "In Question templates, create reusable prompts (yes/no, text, scale…).\nAdding a template to a questionnaire creates an independent copy: editing the template does not overwrite questions already placed.",
+          "alt": "Question templates library in Settings"
+        },
+        "questionnaires": {
+          "title": "Fill the questionnaires",
+          "body": "Day questionnaire: once per trading day and account.\nPosition questionnaire: once per trade.\nAdd questions from templates (or create new ones) in each tab.",
+          "alt": "Day questionnaire with configured questions"
+        },
+        "answer-daily": {
+          "title": "Answer every day",
+          "body": "Open Day questions (#journal-questions): pick the account and date, then answer.\nPosition answers show below the day form (or via compliance / trade detail). You can also reach them from the journal.",
+          "alt": "Day questions page with the answers form"
+        }
+      }
     }
   }
 }

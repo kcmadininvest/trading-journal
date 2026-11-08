@@ -124,6 +124,32 @@
           "alt": "Page Trades avec un compte TopStep et le bouton Synchroniser"
         }
       }
+    },
+    "journal-questions": {
+      "title": "Questions du journal",
+      "summary": "Modèles, questionnaires jour/positions, puis réponses au quotidien.",
+      "steps": {
+        "flow": {
+          "title": "Comprendre l’enchaînement",
+          "body": "Trois couches s’enchaînent :\n1) Modèles = bibliothèque réutilisable.\n2) Questionnaire du jour et Questionnaire positions = copies de questions prêtes à l’emploi.\n3) Réponses = page Questions (jour) et réponses par trade.\nOuvrez Paramètres → Questionnaire pour voir les trois onglets.",
+          "alt": "Paramètres Questions avec les onglets Modèles, Questionnaire du jour et Questionnaire positions"
+        },
+        "templates": {
+          "title": "Créer des modèles",
+          "body": "Dans Modèles de questions, créez des libellés réutilisables (oui/non, texte, échelle…).\nAjouter un modèle à un questionnaire crée une copie indépendante : modifier le modèle n’écrase pas les questions déjà placées.",
+          "alt": "Bibliothèque de modèles de questions dans Paramètres"
+        },
+        "questionnaires": {
+          "title": "Remplir les questionnaires",
+          "body": "Questionnaire du jour : une fois par journée et compte.\nQuestionnaire positions : une fois par trade.\nAjoutez des questions depuis les modèles (ou créez-en) dans chaque onglet.",
+          "alt": "Questionnaire du jour avec des questions configurées"
+        },
+        "answer-daily": {
+          "title": "Répondre au quotidien",
+          "body": "Ouvrez Questions du jour (#journal-questions) : choisissez le compte et la date, puis répondez.\nLes réponses positions apparaissent sous le formulaire du jour (ou via la conformité / détail trade). Vous pouvez aussi y accéder depuis le journal.",
+          "alt": "Page Questions du jour avec le formulaire de réponses"
+        }
+      }
     }
   }
 }

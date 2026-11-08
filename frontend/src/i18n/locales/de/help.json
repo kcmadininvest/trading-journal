@@ -124,6 +124,32 @@
           "alt": "Trades-Seite mit TopStep-Konto und Schaltfläche Synchronisieren"
         }
       }
+    },
+    "journal-questions": {
+      "title": "Journal-Fragen",
+      "summary": "Vorlagen, Tages-/Positionsfragebögen, dann tägliche Antworten.",
+      "steps": {
+        "flow": {
+          "title": "Den Ablauf verstehen",
+          "body": "Drei Schichten greifen ineinander:\n1) Vorlagen = wiederverwendbare Bibliothek.\n2) Tages- und Positionsfragebogen = einsatzbereite Kopien.\n3) Antworten = Fragen-Seite (Tag) und pro Trade.\nÖffnen Sie Einstellungen → Fragebogen für die drei Registerkarten.",
+          "alt": "Einstellungen Fragen mit Registerkarten Vorlagen, Tagesfragebogen und Positionsfragebogen"
+        },
+        "templates": {
+          "title": "Vorlagen anlegen",
+          "body": "Unter Fragetemplates legen Sie wiederverwendbare Fragen an (ja/nein, Text, Skala…).\nDas Hinzufügen zu einem Fragebogen erzeugt eine unabhängige Kopie.",
+          "alt": "Bibliothek der Fragevorlagen in den Einstellungen"
+        },
+        "questionnaires": {
+          "title": "Fragebögen füllen",
+          "body": "Tagesfragebogen: einmal pro Handelstag und Konto.\nPositionsfragebogen: einmal pro Trade.\nFügen Sie Fragen aus Vorlagen in jedem Register hinzu.",
+          "alt": "Tagesfragebogen mit konfigurierten Fragen"
+        },
+        "answer-daily": {
+          "title": "Täglich antworten",
+          "body": "Öffnen Sie Tagesfragen: Konto und Datum wählen, dann antworten.\nPositionsantworten erscheinen unter dem Tagesformular (oder über Journal / Trade-Detail).",
+          "alt": "Seite Tagesfragen mit dem Antwortformular"
+        }
+      }
     }
   }
 }
