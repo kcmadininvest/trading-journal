@@ -98,6 +98,32 @@
           "alt": "Detalle de un día del calendario"
         }
       }
+    },
+    "api-connections": {
+      "title": "Conexiones API",
+      "summary": "Vincular un broker para preparar las sincronizaciones automáticas.",
+      "steps": {
+        "open-settings": {
+          "title": "Abrir Conexiones API",
+          "body": "Ve a Ajustes → Trading y baja hasta el bloque Conexiones API.\nHoy solo está disponible TopStepX; más adelante podrán añadirse otras conexiones.",
+          "alt": "Ajustes pestaña Trading con el bloque Conexiones API y la tarjeta TopStepX"
+        },
+        "credentials": {
+          "title": "Introducir las credenciales",
+          "body": "Introduce el nombre de usuario y la clave API de tu broker (p. ej. TopStepX: Ajustes → API en la plataforma).\nEl enlace Documentación API de la tarjeta abre la ayuda del proveedor. No compartas nunca tu clave.",
+          "alt": "Tarjeta TopStepX en modo edición de la clave API"
+        },
+        "test-connection": {
+          "title": "Probar la conexión",
+          "body": "Guarda y usa Probar la conexión. La insignia pasa a Configurado o Conectado según el resultado.\nSin una conexión válida, la sincronización de operaciones no está disponible.",
+          "alt": "Tarjeta TopStepX con insignia Conectado y botones Guardar / Probar"
+        },
+        "sync-account": {
+          "title": "Sincronizar una cuenta",
+          "body": "En la página Operaciones (o el calendario), selecciona una cuenta del tipo correspondiente (p. ej. TopStep) y usa Sincronizar cuando la integración esté lista.\nLa sync puede coexistir con la importación CSV; no sobrescribe tus operaciones existentes.",
+          "alt": "Página Operaciones con una cuenta TopStep y el botón Sincronizar"
+        }
+      }
     }
   }
 }

@@ -98,6 +98,32 @@
           "alt": "Detail eines Kalendertags"
         }
       }
+    },
+    "api-connections": {
+      "title": "API-Verbindungen",
+      "summary": "Einen Broker verknüpfen, um automatische Synchronisierungen vorzubereiten.",
+      "steps": {
+        "open-settings": {
+          "title": "API-Verbindungen öffnen",
+          "body": "Gehen Sie zu Einstellungen → Trading und scrollen Sie zum Block API-Verbindungen.\nHeute ist nur TopStepX verfügbar; weitere Verbindungen können später hinzukommen.",
+          "alt": "Einstellungen Registerkarte Trading mit Block API-Verbindungen und TopStepX-Karte"
+        },
+        "credentials": {
+          "title": "Zugangsdaten eingeben",
+          "body": "Geben Sie Benutzername und API-Schlüssel Ihres Brokers ein (z. B. TopStepX: Einstellungen → API auf der Plattform).\nDer Link API-Dokumentation auf der Karte öffnet die Hilfe des Anbieters. Teilen Sie Ihren Schlüssel niemals.",
+          "alt": "TopStepX-Karte im Bearbeitungsmodus für den API-Schlüssel"
+        },
+        "test-connection": {
+          "title": "Verbindung testen",
+          "body": "Speichern Sie und nutzen Sie Verbindung testen. Das Badge wird zu Konfiguriert oder Verbunden.\nOhne gültige Verbindung bleibt die Trade-Synchronisierung nicht verfügbar.",
+          "alt": "TopStepX-Karte mit Badge Verbunden und Schaltflächen Speichern / Testen"
+        },
+        "sync-account": {
+          "title": "Ein Konto synchronisieren",
+          "body": "Auf der Seite Trades (oder Kalender) wählen Sie ein passendes Konto (z. B. TopStep) und nutzen Sie Synchronisieren, sobald die Integration bereit ist.\nAPI-Sync kann neben dem CSV-Import laufen und überschreibt bestehende Trades nicht.",
+          "alt": "Trades-Seite mit TopStep-Konto und Schaltfläche Synchronisieren"
+        }
+      }
     }
   }
 }

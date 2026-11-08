@@ -161,6 +161,66 @@ const STEPS: Array<{
       await expect(page.getByText(/NQH6|ESH6/i).first()).toBeVisible({ timeout: 30_000 });
     },
   },
+  {
+    slug: 'api-connections',
+    step: 1,
+    hash: '#settings',
+    ready: async (page, locale) => {
+      await closeImportModal(page);
+      await closeDayTradesModal(page);
+      await openTradingApiSection(page, locale);
+      await setApiKeyEditMode(page, locale, false);
+      await expect(page.getByText(/TopStepX/i).first()).toBeVisible({ timeout: 30_000 });
+      await expect(
+        page.getByText(locale === 'fr' ? /Connecté|Configuré/i : /Connected|Configured/i).first()
+      ).toBeVisible({ timeout: 15_000 });
+    },
+  },
+  {
+    slug: 'api-connections',
+    step: 2,
+    hash: '#settings',
+    ready: async (page, locale) => {
+      await openTradingApiSection(page, locale);
+      await setApiKeyEditMode(page, locale, true);
+      await expect(
+        page.getByPlaceholder(locale === 'fr' ? /Collez votre clé API/i : /Paste your API key/i)
+      ).toBeVisible({ timeout: 15_000 });
+    },
+  },
+  {
+    slug: 'api-connections',
+    step: 3,
+    hash: '#settings',
+    ready: async (page, locale) => {
+      await openTradingApiSection(page, locale);
+      await setApiKeyEditMode(page, locale, false);
+      await expect(
+        page.getByRole('button', {
+          name: locale === 'fr' ? /Tester la connexion/i : /Test connection/i,
+        })
+      ).toBeVisible({ timeout: 15_000 });
+      await expect(
+        page.getByText(locale === 'fr' ? /^Connecté$/i : /^Connected$/i).first()
+      ).toBeVisible({ timeout: 15_000 });
+    },
+  },
+  {
+    slug: 'api-connections',
+    step: 4,
+    // Sync desktop : barre d’actions Trades (compte TopStep = défaut seed).
+    hash: '#trades',
+    ready: async (_page, _locale) => {
+      await closeImportModal(_page);
+      await selectDemoTopStepAccount(_page);
+      await expect(
+        _page.getByRole('button', { name: /Synchroniser|\bSync(?:hronize|ing)?\b/i }).first()
+      ).toBeVisible({ timeout: 60_000 });
+      await expect(appMain(_page).getByText(/Demo TopStep Account/i).first()).toBeVisible({
+        timeout: 15_000,
+      });
+    },
+  },
 ];
 
 /** Évite le <main> de l’overlay ESLint Vite (`window window-collapsed`). */
@@ -238,6 +298,81 @@ async function openDayTradesModal(page: Page, locale: LocaleCode) {
   await expect(viewTrades).toBeVisible({ timeout: 60_000 });
   await viewTrades.click();
   await expect(heading).toBeVisible({ timeout: 15_000 });
+}
+
+/** Settings ne réécoute pas toujours `?tab=` une fois monté → clic onglet Trading (sidebar). */
+async function openTradingApiSection(page: Page, locale: LocaleCode) {
+  await goHash(page, '#settings');
+  await dismissOverlays(page);
+  // Ne pas cibler le menu Header « Trading » (même libellé) — rester dans la sidebar Settings.
+  const settingsNav = appMain(page).getByRole('navigation').first();
+  const tradingTab = settingsNav.getByRole('button', { name: /^Trading$/i });
+  await expect(tradingTab).toBeVisible({ timeout: 30_000 });
+  await tradingTab.click();
+  const sectionTitle =
+    locale === 'fr' ? /Connexions API/i : /API connections/i;
+  await expect(appMain(page).getByText(sectionTitle).first()).toBeVisible({
+    timeout: 30_000,
+  });
+  await expect(appMain(page).getByText(/TopStepX/i).first()).toBeVisible({
+    timeout: 30_000,
+  });
+  // Bloc API souvent sous la fold — evaluate (pas scrollIntoViewIfNeeded, qui a déjà bloqué ailleurs)
+  await appMain(page)
+    .getByText(sectionTitle)
+    .first()
+    .evaluate((el) => {
+      el.scrollIntoView({ block: 'center', inline: 'nearest' });
+    });
+  await page.waitForTimeout(300);
+}
+
+async function selectAccountByName(page: Page, nameRe: RegExp) {
+  // Le sélecteur de compte n’existe pas sur toutes les pages (ex. Settings).
+  const trigger = appMain(page)
+    .getByRole('button')
+    .filter({ hasText: /Demo Futures|Demo TopStep|Tous les comptes|All accounts/i })
+    .first();
+  if (!(await trigger.isVisible().catch(() => false))) {
+    return;
+  }
+  if (nameRe.test(await trigger.innerText())) {
+    return;
+  }
+  await trigger.click();
+  const listbox = page.getByRole('listbox');
+  await expect(listbox).toBeVisible({ timeout: 15_000 });
+  const option = listbox.getByRole('button', { name: nameRe }).first();
+  await expect(option).toBeVisible({ timeout: 15_000 });
+  await option.click();
+  await expect(listbox).toBeHidden({ timeout: 10_000 });
+  await expect(trigger).toContainText(nameRe, { timeout: 15_000 });
+}
+
+async function selectDemoTopStepAccount(page: Page) {
+  await selectAccountByName(page, /Demo TopStep Account/i);
+}
+
+async function setApiKeyEditMode(page: Page, locale: LocaleCode, editing: boolean) {
+  const root = appMain(page);
+  const changeLabel = locale === 'fr' ? /^Modifier$/i : /^Change$/i;
+  const cancelLabel = locale === 'fr' ? /Annuler la modification/i : /Cancel edit/i;
+  const placeholder = root.getByPlaceholder(
+    locale === 'fr' ? /Collez votre clé API/i : /Paste your API key/i
+  );
+  const isEditing = await placeholder.isVisible().catch(() => false);
+
+  if (editing && !isEditing) {
+    const changeBtn = root.getByRole('button', { name: changeLabel }).first();
+    await expect(changeBtn).toBeVisible({ timeout: 15_000 });
+    await changeBtn.click();
+    await expect(placeholder).toBeVisible({ timeout: 10_000 });
+  } else if (!editing && isEditing) {
+    const cancelBtn = root.getByRole('button', { name: cancelLabel }).first();
+    await expect(cancelBtn).toBeVisible({ timeout: 10_000 });
+    await cancelBtn.click();
+    await expect(placeholder).toBeHidden({ timeout: 10_000 });
+  }
 }
 
 async function dismissOverlays(page: Page) {
@@ -384,7 +519,7 @@ async function captureStep(page: Page, target: string) {
 }
 
 test.describe('Tutorials screenshots (manual)', () => {
-  test('capture getting-started + import-trades + calendar FR+EN', async ({
+  test('capture getting-started + import-trades + calendar + api-connections FR+EN', async ({
     page,
     browserName,
   }) => {
@@ -396,6 +531,10 @@ test.describe('Tutorials screenshots (manual)', () => {
 
     for (const locale of LOCALES) {
       await setUiLanguage(page, locale);
+      // Compte défaut seed = TopStep (trades + Sync). Réaffirmer après bascule langue.
+      await goHash(page, '#trades');
+      await dismissOverlays(page);
+      await selectDemoTopStepAccount(page);
 
       const localeDir = path.join(outRoot, locale.code);
       fs.mkdirSync(localeDir, { recursive: true });
@@ -452,7 +591,8 @@ test.describe('Tutorials screenshots (manual)', () => {
     await setUiLanguage(page, LOCALES[0]);
     await goHash(page, '#help');
     await expect(page.getByTestId('help-page')).toBeVisible({ timeout: 30_000 });
-    await page.getByTestId('help-card-calendar').click();
-    await expect(page.getByTestId('tutorial-viewer-calendar')).toBeVisible();
+    await expect(page.getByTestId('help-card-api-connections')).toBeVisible();
+    await page.getByTestId('help-card-api-connections').click();
+    await expect(page.getByTestId('tutorial-viewer-api-connections')).toBeVisible();
   });
 });

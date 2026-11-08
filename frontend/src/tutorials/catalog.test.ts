@@ -20,6 +20,9 @@ describe('tutorials catalog', () => {
     expect(TUTORIAL_BY_SLUG['import-trades']?.stub).toBeFalsy();
     expect(TUTORIAL_BY_SLUG.calendar?.stub).toBeFalsy();
     expect(TUTORIAL_BY_SLUG.calendar?.steps).toHaveLength(2);
+    expect(TUTORIAL_BY_SLUG['api-connections']?.stub).toBeFalsy();
+    expect(TUTORIAL_BY_SLUG['api-connections']?.section).toBe('go-further');
+    expect(TUTORIAL_BY_SLUG['api-connections']?.steps).toHaveLength(4);
   });
 
   it('tracks progress helpers', () => {

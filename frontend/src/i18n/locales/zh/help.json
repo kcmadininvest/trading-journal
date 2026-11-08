@@ -98,6 +98,32 @@
           "alt": "日历单日详情"
         }
       }
+    },
+    "api-connections": {
+      "title": "API 连接",
+      "summary": "连接券商以准备自动同步。",
+      "steps": {
+        "open-settings": {
+          "title": "打开 API 连接",
+          "body": "进入设置 → Trading，然后滚动到 API 连接区块。\n目前仅支持 TopStepX；之后可能添加更多连接。",
+          "alt": "设置 Trading 选项卡中的 API 连接区块与 TopStepX 卡片"
+        },
+        "credentials": {
+          "title": "填写凭证",
+          "body": "输入券商提供的用户名和 API 密钥（例如 TopStepX：平台上的设置 → API）。\n卡片上的 API 文档链接会打开提供商帮助。切勿分享密钥。",
+          "alt": "处于 API 密钥编辑模式的 TopStepX 卡片"
+        },
+        "test-connection": {
+          "title": "测试连接",
+          "body": "保存后使用测试连接。徽章会根据结果变为已配置或已连接。\n没有有效连接时，交易同步不可用。",
+          "alt": "带有已连接徽章以及保存 / 测试按钮的 TopStepX 卡片"
+        },
+        "sync-account": {
+          "title": "同步账户",
+          "body": "在交易页（或日历）选择对应类型的账户（例如 TopStep），集成就绪后使用同步。\nAPI 同步可与 CSV 导入并存，且不会覆盖已有交易。",
+          "alt": "带有 TopStep 账户和同步按钮的交易页"
+        }
+      }
     }
   }
 }

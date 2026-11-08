@@ -17,10 +17,15 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 
 from accounts.models import User, UserPreferences
+from integrations.credentials_crypto import build_secrets_hint, encrypt_json
+from integrations.models import UserApiIntegration
 from trades.models import ImportedTrade, TradingAccount
 
 DEMO_EMAIL = 'tutorial-demo@example.invalid'
 DEMO_USERNAME = 'tutorial_demo'
+# Clé fictive uniquement pour captures (jamais utilisée contre l’API broker dans Playwright).
+DEMO_TOPSTEPX_API_KEY = 'tuto-demo-api-key-xxxx'
+DEMO_TOPSTEPX_USERNAME = 'tutorial_demo_topstep'
 
 
 class Command(BaseCommand):
@@ -87,6 +92,51 @@ class Command(BaseCommand):
                 'currency': 'USD',
                 'initial_capital': Decimal('50000.00'),
                 'status': 'active',
+                'is_default': False,
+            },
+        )
+        if account.is_default:
+            account.is_default = False
+            account.save(update_fields=['is_default', 'updated_at'])
+
+        topstep_account, _ = TradingAccount.objects.get_or_create(
+            user=user,
+            name='Demo TopStep Account',
+            defaults={
+                'account_type': 'topstep',
+                'currency': 'USD',
+                'initial_capital': Decimal('150000.00'),
+                'status': 'active',
+                'broker_account_id': '999001',
+                'is_default': True,
+            },
+        )
+        changed_fields: list[str] = []
+        if topstep_account.account_type != 'topstep':
+            topstep_account.account_type = 'topstep'
+            changed_fields.append('account_type')
+        if topstep_account.status != 'active':
+            topstep_account.status = 'active'
+            changed_fields.append('status')
+        if not topstep_account.broker_account_id:
+            topstep_account.broker_account_id = '999001'
+            changed_fields.append('broker_account_id')
+        if not topstep_account.is_default:
+            topstep_account.is_default = True
+            changed_fields.append('is_default')
+        if changed_fields:
+            topstep_account.save(update_fields=[*changed_fields, 'updated_at'])
+
+        secrets = {'api_key': DEMO_TOPSTEPX_API_KEY}
+        UserApiIntegration.objects.update_or_create(
+            user=user,
+            provider='topstepx',
+            defaults={
+                'external_username': DEMO_TOPSTEPX_USERNAME,
+                'secrets_encrypted': encrypt_json(secrets),
+                'secrets_hint': build_secrets_hint(secrets),
+                'is_connected': True,
+                'last_validated_at': timezone.now(),
             },
         )
 
@@ -101,9 +151,10 @@ class Command(BaseCommand):
             external_id = f'TUTO-DEMO-{idx + 1}'
             entered = now - timedelta(days=idx + 1, hours=2)
             exited = entered + timedelta(minutes=25)
+            # Trades sur le compte TopStep (défaut) pour Sync UI + captures trades/calendrier.
             ImportedTrade.objects.update_or_create(
                 user=user,
-                trading_account=account,
+                trading_account=topstep_account,
                 external_trade_id=external_id,
                 defaults={
                     'contract_name': contract,
@@ -118,10 +169,16 @@ class Command(BaseCommand):
                     'point_value': Decimal('20') if contract.startswith('NQ') else Decimal('50'),
                 },
             )
+            ImportedTrade.objects.filter(
+                user=user,
+                trading_account=account,
+                external_trade_id=external_id,
+            ).delete()
 
         action = 'créé' if created else 'mis à jour'
         self.stdout.write(self.style.SUCCESS(
-            f'Utilisateur démo {DEMO_EMAIL} {action} (id={user.pk}, account={account.pk}).'
+            f'Utilisateur démo {DEMO_EMAIL} {action} '
+            f'(id={user.pk}, account={account.pk}, topstep={topstep_account.pk}).'
         ))
         self.stdout.write(
             'Mot de passe : valeur fournie / TUTORIAL_DEMO_PASSWORD / TutorialDemo!234'

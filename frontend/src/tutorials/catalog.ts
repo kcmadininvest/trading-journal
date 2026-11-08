@@ -54,6 +54,17 @@ export const TUTORIALS: TutorialDef[] = [
       { id: 'day-detail', imageStep: 2 },
     ],
   },
+  {
+    slug: 'api-connections',
+    section: 'go-further',
+    estimatedMinutes: 4,
+    steps: [
+      { id: 'open-settings', imageStep: 1 },
+      { id: 'credentials', imageStep: 2 },
+      { id: 'test-connection', imageStep: 3 },
+      { id: 'sync-account', imageStep: 4 },
+    ],
+  },
 ];
 
 export const TUTORIAL_BY_SLUG: Record<string, TutorialDef> = Object.fromEntries(

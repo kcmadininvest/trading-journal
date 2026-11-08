@@ -98,6 +98,32 @@
           "alt": "Detalhe de um dia do calendário"
         }
       }
+    },
+    "api-connections": {
+      "title": "Ligações API",
+      "summary": "Ligar um broker para preparar as sincronizações automáticas.",
+      "steps": {
+        "open-settings": {
+          "title": "Abrir Ligações API",
+          "body": "Vá a Definições → Trading e desça até ao bloco Ligações API.\nHoje só o TopStepX está disponível; outras ligações poderão ser adicionadas mais tarde.",
+          "alt": "Definições separador Trading com o bloco Ligações API e o cartão TopStepX"
+        },
+        "credentials": {
+          "title": "Introduzir as credenciais",
+          "body": "Introduza o nome de utilizador e a chave API do seu broker (ex. TopStepX: Definições → API na plataforma).\nA ligação Documentação API do cartão abre a ajuda do fornecedor. Nunca partilhe a sua chave.",
+          "alt": "Cartão TopStepX em modo de edição da chave API"
+        },
+        "test-connection": {
+          "title": "Testar a ligação",
+          "body": "Guarde e use Testar a ligação. O distintivo passa a Configurado ou Ligado conforme o resultado.\nSem uma ligação válida, a sincronização de trades permanece indisponível.",
+          "alt": "Cartão TopStepX com distintivo Ligado e botões Guardar / Testar"
+        },
+        "sync-account": {
+          "title": "Sincronizar uma conta",
+          "body": "Na página Trades (ou calendário), selecione uma conta do tipo correspondente (ex. TopStep) e use Sincronizar quando a integração estiver OK.\nA sync pode coexistir com a importação CSV e não substitui trades existentes.",
+          "alt": "Página Trades com uma conta TopStep e o botão Sincronizar"
+        }
+      }
     }
   }
 }

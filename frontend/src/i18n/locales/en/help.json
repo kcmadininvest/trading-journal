@@ -98,6 +98,32 @@
           "alt": "Calendar day detail"
         }
       }
+    },
+    "api-connections": {
+      "title": "API connections",
+      "summary": "Link a broker to prepare automatic sync.",
+      "steps": {
+        "open-settings": {
+          "title": "Open API connections",
+          "body": "Go to Settings → Trading, then scroll to the API connections block.\nToday only TopStepX is available; more connections may be added later.",
+          "alt": "Settings Trading tab with the API connections block and TopStepX card"
+        },
+        "credentials": {
+          "title": "Enter your credentials",
+          "body": "Enter the username and API key from your broker (e.g. TopStepX: Settings → API on the platform).\nThe Documentation API link on the card opens the provider help. Never share your key.",
+          "alt": "TopStepX card in API key edit mode"
+        },
+        "test-connection": {
+          "title": "Test the connection",
+          "body": "Save, then use Test connection. The badge becomes Configured or Connected depending on the result.\nWithout a valid connection, trade sync stays unavailable.",
+          "alt": "TopStepX card with Connected badge and Save / Test buttons"
+        },
+        "sync-account": {
+          "title": "Sync an account",
+          "body": "On the Trades page (or calendar), select a matching account type (e.g. TopStep), then use Sync once the integration is OK.\nAPI sync can coexist with CSV import; it does not overwrite existing trades.",
+          "alt": "Trades page with a TopStep account and the Sync button"
+        }
+      }
     }
   }
 }
