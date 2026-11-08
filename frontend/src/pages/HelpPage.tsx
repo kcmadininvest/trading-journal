@@ -7,6 +7,7 @@ import TutorialViewer from '../components/help/TutorialViewer';
 import {
   TUTORIALS,
   TUTORIAL_BY_SLUG,
+  TUTORIAL_SECTION_ORDER,
   TutorialProgressEntry,
   TutorialsProgress,
   getTutorialStatus,
@@ -76,8 +77,10 @@ const HelpPage: React.FC<HelpPageProps> = ({ initialSlug = null, onNavigateHash 
     });
   }, [filter, t]);
 
-  const starters = filtered.filter((x) => x.section === 'getting-started');
-  const further = filtered.filter((x) => x.section === 'go-further');
+  const sections = TUTORIAL_SECTION_ORDER.map((sectionId) => ({
+    id: sectionId,
+    tutorials: filtered.filter((x) => x.section === sectionId),
+  })).filter((section) => section.tutorials.length > 0);
   const activeTutorial: TutorialDef | null = activeSlug ? TUTORIAL_BY_SLUG[activeSlug] || null : null;
 
   const renderCard = (tut: TutorialDef) => {
@@ -160,26 +163,29 @@ const HelpPage: React.FC<HelpPageProps> = ({ initialSlug = null, onNavigateHash 
               </div>
             )}
 
-            <section className="mb-8" aria-labelledby="help-section-start">
-              <h2 id="help-section-start" className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">
-                {t('help:hub.sectionStart')}
-              </h2>
-              <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
-                {starters.map(renderCard)}
-              </ul>
-            </section>
-
-            <section aria-labelledby="help-section-further">
-              <h2 id="help-section-further" className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">
-                {t('help:hub.sectionFurther')}
-              </h2>
-              <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
-                {further.map(renderCard)}
-              </ul>
-              {further.length === 0 && filtered.length === 0 && (
-                <p className="text-sm text-gray-500">{t('help:hub.noResults')}</p>
-              )}
-            </section>
+            {sections.map((section) => (
+              <section
+                key={section.id}
+                className="mb-8"
+                aria-labelledby={`help-section-${section.id}`}
+                data-testid={`help-section-${section.id}`}
+              >
+                <h2
+                  id={`help-section-${section.id}`}
+                  className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3"
+                >
+                  {t(`help:hub.sections.${section.id}`, {
+                    defaultValue: section.id,
+                  })}
+                </h2>
+                <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
+                  {section.tutorials.map(renderCard)}
+                </ul>
+              </section>
+            ))}
+            {sections.length === 0 && (
+              <p className="text-sm text-gray-500">{t('help:hub.noResults')}</p>
+            )}
           </>
         )}
       </div>

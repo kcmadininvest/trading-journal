@@ -24,8 +24,11 @@ import { expect, test, type Page } from '@playwright/test';
 const DEMO_EMAIL = process.env.TUTORIAL_DEMO_EMAIL || 'tutorial-demo@example.invalid';
 const DEMO_PASSWORD =
   process.env.TUTORIAL_DEMO_PASSWORD || 'TutorialDemo!234';
-/** Filtre optionnel : `TUTORIAL_ONLY_SLUG=position-strategies` ne capture que ce tuto. */
-const ONLY_SLUG = (process.env.TUTORIAL_ONLY_SLUG || '').trim();
+/** Filtre optionnel : `TUTORIAL_ONLY_SLUG=trades` ou `a,b,c` pour limiter les captures. */
+const ONLY_SLUGS = (process.env.TUTORIAL_ONLY_SLUG || '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
 
 const repoRoot = path.resolve(__dirname, '../../..');
 const outRoot = path.join(repoRoot, 'frontend/public/tutorials');
@@ -97,6 +100,290 @@ const STEPS: Array<{
       await expect(
         page.getByText(/Nouvelle entr|New entr|Entrees|Entries|Mois|Months/i).first()
       ).toBeVisible({ timeout: 60_000 });
+    },
+  },
+  {
+    slug: 'trading-accounts',
+    step: 1,
+    hash: '#accounts',
+    ready: async (page, locale) => {
+      await expect(
+        page.getByRole('button', {
+          name: locale === 'fr' ? /Nouveau compte/i : /New Account/i,
+        }).first()
+      ).toBeVisible({ timeout: 60_000 });
+      await expect(appMain(page).getByText(/Demo Futures|Demo TopStep|Futures Account/i).first()).toBeAttached({
+        timeout: 30_000,
+      });
+    },
+  },
+  {
+    slug: 'trading-accounts',
+    step: 2,
+    hash: '#accounts',
+    ready: async (page, locale) => {
+      const createBtn = page.getByRole('button', {
+        name: locale === 'fr' ? /Nouveau compte/i : /New Account/i,
+      }).first();
+      await expect(createBtn).toBeVisible({ timeout: 60_000 });
+      await createBtn.click();
+      await expect(
+        page
+          .getByText(
+            locale === 'fr'
+              ? /Nom du compte|Type de compte|Capital|Devise/i
+              : /Account name|Account type|Capital|Currency/i
+          )
+          .first()
+      ).toBeVisible({ timeout: 15_000 });
+    },
+  },
+  {
+    slug: 'trading-accounts',
+    step: 3,
+    hash: '#dashboard',
+    ready: async (page, locale) => {
+      // Sélecteur de compte dans les filtres dashboard (pas le banner).
+      const region =
+        locale === 'fr' ? /Filtres du tableau de bord/i : /Dashboard filters/i;
+      await expect(page.getByRole('region', { name: region })).toBeVisible({
+        timeout: 60_000,
+      });
+      const trigger = page
+        .getByRole('region', { name: region })
+        .getByRole('button')
+        .filter({ hasText: /Demo TopStep|Demo Futures|Tous les comptes|All accounts/i })
+        .first();
+      await expect(trigger).toBeVisible({ timeout: 30_000 });
+      await trigger.click();
+      await page.waitForTimeout(400);
+      await expect(page.getByText(/Demo TopStep Account|Demo Futures Account/i).nth(1)).toBeAttached({
+        timeout: 15_000,
+      });
+    },
+  },
+  {
+    slug: 'display-settings',
+    step: 1,
+    hash: '#settings',
+    ready: async (page, locale) => {
+      await openDisplaySettings(page, locale);
+      await expect(
+        appMain(page).getByText(
+          locale === 'fr' ? /Préférences d['’]affichage/i : /Display preferences/i
+        ).first()
+      ).toBeVisible({ timeout: 30_000 });
+    },
+  },
+  {
+    slug: 'display-settings',
+    step: 2,
+    hash: '#settings',
+    ready: async (page, locale) => {
+      await openDisplaySettings(page, locale);
+      await expect(
+        appMain(page).getByText(locale === 'fr' ? /^Langue$/i : /^Language$/i).first()
+      ).toBeVisible({ timeout: 30_000 });
+      await expect(
+        appMain(page).getByText(locale === 'fr' ? /Fuseau horaire/i : /Timezone|Time zone/i).first()
+      ).toBeAttached({ timeout: 15_000 });
+    },
+  },
+  {
+    slug: 'display-settings',
+    step: 3,
+    hash: '#settings',
+    ready: async (page, locale) => {
+      await openDisplaySettings(page, locale);
+      await expect(
+        appMain(page).getByText(locale === 'fr' ? /^Thème$/i : /^Theme$/i).first()
+      ).toBeVisible({ timeout: 30_000 });
+      await expect(
+        appMain(page)
+          .getByText(locale === 'fr' ? /^Police$/i : /Font Family|Font/i)
+          .first()
+      ).toBeAttached();
+      const fontSize = appMain(page)
+        .getByText(locale === 'fr' ? /Taille de (la )?police|Taille/i : /Font Size/i)
+        .first();
+      if (await fontSize.isVisible().catch(() => false)) {
+        await fontSize.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+      }
+    },
+  },
+  {
+    slug: 'trades',
+    step: 1,
+    hash: '#trades',
+    ready: async (page) => {
+      await expect(appMain(page).getByText(/NQH6|ESH6/i).first()).toBeAttached({
+        timeout: 60_000,
+      });
+    },
+  },
+  {
+    slug: 'trades',
+    step: 2,
+    hash: '#trades',
+    ready: async (page, locale) => {
+      await expect(appMain(page).getByText(/NQH6|ESH6/i).first()).toBeAttached({
+        timeout: 60_000,
+      });
+      await expect(
+        appMain(page)
+          .getByText(
+            locale === 'fr'
+              ? /Instrument|Date de début|PnL|Stratégie/i
+              : /Instrument|Start date|PnL|Strategy/i
+          )
+          .first()
+      ).toBeAttached({ timeout: 30_000 });
+    },
+  },
+  {
+    slug: 'trades',
+    step: 3,
+    hash: '#trades',
+    ready: async (page, locale) => {
+      // Doublons mobile/desktop : cibler une pastille instrument visible.
+      const instrument = appMain(page)
+        .getByText(/NQH6|ESH6/i)
+        .locator('visible=true')
+        .first();
+      await expect(instrument).toBeVisible({ timeout: 60_000 });
+      await instrument.click();
+      await page.waitForTimeout(500);
+      await expect(
+        page
+          .getByText(
+            locale === 'fr'
+              ? /Détail|Notes|Exécutions|Commission|Modifier|Supprimer|NQH6|ESH6/i
+              : /Detail|Notes|Fills|Commission|Edit|Delete|NQH6|ESH6/i
+          )
+          .first()
+      ).toBeAttached({ timeout: 15_000 });
+    },
+  },
+  {
+    slug: 'dashboard-filters',
+    step: 1,
+    hash: '#dashboard',
+    ready: async (page, locale) => {
+      const region =
+        locale === 'fr' ? /Filtres du tableau de bord/i : /Dashboard filters/i;
+      await expect(page.getByRole('region', { name: region })).toBeVisible({
+        timeout: 60_000,
+      });
+      await expect(page.getByText(/Total Trades|TOTAL TRADES|Total trades/i).first()).toBeVisible({
+        timeout: 60_000,
+      });
+    },
+  },
+  {
+    slug: 'dashboard-filters',
+    step: 2,
+    hash: '#dashboard',
+    ready: async (page, locale) => {
+      const region =
+        locale === 'fr' ? /Filtres du tableau de bord/i : /Dashboard filters/i;
+      await expect(page.getByRole('region', { name: region })).toBeVisible({
+        timeout: 60_000,
+      });
+      await expect(
+        page
+          .getByText(locale === 'fr' ? /Période|Compte|Ce mois|7 jours/i : /Period|Account|This month|7 days/i)
+          .first()
+      ).toBeAttached({ timeout: 30_000 });
+    },
+  },
+  {
+    slug: 'dashboard-filters',
+    step: 3,
+    hash: '#dashboard',
+    ready: async (page) => {
+      await expect(page.getByText(/Total Trades|TOTAL TRADES|Total trades/i).first()).toBeVisible({
+        timeout: 60_000,
+      });
+      await expect(
+        page.getByText(/Win|PnL|Profit|Expectancy|Profit Factor|Facteur/i).first()
+      ).toBeAttached({ timeout: 30_000 });
+    },
+  },
+  {
+    slug: 'daily-journal',
+    step: 1,
+    hash: '#daily-journal',
+    ready: async (page, locale) => {
+      const create = locale === 'fr' ? /Cr[eé]er/i : /Create/i;
+      await expect(page.getByRole('button', { name: create }).first()).toBeVisible({
+        timeout: 60_000,
+      });
+      await expect(
+        page.getByText(/Nouvelle entr|New entr|Entrees|Entries|Mois|Months/i).first()
+      ).toBeVisible({ timeout: 60_000 });
+    },
+  },
+  {
+    slug: 'daily-journal',
+    step: 2,
+    hash: '#daily-journal',
+    ready: async (page, locale) => {
+      await expect(
+        page
+          .getByText(
+            locale === 'fr'
+              ? /Rechercher|Date debut|Date de début|Compte de trading/i
+              : /Search|Start date|Trading account/i
+          )
+          .first()
+      ).toBeVisible({ timeout: 60_000 });
+    },
+  },
+  {
+    slug: 'daily-journal',
+    step: 3,
+    hash: '#daily-journal',
+    ready: async (page, locale) => {
+      // Zone « Nouvelle entrée » : date + Créer (DateInput custom, pas type=date).
+      await expect(
+        appMain(page)
+          .getByText(locale === 'fr' ? /Nouvelle entr/i : /New entr/i)
+          .locator('visible=true')
+          .first()
+      ).toBeVisible({ timeout: 60_000 });
+      const create = appMain(page)
+        .getByRole('button', { name: locale === 'fr' ? /Cr[eé]er/i : /Create/i })
+        .locator('visible=true')
+        .first();
+      await expect(create).toBeVisible({ timeout: 15_000 });
+      // Remplir via calendrier du DateInput adjacent
+      const dateField = create.locator('xpath=preceding-sibling::*[1]//input').first();
+      if (await dateField.isVisible().catch(() => false)) {
+        await dateField.click();
+        await page.waitForTimeout(300);
+        // Cliquer un jour du calendrier popup s’il est ouvert
+        const dayBtn = page.locator('button').filter({ hasText: /^15$/ }).first();
+        if (await dayBtn.isVisible().catch(() => false)) {
+          await dayBtn.click();
+          await page.waitForTimeout(200);
+        } else {
+          await dateField.fill(locale === 'fr' ? '07/11/2026' : '11/07/2026');
+          await dateField.press('Enter');
+        }
+      }
+      if (await create.isEnabled().catch(() => false)) {
+        await create.click();
+        await page.waitForTimeout(600);
+      }
+      await expect(
+        page
+          .getByText(
+            locale === 'fr'
+              ? /Enregistrer|Edition du journal|Édition du journal|Fermer|Nouvelle entr/i
+              : /Save|Editing|Close|New entr/i
+          )
+          .first()
+      ).toBeAttached({ timeout: 20_000 });
     },
   },
   {
@@ -621,6 +908,13 @@ async function closeDayTradesModal(page: Page) {
 async function closeStrategyModals(page: Page) {
   await closeFixedModal(page, /Historique des versions|Version history/i);
   await closeFixedModal(page, /Modifier la stratégie|Edit strategy|Nouvelle stratégie|New strategy/i);
+  // Trade detail + formulaire compte éventuels
+  await closeFixedModal(page, /Détail du trade|Trade detail|Trade Details|Modifier le trade|Edit trade/i);
+  const closeJournal = page.getByRole('button', { name: /Fermer|Close/i }).first();
+  if (await closeJournal.isVisible().catch(() => false)) {
+    await closeJournal.click().catch(() => undefined);
+    await page.waitForTimeout(200);
+  }
 }
 
 async function openDayTradesModal(page: Page, locale: LocaleCode) {
@@ -635,6 +929,23 @@ async function openDayTradesModal(page: Page, locale: LocaleCode) {
   await expect(viewTrades).toBeVisible({ timeout: 60_000 });
   await viewTrades.click();
   await expect(heading).toBeVisible({ timeout: 15_000 });
+}
+
+/** Settings : onglet Affichage (sidebar). */
+async function openDisplaySettings(page: Page, locale: LocaleCode) {
+  await goHash(page, '#settings');
+  await dismissOverlays(page);
+  const settingsNav = appMain(page).getByRole('navigation').first();
+  const displayTab = settingsNav.getByRole('button', {
+    name: locale === 'fr' ? /^Affichage$/i : /^Display$/i,
+  });
+  await expect(displayTab).toBeVisible({ timeout: 30_000 });
+  await displayTab.click();
+  await expect(
+    appMain(page)
+      .getByText(locale === 'fr' ? /Préférences d['’]affichage/i : /Display preferences/i)
+      .first()
+  ).toBeVisible({ timeout: 30_000 });
 }
 
 /** Settings ne réécoute pas toujours `?tab=` une fois monté → clic onglet Trading (sidebar). */
@@ -949,11 +1260,11 @@ test.describe('Tutorials screenshots (manual)', () => {
       fs.mkdirSync(localeDir, { recursive: true });
       digestsByLocale[locale.code] = [];
 
-      const stepsToCapture = ONLY_SLUG
-        ? STEPS.filter((s) => s.slug === ONLY_SLUG)
+      const stepsToCapture = ONLY_SLUGS.length
+        ? STEPS.filter((s) => ONLY_SLUGS.includes(s.slug))
         : STEPS;
-      if (ONLY_SLUG && stepsToCapture.length === 0) {
-        throw new Error(`TUTORIAL_ONLY_SLUG inconnu: ${ONLY_SLUG}`);
+      if (ONLY_SLUGS.length && stepsToCapture.length === 0) {
+        throw new Error(`TUTORIAL_ONLY_SLUG inconnu: ${ONLY_SLUGS.join(',')}`);
       }
 
       for (const step of stepsToCapture) {
@@ -1008,12 +1319,17 @@ test.describe('Tutorials screenshots (manual)', () => {
     await setUiLanguage(page, LOCALES[0]);
     await goHash(page, '#help');
     await expect(page.getByTestId('help-page')).toBeVisible({ timeout: 30_000 });
-    await expect(page.getByTestId('help-card-api-connections')).toBeVisible();
-    await expect(page.getByTestId('help-card-journal-questions')).toBeVisible();
-    await expect(page.getByTestId('help-card-transactions-profitability')).toBeVisible();
-    await expect(page.getByTestId('help-card-backtest-market-replay')).toBeVisible();
+    await expect(page.getByTestId('help-section-workspace')).toBeVisible();
+    await expect(page.getByTestId('help-section-trades-pnl')).toBeVisible();
+    await expect(page.getByTestId('help-section-journal')).toBeVisible();
+    await expect(page.getByTestId('help-section-strategies')).toBeVisible();
+    await expect(page.getByTestId('help-card-trading-accounts')).toBeVisible();
+    await expect(page.getByTestId('help-card-display-settings')).toBeVisible();
+    await expect(page.getByTestId('help-card-trades')).toBeVisible();
+    await expect(page.getByTestId('help-card-dashboard-filters')).toBeVisible();
+    await expect(page.getByTestId('help-card-daily-journal')).toBeVisible();
     await expect(page.getByTestId('help-card-position-strategies')).toBeVisible();
-    await page.getByTestId('help-card-position-strategies').click();
-    await expect(page.getByTestId('tutorial-viewer-position-strategies')).toBeVisible();
+    await page.getByTestId('help-card-daily-journal').click();
+    await expect(page.getByTestId('tutorial-viewer-daily-journal')).toBeVisible();
   });
 });

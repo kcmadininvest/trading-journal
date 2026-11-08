@@ -3,7 +3,21 @@
  * Les textes i18n vivent sous le namespace `help`.
  */
 
-export type TutorialSection = 'getting-started' | 'go-further';
+export type TutorialSection =
+  | 'getting-started'
+  | 'workspace'
+  | 'trades-pnl'
+  | 'journal'
+  | 'strategies';
+
+/** Ordre d’affichage des sections dans le hub Aide. */
+export const TUTORIAL_SECTION_ORDER: TutorialSection[] = [
+  'getting-started',
+  'workspace',
+  'trades-pnl',
+  'journal',
+  'strategies',
+];
 
 export type TutorialStatus = 'not_started' | 'in_progress' | 'completed' | 'skipped';
 
@@ -25,6 +39,7 @@ export interface TutorialDef {
 }
 
 export const TUTORIALS: TutorialDef[] = [
+  // —— Pour bien démarrer ——
   {
     slug: 'getting-started',
     section: 'getting-started',
@@ -36,27 +51,31 @@ export const TUTORIALS: TutorialDef[] = [
       { id: 'journal', imageStep: 4 },
     ],
   },
+
+  // —— Compte & préférences ——
   {
-    slug: 'import-trades',
-    section: 'go-further',
+    slug: 'trading-accounts',
+    section: 'workspace',
     estimatedMinutes: 4,
     steps: [
-      { id: 'open-import', imageStep: 1 },
-      { id: 'format', imageStep: 2 },
+      { id: 'list', imageStep: 1 },
+      { id: 'create', imageStep: 2 },
+      { id: 'switch', imageStep: 3 },
     ],
   },
   {
-    slug: 'calendar',
-    section: 'go-further',
-    estimatedMinutes: 3,
+    slug: 'display-settings',
+    section: 'workspace',
+    estimatedMinutes: 4,
     steps: [
-      { id: 'overview', imageStep: 1 },
-      { id: 'day-detail', imageStep: 2 },
+      { id: 'open-display', imageStep: 1 },
+      { id: 'locale-timezone', imageStep: 2 },
+      { id: 'formats', imageStep: 3 },
     ],
   },
   {
     slug: 'api-connections',
-    section: 'go-further',
+    section: 'workspace',
     estimatedMinutes: 4,
     steps: [
       { id: 'open-settings', imageStep: 1 },
@@ -65,20 +84,49 @@ export const TUTORIALS: TutorialDef[] = [
       { id: 'sync-account', imageStep: 4 },
     ],
   },
+
+  // —— Trades & performance ——
   {
-    slug: 'journal-questions',
-    section: 'go-further',
-    estimatedMinutes: 5,
+    slug: 'trades',
+    section: 'trades-pnl',
+    estimatedMinutes: 4,
     steps: [
-      { id: 'flow', imageStep: 1 },
-      { id: 'templates', imageStep: 2 },
-      { id: 'questionnaires', imageStep: 3 },
-      { id: 'answer-daily', imageStep: 4 },
+      { id: 'list', imageStep: 1 },
+      { id: 'filters', imageStep: 2 },
+      { id: 'detail', imageStep: 3 },
+    ],
+  },
+  {
+    slug: 'import-trades',
+    section: 'trades-pnl',
+    estimatedMinutes: 4,
+    steps: [
+      { id: 'open-import', imageStep: 1 },
+      { id: 'format', imageStep: 2 },
+    ],
+  },
+  {
+    slug: 'dashboard-filters',
+    section: 'trades-pnl',
+    estimatedMinutes: 4,
+    steps: [
+      { id: 'overview', imageStep: 1 },
+      { id: 'period-account', imageStep: 2 },
+      { id: 'widgets', imageStep: 3 },
+    ],
+  },
+  {
+    slug: 'calendar',
+    section: 'trades-pnl',
+    estimatedMinutes: 3,
+    steps: [
+      { id: 'overview', imageStep: 1 },
+      { id: 'day-detail', imageStep: 2 },
     ],
   },
   {
     slug: 'transactions-profitability',
-    section: 'go-further',
+    section: 'trades-pnl',
     estimatedMinutes: 5,
     steps: [
       { id: 'flow', imageStep: 1 },
@@ -87,9 +135,34 @@ export const TUTORIALS: TutorialDef[] = [
       { id: 'link-credits', imageStep: 4 },
     ],
   },
+
+  // —— Journal & revue ——
+  {
+    slug: 'daily-journal',
+    section: 'journal',
+    estimatedMinutes: 4,
+    steps: [
+      { id: 'open', imageStep: 1 },
+      { id: 'filters', imageStep: 2 },
+      { id: 'entry', imageStep: 3 },
+    ],
+  },
+  {
+    slug: 'journal-questions',
+    section: 'journal',
+    estimatedMinutes: 5,
+    steps: [
+      { id: 'flow', imageStep: 1 },
+      { id: 'templates', imageStep: 2 },
+      { id: 'questionnaires', imageStep: 3 },
+      { id: 'answer-daily', imageStep: 4 },
+    ],
+  },
+
+  // —— Stratégies & backtest ——
   {
     slug: 'position-strategies',
-    section: 'go-further',
+    section: 'strategies',
     estimatedMinutes: 5,
     steps: [
       { id: 'flow', imageStep: 1 },
@@ -100,7 +173,7 @@ export const TUTORIALS: TutorialDef[] = [
   },
   {
     slug: 'backtest-market-replay',
-    section: 'go-further',
+    section: 'strategies',
     estimatedMinutes: 6,
     steps: [
       { id: 'flow', imageStep: 1 },

@@ -3,7 +3,7 @@
     "title": "Aide et guides",
     "subtitle": "Parcours pas à pas pour prendre en main le journal. Accessibles à tout moment.",
     "sectionStart": "Pour bien démarrer",
-    "sectionFurther": "Aller plus loin",
+    "sectionFurther": "Trades & performance",
     "estimatedMinutes": "{{count}} min",
     "stub": "Aperçu",
     "search": "Rechercher un guide",
@@ -11,7 +11,14 @@
     "backToLibrary": "Retour à la bibliothèque",
     "menuLabel": "Aide",
     "settingsLink": "Aide et guides",
-    "settingsLinkHint": "Ouvrir la bibliothèque de tutoriels"
+    "settingsLinkHint": "Ouvrir la bibliothèque de tutoriels",
+    "sections": {
+      "getting-started": "Pour bien démarrer",
+      "workspace": "Compte & préférences",
+      "trades-pnl": "Trades & performance",
+      "journal": "Journal & revue",
+      "strategies": "Stratégies & backtest"
+    }
   },
   "status": {
     "not_started": "Non commencé",
@@ -226,6 +233,111 @@
           "title": "Historique des versions",
           "body": "Chaque enregistrement important peut créer une nouvelle version. Ouvrez Versions pour comparer, restaurer ou revoir l’historique.\nGardez ainsi l’évolution de votre playbook sans écraser le passé.",
           "alt": "Modal Historique des versions"
+        }
+      }
+    },
+    "trading-accounts": {
+      "title": "Comptes de trading",
+      "summary": "Créer, organiser et basculer entre plusieurs comptes pour séparer vos environnements.",
+      "steps": {
+        "list": {
+          "title": "Voir vos comptes",
+          "body": "La page Comptes de trading liste vos environnements (futures, prop firm, démo…).\nChaque compte a sa devise, son capital et son statut.",
+          "alt": "Liste des comptes de trading"
+        },
+        "create": {
+          "title": "Ajouter un compte",
+          "body": "Utilisez Nouveau compte pour définir broker, devise et capital initial.\nC’est la base pour rattacher trades, transactions et sync API.",
+          "alt": "Bouton Nouveau compte sur la page Comptes"
+        },
+        "switch": {
+          "title": "Changer de compte actif",
+          "body": "Le sélecteur de compte du tableau de bord (bandeau de filtres) change le périmètre de toute l’app.\nChoisissez le bon compte avant d’analyser une période.",
+          "alt": "Sélecteur de compte dans les filtres du tableau de bord"
+        }
+      }
+    },
+    "display-settings": {
+      "title": "Préférences d’affichage",
+      "summary": "Langue, fuseau, thème et police pour lire le journal dans vos conventions.",
+      "steps": {
+        "open-display": {
+          "title": "Ouvrir Affichage",
+          "body": "Dans Paramètres, ouvrez l’onglet Affichage.\nCes choix s’appliquent à toute l’interface (tableaux, graphiques, exports).",
+          "alt": "Onglet Affichage des Paramètres"
+        },
+        "locale-timezone": {
+          "title": "Langue et fuseau",
+          "body": "Choisissez la langue de l’interface et le fuseau pour vos dates/heures utilisateur.\nLe fuseau métier (marché) reste utilisé quand le contexte l’exige.",
+          "alt": "Contrôles langue et fuseau horaire"
+        },
+        "formats": {
+          "title": "Thème et police",
+          "body": "Ajustez le thème, la taille et la police d’interface.\nLes formats de date et de nombre se règlent aussi dans Paramètres → Trading.",
+          "alt": "Thème, taille et police dans Affichage"
+        }
+      }
+    },
+    "trades": {
+      "title": "Mes trades",
+      "summary": "Parcourir, filtrer et ouvrir le détail de vos trades pour la revue et le tagging.",
+      "steps": {
+        "list": {
+          "title": "Liste des trades",
+          "body": "La page Mes trades affiche l’historique du compte sélectionné.\nParcourez contrats, sens, PnL et dates.",
+          "alt": "Table des trades avec lignes seedées"
+        },
+        "filters": {
+          "title": "Filtrer la vue",
+          "body": "Affinez par dates, contrat, rentabilité ou stratégie de position.\nLes filtres aident à isoler une série avant analyse.",
+          "alt": "Filtres de la page Mes trades"
+        },
+        "detail": {
+          "title": "Ouvrir un trade",
+          "body": "Cliquez une ligne pour le détail (exécutions, notes, liens).\nC’est le point d’entrée pour corriger ou enrichir une entrée.",
+          "alt": "Détail ou ligne de trade sélectionnée"
+        }
+      }
+    },
+    "dashboard-filters": {
+      "title": "Tableau de bord en détail",
+      "summary": "Période, compte et indicateurs pour lire votre performance sans vous perdre dans les chiffres.",
+      "steps": {
+        "overview": {
+          "title": "Vue d’ensemble",
+          "body": "Le tableau de bord regroupe PnL, activité et widgets de la période.\nCommencez toujours par vérifier compte et période.",
+          "alt": "Tableau de bord avec KPIs"
+        },
+        "period-account": {
+          "title": "Période et compte",
+          "body": "Utilisez les filtres du bandeau pour changer période et compte.\nLa vue se recalcule pour coller à ce périmètre.",
+          "alt": "Filtres période et compte du tableau de bord"
+        },
+        "widgets": {
+          "title": "Lire les indicateurs",
+          "body": "Total trades, winrate, courbes : chaque widget suit les filtres actifs.\nCroisez-les avec le calendrier ou Mes trades pour creuser.",
+          "alt": "Widgets de performance du tableau de bord"
+        }
+      }
+    },
+    "daily-journal": {
+      "title": "Journal quotidien",
+      "summary": "Rédiger et retrouver vos notes de séance, indépendamment des questionnaires.",
+      "steps": {
+        "open": {
+          "title": "Ouvrir le journal",
+          "body": "Le Journal regroupe vos entrées par mois.\nCréez une note pour capitaliser sur la séance du jour.",
+          "alt": "Page Journal quotidien"
+        },
+        "filters": {
+          "title": "Retrouver une entrée",
+          "body": "Filtrez par compte, dates ou recherche texte.\nUtile pour relire une série ou préparer une revue hebdo.",
+          "alt": "Filtres et recherche du journal"
+        },
+        "entry": {
+          "title": "Écrire ou modifier",
+          "body": "Ouvrez une entrée pour rédiger en markdown, lier le contexte et enregistrer.\nRevenez plus tard pour compléter à froid.",
+          "alt": "Éditeur d’entrée du journal"
         }
       }
     }

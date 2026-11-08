@@ -3,7 +3,7 @@
     "title": "Help & guides",
     "subtitle": "Step-by-step walkthroughs to get started. Available anytime.",
     "sectionStart": "Getting started",
-    "sectionFurther": "Go further",
+    "sectionFurther": "Trades & performance",
     "estimatedMinutes": "{{count}} min",
     "stub": "Preview",
     "search": "Search guides",
@@ -11,7 +11,14 @@
     "backToLibrary": "Back to library",
     "menuLabel": "Help",
     "settingsLink": "Help & guides",
-    "settingsLinkHint": "Open the tutorial library"
+    "settingsLinkHint": "Open the tutorial library",
+    "sections": {
+      "getting-started": "Getting started",
+      "workspace": "Account & preferences",
+      "trades-pnl": "Trades & performance",
+      "journal": "Journal & review",
+      "strategies": "Strategies & backtest"
+    }
   },
   "status": {
     "not_started": "Not started",
@@ -226,6 +233,111 @@
           "title": "Version history",
           "body": "Important saves can create a new version. Open Versions to compare, restore, or review history.\nKeep your playbook evolution without overwriting the past.",
           "alt": "Version history modal"
+        }
+      }
+    },
+    "trading-accounts": {
+      "title": "Trading accounts",
+      "summary": "Create, organize and switch between accounts to separate your trading environments.",
+      "steps": {
+        "list": {
+          "title": "Browse your accounts",
+          "body": "Trading accounts lists your environments (futures, prop firm, demo…).\nEach account has its currency, capital and status.",
+          "alt": "Trading accounts list"
+        },
+        "create": {
+          "title": "Add an account",
+          "body": "Use New Account to set broker, currency and starting capital.\nTrades, cash movements and API sync attach to that account.",
+          "alt": "New Account button on Accounts page"
+        },
+        "switch": {
+          "title": "Switch active account",
+          "body": "The dashboard account selector (filter bar) scopes the whole app.\nPick the right account before reviewing a period.",
+          "alt": "Account selector in the dashboard filter bar"
+        }
+      }
+    },
+    "display-settings": {
+      "title": "Display preferences",
+      "summary": "Language, timezone, theme and font so the journal matches your conventions.",
+      "steps": {
+        "open-display": {
+          "title": "Open Display",
+          "body": "In Settings, open the Display tab.\nThese choices apply across the UI (tables, charts, exports).",
+          "alt": "Settings Display tab"
+        },
+        "locale-timezone": {
+          "title": "Language and timezone",
+          "body": "Choose UI language and the timezone for your user-facing dates.\nMarket timezones still apply when the domain requires them.",
+          "alt": "Language and timezone controls"
+        },
+        "formats": {
+          "title": "Theme and font",
+          "body": "Adjust theme, font size and typeface.\nDate and number formats are also under Settings → Trading.",
+          "alt": "Theme, size and font in Display"
+        }
+      }
+    },
+    "trades": {
+      "title": "My trades",
+      "summary": "Browse, filter and open trade details for review and tagging.",
+      "steps": {
+        "list": {
+          "title": "Trades list",
+          "body": "My Trades shows the history for the selected account.\nScan contracts, side, PnL and dates.",
+          "alt": "Trades table with seeded rows"
+        },
+        "filters": {
+          "title": "Filter the view",
+          "body": "Narrow by dates, contract, profitability or position strategy.\nFilters help isolate a series before analysis.",
+          "alt": "My Trades page filters"
+        },
+        "detail": {
+          "title": "Open a trade",
+          "body": "Click a row for details (fills, notes, links).\nUse it to correct or enrich an entry.",
+          "alt": "Selected trade detail or row"
+        }
+      }
+    },
+    "dashboard-filters": {
+      "title": "Dashboard in depth",
+      "summary": "Period, account and KPIs so you can read performance without getting lost.",
+      "steps": {
+        "overview": {
+          "title": "Overview",
+          "body": "The dashboard groups PnL, activity and period widgets.\nAlways check account and period first.",
+          "alt": "Dashboard with KPIs"
+        },
+        "period-account": {
+          "title": "Period and account",
+          "body": "Use the filter bar to change period and account.\nThe view recomputes for that scope.",
+          "alt": "Dashboard period and account filters"
+        },
+        "widgets": {
+          "title": "Read the indicators",
+          "body": "Total trades, win rate, curves: every widget follows active filters.\nCross-check with calendar or My Trades to dig deeper.",
+          "alt": "Dashboard performance widgets"
+        }
+      }
+    },
+    "daily-journal": {
+      "title": "Daily journal",
+      "summary": "Write and find session notes, separate from questionnaires.",
+      "steps": {
+        "open": {
+          "title": "Open the journal",
+          "body": "Journal groups entries by month.\nCreate a note to capture today’s session.",
+          "alt": "Daily journal page"
+        },
+        "filters": {
+          "title": "Find an entry",
+          "body": "Filter by account, dates or text search.\nUseful for reviewing a streak or preparing a weekly recap.",
+          "alt": "Journal filters and search"
+        },
+        "entry": {
+          "title": "Write or edit",
+          "body": "Open an entry to write in markdown, add context and save.\nCome back later to refine with a cool head.",
+          "alt": "Journal entry editor"
         }
       }
     }
