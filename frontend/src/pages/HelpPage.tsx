@@ -10,9 +10,15 @@ import {
   TUTORIAL_SECTION_ORDER,
   TutorialProgressEntry,
   TutorialsProgress,
+  TutorialSection,
   getTutorialStatus,
   TutorialDef,
 } from '../tutorials/catalog';
+
+type HelpSectionGroup = {
+  id: TutorialSection;
+  tutorials: TutorialDef[];
+};
 
 export interface HelpPageProps {
   /** Slug issu du hash `#help/<slug>` */
@@ -67,7 +73,7 @@ const HelpPage: React.FC<HelpPageProps> = ({ initialSlug = null, onNavigateHash 
     onNavigateHash?.('help');
   };
 
-  const filtered = useMemo(() => {
+  const filtered = useMemo((): TutorialDef[] => {
     const q = filter.trim().toLowerCase();
     if (!q) return TUTORIALS;
     return TUTORIALS.filter((tut) => {
@@ -77,7 +83,7 @@ const HelpPage: React.FC<HelpPageProps> = ({ initialSlug = null, onNavigateHash 
     });
   }, [filter, t]);
 
-  const sections = TUTORIAL_SECTION_ORDER.map((sectionId) => ({
+  const sections: HelpSectionGroup[] = TUTORIAL_SECTION_ORDER.map((sectionId) => ({
     id: sectionId,
     tutorials: filtered.filter((x) => x.section === sectionId),
   })).filter((section) => section.tutorials.length > 0);
