@@ -176,6 +176,32 @@
           "alt": "Register Credit mit verknüpfter Auszahlung"
         }
       }
+    },
+    "backtest-market-replay": {
+      "title": "Backtest-Journal und Market Replay",
+      "summary": "Backtest-Beobachtungen erfassen und historische Kerzen abspielen. Ein Broker-Abo (z. B. TopStepX) ist für Marktdaten nötig.",
+      "steps": {
+        "flow": {
+          "title": "Zwei Werkzeuge unter Strategien",
+          "body": "Backtest-Journal und Market Replay gehören zusammen: das Journal speichert Beobachtungen je Kampagne; Replay spielt die Sitzung für manuelle Trades ab.\nVoraussetzung: Broker-API (Einstellungen → Trading) und aktives Broker-Abo für historische Kerzen.",
+          "alt": "Menü Strategien mit Backtest-Journal und Market Replay"
+        },
+        "backtest-journal": {
+          "title": "Backtest-Journal öffnen",
+          "body": "Im Backtest-Journal wählen Sie eine Positionsstrategie und eine Kampagne (Instrument + Zeitraum).\nFügen Sie Beobachtungen (Setup, Einstieg, Ausstieg) hinzu.",
+          "alt": "Backtest-Journal mit Strategie und Kampagne"
+        },
+        "historical-data": {
+          "title": "Historische Daten laden",
+          "body": "Vor dem Replay öffnen Sie Historische Daten und laden Kerzen (TopStepX).\nOhne Broker-Abo und API-Integration gibt es keine Kerzen für Market Replay.",
+          "alt": "Seite Historische Daten zum Laden von Kerzen"
+        },
+        "market-replay": {
+          "title": "Eine Sitzung abspielen",
+          "body": "Öffnen Sie Market Replay: Instrument und Sitzung mit Daten wählen, abspielen, Entry / Stop / Ziel setzen, dann An Journal senden.\nDie Beobachtung landet in der verknüpften Kampagne.",
+          "alt": "Market Replay mit Steuerung und Positionspanel"
+        }
+      }
     }
   }
 }

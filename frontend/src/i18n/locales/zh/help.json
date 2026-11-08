@@ -176,6 +176,32 @@
           "alt": "含已关联取款的贷方页签"
         }
       }
+    },
+    "backtest-market-replay": {
+      "title": "回测日记与 Market Replay",
+      "summary": "记录回测观察并回放历史K线。市场数据需要券商订阅（如 TopStepX）。",
+      "steps": {
+        "flow": {
+          "title": "策略菜单下的两个工具",
+          "body": "回测日记与 Market Replay 配套使用：日记按活动保存观察；回放用于手动下单练习。\n前提：券商 API（设置 → Trading）以及用于下载历史K线的有效券商订阅。",
+          "alt": "含回测日记与 Market Replay 的策略菜单"
+        },
+        "backtest-journal": {
+          "title": "打开回测日记",
+          "body": "在回测日记中选择仓位策略与活动（品种+周期）。\n添加观察（形态、入场、出场）以沉淀手动测试。",
+          "alt": "含策略与活动的回测日记页"
+        },
+        "historical-data": {
+          "title": "下载历史数据",
+          "body": "回放前打开历史数据下载K线（TopStepX）。\n没有券商订阅和已配置的 API，就没有可供 Market Replay 使用的K线。",
+          "alt": "用于下载K线的历史数据页"
+        },
+        "market-replay": {
+          "title": "回放一场交易时段",
+          "body": "打开 Market Replay：选择品种与有数据的时段，播放，放置入场/止损/目标，然后发送到日记。\n观察会进入已关联的回测活动。",
+          "alt": "含播放控件与仓位面板的 Market Replay"
+        }
+      }
     }
   }
 }

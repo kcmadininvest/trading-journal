@@ -29,6 +29,9 @@ describe('tutorials catalog', () => {
     expect(TUTORIAL_BY_SLUG['transactions-profitability']?.stub).toBeFalsy();
     expect(TUTORIAL_BY_SLUG['transactions-profitability']?.section).toBe('go-further');
     expect(TUTORIAL_BY_SLUG['transactions-profitability']?.steps).toHaveLength(4);
+    expect(TUTORIAL_BY_SLUG['backtest-market-replay']?.stub).toBeFalsy();
+    expect(TUTORIAL_BY_SLUG['backtest-market-replay']?.section).toBe('go-further');
+    expect(TUTORIAL_BY_SLUG['backtest-market-replay']?.steps).toHaveLength(4);
   });
 
   it('tracks progress helpers', () => {

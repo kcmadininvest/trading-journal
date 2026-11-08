@@ -176,6 +176,32 @@
           "alt": "Pestaña Crédito con una retirada vinculada"
         }
       }
+    },
+    "backtest-market-replay": {
+      "title": "Diario de backtest y Market Replay",
+      "summary": "Registrar observaciones de backtest y reproducir velas históricas. Se necesita una suscripción de broker (p. ej. TopStepX) para los datos de mercado.",
+      "steps": {
+        "flow": {
+          "title": "Dos herramientas en Estrategias",
+          "body": "El diario de backtest y Market Replay van juntos: el diario guarda observaciones por campaña; el replay reproduce la sesión para operar a mano.\nRequisito: conexión API del broker (Ajustes → Trading) y suscripción activa para descargar velas históricas.",
+          "alt": "Menú Estrategias con Diario de backtest y Market Replay"
+        },
+        "backtest-journal": {
+          "title": "Abrir el diario de backtest",
+          "body": "En Diario de backtest, elija una estrategia de posición y una campaña (instrumento + periodo).\nAñada observaciones (setup, entrada, salida) para capitalizar sus pruebas.",
+          "alt": "Página Diario de backtest con estrategia y campaña"
+        },
+        "historical-data": {
+          "title": "Descargar datos históricos",
+          "body": "Antes del replay, abra Datos históricos para descargar velas (TopStepX).\nSin suscripción de broker ni API configurada, no hay velas para Market Replay.",
+          "alt": "Página Datos históricos para descargar velas"
+        },
+        "market-replay": {
+          "title": "Reproducir una sesión",
+          "body": "Abra Market Replay: elija instrumento y sesión con datos, reproduzca, coloque entrada / stop / objetivo y Enviar al diario.\nLa observación entra en la campaña vinculada del diario de backtest.",
+          "alt": "Página Market Replay con controles y panel de posición"
+        }
+      }
     }
   }
 }

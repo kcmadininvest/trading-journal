@@ -176,6 +176,32 @@
           "alt": "Onglet Crédit avec un retrait lié"
         }
       }
+    },
+    "backtest-market-replay": {
+      "title": "Journal de backtest et Market Replay",
+      "summary": "Journaliser des observations de backtest et rejouer les bougies historiques. Un abonnement broker (ex. TopStepX) est nécessaire pour les données de marché.",
+      "steps": {
+        "flow": {
+          "title": "Deux outils sous Stratégies",
+          "body": "Journal de backtest et Market Replay forment un duo : le journal range vos observations par campagne ; le replay rejoue la séance pour placer des trades manuels.\nPrérequis : une connexion API broker (Paramètres → Trading) et un abonnement broker actif pour télécharger les bougies historiques.",
+          "alt": "Menu Stratégies avec Journal de backtest et Market Replay"
+        },
+        "backtest-journal": {
+          "title": "Ouvrir le journal de backtest",
+          "body": "Dans Journal de backtest, choisissez une stratégie de position puis une campagne (instrument + période).\nAjoutez des observations (setup, entrée, sortie) pour capitaliser vos tests manuels.",
+          "alt": "Page Journal de backtest avec une stratégie et une campagne"
+        },
+        "historical-data": {
+          "title": "Télécharger les données historiques",
+          "body": "Avant le replay, allez dans Données historiques pour télécharger les bougies (TopStepX).\nSans abonnement broker et sans intégration API configurée, aucune bougie n’est disponible pour Market Replay.",
+          "alt": "Page Données historiques pour télécharger les bougies"
+        },
+        "market-replay": {
+          "title": "Rejouer une séance",
+          "body": "Ouvrez Market Replay : choisissez l’instrument et une séance avec données, lancez la lecture, placez entrée / stop / objectif, puis Envoyer au journal.\nL’observation rejoint la campagne liée dans le journal de backtest.",
+          "alt": "Page Market Replay avec contrôles de lecture et panneau position"
+        }
+      }
     }
   }
 }

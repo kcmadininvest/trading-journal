@@ -176,6 +176,32 @@
           "alt": "Scheda Credito con un prelievo collegato"
         }
       }
+    },
+    "backtest-market-replay": {
+      "title": "Journal di backtest e Market Replay",
+      "summary": "Registrare osservazioni di backtest e riprodurre candele storiche. Serve un abbonamento broker (es. TopStepX) per i dati di mercato.",
+      "steps": {
+        "flow": {
+          "title": "Due strumenti in Strategie",
+          "body": "Journal di backtest e Market Replay vanno insieme: il journal archivia le osservazioni per campagna; il replay riproduce la sessione per trade manuali.\nPrerequisito: connessione API broker (Impostazioni → Trading) e abbonamento broker attivo per le candele storiche.",
+          "alt": "Menu Strategie con Journal di backtest e Market Replay"
+        },
+        "backtest-journal": {
+          "title": "Aprire il journal di backtest",
+          "body": "Nel Journal di backtest scegliete una strategia di posizione e una campagna (strumento + periodo).\nAggiungete osservazioni (setup, ingresso, uscita).",
+          "alt": "Pagina Journal di backtest con strategia e campagna"
+        },
+        "historical-data": {
+          "title": "Scaricare i dati storici",
+          "body": "Prima del replay aprite Dati storici per scaricare le candele (TopStepX).\nSenza abbonamento broker e API configurata non ci sono candele per Market Replay.",
+          "alt": "Pagina Dati storici per scaricare le candele"
+        },
+        "market-replay": {
+          "title": "Riprodurre una sessione",
+          "body": "Aprite Market Replay: scegliete strumento e sessione con dati, avviate, posizionate ingresso / stop / target, poi Invia al journal.\nL’osservazione entra nella campagna collegata.",
+          "alt": "Pagina Market Replay con controlli e pannello posizione"
+        }
+      }
     }
   }
 }

@@ -380,6 +380,78 @@ const STEPS: Array<{
       await expect(appMain(page).getByText(/1[.,\s]?500/i).first()).toBeAttached();
     },
   },
+  {
+    slug: 'backtest-market-replay',
+    step: 1,
+    hash: '#dashboard',
+    ready: async (page, locale) => {
+      await openStrategiesMenu(page, locale);
+      await expect(
+        page.getByRole('button', {
+          name: locale === 'fr' ? /Journal de backtest/i : /Backtest journal/i,
+        })
+      ).toBeVisible({ timeout: 15_000 });
+      await expect(
+        page.getByRole('button', { name: /Market Replay/i })
+      ).toBeVisible();
+    },
+  },
+  {
+    slug: 'backtest-market-replay',
+    step: 2,
+    hash: '#backtest-journal',
+    ready: async (page, locale) => {
+      await expect(
+        appMain(page).getByRole('heading', {
+          name: locale === 'fr' ? /Journal de backtest/i : /Backtest journal/i,
+        })
+      ).toBeVisible({ timeout: 60_000 });
+      await expect(appMain(page).getByText(/TUTO-DEMO OR Retrace/i).first()).toBeAttached({
+        timeout: 30_000,
+      });
+    },
+  },
+  {
+    slug: 'backtest-market-replay',
+    step: 3,
+    hash: '#historical-data',
+    ready: async (page, locale) => {
+      // Pas de h1 « Données historiques » dans le main — le titre vit dans le header.
+      await expect(
+        appMain(page).getByRole('heading', {
+          name: locale === 'fr' ? /Mise à jour automatique/i : /Automatic update/i,
+        })
+      ).toBeVisible({ timeout: 60_000 });
+      await expect(
+        appMain(page)
+          .getByText(
+            locale === 'fr'
+              ? /Téléchargement historique|TopStepX|Lancer le téléchargement/i
+              : /Historical backfill|TopStepX|Start download/i
+          )
+          .first()
+      ).toBeAttached({ timeout: 30_000 });
+    },
+  },
+  {
+    slug: 'backtest-market-replay',
+    step: 4,
+    hash: '#market-replay',
+    ready: async (page, locale) => {
+      await expect(
+        appMain(page).getByRole('heading', { name: /Market Replay/i })
+      ).toBeVisible({ timeout: 60_000 });
+      await expect(
+        appMain(page)
+          .getByText(
+            locale === 'fr'
+              ? /Choisissez un actif|Rejouez l’historique|Lecture/i
+              : /Choose an instrument|Replay|Play/i
+          )
+          .first()
+      ).toBeAttached({ timeout: 30_000 });
+    },
+  },
 ];
 
 /** Évite le <main> de l’overlay ESLint Vite (`window window-collapsed`). */
@@ -504,6 +576,27 @@ async function openManagementMenu(page: Page, locale: LocaleCode) {
   await expect(
     page.getByRole('button', { name: /^Transactions$/i })
   ).toBeVisible();
+}
+
+async function openStrategiesMenu(page: Page, locale: LocaleCode) {
+  await dismissOverlays(page);
+  // Fermer un éventuel autre menu (Gestion…) qui resterait ouvert.
+  await page.mouse.move(8, 8);
+  await page.waitForTimeout(300);
+  const label = locale === 'fr' ? /^Stratégies$/i : /^Strategies$/i;
+  const trigger = page.getByRole('banner').getByRole('button', { name: label });
+  await expect(trigger).toBeVisible({ timeout: 30_000 });
+  const backtest = page.getByRole('button', {
+    name: locale === 'fr' ? /Journal de backtest/i : /Backtest journal/i,
+  });
+  // Clic unique pour ouvrir (évite le toggle hover+click).
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    if (await backtest.isVisible().catch(() => false)) break;
+    await trigger.click();
+    await page.waitForTimeout(300);
+  }
+  await expect(backtest).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByRole('button', { name: /Market Replay/i })).toBeVisible();
 }
 
 type QuestionsSection = 'templates' | 'day' | 'position';
@@ -803,7 +896,8 @@ test.describe('Tutorials screenshots (manual)', () => {
     await expect(page.getByTestId('help-card-api-connections')).toBeVisible();
     await expect(page.getByTestId('help-card-journal-questions')).toBeVisible();
     await expect(page.getByTestId('help-card-transactions-profitability')).toBeVisible();
-    await page.getByTestId('help-card-transactions-profitability').click();
-    await expect(page.getByTestId('tutorial-viewer-transactions-profitability')).toBeVisible();
+    await expect(page.getByTestId('help-card-backtest-market-replay')).toBeVisible();
+    await page.getByTestId('help-card-backtest-market-replay').click();
+    await expect(page.getByTestId('tutorial-viewer-backtest-market-replay')).toBeVisible();
   });
 });

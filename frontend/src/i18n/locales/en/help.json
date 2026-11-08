@@ -176,6 +176,32 @@
           "alt": "Credit tab with a linked withdrawal"
         }
       }
+    },
+    "backtest-market-replay": {
+      "title": "Backtest journal and Market Replay",
+      "summary": "Log backtest observations and replay historical candles. A broker subscription (e.g. TopStepX) is required for market data.",
+      "steps": {
+        "flow": {
+          "title": "Two tools under Strategies",
+          "body": "Backtest journal and Market Replay work together: the journal stores observations by campaign; replay plays the session so you can place manual trades.\nPrerequisite: a broker API connection (Settings → Trading) and an active broker subscription to download historical candles.",
+          "alt": "Strategies menu with Backtest journal and Market Replay"
+        },
+        "backtest-journal": {
+          "title": "Open the backtest journal",
+          "body": "In Backtest journal, pick a position strategy then a campaign (instrument + period).\nAdd observations (setup, entry, exit) to capture your manual tests.",
+          "alt": "Backtest journal page with a strategy and campaign"
+        },
+        "historical-data": {
+          "title": "Download historical data",
+          "body": "Before replay, open Historical data to download candles (TopStepX).\nWithout a broker subscription and a configured API integration, no candles are available for Market Replay.",
+          "alt": "Historical data page to download candles"
+        },
+        "market-replay": {
+          "title": "Replay a session",
+          "body": "Open Market Replay: pick the instrument and a session with data, press play, place entry / stop / target, then Send to journal.\nThe observation joins the linked campaign in the backtest journal.",
+          "alt": "Market Replay page with playback controls and position panel"
+        }
+      }
     }
   }
 }

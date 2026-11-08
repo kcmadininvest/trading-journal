@@ -24,7 +24,12 @@ from daily_journal.models import (
 )
 from integrations.credentials_crypto import build_secrets_hint, encrypt_json
 from integrations.models import UserApiIntegration
-from trades.models import AccountTransaction, ImportedTrade, TradingAccount
+from backtest_journal.models import (
+    ManualBacktestCampaign,
+    ManualBacktestStrategy,
+    ManualBacktestVersion,
+)
+from trades.models import AccountTransaction, ImportedTrade, PositionStrategy, TradingAccount
 from trading_activity.models import (
     TradingActivityCredit,
     TradingActivityExpense,
@@ -290,6 +295,51 @@ class Command(BaseCommand):
             notes='TUTO-DEMO crédit lié au retrait',
         )
         credit.linked_account_transactions.set([withdrawal_tx])
+
+        # Journal de backtest + Market Replay (tuto Aide)
+        position, _ = PositionStrategy.objects.update_or_create(
+            user=user,
+            title='TUTO-DEMO OR Retrace',
+            defaults={
+                'status': 'active',
+                'is_current': True,
+                'description': 'Stratégie démo pour captures tutoriel.',
+                'strategy_content': {
+                    'sections': [{'title': 'Setup', 'rules': ['Opening range retrace']}],
+                },
+            },
+        )
+        bt_strategy, _ = ManualBacktestStrategy.objects.update_or_create(
+            user=user,
+            position_strategy=position,
+            defaults={
+                'name': position.title,
+                'description': 'Journal démo tutoriel',
+                'default_instrument': 'NQ',
+                'status': 'active',
+            },
+        )
+        bt_version, _ = ManualBacktestVersion.objects.get_or_create(
+            strategy=bt_strategy,
+            version=1,
+            defaults={
+                'setup_rules': 'TUTO-DEMO setup',
+                'entry_rules': 'TUTO-DEMO entry',
+            },
+        )
+        ManualBacktestCampaign.objects.update_or_create(
+            user=user,
+            strategy_version=bt_version,
+            name='TUTO-DEMO NQ campagne',
+            defaults={
+                'instrument': 'NQ',
+                'period_start': (now - timedelta(days=90)).date(),
+                'period_end': (now + timedelta(days=30)).date(),
+                'timezone': 'America/New_York',
+                'status': 'IN_PROGRESS',
+                'notes': 'Campagne démo tutoriel',
+            },
+        )
 
         action = 'créé' if created else 'mis à jour'
         self.stdout.write(self.style.SUCCESS(
