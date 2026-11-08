@@ -106,6 +106,7 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
     journal_questions_positions_collapsed: false,
     tutorials_progress: {},
     tutorials_auto_prompt_dismissed: false,
+    trading_activity_ledger_sort: {},
   });
   const [loading, setLoading] = useState(true);
   const { data: bootstrap, isError: bootstrapError, isLoading: bootstrapLoading } = useBootstrap(
@@ -126,6 +127,7 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
       journal_questions_positions_collapsed: !!prefs.journal_questions_positions_collapsed,
       tutorials_progress: prefs.tutorials_progress || {},
       tutorials_auto_prompt_dismissed: !!prefs.tutorials_auto_prompt_dismissed,
+      trading_activity_ledger_sort: prefs.trading_activity_ledger_sort || {},
     });
     const effectiveTheme: ThemePreference = isThemePreference(prefs.theme) ? prefs.theme : 'light';
     applyThemePreference(effectiveTheme);

@@ -316,6 +316,15 @@ class UserPreferences(models.Model):
             'le menu Aide reste toujours accessible.'
         )),
     )
+    trading_activity_ledger_sort = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name=_('Tri ledger activité trading'),
+        help_text=str(_(
+            'Tri par onglet (debit/credit/tax) : {field, direction}. '
+            'Défaut implicite : date desc.'
+        )),
+    )
 
     # Métadonnées
     created_at = models.DateTimeField(

@@ -108,6 +108,12 @@ export interface UserPreferences {
   >;
   /** Coupe uniquement le prompt auto first-login / bannière. */
   tutorials_auto_prompt_dismissed?: boolean;
+  /** Tri ledger activité trading par onglet (debit/credit/tax). */
+  trading_activity_ledger_sort?: {
+    debit?: { field: string; direction: 'asc' | 'desc' };
+    credit?: { field: string; direction: 'asc' | 'desc' };
+    tax?: { field: string; direction: 'asc' | 'desc' };
+  };
   created_at?: string;
   updated_at?: string;
 }

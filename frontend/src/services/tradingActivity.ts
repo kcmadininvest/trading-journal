@@ -288,11 +288,13 @@ export const tradingActivityService = {
   listExpenses(params?: {
     page?: number;
     page_size?: number;
+    ordering?: string;
     filters?: TradingActivityExpenseLedgerFilters;
   }): Promise<PaginatedResults<TradingActivityExpense>> {
     const q = new URLSearchParams();
     if (params?.page != null) q.set('page', String(params.page));
     if (params?.page_size != null) q.set('page_size', String(params.page_size));
+    if (params?.ordering) q.set('ordering', String(params.ordering));
     const f = params?.filters;
     if (f?.date_from) q.set('date_from', String(f.date_from));
     if (f?.date_to) q.set('date_to', String(f.date_to));
@@ -317,11 +319,13 @@ export const tradingActivityService = {
   listCredits(params?: {
     page?: number;
     page_size?: number;
+    ordering?: string;
     filters?: TradingActivityLedgerFilters;
   }): Promise<PaginatedResults<TradingActivityCredit>> {
     const q = new URLSearchParams();
     if (params?.page != null) q.set('page', String(params.page));
     if (params?.page_size != null) q.set('page_size', String(params.page_size));
+    if (params?.ordering) q.set('ordering', String(params.ordering));
     const f = params?.filters;
     if (f?.date_from) q.set('date_from', String(f.date_from));
     if (f?.date_to) q.set('date_to', String(f.date_to));
@@ -345,11 +349,13 @@ export const tradingActivityService = {
   listTaxPayments(params?: {
     page?: number;
     page_size?: number;
+    ordering?: string;
     filters?: TradingActivityTaxPaymentLedgerFilters;
   }): Promise<PaginatedResults<TradingActivityTaxPayment>> {
     const q = new URLSearchParams();
     if (params?.page != null) q.set('page', String(params.page));
     if (params?.page_size != null) q.set('page_size', String(params.page_size));
+    if (params?.ordering) q.set('ordering', String(params.ordering));
     const f = params?.filters;
     if (f?.date_from) q.set('date_from', String(f.date_from));
     if (f?.date_to) q.set('date_to', String(f.date_to));

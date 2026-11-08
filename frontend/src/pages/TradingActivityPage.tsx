@@ -13,6 +13,7 @@ import {
 } from '../components/tradingActivity/TradingActivityTaxPaymentsPanel';
 import { buildTaxPaymentTypeSelectOptions } from '../components/tradingActivity/taxPaymentTypeUtils';
 import { TradingActivityLedgerDeleteAction } from '../components/tradingActivity/TradingActivityLedgerDeleteAction';
+import { TradingActivitySortableTh } from '../components/tradingActivity/TradingActivitySortableTh';
 import {
   tradingActivityService,
   CurrencySummaryBlock,
@@ -26,9 +27,17 @@ import {
   type BuiltinTaxPaymentLabels,
   type BuiltinTaxPaymentType,
 } from '../services/tradingActivity';
+import userService from '../services/userService';
 import { normalizeDecimalForApi, parseUserDecimal } from '../utils/normalizeDecimalForApi';
 import { formatDate, formatDateTimeShort, type DateFormatType } from '../utils/dateFormat';
 import { formatNumber, getNumberFormatExample, type NumberFormatType } from '../utils/numberFormat';
+import {
+  mergeTabSort,
+  nextSortEntry,
+  resolveTabSort,
+  toOrderingParam,
+  type LedgerSortTab,
+} from '../utils/tradingActivityLedgerSort';
 
 /** Même principe que PageSizeSelector : pas de flèche native du navigateur sur les <select>. */
 const MODAL_SELECT_CLASS =
@@ -551,7 +560,7 @@ function MobileCreditCard({
 const TradingActivityPage: React.FC = () => {
   const { t } = useI18nTranslation('trading_activity');
   const { t: tCommon } = useI18nTranslation('common');
-  const { preferences } = usePreferences();
+  const { preferences, mergePreferences } = usePreferences();
   const defaultCurrency = preferences.default_currency || 'USD';
   const numberFormat: NumberFormatType = preferences.number_format || 'comma';
   const numberFormatHint = tCommon('numberFormatHint', {
@@ -559,6 +568,22 @@ const TradingActivityPage: React.FC = () => {
   });
   const dateFormatPref: DateFormatType = preferences.date_format ?? 'EU';
   const timezonePref = preferences.timezone;
+
+  const debitSort = useMemo(
+    () => resolveTabSort(preferences.trading_activity_ledger_sort, 'debit'),
+    [preferences.trading_activity_ledger_sort],
+  );
+  const creditSort = useMemo(
+    () => resolveTabSort(preferences.trading_activity_ledger_sort, 'credit'),
+    [preferences.trading_activity_ledger_sort],
+  );
+  const taxSort = useMemo(
+    () => resolveTabSort(preferences.trading_activity_ledger_sort, 'tax'),
+    [preferences.trading_activity_ledger_sort],
+  );
+  const debitOrdering = useMemo(() => toOrderingParam(debitSort), [debitSort]);
+  const creditOrdering = useMemo(() => toOrderingParam(creditSort), [creditSort]);
+  const taxOrdering = useMemo(() => toOrderingParam(taxSort), [taxSort]);
 
   const [summary, setSummary] = useState<TradingActivitySummary | null>(null);
   const [expenses, setExpenses] = useState<TradingActivityExpense[]>([]);
@@ -737,6 +762,7 @@ const TradingActivityPage: React.FC = () => {
         let data = await tradingActivityService.listExpenses({
           page: p,
           page_size: pageSize,
+          ordering: debitOrdering,
           filters: {
             date_from: ledgerFilters.date_from || undefined,
             date_to: ledgerFilters.date_to || undefined,
@@ -749,6 +775,7 @@ const TradingActivityPage: React.FC = () => {
           data = await tradingActivityService.listExpenses({
             page: p,
             page_size: pageSize,
+            ordering: debitOrdering,
             filters: {
               date_from: ledgerFilters.date_from || undefined,
               date_to: ledgerFilters.date_to || undefined,
@@ -766,7 +793,14 @@ const TradingActivityPage: React.FC = () => {
         setExpensesLoading(false);
       }
     },
-    [t, ledgerFilters.category, ledgerFilters.date_from, ledgerFilters.date_to, debouncedLedgerQuery],
+    [
+      t,
+      ledgerFilters.category,
+      ledgerFilters.date_from,
+      ledgerFilters.date_to,
+      debouncedLedgerQuery,
+      debitOrdering,
+    ],
   );
 
   const loadCreditsList = useCallback(
@@ -777,6 +811,7 @@ const TradingActivityPage: React.FC = () => {
         let data = await tradingActivityService.listCredits({
           page: p,
           page_size: pageSize,
+          ordering: creditOrdering,
           filters: {
             date_from: ledgerFilters.date_from || undefined,
             date_to: ledgerFilters.date_to || undefined,
@@ -788,6 +823,7 @@ const TradingActivityPage: React.FC = () => {
           data = await tradingActivityService.listCredits({
             page: p,
             page_size: pageSize,
+            ordering: creditOrdering,
             filters: {
               date_from: ledgerFilters.date_from || undefined,
               date_to: ledgerFilters.date_to || undefined,
@@ -804,7 +840,7 @@ const TradingActivityPage: React.FC = () => {
         setCreditsLoading(false);
       }
     },
-    [t, ledgerFilters.date_from, ledgerFilters.date_to, debouncedLedgerQuery],
+    [t, ledgerFilters.date_from, ledgerFilters.date_to, debouncedLedgerQuery, creditOrdering],
   );
 
   const loadTaxPaymentsList = useCallback(
@@ -815,6 +851,7 @@ const TradingActivityPage: React.FC = () => {
         let data = await tradingActivityService.listTaxPayments({
           page: p,
           page_size: pageSize,
+          ordering: taxOrdering,
           filters: {
             date_from: ledgerFilters.date_from || undefined,
             date_to: ledgerFilters.date_to || undefined,
@@ -827,6 +864,7 @@ const TradingActivityPage: React.FC = () => {
           data = await tradingActivityService.listTaxPayments({
             page: p,
             page_size: pageSize,
+            ordering: taxOrdering,
             filters: {
               date_from: ledgerFilters.date_from || undefined,
               date_to: ledgerFilters.date_to || undefined,
@@ -850,6 +888,38 @@ const TradingActivityPage: React.FC = () => {
       ledgerFilters.date_to,
       ledgerFilters.payment_type,
       debouncedLedgerQuery,
+      taxOrdering,
+    ],
+  );
+
+  const handleLedgerSort = useCallback(
+    (tab: LedgerSortTab, field: string) => {
+      const current =
+        tab === 'debit' ? debitSort : tab === 'credit' ? creditSort : taxSort;
+      const next = nextSortEntry(current, field);
+      const merged = mergeTabSort(preferences.trading_activity_ledger_sort, tab, next);
+      mergePreferences({ trading_activity_ledger_sort: merged });
+      if (tab === 'debit') setExpensesPage(1);
+      if (tab === 'credit') setCreditsPage(1);
+      if (tab === 'tax') setTaxPaymentsPage(1);
+      setLedgerBump((b) => b + 1);
+      void userService
+        .updatePreferences({ trading_activity_ledger_sort: merged })
+        .then((prefs) => {
+          if (prefs?.trading_activity_ledger_sort) {
+            mergePreferences({ trading_activity_ledger_sort: prefs.trading_activity_ledger_sort });
+          }
+        })
+        .catch(() => {
+          /* ignore — tri local déjà appliqué */
+        });
+    },
+    [
+      debitSort,
+      creditSort,
+      taxSort,
+      preferences.trading_activity_ledger_sort,
+      mergePreferences,
     ],
   );
 
@@ -1716,13 +1786,43 @@ const TradingActivityPage: React.FC = () => {
                       <table className="min-w-full text-sm">
                         <thead className="bg-gray-50 text-left text-gray-600 dark:bg-gray-900/50 dark:text-gray-300">
                           <tr>
-                            <th className="px-3 py-2">{t('table.date')}</th>
-                            <th className="px-3 py-2">{t('table.category')}</th>
-                            <th className="px-3 py-2">{t('table.label')}</th>
+                            <TradingActivitySortableTh
+                              label={t('table.date')}
+                              field="date"
+                              activeField={debitSort.field}
+                              direction={debitSort.direction}
+                              onSort={(field) => handleLedgerSort('debit', field)}
+                            />
+                            <TradingActivitySortableTh
+                              label={t('table.category')}
+                              field="category"
+                              activeField={debitSort.field}
+                              direction={debitSort.direction}
+                              onSort={(field) => handleLedgerSort('debit', field)}
+                            />
+                            <TradingActivitySortableTh
+                              label={t('table.label')}
+                              field="label"
+                              activeField={debitSort.field}
+                              direction={debitSort.direction}
+                              onSort={(field) => handleLedgerSort('debit', field)}
+                            />
                             <th className="px-3 py-2">{t('table.subtotal')}</th>
                             <th className="px-3 py-2">{t('table.vat')}</th>
-                            <th className="px-3 py-2">{t('table.total')}</th>
-                            <th className="px-3 py-2">{t('table.ref')}</th>
+                            <TradingActivitySortableTh
+                              label={t('table.total')}
+                              field="total"
+                              activeField={debitSort.field}
+                              direction={debitSort.direction}
+                              onSort={(field) => handleLedgerSort('debit', field)}
+                            />
+                            <TradingActivitySortableTh
+                              label={t('table.ref')}
+                              field="invoice_reference"
+                              activeField={debitSort.field}
+                              direction={debitSort.direction}
+                              onSort={(field) => handleLedgerSort('debit', field)}
+                            />
                             <th className="px-3 py-2">{t('table.secondary')}</th>
                             <th className="w-14 px-3 py-2">
                               <span className="sr-only">{t('actions.delete')}</span>
@@ -1907,8 +2007,20 @@ const TradingActivityPage: React.FC = () => {
                       <table className="min-w-full text-sm">
                         <thead className="bg-gray-50 text-left text-gray-600 dark:bg-gray-900/50 dark:text-gray-300">
                           <tr>
-                            <th className="px-3 py-2">{t('table.date')}</th>
-                            <th className="px-3 py-2">{t('table.amount')}</th>
+                            <TradingActivitySortableTh
+                              label={t('table.date')}
+                              field="date"
+                              activeField={creditSort.field}
+                              direction={creditSort.direction}
+                              onSort={(field) => handleLedgerSort('credit', field)}
+                            />
+                            <TradingActivitySortableTh
+                              label={t('table.amount')}
+                              field="amount"
+                              activeField={creditSort.field}
+                              direction={creditSort.direction}
+                              onSort={(field) => handleLedgerSort('credit', field)}
+                            />
                             <th className="px-3 py-2">{t('table.fxRate')}</th>
                             <th className="px-3 py-2">{t('table.transferFee')}</th>
                             <th className="px-3 py-2">{t('table.secondary')}</th>
@@ -2040,6 +2152,9 @@ const TradingActivityPage: React.FC = () => {
                 page={taxPaymentsPage}
                 pageSize={taxPaymentsPageSize}
                 pageSizeOptions={LEDGER_PAGE_SIZE_OPTIONS}
+                sortField={taxSort.field}
+                sortDirection={taxSort.direction}
+                onSort={(field) => handleLedgerSort('tax', field)}
                 onPageChange={(p) => {
                   setTaxPaymentsPage(p);
                   window.scrollTo({ top: 0, behavior: 'smooth' });
