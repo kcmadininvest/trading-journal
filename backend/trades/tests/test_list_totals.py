@@ -5,7 +5,7 @@ from unittest.mock import patch
 from django.utils import timezone
 from rest_framework.test import APITestCase
 
-from accounts.models import User, UserPreferences
+from accounts.models import AppSettings, User, UserPreferences
 from billing.models import CustomerSubscription
 from trades.models import ImportedTrade, TradingAccount
 from trades.services.statistics_calculator import compute_list_totals_payload, compute_statistics_payload
@@ -125,3 +125,54 @@ class ImportedTradeListTotalsTests(APITestCase):
         payload = compute_list_totals_payload(qs, 'net_pnl')
         self.assertEqual(payload['total_trades'], 2)
         self.assertEqual(payload['total_fees'], Decimal('20.00'))
+
+
+class ListTotalsNotPremiumRestrictedTests(APITestCase):
+    """Décision métier : totaux pied de page Trades accessibles hors premium."""
+
+    def setUp(self) -> None:
+        self.user = User.objects.create_user(
+            email='free-list-totals@example.com',
+            username='free_list_totals',
+            password='testpass123',
+            first_name='F',
+            last_name='T',
+            role='user',
+        )
+        UserPreferences.objects.get_or_create(user=self.user)
+        settings_obj = AppSettings.get_solo()
+        settings_obj.premium_restrictions_enabled = True
+        settings_obj.save()
+        self.account = TradingAccount.objects.create(
+            user=self.user,
+            name='Free totals account',
+            account_type='other',
+            currency='USD',
+            initial_capital=Decimal('10000.00'),
+            status='active',
+        )
+        now = timezone.now()
+        ImportedTrade.objects.create(
+            user=self.user,
+            trading_account=self.account,
+            external_trade_id='free-lt-1',
+            contract_name='NQ',
+            entered_at=now,
+            exited_at=now,
+            entry_price=Decimal('100.000000000'),
+            exit_price=Decimal('101.000000000'),
+            size=Decimal('1.0000'),
+            trade_type='Long',
+            trade_day=now.date(),
+            pnl=Decimal('100.000000000'),
+            fees=Decimal('10.00'),
+        )
+        self.client.force_authenticate(user=self.user)
+
+    def test_list_totals_ok_without_premium_while_statistics_forbidden(self) -> None:
+        totals = self.client.get('/api/trades/imported/list-totals/')
+        self.assertEqual(totals.status_code, 200, totals.data)
+        self.assertEqual(totals.data['total_trades'], 1)
+
+        stats = self.client.get('/api/trades/imported/statistics/')
+        self.assertEqual(stats.status_code, 403)

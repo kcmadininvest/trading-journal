@@ -815,7 +815,7 @@ class ImportedTradeViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
     ViewSet pour gérer les trades TopStep.
     """
     permission_classes = [permissions.IsAuthenticated]
-    premium_restricted_actions = {'statistics', 'analytics', 'list_totals'}
+    premium_restricted_actions = {'statistics', 'analytics'}
 
     def get_permissions(self):
         base_permissions = [permissions.IsAuthenticated()]
