@@ -41,7 +41,8 @@
     "hint": "You can always find this guide under Help, even if you dismiss this reminder.",
     "start": "Start",
     "later": "Later",
-    "dismissAuto": "Don’t show this automatically again"
+    "dismissAuto": "Don’t show this automatically again",
+    "dismissPersistError": "Could not save this choice. Please try again or check your connection."
   },
   "banner": {
     "resume": "Resume the getting started guide",
