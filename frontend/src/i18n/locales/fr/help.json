@@ -41,7 +41,8 @@
     "hint": "Vous pourrez toujours retrouver ce guide dans Aide, même si vous ignorez ce rappel.",
     "start": "Commencer",
     "later": "Plus tard",
-    "dismissAuto": "Ne plus me le proposer automatiquement"
+    "dismissAuto": "Ne plus me le proposer automatiquement",
+    "dismissPersistError": "Impossible d’enregistrer ce choix. Réessayez ou vérifiez votre connexion."
   },
   "banner": {
     "resume": "Reprendre le guide de démarrage",

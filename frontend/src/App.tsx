@@ -812,12 +812,27 @@ function App() {
     if (permanent) {
       mergePreferences({ tutorials_auto_prompt_dismissed: true });
       try {
-        await userService.updatePreferences({ tutorials_auto_prompt_dismissed: true });
+        const updated = await userService.updatePreferences({
+          tutorials_auto_prompt_dismissed: true,
+        });
+        if (!updated?.tutorials_auto_prompt_dismissed) {
+          throw new Error('tutorials_auto_prompt_dismissed not persisted');
+        }
+        mergePreferences({ tutorials_auto_prompt_dismissed: true });
+        window.dispatchEvent(new CustomEvent('preferences:updated'));
+        setShowTutorialBanner(false);
+        return;
       } catch {
-        // ignore
+        mergePreferences({ tutorials_auto_prompt_dismissed: false });
+        setShowTutorialAutoPrompt(true);
+        toast.error(
+          t('help:autoPrompt.dismissPersistError', {
+            defaultValue:
+              'Impossible d’enregistrer ce choix. Réessayez ou vérifiez votre connexion.',
+          })
+        );
+        return;
       }
-      setShowTutorialBanner(false);
-      return;
     }
     setShowTutorialBanner(true);
   };

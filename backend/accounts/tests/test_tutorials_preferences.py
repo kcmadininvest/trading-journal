@@ -36,6 +36,27 @@ class TutorialsPreferencesTests(TestCase):
         self.assertEqual(self.prefs.tutorials_progress['getting-started']['status'], 'in_progress')
         self.assertEqual(self.prefs.tutorials_progress['getting-started']['stepIndex'], 1)
 
+    def test_dismiss_only_survives_get_and_bootstrap(self):
+        """Payload exact du bouton « Ne plus me le proposer automatiquement »."""
+        put = self.client.put(
+            '/api/accounts/preferences/',
+            {'tutorials_auto_prompt_dismissed': True},
+            format='json',
+        )
+        self.assertEqual(put.status_code, 200, put.content)
+        self.assertTrue(put.data['preferences']['tutorials_auto_prompt_dismissed'])
+
+        get = self.client.get('/api/accounts/preferences/')
+        self.assertEqual(get.status_code, 200, get.content)
+        self.assertTrue(get.data['tutorials_auto_prompt_dismissed'])
+
+        boot = self.client.get('/api/accounts/bootstrap/')
+        self.assertEqual(boot.status_code, 200, boot.content)
+        self.assertTrue(boot.data['preferences']['tutorials_auto_prompt_dismissed'])
+
+        self.prefs.refresh_from_db()
+        self.assertTrue(self.prefs.tutorials_auto_prompt_dismissed)
+
     def test_trading_activity_ledger_sort_persisted_per_tab(self):
         payload = {
             'trading_activity_ledger_sort': {

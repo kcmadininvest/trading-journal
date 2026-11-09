@@ -185,7 +185,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
   onPremiumRestrictionsChange,
 }) => {
   const { t } = useI18nTranslation();
-  const { mergePreferences } = usePreferences();
+  const { mergePreferences, preferences: contextPreferences } = usePreferences();
   const [activeTab, setActiveTab] = useState<SettingsTabId>(() => readSettingsHash().tab);
   const [questionsSection, setQuestionsSection] = useState<QuestionsSectionId>(
     () => readSettingsHash().section
@@ -388,7 +388,15 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
 
   const persistPreferences = async (options?: { quietSuccess?: boolean }): Promise<boolean> => {
     try {
-      const updatedPreferences = await userService.updatePreferences(preferences);
+      // Ne pas écraser un dismiss auto-prompt déjà true en contexte
+      // avec un state local Settings chargé avant « Ne plus proposer ».
+      const payload: UserPreferences = {
+        ...preferences,
+        tutorials_auto_prompt_dismissed:
+          Boolean(contextPreferences.tutorials_auto_prompt_dismissed) ||
+          Boolean(preferences.tutorials_auto_prompt_dismissed),
+      };
+      const updatedPreferences = await userService.updatePreferences(payload);
       if (!options?.quietSuccess) {
         showMessage('success', t('settings:preferencesUpdated'));
       }
