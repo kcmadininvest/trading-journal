@@ -199,6 +199,33 @@ class TradesService {
     };
   }
 
+  /** Totaux légers pour le pied de tableau Trades (sans payload statistics complet). */
+  async listTotals(filters: TradesFilters = {}): Promise<{
+    total_trades: number;
+    total_pnl: number;
+    total_raw_pnl?: number;
+    total_net_pnl?: number;
+    total_fees: number;
+  }> {
+    const qs = this.toQuery(filters as any);
+    const url = `${this.BASE_URL}/api/trades/imported/list-totals/${qs ? `?${qs}` : ''}`;
+    const res = await fetchWithAuth(url);
+    if (!res.ok) throw new Error('Erreur lors du chargement des totaux');
+    const data = await res.json();
+    return {
+      total_trades: data.total_trades ?? 0,
+      total_pnl: typeof data.total_pnl === 'number' ? data.total_pnl : parseFloat(String(data.total_pnl || 0)),
+      total_raw_pnl: typeof data.total_raw_pnl === 'number' ? data.total_raw_pnl : parseFloat(String(data.total_raw_pnl || 0)),
+      total_net_pnl:
+        data.total_net_pnl === undefined || data.total_net_pnl === null
+          ? undefined
+          : typeof data.total_net_pnl === 'number'
+            ? data.total_net_pnl
+            : parseFloat(String(data.total_net_pnl || 0)),
+      total_fees: typeof data.total_fees === 'number' ? data.total_fees : parseFloat(String(data.total_fees || 0)),
+    };
+  }
+
   async uploadCSV(
     file: File,
     trading_account?: number,

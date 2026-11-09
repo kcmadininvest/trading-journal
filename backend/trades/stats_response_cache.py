@@ -65,7 +65,23 @@ def extract_activity_cache_params(request) -> Dict[str, Any]:
     return extract_dashboard_cache_params(request)
 
 
+def _contract_cache_token(request) -> str:
+    """Normalise les contrats (répétables / CSV) pour la clé de cache."""
+    raw = list(request.query_params.getlist('contract'))
+    if not raw:
+        single = request.query_params.get('contract')
+        if single:
+            raw = [single]
+    names: list[str] = []
+    for item in raw:
+        if not item:
+            continue
+        names.extend(part.strip() for part in str(item).split(',') if part.strip())
+    return ','.join(sorted(names))
+
+
 def extract_viewset_cache_params(request) -> Dict[str, Any]:
+    """Params de cache alignés sur les filtres ImportedTradeViewSet.get_queryset."""
     return {
         'trading_account': request.query_params.get('trading_account') or '',
         'start_date': request.query_params.get('start_date') or '',
@@ -75,4 +91,9 @@ def extract_viewset_cache_params(request) -> Dict[str, Any]:
         'position_strategy': request.query_params.get('position_strategy') or '',
         'pnl_display': request.query_params.get('pnl_display') or 'net',
         'convert_to': request.query_params.get('convert_to') or '',
+        'contract': _contract_cache_token(request),
+        'type': request.query_params.get('type') or '',
+        'profitable': request.query_params.get('profitable') or '',
+        'has_strategy': request.query_params.get('has_strategy') or '',
+        'trade_day': request.query_params.get('trade_day') or '',
     }

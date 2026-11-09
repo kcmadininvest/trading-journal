@@ -98,6 +98,32 @@ EMPTY_STATISTICS_PAYLOAD: Dict[str, Any] = {
 }
 
 
+def compute_list_totals_payload(trades, pf: str) -> Dict[str, Any]:
+    """
+    Totaux légers pour le pied de liste Trades (sans Sharpe/drawdown/RR/…).
+    Frais = Coalesce(fees)+Coalesce(commissions), comme compute_statistics_payload.
+    """
+    _zero_money = Value(Decimal('0'), output_field=DecimalField(max_digits=20, decimal_places=9))
+    _effective_fees = ExpressionWrapper(
+        Coalesce(F('fees'), _zero_money) + Coalesce(F('commissions'), _zero_money),
+        output_field=DecimalField(max_digits=20, decimal_places=9),
+    )
+    aggregates = trades.aggregate(
+        total_trades=Count('id'),
+        total_pnl=Sum(pf),
+        total_fees=Sum(_effective_fees),
+        total_raw_pnl=Sum('pnl'),
+        total_net_pnl=Sum('net_pnl'),
+    )
+    return {
+        'total_trades': int(aggregates['total_trades'] or 0),
+        'total_pnl': aggregates['total_pnl'] or Decimal('0'),
+        'total_raw_pnl': aggregates['total_raw_pnl'] or Decimal('0'),
+        'total_net_pnl': aggregates['total_net_pnl'] or Decimal('0'),
+        'total_fees': aggregates['total_fees'] or Decimal('0'),
+    }
+
+
 def compute_statistics_payload(request, trades, pf: str) -> Dict[str, Any]:
     """Calcule le payload statistics identique à l'ancien views.statistics."""
     

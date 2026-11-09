@@ -155,7 +155,7 @@ const TradesPage: React.FC = () => {
   const reloadStats = async () => {
     try {
       const { trading_account, contract, type, start_date, end_date, profitable, position_strategy } = filters;
-      const s = await tradesService.statistics({
+      const s = await tradesService.listTotals({
         trading_account: trading_account ?? undefined,
         contract: contract.length > 0 ? contract : undefined,
         type: type || undefined,
@@ -233,7 +233,7 @@ const TradesPage: React.FC = () => {
     const loadStats = async () => {
       try {
         // Passer trading_account même s'il est null (tous les comptes) - undefined sera ignoré par l'API
-        const s = await tradesService.statistics({
+        const s = await tradesService.listTotals({
           trading_account: trading_account !== null ? trading_account : undefined,
           contract: contract.length > 0 ? contract : undefined,
           type: type || undefined,
@@ -245,7 +245,7 @@ const TradesPage: React.FC = () => {
         });
         setStats(s);
       } catch (e) {
-        console.error('[TradesPage] Error loading statistics', e);
+        console.error('[TradesPage] Error loading list totals', e);
         setStats(null);
       }
     };
@@ -324,7 +324,7 @@ const TradesPage: React.FC = () => {
       setTotal(prev => Math.max(0, prev - 1));
       // Recharger stats
       try {
-        const s = await tradesService.statistics({
+        const s = await tradesService.listTotals({
           trading_account: filters.trading_account !== null ? filters.trading_account : undefined,
           contract: filters.contract.length > 0 ? filters.contract : undefined,
           type: filters.type || undefined,
@@ -375,7 +375,7 @@ const TradesPage: React.FC = () => {
       setTotal(prev => Math.max(0, prev - ids.filter((_, i) => results[i].status === 'fulfilled').length));
       // Recharger stats
       try {
-        const s = await tradesService.statistics({
+        const s = await tradesService.listTotals({
           trading_account: filters.trading_account !== null ? filters.trading_account : undefined,
           contract: filters.contract.length > 0 ? filters.contract : undefined,
           type: filters.type || undefined,
