@@ -815,7 +815,7 @@ class ImportedTradeViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
     ViewSet pour gérer les trades TopStep.
     """
     permission_classes = [permissions.IsAuthenticated]
-    premium_restricted_actions = {'statistics', 'analytics'}
+    premium_restricted_actions = {'statistics', 'analytics', 'list_totals'}
 
     def get_permissions(self):
         base_permissions = [permissions.IsAuthenticated()]
@@ -1016,6 +1016,30 @@ class ImportedTradeViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
 
         payload = compute_statistics_payload(request, trades, pf)
         set_cached_stats_response(request.user.id, 'statistics', cache_params, payload)
+        return Response(payload)
+
+    @action(detail=False, methods=['get'], url_path='list-totals')
+    def list_totals(self, request):
+        """
+        Totaux légers pour le pied de tableau de la page Trades.
+        Même get_queryset()/filtres que list et statistics ; un seul aggregate SQL.
+        """
+        from .stats_response_cache import (
+            extract_viewset_cache_params,
+            get_cached_stats_response,
+            set_cached_stats_response,
+        )
+        from .services.statistics_calculator import compute_list_totals_payload
+
+        cache_params = extract_viewset_cache_params(request)
+        cached = get_cached_stats_response(request.user.id, 'list_totals', cache_params)
+        if cached is not None:
+            return Response(cached)
+
+        trades = self.get_queryset()
+        pf = self.get_pnl_field()
+        payload = compute_list_totals_payload(trades, pf)
+        set_cached_stats_response(request.user.id, 'list_totals', cache_params, payload)
         return Response(payload)
 
     @action(detail=False, methods=['get'], url_path='statistics-legacy-inline')
