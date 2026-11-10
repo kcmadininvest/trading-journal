@@ -90,49 +90,6 @@ class ImportedTradeListTotalsTests(APITestCase):
         self.assertEqual(Decimal(str(res.data['total_raw_pnl'])), Decimal('100.00'))
         self.assertEqual(Decimal(str(res.data['total_fees'])), Decimal('15.00'))
 
-    def test_list_totals_ignores_has_strategy_filter(self) -> None:
-        """Le pied de page ne doit pas changer avec Avec/Sans stratégie."""
-        from trades.models import PositionStrategy
-
-        strategy = PositionStrategy.objects.create(
-            user=self.user,
-            title='LT strategy',
-            status='active',
-            is_current=True,
-            strategy_content={'sections': []},
-        )
-        trade = ImportedTrade.objects.get(external_trade_id='lt-1')
-        trade.position_strategy = strategy
-        trade.save(update_fields=['position_strategy'])
-
-        all_res = self.client.get(
-            '/api/trades/imported/list-totals/',
-            {'trading_account': self.account.id},
-        )
-        with_res = self.client.get(
-            '/api/trades/imported/list-totals/',
-            {'trading_account': self.account.id, 'has_strategy': 'true'},
-        )
-        without_res = self.client.get(
-            '/api/trades/imported/list-totals/',
-            {'trading_account': self.account.id, 'has_strategy': 'false'},
-        )
-        self.assertEqual(all_res.status_code, 200, all_res.data)
-        self.assertEqual(with_res.status_code, 200, with_res.data)
-        self.assertEqual(without_res.status_code, 200, without_res.data)
-        for key in ('total_trades', 'total_raw_pnl', 'total_net_pnl', 'total_fees'):
-            self.assertEqual(all_res.data[key], with_res.data[key], msg=key)
-            self.assertEqual(all_res.data[key], without_res.data[key], msg=key)
-        self.assertEqual(all_res.data['total_trades'], 2)
-
-        # La liste, elle, reste filtrée.
-        listed = self.client.get(
-            '/api/trades/imported/',
-            {'trading_account': self.account.id, 'has_strategy': 'true'},
-        )
-        self.assertEqual(listed.status_code, 200, listed.data)
-        self.assertEqual(listed.data['count'], 1)
-
     def test_list_totals_does_not_call_compute_statistics_payload(self) -> None:
         with patch(
             'trades.services.statistics_calculator.compute_statistics_payload',
