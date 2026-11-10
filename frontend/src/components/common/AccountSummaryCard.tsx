@@ -49,10 +49,8 @@ export const AccountSummaryCard: React.FC<AccountSummaryCardProps> = React.memo(
   globalAllAccountsActivity = null,
   theme = 'default',
 }) => {
-  const shellClass =
-    theme === 'band'
-      ? DASHBOARD_PANEL_SHELL_CLASS
-      : 'bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4';
+  /** Même chrome que Performance récente (panel shell), y compris theme default. */
+  const shellClass = DASHBOARD_PANEL_SHELL_CLASS;
 
   return (
     <div className={`${shellClass} ${className}`.trim()}>

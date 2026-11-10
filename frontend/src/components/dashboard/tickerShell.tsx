@@ -30,12 +30,12 @@ export const DASHBOARD_PANEL_HINT_CLASS = 'text-xs font-normal text-gray-500 dar
 export const DASHBOARD_INNER_LABEL_CLASS =
   'text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400';
 
-/** Tuile regroupée (soldes, trades, meilleur jour…) dans un panneau dashboard. */
+/** Tuile regroupée (soldes, trades, meilleur jour…) — stack vertical permanent (évite truncate des labels). */
 export const DASHBOARD_INNER_TILE_CLASS =
-  'flex h-full min-w-0 w-full flex-col gap-3 rounded-lg border border-gray-200 bg-gray-50 p-4 transition-colors duration-150 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-700/40 dark:hover:bg-gray-700/60 xl:flex-row xl:items-stretch xl:gap-0';
+  'flex h-full min-w-0 w-full flex-col gap-3 rounded-lg border border-gray-200 bg-gray-50 p-4 transition-colors duration-150 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-700/40 dark:hover:bg-gray-700/60';
 
-export const DASHBOARD_TILE_DIVIDER_CLASS =
-  'hidden w-px shrink-0 self-stretch bg-gray-200 dark:bg-gray-600 xl:mx-4 xl:block';
+/** Ancien divider vertical xl — conservé pour imports ; masqué (stack-first). */
+export const DASHBOARD_TILE_DIVIDER_CLASS = 'hidden';
 
 export const DASHBOARD_GAUGE_TILE_CLASS = `${DASHBOARD_INNER_CARD_CLASS} flex flex-col items-center p-3 shadow-none transition-all duration-300 ease-in-out hover:-translate-y-1 hover:shadow-md dark:hover:shadow-none sm:p-4`;
 
