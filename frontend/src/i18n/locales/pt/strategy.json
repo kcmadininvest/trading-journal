@@ -1,0 +1,56 @@
+{
+  "streak": {
+    "title": "Sequência de respeito da estratégia",
+    "subtitle": "Dias consecutivos com 100% de conformidade",
+    "sinceWithArticle": "desde",
+    "nextBadge": "Próximo distintivo",
+    "daysLeft": "dias restantes",
+    "days": "dias"
+  },
+  "badges": {
+    "title": "Distintivos de disciplina",
+    "earned": "Distintivos obtidos",
+    "locked": "Distintivos a desbloquear",
+    "days": "dias",
+    "labels": {
+      "beginner": "Principiante disciplinado",
+      "week": "Semana perfeita",
+      "two_weeks": "Duas semanas exemplares",
+      "maltz": "Rotina estabelecida",
+      "month": "Mês de disciplina",
+      "two_months": "Mestre da disciplina",
+      "three_months": "Lenda da estratégia",
+      "centurion": "Centurião",
+      "year": "Ano perfeito"
+    }
+  },
+  "metrics": {
+    "overall": "Taxa global",
+    "respected": "Respeitada",
+    "notRespected": "Não respeitada",
+    "last7Days": "Últimos 7 dias",
+    "last30Days": "Últimos 30 dias",
+    "last90Days": "Últimos 90 dias"
+  },
+  "compliance": {
+    "rate": "Taxa de conformidade (%)",
+    "evolution": "Evolução da taxa de conformidade",
+    "trades": "trades respeitados"
+  },
+  "complianceEvolutionAllAccountsTooltip": "Evolução da taxa de conformidade da estratégia para todas as suas contas ativas combinadas",
+  "complianceEvolutionSelectedAccountTooltip": "Evolução da taxa de conformidade da estratégia para a conta selecionada",
+  "date": "Data",
+  "noDataForAccount": "Não há dados disponíveis para esta conta",
+  "loading": "A carregar...",
+  "performance": {
+    "title": "Impacto da conformidade com a estratégia",
+    "subtitle": "Comparação de desempenho com base na conformidade com a estratégia",
+    "respected": "Estratégia respeitada",
+    "notRespected": "Estratégia não respeitada",
+    "trades": "Trades",
+    "winRate": "Taxa de acerto",
+    "avgPnl": "PnL médio",
+    "totalPnl": "PnL total",
+    "insight": "Quando respeita a sua estratégia, a sua taxa de acerto é {{diff}}% mais elevada e o seu PnL médio é {{pnlDiff}} superior."
+  }
+}

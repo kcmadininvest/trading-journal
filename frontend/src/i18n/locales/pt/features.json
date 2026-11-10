@@ -1,0 +1,26 @@
+{
+  "title": "Funcionalidades",
+  "subtitle": "Todas as funcionalidades de que precisa para acompanhar e melhorar o seu desempenho de trading.",
+  "coreTitle": "Funcionalidades principais",
+  "advancedTitle": "Módulos avançados",
+  "backHome": "Voltar ao início",
+  "additional": {
+    "title": "Funcionalidades adicionais",
+    "import": {
+      "title": "Importação CSV",
+      "content": "Importe facilmente os seus trades a partir de um ficheiro CSV. Compatível com a maioria das plataformas de trading."
+    },
+    "export": {
+      "title": "Exportação CSV",
+      "content": "Exporte os seus dados filtrados para análise externa ou cópia de segurança."
+    },
+    "filters": {
+      "title": "Filtros avançados",
+      "content": "Filtre os seus trades por conta, data, instrumento, estratégia e muito mais."
+    },
+    "customization": {
+      "title": "Personalização",
+      "content": "Personalize a sua interface: formato de data, formato de números, idioma, fuso horário, tema e tamanho da letra."
+    }
+  }
+}

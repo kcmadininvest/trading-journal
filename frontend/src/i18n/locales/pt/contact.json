@@ -1,0 +1,30 @@
+{
+  "title": "Contacte-nos",
+  "close": "Fechar",
+  "form": {
+    "email": {
+      "label": "O seu e-mail",
+      "placeholder": "oseu@email.com"
+    },
+    "subject": {
+      "label": "Assunto",
+      "placeholder": "Assunto da sua mensagem"
+    },
+    "message": {
+      "label": "Mensagem",
+      "placeholder": "A sua mensagem..."
+    }
+  },
+  "buttons": {
+    "cancel": "Cancelar",
+    "send": "Enviar",
+    "sending": "A enviar..."
+  },
+  "errors": {
+    "sendError": "Ocorreu um erro ao enviar a sua mensagem. Tente novamente.",
+    "sendErrorDefault": "Ocorreu um erro ao enviar a sua mensagem."
+  },
+  "success": {
+    "messageSent": "A sua mensagem foi enviada com sucesso!"
+  }
+}

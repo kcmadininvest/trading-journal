@@ -1,55 +1,54 @@
 {
-  "title": "Assinatura Premium",
-  "description": "Gerencie seu acesso Premium e período de teste.",
-  "currentStatus": "Status atual: {{status}}",
-  "trialDaysLeft_one": "Falta {{count}} dia de teste.",
-  "trialDaysLeft_other": "Faltam {{count}} dias de teste.",
+  "title": "Subscrição Premium",
+  "description": "Faça a gestão do seu acesso Premium e do período de avaliação.",
+  "currentStatus": "Estado atual: {{status}}",
+  "trialDaysLeft_one": "{{count}} dia de avaliação restante.",
+  "trialDaysLeft_other": "{{count}} dias de avaliação restantes.",
   "banner": {
-    "trialDaysLeft_one": "Teste Premium: falta {{count}} dia.",
-    "trialDaysLeft_other": "Teste Premium: faltam {{count}} dias.",
-    "trialEnded": "Seu teste terminou. Assine para continuar usando os recursos Premium.",
-    "active": "Sua assinatura Premium está ativa."
+    "trialDaysLeft_one": "Avaliação Premium: {{count}} dia restante.",
+    "trialDaysLeft_other": "Avaliação Premium: {{count}} dias restantes.",
+    "trialEnded": "A sua avaliação terminou. Subscreva para continuar a utilizar as funcionalidades Premium.",
+    "active": "A sua subscrição Premium está ativa."
   },
   "locked": {
-    "title": "Assinatura Premium obrigatória",
-    "description": "Esta seção só está disponível com teste ativo ou assinatura Premium."
+    "title": "Subscrição Premium necessária",
+    "description": "Esta secção está disponível apenas com uma avaliação ativa ou uma subscrição Premium."
   },
   "cta": {
-    "subscribe": "Assinar Premium",
-    "subscribeNow": "Assinar agora",
-    "manage": "Gerenciar assinatura",
-    "refresh": "Atualizar status",
+    "subscribe": "Passar a Premium",
+    "subscribeNow": "Subscrever agora",
+    "manage": "Gerir subscrição",
+    "refresh": "Atualizar estado",
     "backToDashboard": "Voltar ao painel",
-    "redirecting": "Redirecionando...",
-    "loading": "Carregando...",
+    "redirecting": "A redirecionar...",
+    "loading": "A carregar...",
     "unavailable": "Pagamento indisponível"
   },
   "messages": {
-    "trialActive": "Seu teste está ativo. Você pode assinar agora para evitar qualquer interrupção.",
-    "trialExpired": "Seu teste terminou. Assine agora para manter o acesso Premium.",
-    "active": "Sua assinatura está ativa. Gerencie-a pelo portal de cobrança.",
-    "inactive": "Você não tem assinatura ativa. Assine para desbloquear os recursos Premium."
+    "trialActive": "A sua avaliação está ativa. Pode subscrever agora para evitar qualquer interrupção.",
+    "trialExpired": "A sua avaliação terminou. Subscreva agora para manter o acesso Premium.",
+    "active": "A sua subscrição está ativa. Faça a gestão no portal de faturação.",
+    "inactive": "Não tem uma subscrição ativa. Subscreva para desbloquear as funcionalidades Premium."
   },
   "status": {
     "admin_bypass": "Administrador",
-    "trialing": "Teste em andamento",
+    "trialing": "Avaliação em curso",
     "active": "Premium ativo",
-    "inactive": "Sem assinatura",
-    "loading": "Carregando..."
+    "inactive": "Sem subscrição",
+    "loading": "A carregar..."
   },
   "header": {
-    "trialBadge_one": "Teste: {{count}}d",
-    "trialBadge_other": "Teste: {{count}}d",
+    "trialBadge_one": "Avaliação: {{count}}d",
+    "trialBadge_other": "Avaliação: {{count}}d",
     "activeBadge": "Premium",
-    "inactiveBadge": "Sem assinatura"
+    "inactiveBadge": "Sem subscrição"
   },
   "labels": {
     "premium": "Premium"
   },
   "errors": {
     "checkoutFailed": "Não foi possível iniciar o pagamento.",
-    "portalFailed": "Não foi possível abrir o portal de cobrança.",
-    "statusUnavailable": "O status da assinatura está temporariamente indisponível."
+    "portalFailed": "Não foi possível abrir o portal de faturação.",
+    "statusUnavailable": "O estado da subscrição está temporariamente indisponível."
   }
 }
-

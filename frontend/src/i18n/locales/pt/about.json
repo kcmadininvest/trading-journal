@@ -1,0 +1,41 @@
+{
+  "title": "Sobre nós",
+  "hero": {
+    "subtitle": "Descubra a história e a missão por detrás do K&C Trading Journal"
+  },
+  "story": {
+    "title": "A nossa história",
+    "content1": "O K&C Trading Journal nasceu de uma paixão pela informática e pelos mercados financeiros. Como trader, apercebi-me rapidamente da importância de acompanhar e analisar o desempenho para progredir.",
+    "content2": "No entanto, a maioria das soluções disponíveis era demasiado cara ou limitada nas funcionalidades. Decidi então criar uma plataforma completa e profissional que pode começar a utilizar sem compromisso."
+  },
+  "mission": {
+    "title": "A nossa missão",
+    "content1": "A nossa missão é simples: disponibilizar a todos os traders, principiantes ou experientes, uma ferramenta profissional para acompanhar, analisar e otimizar o seu desempenho de trading.",
+    "content2": "Acreditamos firmemente que acompanhar o progresso não deve ser um obstáculo, especialmente quando ainda está a aprender e ainda não ganha dinheiro com o trading.",
+    "content3": "É por isso que o registo no K&C Trading Journal é gratuito e sem compromisso. A oferta e as condições de acesso às funcionalidades podem evoluir; são indicadas na aplicação.",
+    "badge": "Registo gratuito • Sem compromisso"
+  },
+  "values": {
+    "title": "Os nossos valores",
+    "free": {
+      "title": "Acessibilidade",
+      "content": "Uma ferramenta profissional com a qual pode começar, com registo gratuito."
+    },
+    "transparency": {
+      "title": "Transparência",
+      "content": "As condições de acesso às funcionalidades são claramente indicadas na aplicação."
+    },
+    "quality": {
+      "title": "Qualidade",
+      "content": "Funcionalidades profissionais e uma interface moderna."
+    },
+    "privacy": {
+      "title": "Privacidade",
+      "content": "Os seus dados estão seguros e pertencem-lhe. Pode eliminá-los a qualquer momento."
+    }
+  },
+  "future": {
+    "title": "O futuro",
+    "content": "Continuamos a melhorar o K&C Trading Journal, adicionando novas funcionalidades com base no feedback da nossa comunidade. O nosso objetivo é permanecer uma solução de referência de diário de trading."
+  }
+}
