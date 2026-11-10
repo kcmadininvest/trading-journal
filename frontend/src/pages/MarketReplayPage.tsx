@@ -23,6 +23,7 @@ import {
   type ResultStatus,
 } from '../services/backtestJournal';
 import userService from '../services/userService';
+import integrationsService from '../services/integrationsService';
 import { ConfirmModal } from '../components/ui';
 import { getTodayDateInTimezone, canNavigateSessionDate, getAdjacentSessionDate } from '../components/replay/replayDateNav';
 import { replayPrimaryButtonClass, replaySecondaryButtonClass, replayDateInputClass } from '../components/replay/replayStyles';
@@ -175,6 +176,7 @@ const MarketReplayPage: React.FC<MarketReplayPageProps> = ({ detached = false })
   const primaryPaneRef = useRef<ReplayChartPaneHandle | null>(null);
   const paneHandlesRef = useRef<Record<string, ReplayChartPaneHandle | null>>({});
   const [saving, setSaving] = useState(false);
+  const [apiConfigured, setApiConfigured] = useState<boolean | null>(null);
   const [logarithmic, setLogarithmic] = useState(!!preferences.market_replay_logarithmic);
   const [autoFit, setAutoFit] = useState(!!preferences.market_replay_autofit);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
@@ -188,6 +190,34 @@ const MarketReplayPage: React.FC<MarketReplayPageProps> = ({ detached = false })
     setLogarithmic(!!preferences.market_replay_logarithmic);
     setAutoFit(!!preferences.market_replay_autofit);
   }, [preferences.market_replay_logarithmic, preferences.market_replay_autofit]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const data = await integrationsService.listIntegrations();
+        if (cancelled) return;
+        const topstepx = data.integrations.find((item) => item.provider === 'topstepx');
+        setApiConfigured(Boolean(topstepx?.configured));
+      } catch {
+        if (!cancelled) {
+          setApiConfigured(false);
+        }
+      }
+    };
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const goToApiSettings = useCallback(() => {
+    if (detached) {
+      window.location.assign('/#settings?tab=trading');
+      return;
+    }
+    window.location.hash = 'settings?tab=trading';
+  }, [detached]);
 
   const persistChartPref = useCallback(
     async (
@@ -1068,7 +1098,19 @@ const MarketReplayPage: React.FC<MarketReplayPageProps> = ({ detached = false })
         {replay.error ? (
           <div className="text-sm text-red-600 dark:text-red-400">{replay.error}</div>
         ) : null}
-        {noTimeframes ? (
+        {apiConfigured === false ? (
+          <div className="text-sm text-amber-700 dark:text-amber-300">
+            {t('apiRequired')}{' '}
+            <button
+              type="button"
+              className="font-medium underline underline-offset-2 hover:text-amber-600 dark:hover:text-amber-200"
+              onClick={goToApiSettings}
+            >
+              {t('configureApiLink')}
+            </button>
+          </div>
+        ) : null}
+        {noTimeframes && apiConfigured !== false ? (
           <div className="text-sm text-amber-700 dark:text-amber-300">
             {t('noHistoricalData')}{' '}
             <button

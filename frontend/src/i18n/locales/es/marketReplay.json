@@ -81,6 +81,8 @@
   "errorCampaign": "Campaña no encontrada",
   "errorSend": "Error al enviar al diario",
   "openFromCampaign": "Abrir Market Replay",
+  "apiRequired": "Ninguna API configurada.",
+  "configureApiLink": "Configurar en Ajustes → Trading",
   "noHistoricalData": "No hay velas históricas para este instrumento. Descárgalas primero en",
   "goHistoricalData": "Datos históricos",
   "noBarsForSession": "No hay velas para la sesión del {{date}}.",

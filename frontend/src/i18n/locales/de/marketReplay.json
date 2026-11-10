@@ -81,6 +81,8 @@
   "errorCampaign": "Kampagne nicht gefunden",
   "errorSend": "Senden an Journal fehlgeschlagen",
   "openFromCampaign": "Market Replay öffnen",
+  "apiRequired": "Keine API konfiguriert.",
+  "configureApiLink": "In Einstellungen → Trading konfigurieren",
   "noHistoricalData": "Keine historischen Kerzen für dieses Instrument. Bitte zuerst laden unter",
   "goHistoricalData": "Historische Daten",
   "noBarsForSession": "Keine Kerzen für die Sitzung vom {{date}}.",
