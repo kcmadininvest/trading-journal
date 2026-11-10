@@ -207,7 +207,10 @@ class TradesService {
     total_net_pnl?: number;
     total_fees: number;
   }> {
-    const qs = this.toQuery(filters as any);
+    // Pied de page : ignorer avec/sans stratégie et stratégie de position
+    // (la liste reste filtrée ; le total reste celui du compte + filtres métier).
+    const { has_strategy: _hasStrategy, position_strategy: _positionStrategy, ...totalsFilters } = filters;
+    const qs = this.toQuery(totalsFilters as any);
     const url = `${this.BASE_URL}/api/trades/imported/list-totals/${qs ? `?${qs}` : ''}`;
     const res = await fetchWithAuth(url);
     if (!res.ok) throw new Error('Erreur lors du chargement des totaux');

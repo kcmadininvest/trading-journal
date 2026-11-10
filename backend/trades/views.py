@@ -1022,7 +1022,11 @@ class ImportedTradeViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
     def list_totals(self, request):
         """
         Totaux légers pour le pied de tableau de la page Trades.
-        Même get_queryset()/filtres que list et statistics ; un seul aggregate SQL.
+
+        Respecte compte, dates, instrument, type, profitable, trade_day.
+        Ignore has_strategy et position_strategy : le pied affiche le total du
+        périmètre compte (+ filtres métier), pas le sous-ensemble « avec/sans
+        stratégie » — la liste reste filtrée côté list.
         """
         from .stats_response_cache import (
             extract_viewset_cache_params,
@@ -1031,16 +1035,26 @@ class ImportedTradeViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
         )
         from .services.statistics_calculator import compute_list_totals_payload
 
-        cache_params = extract_viewset_cache_params(request)
-        cached = get_cached_stats_response(request.user.id, 'list_totals', cache_params)
-        if cached is not None:
-            return Response(cached)
+        # Écarter les filtres stratégie le temps du calcul / cache (sans les
+        # laisser influencer get_queryset ni la clé Redis).
+        original_get = request._request.GET
+        totals_get = original_get.copy()
+        totals_get.pop('has_strategy', None)
+        totals_get.pop('position_strategy', None)
+        request._request.GET = totals_get
+        try:
+            cache_params = extract_viewset_cache_params(request)
+            cached = get_cached_stats_response(request.user.id, 'list_totals', cache_params)
+            if cached is not None:
+                return Response(cached)
 
-        trades = self.get_queryset()
-        pf = self.get_pnl_field()
-        payload = compute_list_totals_payload(trades, pf)
-        set_cached_stats_response(request.user.id, 'list_totals', cache_params, payload)
-        return Response(payload)
+            trades = self.get_queryset()
+            pf = self.get_pnl_field()
+            payload = compute_list_totals_payload(trades, pf)
+            set_cached_stats_response(request.user.id, 'list_totals', cache_params, payload)
+            return Response(payload)
+        finally:
+            request._request.GET = original_get
 
     @action(detail=False, methods=['get'], url_path='statistics-legacy-inline')
     def contracts(self, request):
