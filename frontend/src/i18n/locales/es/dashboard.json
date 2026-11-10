@@ -247,7 +247,7 @@
     "unavailable": "Precios no disponibles",
     "market_quotes_unavailable": "Servicio de precios no iniciado",
     "market_quotes_disconnected": "Conexión de mercado interrumpida",
-    "missing_credentials": "Configure TopStep en Ajustes → Integraciones",
+    "missing_credentials": "Configure la API",
     "connecting": "Conectando…",
     "awaitingQuotes": "Esperando cotizaciones…",
     "topstep_api_paused": "API TopStep en pausa",

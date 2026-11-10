@@ -246,7 +246,7 @@
     "unavailable": "Prices unavailable",
     "market_quotes_unavailable": "Price feed not running",
     "market_quotes_disconnected": "Market connection lost",
-    "missing_credentials": "Configure TopStep in Settings → Integrations",
+    "missing_credentials": "Configure API",
     "connecting": "Connecting…",
     "awaitingQuotes": "Waiting for quotes…",
     "topstep_api_paused": "TopStep API paused",

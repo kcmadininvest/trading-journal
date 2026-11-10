@@ -247,7 +247,7 @@
     "unavailable": "Preise nicht verfügbar",
     "market_quotes_unavailable": "Kursfeed nicht gestartet",
     "market_quotes_disconnected": "Marktverbindung unterbrochen",
-    "missing_credentials": "TopStep unter Einstellungen → Integrationen einrichten",
+    "missing_credentials": "API konfigurieren",
     "connecting": "Verbindung wird hergestellt…",
     "awaitingQuotes": "Warte auf Kurse…",
     "topstep_api_paused": "TopStep-API pausiert",
