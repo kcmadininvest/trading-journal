@@ -31,7 +31,7 @@ const IndicatorMetricLabel: React.FC<IndicatorMetricLabelProps> = ({
 }) => (
   <span className={`flex min-w-0 flex-wrap items-center gap-1.5 text-xs font-medium uppercase tracking-wider ${labelClassName}`}>
     {icon}
-    <span className="truncate">{label}</span>
+    <span className="min-w-0 break-words">{label}</span>
     {tooltip ? (
       <Tooltip
         content={tooltip}
@@ -94,10 +94,10 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
   const isBand = theme === 'band';
   const tileClass = isBand
     ? DASHBOARD_INNER_TILE_CLASS
-    : 'flex h-full min-w-0 w-full flex-col gap-3 xl:flex-row xl:items-stretch xl:gap-0 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700/70 transition-colors duration-150';
+    : 'flex h-full min-w-0 w-full flex-col gap-3 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700/70 transition-colors duration-150';
   const dividerClass = isBand
     ? DASHBOARD_TILE_DIVIDER_CLASS
-    : 'hidden xl:block w-px bg-gray-200 dark:bg-gray-600 mx-4 my-1 self-stretch';
+    : 'hidden';
   const labelMuted = isBand
     ? 'text-white/50'
     : 'text-gray-500 dark:text-gray-400';
@@ -140,9 +140,9 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
 
   return (
     <div className={`${className}`}>
-      {/* Grille responsive : toutes les cartes sur une ligne en grand écran */}
+      {/* Grille : 2×2 dès md, 3/4 colonnes seulement à partir de 2xl (évite truncate des labels) */}
       <div
-        className={`grid w-full min-w-0 grid-cols-1 md:grid-cols-2 ${visibleConsistencyTarget ? 'xl:grid-cols-4' : 'xl:grid-cols-3'} gap-3`}
+        className={`grid w-full min-w-0 grid-cols-1 md:grid-cols-2 ${visibleConsistencyTarget ? '2xl:grid-cols-4' : '2xl:grid-cols-3'} gap-3`}
       >
         {/* Solde initial et actuel regroupés */}
         <div className={tileClass}>
@@ -217,36 +217,14 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
         {/* Total Trades et cumul multi-comptes */}
         <div className={tileClass}>
           {showTradesSection && (
-            <div
-              className={
-                globalAllAccountsActivity
-                  ? 'flex min-w-0 flex-1 flex-col gap-3 xl:flex-row xl:items-stretch xl:gap-0'
-                  : 'flex min-w-0 flex-1 flex-col gap-1'
-              }
-            >
+            <div className="flex min-w-0 flex-1 flex-col gap-3">
               <div className="flex min-w-0 flex-1 flex-col gap-1">
-                <div className="flex min-w-0 items-center gap-2">
-                  <span className={`flex min-w-0 flex-1 items-center gap-1.5 text-xs font-medium uppercase tracking-wider ${labelMuted}`}>
-                    <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                    </svg>
-                    <span className="truncate">{t('dashboard:totalTrades', { defaultValue: 'Total Trades' })}</span>
-                  </span>
-                  {formattedAccountCreatedDate ? (
-                    <span
-                      className={`min-w-0 max-w-[45%] shrink truncate text-right text-[10px] font-normal normal-case tracking-normal ${labelMuted}`}
-                      title={t('dashboard:accountCreatedOn', {
-                        date: formattedAccountCreatedDate,
-                        defaultValue: 'Depuis le {{date}}',
-                      })}
-                    >
-                      {t('dashboard:accountCreatedOn', {
-                        date: formattedAccountCreatedDate,
-                        defaultValue: 'Depuis le {{date}}',
-                      })}
-                    </span>
-                  ) : null}
-                </div>
+                <span className={`flex min-w-0 flex-wrap items-center gap-1.5 text-xs font-medium uppercase tracking-wider ${labelMuted}`}>
+                  <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                  <span className="min-w-0 break-words">{t('dashboard:totalTrades', { defaultValue: 'Total Trades' })}</span>
+                </span>
                 <div className="flex flex-wrap items-center gap-2">
                   <span className={`text-xl font-semibold ${valuePrimary}`}>
                     {detailsLoading ? (
@@ -264,41 +242,43 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
                     </span>
                   )}
                 </div>
+                {formattedAccountCreatedDate ? (
+                  <span className={`text-[10px] font-normal normal-case tracking-normal ${labelMuted}`}>
+                    {t('dashboard:accountCreatedOn', {
+                      date: formattedAccountCreatedDate,
+                      defaultValue: 'Depuis le {{date}}',
+                    })}
+                  </span>
+                ) : null}
               </div>
               {globalAllAccountsActivity && (
-                <>
-                  <div
-                    aria-hidden
-                    className={`mx-0 hidden min-h-0 w-px shrink-0 self-stretch xl:mx-4 xl:block ${isBand ? 'bg-white/15' : 'bg-gray-200 dark:bg-gray-600'}`}
-                  />
-                  <div
-                    className={`flex min-w-0 flex-1 flex-col justify-center gap-1 border-t pt-3 font-sans xl:border-t-0 xl:pt-0 ${cumulBorder}`}
-                  >
-                    <span className={`break-words text-xs font-medium uppercase tracking-wider ${labelMuted}`}>
-                      {t('dashboard:allAccountsCumulative', { defaultValue: 'Tous comptes (cumul)' })}
+                <div
+                  className={`flex min-w-0 flex-1 flex-col justify-center gap-1 border-t pt-3 font-sans ${cumulBorder}`}
+                >
+                  <span className={`break-words text-xs font-medium uppercase tracking-wider ${labelMuted}`}>
+                    {t('dashboard:allAccountsCumulative', { defaultValue: 'Tous comptes (cumul)' })}
+                  </span>
+                  <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 sm:gap-x-2">
+                    <span className={`text-base font-semibold tabular-nums ${valuePrimary}`}>
+                      {globalAllAccountsActivity.totalPositions}
                     </span>
-                    <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 sm:gap-x-2 xl:gap-x-1 2xl:gap-x-2">
-                      <span className={`text-base font-semibold tabular-nums xl:text-sm 2xl:text-base min-[1800px]:text-xl ${valuePrimary}`}>
-                        {globalAllAccountsActivity.totalPositions}
-                      </span>
-                      <span className={`text-xs font-medium lowercase leading-tight xl:text-[0.625rem] xl:leading-tight 2xl:text-xs min-[1800px]:text-sm ${isBand ? 'text-white/60' : 'text-gray-700 dark:text-gray-300'}`}>
-                        {t('dashboard:globalPositionsLabel', { defaultValue: 'positions' })}
-                      </span>
-                      <span
-                        className={`select-none text-xs leading-none xl:text-[0.625rem] 2xl:text-xs min-[1800px]:text-sm ${isBand ? 'text-white/40' : 'text-gray-400 dark:text-gray-500'}`}
-                        aria-hidden
-                      >
-                        ·
-                      </span>
-                      <span className={`text-base font-semibold tabular-nums xl:text-sm 2xl:text-base min-[1800px]:text-xl ${valuePrimary}`}>
-                        {globalAllAccountsActivity.globalActiveDays}
-                      </span>
-                      <span className={`text-xs font-medium lowercase leading-tight xl:text-[0.625rem] xl:leading-tight 2xl:text-xs min-[1800px]:text-sm ${isBand ? 'text-white/60' : 'text-gray-700 dark:text-gray-300'}`}>
-                        {t('dashboard:activeDays', { defaultValue: 'Jours actifs' })}
-                      </span>
-                    </div>
+                    <span className={`text-xs font-medium lowercase leading-tight ${isBand ? 'text-white/60' : 'text-gray-700 dark:text-gray-300'}`}>
+                      {t('dashboard:globalPositionsLabel', { defaultValue: 'positions' })}
+                    </span>
+                    <span
+                      className={`select-none text-xs leading-none ${isBand ? 'text-white/40' : 'text-gray-400 dark:text-gray-500'}`}
+                      aria-hidden
+                    >
+                      ·
+                    </span>
+                    <span className={`text-base font-semibold tabular-nums ${valuePrimary}`}>
+                      {globalAllAccountsActivity.globalActiveDays}
+                    </span>
+                    <span className={`text-xs font-medium lowercase leading-tight ${isBand ? 'text-white/60' : 'text-gray-700 dark:text-gray-300'}`}>
+                      {t('dashboard:activeDays', { defaultValue: 'Jours actifs' })}
+                    </span>
                   </div>
-                </>
+                </div>
               )}
             </div>
           )}
