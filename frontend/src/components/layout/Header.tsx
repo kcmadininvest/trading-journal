@@ -38,7 +38,6 @@ const Header: React.FC<HeaderProps> = ({
     { value: 'de', label: 'Deutsch', flag: '🇩🇪' },
     { value: 'es', label: 'Español', flag: '🇪🇸' },
     { value: 'pt', label: 'Português', flag: '🇵🇹' },
-    { value: 'it', label: 'Italiano', flag: '🇮🇹' },
   ];
 
   const currentLanguage = i18n.language?.split('-')[0] || 'en';

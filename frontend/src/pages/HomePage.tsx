@@ -59,7 +59,7 @@ const HomePage: React.FC = () => {
   useEffect(() => {
     const handleLanguageChanged = (lng: string) => {
       const langCode = lng.split('-')[0];
-      if (['fr', 'en', 'es', 'de', 'pt', 'it'].includes(langCode)) {
+      if (['fr', 'en', 'es', 'de', 'pt'].includes(langCode)) {
         setCurrentLanguage(langCode);
       }
     };
@@ -78,7 +78,7 @@ const HomePage: React.FC = () => {
     if (window.location.search) {
       const searchParams = new URLSearchParams(window.location.search);
       const langParam = searchParams.get('lang');
-      const hasSupportedLang = !!langParam && ['fr', 'en', 'es', 'de', 'pt', 'it'].includes(langParam);
+      const hasSupportedLang = !!langParam && ['fr', 'en', 'es', 'de', 'pt'].includes(langParam);
 
       if (!hasSupportedLang) {
         const newUrl = window.location.pathname;
@@ -144,7 +144,6 @@ const HomePage: React.FC = () => {
     { value: 'es', label: 'Español', flag: '🇪🇸' },
     { value: 'de', label: 'Deutsch', flag: '🇩🇪' },
     { value: 'pt', label: 'Português', flag: '🇵🇹' },
-    { value: 'it', label: 'Italiano', flag: '🇮🇹' },
   ];
 
   useEffect(() => {
@@ -193,7 +192,7 @@ const HomePage: React.FC = () => {
   // Synchroniser currentLanguage avec i18n à chaque fois que i18n change
   useEffect(() => {
     const i18nLang = i18nInstance.language?.split('-')[0] || 'fr';
-    if (i18nLang !== currentLanguage && ['fr', 'en', 'es', 'de', 'pt', 'it'].includes(i18nLang)) {
+    if (i18nLang !== currentLanguage && ['fr', 'en', 'es', 'de', 'pt'].includes(i18nLang)) {
       setCurrentLanguage(i18nLang);
     }
   }, [i18nInstance.language, currentLanguage]);

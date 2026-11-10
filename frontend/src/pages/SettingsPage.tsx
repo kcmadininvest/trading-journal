@@ -1085,7 +1085,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                   onChange={(value) =>
                     setPreferences({
                       ...preferences,
-                      language: value as 'de' | 'en' | 'fr' | 'es' | 'pt' | 'it',
+                      language: value as 'de' | 'en' | 'fr' | 'es' | 'pt',
                     })
                   }
                   options={[
@@ -1094,7 +1094,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                     { value: 'de', label: 'Deutsch' },
                     { value: 'es', label: 'Español' },
                     { value: 'pt', label: 'Português' },
-                    { value: 'it', label: 'Italiano' },
                   ]}
                 />
               </div>

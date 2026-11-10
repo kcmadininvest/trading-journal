@@ -35,7 +35,7 @@ const AboutPage: React.FC = () => {
     }
     // Sinon, utiliser localStorage
     const savedLang = localStorage.getItem('i18nextLng');
-    if (savedLang && ['fr', 'en', 'es', 'de', 'pt', 'it'].includes(savedLang)) {
+    if (savedLang && ['fr', 'en', 'es', 'de', 'pt'].includes(savedLang)) {
       return savedLang;
     }
     return 'fr';
