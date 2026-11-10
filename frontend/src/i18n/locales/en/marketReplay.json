@@ -81,6 +81,8 @@
   "errorCampaign": "Campaign not found",
   "errorSend": "Failed to send to journal",
   "openFromCampaign": "Open Market Replay",
+  "apiRequired": "No API configured.",
+  "configureApiLink": "Configure in Settings → Trading",
   "noHistoricalData": "No historical bars for this instrument. Download some first in",
   "goHistoricalData": "Historical data",
   "noBarsForSession": "No candles for session {{date}}.",

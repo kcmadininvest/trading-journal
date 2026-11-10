@@ -81,6 +81,8 @@
   "errorCampaign": "Campagne introuvable",
   "errorSend": "Échec de l’envoi au journal",
   "openFromCampaign": "Ouvrir Market Replay",
+  "apiRequired": "Aucune API configurée.",
+  "configureApiLink": "Configurer dans Paramètres → Trading",
   "noHistoricalData": "Aucune bougie historique pour cet instrument. Téléchargez-en d’abord dans",
   "goHistoricalData": "Données historiques",
   "noBarsForSession": "Aucune bougie pour la séance du {{date}}.",
