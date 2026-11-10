@@ -132,14 +132,13 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
   const { accountBalance, totalTrades, bestAndWorstDays, consistencyTarget, activeDays, accountCreatedAt } = indicators;
 
   const hasActiveDays = useMemo(() => typeof activeDays === 'number' && activeDays >= 0, [activeDays]);
-  const showTradesCard = useMemo(() => totalTrades > 0 || hasActiveDays, [totalTrades, hasActiveDays]);
+  /** Carte toujours visible : Total trades + Plus haut (pic toujours dispo). */
   const showCumulCard = Boolean(globalAllAccountsActivity);
   const showDaysCard = Boolean(bestAndWorstDays.bestDay || bestAndWorstDays.worstDay);
   const showConsistencyCard = Boolean(consistencyTarget && !hideConsistencyTarget);
 
   const cardCount =
     2 +
-    (showTradesCard ? 1 : 0) +
     (showCumulCard ? 1 : 0) +
     (showDaysCard ? 1 : 0) +
     (showConsistencyCard ? 1 : 0);
@@ -148,6 +147,13 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
     if (!accountCreatedAt) return '';
     return formatDate(accountCreatedAt, preferences.date_format, false, preferences.timezone);
   }, [accountCreatedAt, preferences.date_format, preferences.timezone]);
+
+  const accountSinceTooltip = formattedAccountCreatedDate
+    ? t('dashboard:accountCreatedOn', {
+        date: formattedAccountCreatedDate,
+        defaultValue: 'Depuis le {{date}}',
+      })
+    : undefined;
 
   const currentBalanceTooltip = t('dashboard:currentBalanceTooltip', {
     defaultValue:
@@ -210,71 +216,60 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
           </div>
         </div>
 
-        {/* 2 — Plus haut atteint */}
+        {/* 2 — Total trades + Plus haut (Depuis le → tooltip) */}
         <div className={cardBase}>
           <MetricLabel
             isBand={isBand}
             labelClassName={labelMuted}
-            label={t('dashboard:highestBalanceReached', { defaultValue: 'Plus haut atteint' })}
-            tooltip={highestBalanceTooltip}
+            label={t('dashboard:totalTrades', { defaultValue: 'Total Trades' })}
+            tooltip={accountSinceTooltip}
             icon={(
               <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
               </svg>
             )}
           />
-          <span
-            className={`text-xl font-semibold tabular-nums sm:text-2xl ${
-              accountBalance.peak >= accountBalance.initial ? valueUp : valueDown
-            }`}
-          >
-            {peakLoading ? (
-              <span className={valueSkeletonClass} aria-hidden />
-            ) : hideCurrentBalance
-              ? maskValue(accountBalance.peak, currencySymbol)
-              : formatCurrency(accountBalance.peak, currencySymbol, preferences.number_format, 2)}
-          </span>
-        </div>
-
-        {/* 3 — Total trades */}
-        {showTradesCard && (
-          <div className={cardBase}>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className={`text-xl font-semibold tabular-nums sm:text-2xl ${valuePrimary}`}>
+              {detailsLoading ? <span className={valueSkeletonClass} aria-hidden /> : totalTrades}
+            </span>
+            {hasActiveDays && (
+              <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${badgeNeutral}`}>
+                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10m-11 8h12a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                {t('dashboard:activeDays', { defaultValue: 'Jours actifs' })}:{' '}
+                <span className="font-semibold">{activeDays}</span>
+              </span>
+            )}
+          </div>
+          <div className={`border-t pt-2 ${isBand ? 'border-white/15' : 'border-gray-200 dark:border-gray-600'}`}>
             <MetricLabel
               isBand={isBand}
               labelClassName={labelMuted}
-              label={t('dashboard:totalTrades', { defaultValue: 'Total Trades' })}
+              label={t('dashboard:highestBalanceReached', { defaultValue: 'Plus haut atteint' })}
+              tooltip={highestBalanceTooltip}
               icon={(
                 <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                 </svg>
               )}
             />
-            <div className="flex flex-wrap items-center gap-2">
-              <span className={`text-xl font-semibold tabular-nums sm:text-2xl ${valuePrimary}`}>
-                {detailsLoading ? <span className={valueSkeletonClass} aria-hidden /> : totalTrades}
-              </span>
-              {hasActiveDays && (
-                <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${badgeNeutral}`}>
-                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10m-11 8h12a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  {t('dashboard:activeDays', { defaultValue: 'Jours actifs' })}:{' '}
-                  <span className="font-semibold">{activeDays}</span>
-                </span>
-              )}
-            </div>
-            {formattedAccountCreatedDate ? (
-              <span className={`text-[10px] font-normal normal-case tracking-normal ${isBand ? 'text-white/50' : 'text-gray-500 dark:text-gray-400'}`}>
-                {t('dashboard:accountCreatedOn', {
-                  date: formattedAccountCreatedDate,
-                  defaultValue: 'Depuis le {{date}}',
-                })}
-              </span>
-            ) : null}
+            <span
+              className={`mt-1 inline-block text-lg font-semibold tabular-nums sm:text-xl ${
+                accountBalance.peak >= accountBalance.initial ? valueUp : valueDown
+              }`}
+            >
+              {peakLoading ? (
+                <span className={valueSkeletonClass} aria-hidden />
+              ) : hideCurrentBalance
+                ? maskValue(accountBalance.peak, currencySymbol)
+                : formatCurrency(accountBalance.peak, currencySymbol, preferences.number_format, 2)}
+            </span>
           </div>
-        )}
+        </div>
 
-        {/* 4 — Tous comptes (cumul) */}
+        {/* 3 — Tous comptes (cumul) */}
         {showCumulCard && globalAllAccountsActivity && (
           <div className={cardBase}>
             <MetricLabel
@@ -302,7 +297,7 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
           </div>
         )}
 
-        {/* 5 — Meilleur / Pire jour */}
+        {/* 4 — Meilleur / Pire jour */}
         {showDaysCard && (
           <div className={cardBase}>
             {bestAndWorstDays.bestDay && (
@@ -355,7 +350,7 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
           </div>
         )}
 
-        {/* 6 — Consistency */}
+        {/* 5 — Consistency */}
         {showConsistencyCard && consistencyTarget && (
           <div
             className={`flex h-full min-w-0 w-full flex-col gap-2 rounded-lg border p-4 transition-colors duration-150 ${
