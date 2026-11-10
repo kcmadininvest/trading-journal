@@ -257,6 +257,12 @@ const customNavigatorLanguagesDetector = {
       if (lang === 'de') {
         return 'de';
       }
+      if (lang === 'pt') {
+        return 'pt';
+      }
+      if (lang === 'it') {
+        return 'it';
+      }
     }
     
     return undefined;
@@ -507,8 +513,8 @@ const resources = {
 // Utilise navigator.languages pour respecter l'ordre de préférence (comme YouTube)
 // Format retourné : 'fr-FR', 'en-US', 'es-ES', etc.
 // On extrait le code langue principal (ex: 'fr' de 'fr-FR')
-// Les langues complètement traduites sont : 'fr', 'en', 'es', et 'de'
-// Les autres langues utiliseront 'en' par défaut
+// Langues détectables / ?lang= : fr, en, es, de, pt, it
+// (ja/ko/zh restent dans supportedLngs mais hors sélecteur UI pour l’instant)
 const getDefaultLanguage = (): string => {
   if (typeof navigator !== 'undefined') {
     // navigator.languages contient toutes les langues préférées dans l'ordre
@@ -526,6 +532,8 @@ const getDefaultLanguage = (): string => {
       if (lang === 'fr') return 'fr';
       if (lang === 'es') return 'es';
       if (lang === 'de') return 'de';
+      if (lang === 'pt') return 'pt';
+      if (lang === 'it') return 'it';
     }
   }
   // Par défaut, retourner 'en'
@@ -543,7 +551,7 @@ languageDetector.addDetector(customNavigatorLanguagesDetector);
 const getInitialLanguage = (): string => {
   if (typeof window !== 'undefined') {
     const urlLang = new URLSearchParams(window.location.search).get('lang');
-    if (urlLang && ['fr', 'en', 'es', 'de'].includes(urlLang)) {
+    if (urlLang && ['fr', 'en', 'es', 'de', 'pt', 'it'].includes(urlLang)) {
       return urlLang;
     }
   }

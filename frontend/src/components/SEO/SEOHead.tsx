@@ -123,7 +123,7 @@ const SEOHead: React.FC<SEOHeadProps> = ({
     const hasHomeLangQuery = (() => {
       if (typeof window === 'undefined') return false;
       const langParam = new URLSearchParams(window.location.search).get('lang');
-      return isHomePage && !!langParam && ['fr', 'en', 'es', 'de'].includes(langParam);
+      return isHomePage && !!langParam && ['fr', 'en', 'es', 'de', 'pt', 'it'].includes(langParam);
     })();
     updateMetaTag('robots', noindex || hasHomeLangQuery ? 'noindex, follow' : 'index, follow');
     
@@ -146,6 +146,8 @@ const SEOHead: React.FC<SEOHeadProps> = ({
       en: 'en_US',
       es: 'es_ES',
       de: 'de_DE',
+      pt: 'pt_PT',
+      it: 'it_IT',
     };
     const currentLocale = localeMap[currentLang] || 'fr_FR';
     updateMetaTag('og:locale', currentLocale, true);
@@ -156,7 +158,7 @@ const SEOHead: React.FC<SEOHeadProps> = ({
     existingAlternates.forEach((meta) => meta.remove());
     
     // Ajouter les nouvelles balises og:locale:alternate pour toutes les langues sauf la langue actuelle
-    const supportedLocales = ['fr_FR', 'en_US', 'es_ES', 'de_DE'];
+    const supportedLocales = ['fr_FR', 'en_US', 'es_ES', 'de_DE', 'pt_PT', 'it_IT'];
     supportedLocales.forEach((locale) => {
       if (locale !== currentLocale) {
         const alternateMeta = document.createElement('meta');
@@ -178,7 +180,7 @@ const SEOHead: React.FC<SEOHeadProps> = ({
     updateLinkTag('canonical', canonicalUrl);
 
     // Hreflang tags - Générer les URLs pour chaque langue selon la page actuelle
-    const languages = ['fr', 'en', 'es', 'de'];
+    const languages = ['fr', 'en', 'es', 'de', 'pt', 'it'];
     
     // URLs selon la page et la langue
     const getUrlForLanguage = (lang: string): string => {
