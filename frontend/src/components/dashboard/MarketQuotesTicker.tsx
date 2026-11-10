@@ -132,7 +132,7 @@ function StatusContent({
   message,
   pulse,
 }: {
-  message: string;
+  message: React.ReactNode;
   pulse: boolean;
 }) {
   return (
@@ -182,9 +182,19 @@ export const MarketQuotesTicker: React.FC = () => {
 
   const tickerTitle = t('dashboard:marketQuotes.title');
 
-  const statusMessage = useMemo(() => {
+  const statusMessage = useMemo((): React.ReactNode => {
     if (topStepConfigured === false) {
-      return t('dashboard:marketQuotes.missing_credentials');
+      return (
+        <>
+          {t('dashboard:marketQuotes.missing_credentials')}{' '}
+          <a
+            href="#settings?tab=trading"
+            className="font-medium text-white underline underline-offset-2 hover:text-white/90"
+          >
+            {t('dashboard:marketQuotes.missing_credentials_link')}
+          </a>
+        </>
+      );
     }
     if (hasPrices) {
       return null;

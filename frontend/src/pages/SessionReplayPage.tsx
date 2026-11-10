@@ -785,7 +785,15 @@ const SessionReplayPage: React.FC = () => {
           </div>
         </div>
         {!canSync && !eligibilityLoading && accountId && (
-          <p className="mt-3 text-sm text-amber-600 dark:text-amber-400">{t('topstepRequired')}</p>
+          <p className="mt-3 text-sm text-amber-600 dark:text-amber-400">
+            {t('topstepRequired')}{' '}
+            <a
+              href="#settings?tab=trading"
+              className="font-medium underline underline-offset-2 hover:text-amber-500 dark:hover:text-amber-300"
+            >
+              {t('configureApiLink')}
+            </a>
+          </p>
         )}
       </div>
 
