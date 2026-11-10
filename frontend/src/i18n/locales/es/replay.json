@@ -18,7 +18,7 @@
   },
   "buildError": "Error al construir",
   "selectAccount": "Seleccione una cuenta TopStep",
-  "topstepRequired": "Conecte la integración TopStepX y seleccione una cuenta TopStep activa.",
+  "topstepRequired": "Configure la API",
   "play": "Reproducir",
   "pause": "Pausa",
   "replay": "Reproducir desde el inicio",

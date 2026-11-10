@@ -18,7 +18,7 @@
   },
   "buildError": "Échec de la construction",
   "selectAccount": "Sélectionnez un compte TopStep",
-  "topstepRequired": "Connectez l'intégration TopStepX et sélectionnez un compte TopStep actif.",
+  "topstepRequired": "Configurez API",
   "play": "Lecture",
   "pause": "Pause",
   "replay": "Rejouer depuis le début",
