@@ -162,14 +162,15 @@ export const TopStepSyncControls: React.FC<TopStepSyncControlsProps> = ({
   if (!integrationConnected && !missingBrokerId) {
     return (
       <Tooltip content={t('sync.integrationRequired')} position="top">
-        <span
-          className={`inline-flex items-center justify-center rounded-md border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 p-2 text-amber-700 dark:text-amber-300 ${className}`}
+        <a
+          href="#settings?tab=trading"
+          className={`inline-flex items-center justify-center rounded-md border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 p-2 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/50 ${className}`}
           aria-label={t('sync.integrationRequired')}
         >
           <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-        </span>
+        </a>
       </Tooltip>
     );
   }

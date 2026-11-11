@@ -67,7 +67,7 @@
   "loadError": "Daten können nicht geladen werden",
   "throttleError": "Zu viele Downloads gestartet. Bitte in einigen Minuten erneut versuchen.",
   "authExpired": "Sitzung abgelaufen. Melden Sie sich erneut an, um den Download zu verfolgen.",
-  "needTopstep": "TopStepX in Einstellungen → Trading konfigurieren.",
+  "needTopstep": "Keine API konfiguriert. In Einstellungen → Trading konfigurieren",
   "refresh": "Aktualisieren",
   "statusComplete": "Vollständig",
   "statusPartial": "Teilweise",

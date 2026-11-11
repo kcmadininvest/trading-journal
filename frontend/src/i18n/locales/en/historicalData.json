@@ -67,7 +67,7 @@
   "loadError": "Unable to load data",
   "throttleError": "Too many downloads started. Try again in a few minutes.",
   "authExpired": "Session expired. Sign in again to follow the download.",
-  "needTopstep": "Configure TopStepX in Settings → Trading.",
+  "needTopstep": "No API configured. Configure in Settings → Trading",
   "refresh": "Refresh",
   "statusComplete": "Complete",
   "statusPartial": "Partial",
