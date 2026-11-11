@@ -133,6 +133,70 @@ class TopStepXMapperTests(TestCase):
         ]
         self.assertEqual(map_api_trades_to_parsed_rows(fills), [])
 
+    def test_overlapping_same_contract_uses_fifo_entry_not_last_open(self) -> None:
+        """
+        Deux Long MNQ qui se chevauchent : la sortie size=5 (pnl 370) doit
+        reprendre l'entrée @ 27910.50, pas la 2e ouverture @ 27939.25
+        (bug « last entry before exit » → prix UI faux → recalc frontend 82.5).
+        """
+        fills = [
+            {
+                'id': 8001,
+                'contractId': 'CON.F.US.MNQ.Z26',
+                'creationTimestamp': '2026-11-09T18:28:03.000Z',
+                'price': 27910.5,
+                'size': 5,
+                'side': 0,
+                'profitAndLoss': None,
+                'fees': 1.8,
+                'voided': False,
+            },
+            {
+                'id': 8002,
+                'contractId': 'CON.F.US.MNQ.Z26',
+                'creationTimestamp': '2026-11-09T18:30:27.000Z',
+                'price': 27939.25,
+                'size': 2,
+                'side': 0,
+                'profitAndLoss': None,
+                'fees': 0.72,
+                'voided': False,
+            },
+            {
+                'id': 3295430630,
+                'contractId': 'CON.F.US.MNQ.Z26',
+                'creationTimestamp': '2026-11-09T18:35:28.000Z',
+                'price': 27947.5,
+                'size': 5,
+                'side': 0,
+                'profitAndLoss': 370.0,
+                'fees': 1.8,
+                'voided': False,
+            },
+            {
+                'id': 3295437866,
+                'contractId': 'CON.F.US.MNQ.Z26',
+                'creationTimestamp': '2026-11-09T18:36:48.000Z',
+                'price': 27940.25,
+                'size': 2,
+                'side': 0,
+                'profitAndLoss': 4.0,
+                'fees': 0.72,
+                'voided': False,
+            },
+        ]
+        rows = map_api_trades_to_parsed_rows(fills)
+        self.assertEqual(len(rows), 2)
+        by_id = {r['external_trade_id']: r for r in rows}
+        big = by_id['3295430630']
+        small = by_id['3295437866']
+        self.assertEqual(big['entry_price'], Decimal('27910.5'))
+        self.assertEqual(big['exit_price'], Decimal('27947.5'))
+        self.assertEqual(big['size'], Decimal('5'))
+        self.assertEqual(big['pnl'], Decimal('370.0'))
+        self.assertEqual(small['entry_price'], Decimal('27939.25'))
+        self.assertEqual(small['pnl'], Decimal('4.0'))
+
     def test_partial_close_reuses_entry_fill(self) -> None:
         fills = [
             {
@@ -222,8 +286,8 @@ class TopStepXMapperTests(TestCase):
         self.assertEqual(rows[0]['fees'], Decimal('2.8'))
         self.assertEqual(rows[1]['fees'], Decimal('2.8'))
 
-    def test_exit_after_prior_exit_still_finds_entry(self) -> None:
-        """Deux sorties consécutives : la 2e ne doit pas dupliquer entrée=sortie."""
+    def test_exit_without_remaining_open_is_skipped(self) -> None:
+        """Après consommation FIFO de l'ouverture, une sortie orpheline est ignorée."""
         fills = [
             {
                 'id': 4001,
@@ -260,9 +324,10 @@ class TopStepXMapperTests(TestCase):
             },
         ]
         rows = map_api_trades_to_parsed_rows(fills)
-        self.assertEqual(len(rows), 2)
-        self.assertEqual(rows[1]['entered_at'], parse_api_timestamp('2026-05-19T16:00:00.000Z'))
-        self.assertNotEqual(rows[1]['entered_at'], rows[1]['exited_at'])
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]['external_trade_id'], '4002')
+        self.assertEqual(rows[0]['entered_at'], parse_api_timestamp('2026-05-19T16:00:00.000Z'))
+        self.assertNotEqual(rows[0]['entered_at'], rows[0]['exited_at'])
 
 
 @override_settings(
