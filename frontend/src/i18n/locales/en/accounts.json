@@ -119,7 +119,7 @@
     "lastSync": "Last sync: {{date}}",
     "neverSynced": "Not synced yet",
     "brokerIdRequired": "Use the exact TopStepX account name (account menu) or a valid ProjectX ID. The ID is set automatically when names match.",
-    "integrationRequired": "Configure API",
+    "integrationRequired": "No API configured. Configure in Settings → Trading",
     "apiPaused": "TopStep API paused — re-enable from the dashboard or settings.",
     "apiActiveWarning": "API sync may disconnect TopStep if you are trading at the same time.",
     "errors": {
