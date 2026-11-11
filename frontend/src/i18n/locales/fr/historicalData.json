@@ -67,7 +67,7 @@
   "loadError": "Impossible de charger les données",
   "throttleError": "Trop de téléchargements lancés. Réessayez dans quelques minutes.",
   "authExpired": "Session expirée. Reconnectez-vous pour suivre le téléchargement.",
-  "needTopstep": "Configurez l’intégration TopStepX dans Paramètres → Trading.",
+  "needTopstep": "Configurez API",
   "refresh": "Actualiser",
   "statusComplete": "Complète",
   "statusPartial": "Partielle",
