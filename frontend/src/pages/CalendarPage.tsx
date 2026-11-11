@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import MonthlyView from '../components/calendar/MonthlyView';
 import DailyView from '../components/calendar/DailyView';
+import { resolveCalendarContentMode } from '../components/calendar/resolveCalendarContentMode';
 import { AccountSelector } from '../components/accounts/AccountSelector';
 import { useAccountNumberVisibility } from '../hooks/useAccountNumberVisibility';
 import { useTradingAccount } from '../contexts/useTradingAccount';
@@ -158,6 +159,13 @@ const CalendarPage: React.FC = () => {
     setViewType('daily');
   };
 
+  const contentMode = resolveCalendarContentMode({
+    viewType,
+    hasDailyData: Boolean(dailyData),
+    hasMonthlyData: Boolean(yearlyMonthlyData && yearlyWeeklyData),
+    isLoading,
+  });
+
   return (
     <PageShell>
         {/* Filtres — même disposition que Stratégies (carte + compte + toggle aligné bas) */}
@@ -198,15 +206,8 @@ const CalendarPage: React.FC = () => {
           </div>
         )}
 
-        {/* Contenu du calendrier */}
-        {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-500 mx-auto mb-4"></div>
-              <p className="text-gray-600 dark:text-gray-400">{t('calendar:loading')}</p>
-            </div>
-          </div>
-        ) : viewType === 'daily' && dailyData ? (
+        {/* Contenu du calendrier — voir resolveCalendarContentMode (anti-scintillement modale). */}
+        {contentMode === 'daily' && dailyData ? (
           <DailyView
             year={currentYear}
             month={currentMonth}
@@ -221,7 +222,7 @@ const CalendarPage: React.FC = () => {
             onDataRefresh={loadDailyData}
             currencySymbol={currencySymbol}
           />
-        ) : viewType === 'monthly' && yearlyMonthlyData && yearlyWeeklyData ? (
+        ) : contentMode === 'monthly' && yearlyMonthlyData && yearlyWeeklyData ? (
           <MonthlyView
             year={yearlyYear}
             monthlyData={yearlyMonthlyData.monthly_data}
@@ -233,6 +234,13 @@ const CalendarPage: React.FC = () => {
             onViewTypeChange={setViewType}
             currencySymbol={currencySymbol}
           />
+        ) : contentMode === 'loading' ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-500 mx-auto mb-4"></div>
+              <p className="text-gray-600 dark:text-gray-400">{t('calendar:loading')}</p>
+            </div>
+          </div>
         ) : null}
       <ImportTradesModal 
         open={showImport} 
