@@ -810,6 +810,7 @@ const TradesPage: React.FC = () => {
       
       {/* Modale de création/édition de trade */}
       <CreateTradeModal
+        key={editingTradeId ?? 'create'}
         isOpen={showCreateModal}
         onClose={() => {
           setShowCreateModal(false);

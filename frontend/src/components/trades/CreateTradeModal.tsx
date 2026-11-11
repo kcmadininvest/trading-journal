@@ -10,6 +10,30 @@ import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { useTradingAccount } from '../../contexts/useTradingAccount';
 import { usePreferences } from '../../hooks/usePreferences';
 import { formatNumber } from '../../utils/numberFormat';
+import {
+  computeGrossPnl,
+  isSameNumericInput,
+  shouldAutoCalculatePnl,
+} from './createTradePnlAutoCalc';
+
+const EMPTY_TRADE_FORM = {
+  trading_account: null as number | null,
+  contract_name: '',
+  trade_type: 'Long' as 'Long' | 'Short',
+  entered_at: '',
+  exited_at: '',
+  entry_price: '',
+  exit_price: '',
+  size: '',
+  point_value: '',
+  fees: '0',
+  commissions: '0',
+  pnl: '',
+  notes: '',
+  position_strategy: null as number | null,
+  planned_stop_loss: '',
+  planned_take_profit: '',
+};
 
 /** Normalise l'ID renvoyé par l'API (nombre, chaîne ou objet minimal) pour le select stratégie. */
 function normalizePositionStrategyId(raw: unknown): number | null {
@@ -46,28 +70,19 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
   const [strategies, setStrategies] = useState<PositionStrategy[]>([]);
   const [loadingStrategies, setLoadingStrategies] = useState(false);
   const [isPnlManuallyEdited, setIsPnlManuallyEdited] = useState(false);
+  /** En édition : false après hydrate API → conserve trade.pnl ; true si l’utilisateur touche un champ prix. */
+  const [priceFieldsDirtySinceHydrate, setPriceFieldsDirtySinceHydrate] = useState(false);
   const [hasInitialized, setHasInitialized] = useState(false);
   /** Titre API du trade en cours d'édition (stratégie absente de la liste active/courante). */
   const [loadedPositionStrategyTitle, setLoadedPositionStrategyTitle] = useState<string | null>(null);
 
-  const [formData, setFormData] = useState({
-    trading_account: null as number | null,
-    contract_name: '',
-    trade_type: 'Long' as 'Long' | 'Short',
-    entered_at: '',
-    exited_at: '',
-    entry_price: '',
-    exit_price: '',
-    size: '',
-    point_value: '',
-    fees: '0',
-    commissions: '0',
-    pnl: '',
-    notes: '',
-    position_strategy: null as number | null,
-    planned_stop_loss: '',
-    planned_take_profit: '',
-  });
+  const [formData, setFormData] = useState(() => ({ ...EMPTY_TRADE_FORM }));
+
+  const markPriceFieldsDirtyIfChanged = (previous: string, next: string) => {
+    if (!isSameNumericInput(previous, next)) {
+      setPriceFieldsDirtySinceHydrate(true);
+    }
+  };
 
 
   // Charger les stratégies de position
@@ -158,9 +173,9 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
             planned_take_profit: trade.planned_take_profit || '',
           });
           setLoadedPositionStrategyTitle(trade.position_strategy_title || null);
-          // En mode édition, permettre le recalcul automatique du PnL
-          // L'utilisateur peut toujours éditer manuellement le PnL s'il le souhaite
+          // Préserver trade.pnl API : pas de recalc auto tant que les prix ne sont pas dirty
           setIsPnlManuallyEdited(false);
+          setPriceFieldsDirtySinceHydrate(false);
         } catch (err: any) {
           const errorMessage = err.message || t('trades:createModal.errors.loadError', { defaultValue: 'Erreur lors du chargement du trade' });
           setError(errorMessage);
@@ -257,34 +272,26 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
       };
       
       setFormData({
+        ...EMPTY_TRADE_FORM,
         trading_account: selectedAccountId || null,
-        contract_name: '',
-        trade_type: 'Long',
         entered_at: formatDateTimeLocal(now), // Format datetime-local avec date/heure actuelle dans le timezone de l'utilisateur
-        exited_at: '', // Laisser vide par défaut car c'est optionnel
-        entry_price: '',
-        exit_price: '',
-        size: '',
-        point_value: '',
-        fees: '0',
-        commissions: '0',
-        pnl: '',
-        notes: '',
-        position_strategy: null,
-        planned_stop_loss: '',
-        planned_take_profit: '',
       });
       setError(null);
       setIsPnlManuallyEdited(false);
+      setPriceFieldsDirtySinceHydrate(false);
       setHasInitialized(true);
     }
   }, [isOpen, selectedAccountId, tradeId, preferences.timezone, preferencesLoading, hasInitialized]);
 
-  // Réinitialiser hasInitialized quand la modale se ferme
+  // Réinitialiser l’état formulaire à la fermeture (évite un state stale au prochain open)
   useEffect(() => {
     if (!isOpen) {
       setHasInitialized(false);
       setLoadedPositionStrategyTitle(null);
+      setIsPnlManuallyEdited(false);
+      setPriceFieldsDirtySinceHydrate(false);
+      setError(null);
+      setFormData({ ...EMPTY_TRADE_FORM });
     }
   }, [isOpen]);
 
@@ -302,9 +309,15 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
   }, [isOpen]);
 
   // Calculer automatiquement le PnL brut (aligné sur l'API : le serveur déduit frais/commissions pour net_pnl)
+  // Édition : pas de recalc juste après hydrate (hard refresh → conserve trade.pnl, ex. 370).
   useEffect(() => {
-    // Ne pas calculer si l'utilisateur a modifié manuellement le PnL
-    if (isPnlManuallyEdited) {
+    if (
+      !shouldAutoCalculatePnl({
+        isPnlManuallyEdited,
+        isEditMode: Boolean(tradeId),
+        priceFieldsDirtySinceHydrate,
+      })
+    ) {
       return;
     }
 
@@ -318,16 +331,13 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
         // Ne calculer le PnL que si point_value est fourni
         // Sinon, garder le PnL existant (par exemple pour les trades importés)
         if (pointValue && !isNaN(pointValue) && pointValue > 0) {
-          let priceDiff: number;
-          if (formData.trade_type === 'Long') {
-            // Long: gain si prix monte
-            priceDiff = exitPrice - entryPrice;
-          } else {
-            // Short: gain si prix baisse
-            priceDiff = entryPrice - exitPrice;
-          }
-
-          const grossPnl = priceDiff * pointValue * size;
+          const grossPnl = computeGrossPnl({
+            tradeType: formData.trade_type,
+            entryPrice,
+            exitPrice,
+            size,
+            pointValue,
+          });
           setFormData(prev => ({ ...prev, pnl: String(grossPnl) }));
         }
         // Si point_value est manquant, ne pas recalculer le PnL
@@ -340,7 +350,16 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
       // Réinitialiser le PnL si les champs requis ne sont plus remplis
       setFormData(prev => ({ ...prev, pnl: '' }));
     }
-  }, [formData.entry_price, formData.exit_price, formData.size, formData.trade_type, formData.point_value, isPnlManuallyEdited]);
+  }, [
+    formData.entry_price,
+    formData.exit_price,
+    formData.size,
+    formData.trade_type,
+    formData.point_value,
+    isPnlManuallyEdited,
+    tradeId,
+    priceFieldsDirtySinceHydrate,
+  ]);
 
   // Calculer automatiquement le R:R prévu si les prix sont fournis
   const calculatedPlannedRR = useMemo(() => {
@@ -563,7 +582,13 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
                 </label>
                 <CustomSelect
                   value={formData.trade_type}
-                  onChange={(value) => setFormData(prev => ({ ...prev, trade_type: value as 'Long' | 'Short' }))}
+                  onChange={(value) => {
+                    const next = value as 'Long' | 'Short';
+                    if (next !== formData.trade_type) {
+                      setPriceFieldsDirtySinceHydrate(true);
+                    }
+                    setFormData(prev => ({ ...prev, trade_type: next }));
+                  }}
                   options={tradeTypeOptions}
                   disabled={isLoading}
                 />
@@ -608,7 +633,10 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
                 </label>
                 <NumberInput
                   value={formData.entry_price}
-                  onChange={(value) => setFormData(prev => ({ ...prev, entry_price: value }))}
+                  onChange={(value) => {
+                    markPriceFieldsDirtyIfChanged(formData.entry_price, value);
+                    setFormData(prev => ({ ...prev, entry_price: value }));
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder={pricePlaceholder}
                   required
@@ -625,7 +653,10 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
                 </label>
                 <NumberInput
                   value={formData.exit_price}
-                  onChange={(value) => setFormData(prev => ({ ...prev, exit_price: value }))}
+                  onChange={(value) => {
+                    markPriceFieldsDirtyIfChanged(formData.exit_price, value);
+                    setFormData(prev => ({ ...prev, exit_price: value }));
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder={pricePlaceholder}
                   min={0}
@@ -693,7 +724,10 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
                 </label>
                 <NumberInput
                   value={formData.size}
-                  onChange={(value) => setFormData(prev => ({ ...prev, size: value }))}
+                  onChange={(value) => {
+                    markPriceFieldsDirtyIfChanged(formData.size, value);
+                    setFormData(prev => ({ ...prev, size: value }));
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder={sizePlaceholder}
                   required
@@ -710,7 +744,10 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
                 </label>
                 <NumberInput
                   value={formData.point_value}
-                  onChange={(value) => setFormData(prev => ({ ...prev, point_value: value }))}
+                  onChange={(value) => {
+                    markPriceFieldsDirtyIfChanged(formData.point_value, value);
+                    setFormData(prev => ({ ...prev, point_value: value }));
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder={pointValuePlaceholder}
                   min={0.01}
