@@ -511,6 +511,11 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
     };
   }, []);
 
+  // loadData change d’identité avec `t` / draftKey : ne pas le mettre en deps,
+  // sinon la modale recharge (spinner) pendant qu’elle est déjà ouverte.
+  const loadDataRef = useRef(loadData);
+  loadDataRef.current = loadData;
+
   useEffect(() => {
     if (open && date) {
       isInitialLoad.current = true;
@@ -523,7 +528,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
         window.clearTimeout(copiedQuestionTimerRef.current);
         copiedQuestionTimerRef.current = null;
       }
-      loadData();
+      void loadDataRef.current();
     } else {
       setTrades([]);
       setIsDayWithoutTrades(false);
@@ -542,7 +547,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
       // Le message réapparaîtra à la réouverture si un brouillon existe
       isInitialLoad.current = true;
     }
-  }, [open, date, tradingAccount, loadData]);
+  }, [open, date, tradingAccount]);
 
   const updateTradeStrategy = (tradeId: number, field: 'strategyRespected' | 'gainIfStrategyRespected' | 'dominantEmotions' | 'screenshotUrl' | 'screenshotThumbnailUrl' | 'videoUrl' | 'tp1Reached' | 'tp2PlusReached' | 'emotionDetails' | 'possibleImprovements' | 'sessionRating', value: any) => {
     setTrades((prev) =>
@@ -716,7 +721,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
       setHasUnsavedChanges(false);
       isInitialLoad.current = true;
       setDeleteModalOpen(false);
-      await loadData();
+      // Pas de reload : la modale se ferme ; le parent rafraîchit via onClose(true).
       onClose(true);
     } catch (e: any) {
       setError(e?.message || t('trades:strategyCompliance.deleteError', { defaultValue: 'Erreur lors de la suppression' }));
@@ -899,7 +904,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
 
       setHasUnsavedChanges(false);
       isInitialLoad.current = true;
-      await loadData();
+      // Pas de reload : la modale se ferme ; le parent rafraîchit via onClose(true).
       onClose(true);
     } catch (e: any) {
       setSaveError(e?.message || t('trades:strategyCompliance.error'));

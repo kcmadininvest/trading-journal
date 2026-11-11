@@ -198,15 +198,11 @@ const CalendarPage: React.FC = () => {
           </div>
         )}
 
-        {/* Contenu du calendrier */}
-        {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-500 mx-auto mb-4"></div>
-              <p className="text-gray-600 dark:text-gray-400">{t('calendar:loading')}</p>
-            </div>
-          </div>
-        ) : viewType === 'daily' && dailyData ? (
+        {/* Contenu du calendrier
+            Garder DailyView / MonthlyView montés dès qu’on a des données, même pendant un
+            rechargement (PnL, sync, transaction). Sinon isLoading démonte DailyView et fait
+            scintiller / disparaître StrategyComplianceModal (état local selectedDateForStrategy). */}
+        {viewType === 'daily' && dailyData ? (
           <DailyView
             year={currentYear}
             month={currentMonth}
@@ -233,6 +229,13 @@ const CalendarPage: React.FC = () => {
             onViewTypeChange={setViewType}
             currencySymbol={currencySymbol}
           />
+        ) : isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-500 mx-auto mb-4"></div>
+              <p className="text-gray-600 dark:text-gray-400">{t('calendar:loading')}</p>
+            </div>
+          </div>
         ) : null}
       <ImportTradesModal 
         open={showImport} 
