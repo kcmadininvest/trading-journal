@@ -13,6 +13,7 @@ import { formatDateLong, formatTime } from '../../utils/dateFormat';
 import { openMediaUrl, isAppHostedImageUrl } from '../../utils/mediaUrl';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { parsePnlDisplayMode, getTradeDisplayPnlValue } from '../../utils/pnlDisplay';
+import { shouldReloadComplianceDataBeforeClose } from './complianceModalPostSuccess';
 import { JournalQuestionsForm, JournalQuestionsFormHandle } from '../journalQuestions/JournalQuestionsForm';
 import { tradeDayFilters, TradeDayBasis } from '../../utils/tradeDayFilters';
 import { isAnswered } from '../../utils/questionnaireVisibility';
@@ -721,7 +722,9 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
       setHasUnsavedChanges(false);
       isInitialLoad.current = true;
       setDeleteModalOpen(false);
-      // Pas de reload : la modale se ferme ; le parent rafraîchit via onClose(true).
+      if (shouldReloadComplianceDataBeforeClose()) {
+        await loadData();
+      }
       onClose(true);
     } catch (e: any) {
       setError(e?.message || t('trades:strategyCompliance.deleteError', { defaultValue: 'Erreur lors de la suppression' }));
@@ -904,7 +907,9 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
 
       setHasUnsavedChanges(false);
       isInitialLoad.current = true;
-      // Pas de reload : la modale se ferme ; le parent rafraîchit via onClose(true).
+      if (shouldReloadComplianceDataBeforeClose()) {
+        await loadData();
+      }
       onClose(true);
     } catch (e: any) {
       setSaveError(e?.message || t('trades:strategyCompliance.error'));
