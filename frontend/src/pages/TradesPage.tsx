@@ -611,8 +611,14 @@ const TradesPage: React.FC = () => {
               <TopStepSyncControls
                 accountId={filters.trading_account ?? selectedAccountId}
                 enablePolling
-                onSynced={() => void load()}
-                onPollingSynced={() => void load(undefined, undefined, { silent: true })}
+                onSynced={() => {
+                  void load();
+                  void reloadStats();
+                }}
+                onPollingSynced={() => {
+                  void load(undefined, undefined, { silent: true });
+                  void reloadStats();
+                }}
               />
               {filters.start_date &&
                 filters.end_date &&
@@ -810,6 +816,7 @@ const TradesPage: React.FC = () => {
       
       {/* Modale de création/édition de trade */}
       <CreateTradeModal
+        key={editingTradeId ?? 'create'}
         isOpen={showCreateModal}
         onClose={() => {
           setShowCreateModal(false);

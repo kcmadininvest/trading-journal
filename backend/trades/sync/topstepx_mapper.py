@@ -139,16 +139,40 @@ def _build_parsed_round_trip(
     }
 
 
-def _find_entry_fill_for_exit(contract_fills: list[dict[str, Any]], exit_index: int) -> dict[str, Any] | None:
-    """Dernière entrée (PnL null) avant le fill de sortie — gère clôtures partielles."""
-    for j in range(exit_index - 1, -1, -1):
-        if contract_fills[j].get('profitAndLoss') is None:
-            return contract_fills[j]
-    return None
+def _consume_fifo_entry(
+    open_lots: list[dict[str, Any]],
+    exit_size: Decimal,
+) -> dict[str, Any] | None:
+    """
+    Apparie une sortie à l'ouverture FIFO (plus ancienne avec reste > 0).
+
+    « Dernière entrée avant sortie » casse dès que deux positions se chevauchent
+    sur le même contrat (ex. MNQ open 5 @ 27910 puis open 2 @ 27939 : la sortie
+    des 5 lots doit reprendre 27910, pas 27939).
+    """
+    if exit_size <= 0:
+        return None
+    while open_lots and open_lots[0]['remaining'] <= 0:
+        open_lots.pop(0)
+    if not open_lots:
+        return None
+    entry = open_lots[0]['fill']
+    need = exit_size
+    while need > 0 and open_lots:
+        lot = open_lots[0]
+        if lot['remaining'] <= 0:
+            open_lots.pop(0)
+            continue
+        take = min(need, lot['remaining'])
+        lot['remaining'] -= take
+        need -= take
+        if lot['remaining'] <= 0:
+            open_lots.pop(0)
+    return entry
 
 
 def aggregate_fills_to_round_trips(fills: list[dict[str, Any]]) -> list[dict]:
-    """Apparie les fills en round-trips fermés (entrée + sortie)."""
+    """Apparie les fills en round-trips fermés (entrée + sortie) en FIFO par contrat."""
     active = [f for f in fills if not f.get('voided')]
     active.sort(key=lambda f: f.get('creationTimestamp') or '')
 
@@ -159,10 +183,14 @@ def aggregate_fills_to_round_trips(fills: list[dict[str, Any]]) -> list[dict]:
 
     parsed_rows: list[dict] = []
     for contract_fills in by_contract.values():
-        for i, fill in enumerate(contract_fills):
+        open_lots: list[dict[str, Any]] = []
+        for fill in contract_fills:
             if fill.get('profitAndLoss') is None:
+                size = _decimal(fill.get('size')) or Decimal('1')
+                open_lots.append({'fill': fill, 'remaining': size})
                 continue
-            entry = _find_entry_fill_for_exit(contract_fills, i)
+            exit_size = _decimal(fill.get('size')) or Decimal('1')
+            entry = _consume_fifo_entry(open_lots, exit_size)
             if entry is None:
                 continue
             try:
