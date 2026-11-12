@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import integrationsService, { IntegrationStatus } from '../../services/integrationsService';
+import DeleteConfirmModal from '../ui/DeleteConfirmModal';
 import { SettingsInput } from './SettingsInput';
 import { INTEGRATION_HELP_URLS } from './integrationUiConfig';
 import { translateIntegrationError } from '../../utils/integrationErrors';
@@ -29,6 +30,7 @@ export const IntegrationCard: React.FC<IntegrationCardProps> = ({
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   useEffect(() => {
     setUsername(integration.external_username || '');
     setApiKey('');
@@ -118,16 +120,18 @@ export const IntegrationCard: React.FC<IntegrationCardProps> = ({
     }
   };
 
-  const handleDelete = async () => {
-    if (!window.confirm(t('integrations.confirmDelete', { name: displayName }))) {
-      return;
-    }
+  const handleDeleteClick = () => {
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = async () => {
     setDeleting(true);
     try {
       await integrationsService.deleteIntegration(provider);
       onDeleted(provider);
       setUsername('');
       setApiKey('');
+      setShowDeleteConfirm(false);
       onMessage('success', t('integrations.deleted'));
     } catch (err: unknown) {
       onMessage('error', err instanceof Error ? err.message : t('integrations.deleteError'));
@@ -273,7 +277,7 @@ export const IntegrationCard: React.FC<IntegrationCardProps> = ({
           {integration.configured && (
             <button
               type="button"
-              onClick={handleDelete}
+              onClick={handleDeleteClick}
               disabled={saving || testing || deleting}
               className="rounded-lg border border-red-300 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20"
             >
@@ -282,6 +286,18 @@ export const IntegrationCard: React.FC<IntegrationCardProps> = ({
           )}
         </div>
       </div>
+
+      <DeleteConfirmModal
+        isOpen={showDeleteConfirm}
+        onClose={() => {
+          if (!deleting) setShowDeleteConfirm(false);
+        }}
+        onConfirm={confirmDelete}
+        isLoading={deleting}
+        title={t('integrations.delete')}
+        message={t('integrations.confirmDelete', { name: displayName })}
+        confirmButtonText={t('integrations.delete')}
+      />
     </div>
   );
 };
