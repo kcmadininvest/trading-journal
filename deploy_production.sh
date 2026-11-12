@@ -685,8 +685,12 @@ if [ -f "$ENV_FRONTEND" ]; then
 fi
 
 if [ -f "$ENV_BACKEND" ]; then
-    chmod 644 "$ENV_BACKEND" 2>/dev/null || true
-    info "✅ Permissions backend/.env (644)"
+    chown apache:apache "$ENV_BACKEND" 2>/dev/null \
+      || chown apache: "$ENV_BACKEND" 2>/dev/null \
+      || warn "Impossible de chown apache sur backend/.env"
+    chmod 600 "$ENV_BACKEND" 2>/dev/null \
+      || warn "Impossible de chmod 600 sur backend/.env"
+    info "✅ Permissions backend/.env (600, owner apache)"
 fi
 
 info "✅ Permissions mises à jour"

@@ -86,9 +86,11 @@ sudo chown -R apache:apache /var/www/html/trading_journal
 sudo find /var/www/html/trading_journal -type d -exec chmod 755 {} \;
 sudo find /var/www/html/trading_journal -type f -exec chmod 644 {} \;
 
-# Fichiers de configuration sensibles
-sudo chmod 644 /var/www/html/trading_journal/backend/.env
-sudo chmod 644 /var/www/html/trading_journal/frontend/.env.production
+# Fichiers de configuration sensibles (Daphne lit backend/.env en User=apache)
+sudo chown apache:apache /var/www/html/trading_journal/backend/.env
+sudo chmod 600 /var/www/html/trading_journal/backend/.env
+sudo chown apache:apache /var/www/html/trading_journal/frontend/.env.production
+sudo chmod 640 /var/www/html/trading_journal/frontend/.env.production
 
 # Fichiers exécutables
 sudo chmod 755 /var/www/html/trading_journal/backend/manage.py
@@ -405,8 +407,10 @@ sudo chown -R $WEB_USER:$WEB_GROUP $PROJECT_DIR
 sudo find $PROJECT_DIR -type d -exec chmod 755 {} \;
 sudo find $PROJECT_DIR -type f -exec chmod 644 {} \;
 
-# Fichiers de configuration sensibles (lecture seule pour le propriétaire)
-sudo chmod 640 $PROJECT_DIR/backend/.env
+# Fichiers de configuration sensibles (backend: owner-only ; frontend: owner+group)
+sudo chown $WEB_USER:$WEB_GROUP $PROJECT_DIR/backend/.env
+sudo chmod 600 $PROJECT_DIR/backend/.env
+sudo chown $WEB_USER:$WEB_GROUP $PROJECT_DIR/frontend/.env.production
 sudo chmod 640 $PROJECT_DIR/frontend/.env.production
 
 # Fichiers exécutables
