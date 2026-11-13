@@ -17,10 +17,18 @@ ROLLUP_DEBOUNCE_SECONDS = 3
 
 
 def schedule_debounced_stats_invalidation(user_id: int) -> None:
-    """Invalidation + warm cache debounced (imports bulk)."""
+    """Invalide le cache stats immédiatement ; le warm reste debounced (imports bulk).
+
+    L'invalidation ne doit pas dépendre d'un worker Celery : sinon list-totals
+    renvoie des totaux périmés tant que la tâche n'est pas consommée.
+    """
     from django.core.cache import cache
 
     from trades.stats_response_cache import invalidate_user_stats_cache
+
+    # Invalidation synchrone : le pied de tableau Trades (list-totals) est servi
+    # depuis ce cache et doit refléter la mutation dès le reload frontend.
+    invalidate_user_stats_cache(user_id)
 
     debounce_key = f'stats_invalidate_scheduled:{user_id}'
     if cache.add(debounce_key, 1, timeout=ROLLUP_DEBOUNCE_SECONDS):
