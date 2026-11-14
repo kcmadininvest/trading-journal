@@ -1,6 +1,7 @@
 import { getApiBaseUrl } from '../utils/apiConfig';
 import { AppFontFamily } from '../utils/chartConfig';
 import type { TradingAccount } from './tradingAccounts';
+import { parseCreationOptions, serializeCredential, splitChallengeResponse } from '../utils/webauthn';
 import { fetchWithAuth } from './apiClient';
 
 export interface User {
@@ -131,6 +132,26 @@ export interface LoginHistoryEntry {
   ip_address?: string;
   user_agent?: string;
   success: boolean;
+  method?: string;
+}
+
+export interface PasskeyInfo {
+  id: number | string;
+  label: string;
+  created_at: string;
+  last_used_at: string | null;
+  transports: string[];
+}
+
+export interface AccountSecurityStatus {
+  passkey_enabled: boolean;
+  passkeys: PasskeyInfo[];
+  totp_enabled: boolean;
+  totp_pending: boolean;
+  backup_codes_remaining: number;
+  recovery_pending: boolean;
+  recovery_usable_from: string | null;
+  recovery_expires_at: string | null;
 }
 
 class UserService {
@@ -422,6 +443,126 @@ class UserService {
     }
 
     return response.json();
+  }
+
+  async getSecurityStatus(): Promise<AccountSecurityStatus> {
+    const response = await fetchWithAuth(`${this.BASE_URL}/api/accounts/security/`);
+    if (!response.ok) {
+      throw new Error('Erreur lors du chargement de la sécurité');
+    }
+    return response.json();
+  }
+
+  async beginPasskeyRegistration(password: string): Promise<{ challengeId: string; options: any }> {
+    const response = await fetchWithAuth(`${this.BASE_URL}/api/accounts/security/passkey/register/begin/`, {
+      method: 'POST',
+      body: JSON.stringify({ password }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(data.detail || "Impossible de démarrer l'enregistrement de la passkey");
+    }
+    return splitChallengeResponse(data);
+  }
+
+  async finishPasskeyRegistration(
+    password: string,
+    challengeId: string,
+    credential: Record<string, unknown>,
+    label?: string,
+  ): Promise<AccountSecurityStatus | undefined> {
+    const response = await fetchWithAuth(`${this.BASE_URL}/api/accounts/security/passkey/register/finish/`, {
+      method: 'POST',
+      body: JSON.stringify({
+        password,
+        challenge_id: challengeId,
+        credential,
+        ...(label ? { label } : {}),
+      }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(data.detail || "Impossible d'enregistrer la passkey");
+    }
+    return data.status;
+  }
+
+  /** Enregistre une passkey : begin -> navigator.credentials.create -> finish. */
+  async registerPasskey(password: string, label?: string): Promise<AccountSecurityStatus | undefined> {
+    const { challengeId, options } = await this.beginPasskeyRegistration(password);
+    const credential = await navigator.credentials.create({
+      publicKey: parseCreationOptions(options),
+    });
+    if (!credential) {
+      throw new Error('Enregistrement de la passkey annulé');
+    }
+    return this.finishPasskeyRegistration(password, challengeId, serializeCredential(credential), label);
+  }
+
+  async deletePasskey(password: string, passkeyId: number | string): Promise<AccountSecurityStatus | undefined> {
+    const response = await fetchWithAuth(`${this.BASE_URL}/api/accounts/security/passkey/delete/`, {
+      method: 'POST',
+      body: JSON.stringify({ password, passkey_id: passkeyId }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(data.detail || 'Impossible de supprimer la passkey');
+    }
+    return data.status;
+  }
+
+  async beginTotp(password: string): Promise<{ secret: string; otpauth_uri: string; qr_data_url: string }> {
+    const response = await fetchWithAuth(`${this.BASE_URL}/api/accounts/security/totp/begin/`, {
+      method: 'POST',
+      body: JSON.stringify({ password }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(data.detail || 'Impossible de démarrer le 2FA');
+    }
+    return data;
+  }
+
+  async confirmTotp(
+    password: string,
+    code: string,
+  ): Promise<{ backup_codes: string[]; status: AccountSecurityStatus }> {
+    const response = await fetchWithAuth(`${this.BASE_URL}/api/accounts/security/totp/confirm/`, {
+      method: 'POST',
+      body: JSON.stringify({ password, code }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(data.detail || 'Code invalide');
+    }
+    return data;
+  }
+
+  async disableTotp(password: string, code: string): Promise<AccountSecurityStatus> {
+    const response = await fetchWithAuth(`${this.BASE_URL}/api/accounts/security/totp/disable/`, {
+      method: 'POST',
+      body: JSON.stringify({ password, code }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(data.detail || 'Impossible de désactiver le 2FA');
+    }
+    return data.status;
+  }
+
+  async regenerateBackupCodes(
+    password: string,
+    code: string,
+  ): Promise<{ backup_codes: string[]; status: AccountSecurityStatus }> {
+    const response = await fetchWithAuth(`${this.BASE_URL}/api/accounts/security/backup-codes/regenerate/`, {
+      method: 'POST',
+      body: JSON.stringify({ password, code }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(data.detail || 'Impossible de régénérer les codes');
+    }
+    return data;
   }
 
   // Exporter toutes les données de l'utilisateur

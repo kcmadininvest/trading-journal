@@ -644,6 +644,12 @@ if EMAIL_HOST_PASSWORD:
 
 # Frontend URL pour les liens d'activation
 FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:3000')
+
+# WebAuthn / passkeys — RP ID doit matcher l'hôte navigateur (qualif: 127.0.0.1 ≠ localhost)
+WEBAUTHN_RP_ID = config('WEBAUTHN_RP_ID', default='127.0.0.1')
+WEBAUTHN_RP_NAME = config('WEBAUTHN_RP_NAME', default='K&C Trading Journal')
+WEBAUTHN_ORIGIN = config('WEBAUTHN_ORIGIN', default='http://127.0.0.1:3000')
+TOTP_ISSUER_NAME = config('TOTP_ISSUER_NAME', default='K&C Trading Journal')
 STRIPE_SECRET_KEY = config('STRIPE_SECRET_KEY', default='')
 STRIPE_PUBLISHABLE_KEY = config('STRIPE_PUBLISHABLE_KEY', default='')
 STRIPE_WEBHOOK_SECRET = config('STRIPE_WEBHOOK_SECRET', default='')

@@ -111,78 +111,79 @@ class CustomTokenObtainPairView(TokenObtainPairView):
     throttle_classes = [LoginThrottle]
     
     def post(self, request, *args, **kwargs):
-        """Enregistrer l'historique de connexion"""
-        response = super().post(request, *args, **kwargs)
-        
-        # Enregistrer l'historique de connexion si la connexion a réussi
-        if response.status_code == 200:
-            try:
-                # Récupérer l'utilisateur depuis la réponse ou le serializer
-                response_data = response.data if hasattr(response, 'data') else None
-                user_data = response_data.get('user', {}) if response_data else {}
-                user_id = user_data.get('id')
-                
-                if not user_id:
-                    # Essayer de récupérer par email
-                    email = getattr(request, 'data', {}).get('email') if hasattr(request, 'data') else None
-                    if email:
-                        try:
-                            user = User.objects.get(email=email)
-                            user_id = user.id
-                        except User.DoesNotExist:
-                            logger.debug("Utilisateur non trouvé pour l'email lors de la connexion")
-                        except Exception as e:
-                            logger.error(f"Erreur inattendue lors de la récupération de l'utilisateur: {str(e)}")
-                
-                if user_id:
-                    try:
-                        user = User.objects.get(id=user_id)
-                        LoginHistory.objects.create(
-                            user=user,
-                            ip_address=self._get_client_ip(request),
-                            user_agent=request.META.get('HTTP_USER_AGENT', ''),
-                            success=True
-                        )
-                        from trades.tasks import schedule_warm_stats_cache
-                        schedule_warm_stats_cache(user_id)
-                    except Exception as e:  # User.DoesNotExist ou autre exception
-                        # Logger l'erreur pour debug mais ne pas faire échouer la connexion
-                        import logging
-                        logger.warning(f"Erreur lors de l'enregistrement de l'historique de connexion: {str(e)}")
-            except Exception as e:
-                # Ne pas faire échouer la connexion si l'enregistrement de l'historique échoue
-                import logging
-                logger.warning(f"Erreur lors de l'enregistrement de l'historique de connexion: {str(e)}")
-        else:
-            # Enregistrer les tentatives de connexion échouées avec logging détaillé
+        """Connexion e-mail/mot de passe ; défi 2FA si TOTP actif."""
+        from .account_security import (
+            AccountSecurityError,
+            create_2fa_challenge,
+            record_login,
+            totp_enabled,
+        )
+
+        serializer = self.get_serializer(data=request.data)
+        try:
+            serializer.is_valid(raise_exception=True)
+        except Exception:
             try:
                 email = getattr(request, 'data', {}).get('email') if hasattr(request, 'data') else None
                 ip_address = self._get_client_ip(request)
                 user_agent = request.META.get('HTTP_USER_AGENT', '')
-                
-                # Logger la tentative échouée
                 security_logger.warning(
                     f"Tentative de connexion échouée - Email: {email}, IP: {ip_address}, "
-                    f"User-Agent: {user_agent}, Status: {response.status_code}"
+                    f"User-Agent: {user_agent}"
                 )
-                
                 if email:
                     try:
-                        user = User.objects.get(email=email)
-                        LoginHistory.objects.create(
-                            user=user,
+                        user = User.objects.get(email__iexact=email)
+                        record_login(
+                            user,
+                            success=False,
+                            method=LoginHistory.METHOD_PASSWORD,
                             ip_address=ip_address,
                             user_agent=user_agent,
-                            success=False
                         )
                     except User.DoesNotExist:
                         security_logger.warning(
                             f"Tentative de connexion avec email inexistant - Email: {email}, IP: {ip_address}"
                         )
             except Exception as e:
-                security_logger.error(f"Erreur lors de l'enregistrement de la tentative de connexion échouée: {str(e)}")
+                security_logger.error(
+                    f"Erreur lors de l'enregistrement de la tentative de connexion échouée: {str(e)}"
+                )
+            raise
 
-        if response.status_code == 200 and isinstance(getattr(response, 'data', None), dict):
+        user = serializer.user
+        if totp_enabled(user):
+            try:
+                challenge = create_2fa_challenge(
+                    user,
+                    primary_method=LoginHistory.METHOD_PASSWORD,
+                )
+            except AccountSecurityError as exc:
+                return Response({'detail': exc.message}, status=exc.status_code)
+            return Response(
+                {
+                    'requires_2fa': True,
+                    'challenge': challenge,
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        response = Response(serializer.validated_data, status=status.HTTP_200_OK)
+        try:
+            record_login(
+                user,
+                success=True,
+                method=LoginHistory.METHOD_PASSWORD,
+                ip_address=self._get_client_ip(request),
+                user_agent=request.META.get('HTTP_USER_AGENT', ''),
+            )
+            from trades.tasks import schedule_warm_stats_cache
+
+            schedule_warm_stats_cache(user.id)
+        except Exception as e:
+            logger.warning(f"Erreur lors de l'enregistrement de l'historique de connexion: {str(e)}")
+
+        if isinstance(getattr(response, 'data', None), dict):
             access = response.data.get('access')
             refresh = response.data.get('refresh')
             set_jwt_cookies(response, access=access, refresh=refresh)

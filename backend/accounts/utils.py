@@ -179,3 +179,38 @@ def send_password_reset_email(
             str(e),
         )
         return False
+
+
+def send_two_factor_recovery_email(user: User, recovery, language: str = None) -> bool:
+    """E-mail d'alerte + liens confirmer / annuler pour la récupération 2FA."""
+    try:
+        language = _resolve_email_language(user, language)
+        frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:3000')
+        confirm_url = f"{frontend_url}/recover-2fa/{recovery.token}/"
+        cancel_url = f"{frontend_url}/cancel-2fa-recovery/{recovery.cancel_token}/"
+        context = {
+            'user': user,
+            'confirm_url': confirm_url,
+            'cancel_url': cancel_url,
+            'usable_from': recovery.usable_from,
+            'expires_at': recovery.expires_at,
+        }
+        template_path = 'emails/two_factor_recovery_email.html'
+        subject = 'Récupération 2FA — K&C Trading Journal'
+        if language == 'en':
+            subject = '2FA recovery — K&C Trading Journal'
+        html_content = render_to_string(template_path, context)
+        text_content = strip_tags(html_content)
+        msg = EmailMultiAlternatives(
+            subject,
+            text_content,
+            settings.DEFAULT_FROM_EMAIL,
+            [user.email],
+        )
+        msg.attach_alternative(html_content, 'text/html')
+        msg.send()
+        logger.info('Email récupération 2FA envoyé à %s', user.email)
+        return True
+    except Exception as e:
+        logger.error('Erreur envoi email récupération 2FA à %s: %s', user.email, str(e))
+        return False

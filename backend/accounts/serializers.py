@@ -590,3 +590,4 @@ class LoginHistorySerializer(serializers.Serializer):
     ip_address = serializers.CharField(required=False, allow_null=True)
     user_agent = serializers.CharField(required=False, allow_null=True)
     success = serializers.BooleanField()
+    method = serializers.CharField(required=False, allow_blank=True)

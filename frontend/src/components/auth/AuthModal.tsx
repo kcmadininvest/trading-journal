@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { authService } from '../../services/auth';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
+import { isConditionalMediationAvailable, isWebAuthnSupported } from '../../utils/webauthn';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -16,15 +17,23 @@ const AuthModal: React.FC<AuthModalProps> = ({
   initialMode = 'login' 
 }) => {
   const { t } = useI18nTranslation();
-  const [mode, setMode] = useState<'login' | 'register' | 'forgot'>(initialMode);
+  const [mode, setMode] = useState<'login' | 'register' | 'forgot' | '2fa' | 'recover-2fa'>(initialMode);
   const [formData, setFormData] = useState({
     username: '',
     email: '',
     firstName: '',
     lastName: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    totpCode: '',
   });
+  const [challenge, setChallenge] = useState('');
+  const [conditionalNonce, setConditionalNonce] = useState(0);
+  const onSuccessRef = useRef(onSuccess);
+  onSuccessRef.current = onSuccess;
+  const conditionalAbortRef = useRef<AbortController | null>(null);
+  const conditionalSettledRef = useRef<Promise<void>>(Promise.resolve());
+  const passkeySupported = isWebAuthnSupported();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
@@ -42,14 +51,119 @@ const AuthModal: React.FC<AuthModalProps> = ({
         firstName: '',
         lastName: '',
         password: '',
-        confirmPassword: ''
+        confirmPassword: '',
+        totpCode: '',
       });
+      setChallenge('');
       setError('');
       setSuccessMessage('');
       setShowPassword(false);
       setShowConfirmPassword(false);
     }
   }, [initialMode, isOpen]);
+
+  // Conditional UI : autofill passkey sur l'onglet connexion, annulé au changement de mode / démontage
+  useEffect(() => {
+    if (!isOpen || mode !== 'login') return;
+    const controller = new AbortController();
+    conditionalAbortRef.current = controller;
+    let cancelled = false;
+    let settle!: () => void;
+    conditionalSettledRef.current = new Promise<void>((resolve) => {
+      settle = resolve;
+    });
+
+    (async () => {
+      try {
+        if (!(await isConditionalMediationAvailable())) return;
+        if (cancelled || controller.signal.aborted) return;
+        await authService.loginWithPasskey({ conditional: true, signal: controller.signal });
+        if (!cancelled && !controller.signal.aborted) onSuccessRef.current();
+      } catch (err: any) {
+        if (
+          cancelled ||
+          controller.signal.aborted ||
+          err?.name === 'AbortError' ||
+          err?.name === 'NotAllowedError'
+        ) {
+          return;
+        }
+        // Ne pas afficher les erreurs brutes du navigateur (ex. "already pending")
+        const raw = String(err?.message || '');
+        if (/already pending|invalidstate/i.test(raw)) return;
+        setError(raw || t('auth:errorOccurred'));
+      } finally {
+        settle();
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+      if (conditionalAbortRef.current === controller) {
+        conditionalAbortRef.current = null;
+      }
+      settle();
+    };
+  }, [isOpen, mode, conditionalNonce, t]);
+
+  /** Libère le slot WebAuthn occupé par Conditional UI avant un get() explicite. */
+  const abortConditionalUi = async () => {
+    conditionalAbortRef.current?.abort();
+    await Promise.race([
+      conditionalSettledRef.current.catch(() => undefined),
+      new Promise<void>((r) => setTimeout(r, 150)),
+    ]);
+    // Chrome / Firefox : court délai pour libérer le verrou credentials.get
+    await new Promise((r) => setTimeout(r, 80));
+  };
+
+  const mapPasskeyLoginError = (err: unknown): string => {
+    const name = err && typeof err === 'object' && 'name' in err ? String((err as { name?: string }).name) : '';
+    const raw = err instanceof Error ? err.message : typeof err === 'string' ? err : '';
+    const blob = `${name} ${raw}`.toLowerCase();
+    if (name === 'NotAllowedError' || name === 'AbortError' || /notallowed|timed out|cancel|abort/.test(blob)) {
+      return t('auth:passkeyCancelled');
+    }
+    if (name === 'InvalidStateError' || /already pending|request is already/.test(blob)) {
+      return t('auth:passkeyBusy');
+    }
+    if (/relying party|rp id|registrable domain/.test(blob)) {
+      return t('auth:passkeyRpIdMismatch');
+    }
+    return raw || t('auth:errorOccurred');
+  };
+
+  /** Un seul CTA : email du formulaire utilisé s'il est renseigné (sinon discoverable). */
+  const handlePasskeyLogin = async () => {
+    setError('');
+    setSuccessMessage('');
+    const email = formData.username.trim() || undefined;
+    const opts = email ? { email } : {};
+    setIsLoading(true);
+    try {
+      await abortConditionalUi();
+      try {
+        await authService.loginWithPasskey(opts);
+      } catch (err: any) {
+        // Une course résiduelle : nouvel abort + un seul retry
+        const blob = `${err?.name || ''} ${err?.message || ''}`.toLowerCase();
+        if (err?.name === 'InvalidStateError' || /already pending|request is already/.test(blob)) {
+          await abortConditionalUi();
+          await authService.loginWithPasskey(opts);
+        } else {
+          throw err;
+        }
+      }
+      onSuccess();
+    } catch (err: any) {
+      setError(mapPasskeyLoginError(err));
+    } finally {
+      setIsLoading(false);
+      // Relance l'autofill conditionnel après la tentative explicite
+      setConditionalNonce((n) => n + 1);
+    }
+  };
 
   // Empêcher le scroll du body quand la modale est ouverte
   useEffect(() => {
@@ -146,10 +260,31 @@ const AuthModal: React.FC<AuthModalProps> = ({
         setSuccessMessage(message || t('auth:forgotPasswordSuccess'));
         return;
       }
-      if (mode === 'login') {
-        await authService.login(formData.username, formData.password);
+      if (mode === 'recover-2fa') {
+        const email = formData.email.trim() || formData.username.trim();
+        if (!email) {
+          throw new Error(t('auth:errors.emailRequired'));
+        }
+        const message = await authService.requestTwoFactorRecovery(email);
+        setSuccessMessage(message || t('auth:recover2faSuccess'));
+        return;
+      }
+      if (mode === '2fa') {
+        await authService.verifyTwoFactor(challenge, formData.totpCode.trim());
         onSuccess();
-      } else {
+        return;
+      }
+      if (mode === 'login') {
+        const result = await authService.login(formData.username, formData.password);
+        if ('requires_2fa' in result && result.requires_2fa) {
+          setChallenge(result.challenge);
+          setMode('2fa');
+          return;
+        }
+        onSuccess();
+        return;
+      }
+      if (mode === 'register') {
         if (formData.password !== formData.confirmPassword) {
           throw new Error(t('auth:errors.passwordMismatch'));
         }
@@ -173,7 +308,8 @@ const AuthModal: React.FC<AuthModalProps> = ({
                 firstName: '',
                 lastName: '',
                 password: '',
-                confirmPassword: ''
+                confirmPassword: '',
+                totpCode: '',
               });
               setSuccessMessage('');
               // Fermer le modal après affichage du message
@@ -253,7 +389,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
     return label;
   };
 
-  const switchMode = (newMode: 'login' | 'register' | 'forgot') => {
+  const switchMode = (newMode: 'login' | 'register' | 'forgot' | '2fa' | 'recover-2fa') => {
     setMode(newMode);
     setFormData({
       username: '',
@@ -261,8 +397,12 @@ const AuthModal: React.FC<AuthModalProps> = ({
       firstName: '',
       lastName: '',
       password: '',
-      confirmPassword: ''
+      confirmPassword: '',
+      totpCode: '',
     });
+    if (newMode !== '2fa') {
+      setChallenge('');
+    }
     setError('');
     setSuccessMessage('');
     setShowPassword(false);
@@ -297,14 +437,18 @@ const AuthModal: React.FC<AuthModalProps> = ({
             </svg>
           </button>
 
-          {/* Onglets (masqués en mode forgot) */}
-          {mode === 'forgot' ? (
+          {/* Onglets / titres selon le mode */}
+          {mode === 'forgot' || mode === '2fa' || mode === 'recover-2fa' ? (
             <div className="px-6 py-4 pr-14">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                {t('auth:forgotPasswordTitle')}
+                {mode === 'forgot' && t('auth:forgotPasswordTitle')}
+                {mode === '2fa' && t('auth:twoFactorTitle')}
+                {mode === 'recover-2fa' && t('auth:recover2faTitle')}
               </h2>
               <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                {t('auth:forgotPasswordHint')}
+                {mode === 'forgot' && t('auth:forgotPasswordHint')}
+                {mode === '2fa' && t('auth:twoFactorHint')}
+                {mode === 'recover-2fa' && t('auth:recover2faHint')}
               </p>
             </div>
           ) : (
@@ -367,7 +511,27 @@ const AuthModal: React.FC<AuthModalProps> = ({
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {mode === 'forgot' ? (
+            {mode === '2fa' && (
+              <div className="space-y-2">
+                <label htmlFor="totpCode" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {t('auth:totpCode')} <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="totpCode"
+                  name="totpCode"
+                  value={formData.totpCode}
+                  onChange={handleInputChange}
+                  required
+                  autoComplete="one-time-code"
+                  className="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  placeholder="123456"
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400">{t('auth:totpOrBackupHint')}</p>
+              </div>
+            )}
+
+            {mode === 'forgot' || mode === 'recover-2fa' ? (
               <div className="space-y-2">
                 <label htmlFor="forgotEmail" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   {t('auth:email')} <span className="text-red-500">*</span>
@@ -391,7 +555,8 @@ const AuthModal: React.FC<AuthModalProps> = ({
                   />
                 </div>
               </div>
-            ) : mode === 'login' ? (
+            ) : mode === 'login' || mode === '2fa' ? (
+              mode === 'login' ? (
               <div className="space-y-2">
                 <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   {t('auth:email')} <span className="text-red-500">*</span>
@@ -409,12 +574,13 @@ const AuthModal: React.FC<AuthModalProps> = ({
                     value={formData.username}
                     onChange={handleInputChange}
                     required
-                    autoComplete="email"
+                    autoComplete="username webauthn"
                     className="w-full pl-10 pr-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:border-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
                     placeholder="votre@email.com"
                   />
                 </div>
               </div>
+              ) : null
             ) : (
               <div className="space-y-2">
                 <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -506,7 +672,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
             )}
 
             {/* Mot de passe (login / register) */}
-            {mode !== 'forgot' && (
+            {(mode === 'login' || mode === 'register') && (
             <div className="space-y-2">
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 {t('auth:password')} <span className="text-red-500">*</span>
@@ -546,7 +712,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
                 </button>
               </div>
               {mode === 'login' && (
-                <div className="text-right">
+                <div className="flex justify-end text-right">
                   <button
                     type="button"
                     onClick={() => switchMode('forgot')}
@@ -621,10 +787,14 @@ const AuthModal: React.FC<AuthModalProps> = ({
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  {mode === 'forgot' ? t('auth:sending') : t('auth:loading')}
+                  {(mode === 'forgot' || mode === 'recover-2fa') ? t('auth:sending') : t('auth:loading')}
                 </span>
               ) : mode === 'forgot' ? (
                 t('auth:sendResetLink')
+              ) : mode === 'recover-2fa' ? (
+                t('auth:sendRecoveryLink')
+              ) : mode === '2fa' ? (
+                t('auth:verifyCode')
               ) : mode === 'login' ? (
                 t('auth:login')
               ) : (
@@ -632,14 +802,46 @@ const AuthModal: React.FC<AuthModalProps> = ({
               )}
             </button>
 
-            {mode === 'forgot' && (
-              <button
-                type="button"
-                onClick={() => switchMode('login')}
-                className="w-full text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
-              >
-                {t('auth:backToLogin')}
-              </button>
+            {mode === 'login' && passkeySupported && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+                  <span className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
+                  {t('auth:orSeparator')}
+                  <span className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
+                </div>
+                <button
+                  type="button"
+                  disabled={isLoading}
+                  onClick={() => void handlePasskeyLogin()}
+                  className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-gray-200 dark:border-gray-600 text-gray-800 dark:text-gray-100 font-medium hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                  </svg>
+                  {t('auth:passkeyLogin')}
+                </button>
+              </div>
+            )}
+
+            {(mode === 'forgot' || mode === '2fa' || mode === 'recover-2fa') && (
+              <div className="space-y-2">
+                {mode === '2fa' && (
+                  <button
+                    type="button"
+                    onClick={() => switchMode('recover-2fa')}
+                    className="w-full text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                  >
+                    {t('auth:recover2faLink')}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => switchMode('login')}
+                  className="w-full text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
+                >
+                  {t('auth:backToLogin')}
+                </button>
+              </div>
             )}
           </form>
         </div>

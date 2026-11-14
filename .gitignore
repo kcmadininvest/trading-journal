@@ -29,6 +29,9 @@ wheels/
 *.log
 db.sqlite3
 db.sqlite3-journal
+backend/security_campaign.sqlite3
+backend/security_campaign_test.sqlite3
+backend/.env.security_campaign
 /backend/media
 /backend/staticfiles
 /backend/static

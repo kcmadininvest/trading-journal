@@ -20,6 +20,7 @@ import { DangerZoneCard } from '../components/settings/DangerZoneCard';
 import { SettingsToast } from '../components/settings/SettingsToast';
 import { IntegrationsSection } from '../components/settings/IntegrationsSection';
 import { JournalQuestionsSettings } from '../components/settings/JournalQuestionsSettings';
+import { AccountSecuritySection } from '../components/settings/AccountSecuritySection';
 import {
   AppFontFamily,
   applyAppFontFamily,
@@ -772,6 +773,8 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
         {/* Section Sécurité */}
         {activeTab === 'security' && (
           <>
+            <AccountSecuritySection showMessage={showMessage} />
+
             <SettingsSection
               title={t('settings:changePassword')}
               description={t('settings:changePasswordDesc', { defaultValue: 'Modifiez votre mot de passe pour sécuriser votre compte' })}
@@ -922,6 +925,11 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                             }`}>
                               {entry.success ? t('settings:success') : t('settings:failed')}
                             </span>
+                            {entry.method ? (
+                              <span className="px-2 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">
+                                {entry.method}
+                              </span>
+                            ) : null}
                           </div>
                           <p className="text-xs text-gray-600 dark:text-gray-400 truncate">
                             {entry.ip_address || t('common:na')} • {entry.user_agent || t('common:na')}

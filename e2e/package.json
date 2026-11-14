@@ -4,6 +4,7 @@
   "scripts": {
     "test": "playwright test",
     "test:spike": "playwright test --config=playwright.spike.config.ts",
+    "test:security": "playwright test --config=playwright.security.config.ts",
     "tutorials:screenshots": "playwright test --config=playwright.tutorials.config.ts"
   },
   "devDependencies": {

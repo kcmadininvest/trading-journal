@@ -36,6 +36,7 @@ const TradingActivityPage = lazy(() => import('./pages/TradingActivityPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const ActivateAccountPage = lazy(() => import('./pages/ActivateAccountPage'));
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
+const Recover2faPage = lazy(() => import('./pages/Recover2faPage'));
 const PositionStrategiesPage = lazy(() => import('./pages/PositionStrategiesPage'));
 const StrategyChecklistPopup = lazy(() => import('./pages/StrategyChecklistPopup'));
 const GoalsPage = lazy(() => import('./pages/GoalsPage'));
@@ -618,6 +619,16 @@ function App() {
     if (resetPasswordMatch) {
       const token = resetPasswordMatch[1];
       return <LazyPage><ResetPasswordPage token={token} /></LazyPage>;
+    }
+
+    const recover2faMatch = pathname.match(/^\/recover-2fa\/([^/]+)\/?$/);
+    if (recover2faMatch) {
+      return <LazyPage><Recover2faPage token={recover2faMatch[1]} mode="confirm" /></LazyPage>;
+    }
+
+    const cancel2faMatch = pathname.match(/^\/cancel-2fa-recovery\/([^/]+)\/?$/);
+    if (cancel2faMatch) {
+      return <LazyPage><Recover2faPage token={cancel2faMatch[1]} mode="cancel" /></LazyPage>;
     }
 
     // Pages publiques accessibles via pathname (SEO) - Support multilingue

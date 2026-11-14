@@ -389,6 +389,20 @@ class LoginHistory(models.Model):
     """
     Modèle pour enregistrer l'historique des connexions
     """
+    METHOD_PASSWORD = 'password'
+    METHOD_PASSKEY = 'passkey'
+    METHOD_TOTP = 'totp'
+    METHOD_BACKUP_CODE = 'backup_code'
+    METHOD_UNKNOWN = ''
+
+    METHOD_CHOICES = (
+        (METHOD_PASSWORD, _('Mot de passe')),
+        (METHOD_PASSKEY, _('Passkey')),
+        (METHOD_TOTP, _('Code 2FA')),
+        (METHOD_BACKUP_CODE, _('Code de secours')),
+        (METHOD_UNKNOWN, _('Inconnu')),
+    )
+
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -412,6 +426,13 @@ class LoginHistory(models.Model):
     success = models.BooleanField(
         default=_LOGIN_SUCCESS_DEFAULT,
         verbose_name=_('Connexion réussie')
+    )
+    method = models.CharField(
+        max_length=32,
+        choices=METHOD_CHOICES,
+        blank=True,
+        default=METHOD_UNKNOWN,
+        verbose_name=_('Moyen de connexion'),
     )
     
     class Meta:
@@ -556,3 +577,121 @@ class PasswordResetToken(models.Model):
 
     def is_valid(self):
         return not self.is_used and not self.is_expired()
+
+class WebAuthnCredential(models.Model):
+    """Passkey WebAuthn (plusieurs par compte, coexiste avec le TOTP)."""
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='webauthn_credentials',
+        verbose_name=_('Utilisateur'),
+    )
+    credential_id = models.CharField(max_length=1024, unique=True, db_index=True)
+    public_key = models.TextField()
+    sign_count = models.PositiveIntegerField(default=0)
+    transports = models.JSONField(default=list, blank=True)
+    label = models.CharField(max_length=128, blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_used_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = _('Passkey WebAuthn')
+        verbose_name_plural = _('Passkeys WebAuthn')
+        db_table = 'accounts_webauthncredential'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'WebAuthnCredential {self.label or self.credential_id[:12]}… ({self.user_id})'
+
+
+class TotpDevice(models.Model):
+    """Configuration TOTP (coexiste avec les passkeys)."""
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='totp_device',
+        verbose_name=_('Utilisateur'),
+    )
+    secret_encrypted = models.TextField()
+    enabled = models.BooleanField(default=False)
+    confirmed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = _('Appareil TOTP')
+        verbose_name_plural = _('Appareils TOTP')
+        db_table = 'accounts_totpdevice'
+
+    def __str__(self):
+        state = 'enabled' if self.enabled else 'pending'
+        return f'TOTP {self.user_id} ({state})'
+
+
+class BackupCode(models.Model):
+    """Code de secours à usage unique pour le 2FA."""
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='backup_codes',
+        verbose_name=_('Utilisateur'),
+    )
+    code_hash = models.CharField(max_length=64)
+    used_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = _('Code de secours')
+        verbose_name_plural = _('Codes de secours')
+        db_table = 'accounts_backupcode'
+        indexes = [
+            models.Index(fields=['user', 'used_at']),
+        ]
+
+    @property
+    def is_used(self) -> bool:
+        return self.used_at is not None
+
+
+class TwoFactorRecoveryRequest(models.Model):
+    """
+    Récupération 2FA par e-mail.
+    Lien utilisable uniquement entre created_at+1h et created_at+2h.
+    """
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='two_factor_recovery_requests',
+        verbose_name=_('Utilisateur'),
+    )
+    token = models.UUIDField(default=uuid.uuid4, unique=True)
+    cancel_token = models.UUIDField(default=uuid.uuid4, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    usable_from = models.DateTimeField()
+    expires_at = models.DateTimeField()
+    completed_at = models.DateTimeField(null=True, blank=True)
+    cancelled_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = _('Récupération 2FA')
+        verbose_name_plural = _('Récupérations 2FA')
+        db_table = 'accounts_twofactorrecoveryrequest'
+        indexes = [
+            models.Index(fields=['token']),
+            models.Index(fields=['cancel_token']),
+            models.Index(fields=['user', '-created_at']),
+        ]
+
+    def save(self, *args, **kwargs):
+        if not self.usable_from:
+            self.usable_from = timezone.now() + timedelta(hours=1)
+        if not self.expires_at:
+            self.expires_at = timezone.now() + timedelta(hours=2)
+        return super().save(*args, **kwargs)
+
+    def is_pending(self) -> bool:
+        return self.completed_at is None and self.cancelled_at is None
+
+    def is_usable_now(self) -> bool:
+        now = timezone.now()
+        return self.is_pending() and self.usable_from <= now <= self.expires_at

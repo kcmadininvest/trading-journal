@@ -1,5 +1,6 @@
 import { getApiBaseUrl } from '../utils/apiConfig';
 import { clearTradingJournalFilterStorageKeys } from '../hooks/usePersistedPeriodAndStrategyFilters';
+import { parseRequestOptions, serializeCredential, splitChallengeResponse } from '../utils/webauthn';
 import { bootstrapCsrf, fetchWithAuth, resetSessionExpiredFlag } from './apiClient';
 
 export interface User {
@@ -19,6 +20,17 @@ export interface User {
 
 export interface LoginResponse {
   user: User;
+}
+
+export interface LoginRequires2FA {
+  requires_2fa: true;
+  challenge: string;
+}
+
+export type LoginResult = LoginResponse | LoginRequires2FA;
+
+function isRequires2FA(data: any): data is LoginRequires2FA {
+  return Boolean(data && data.requires_2fa && data.challenge);
 }
 
 class AuthService {
@@ -94,7 +106,14 @@ class AuthService {
     return this.bootstrapPromise;
   }
 
-  async login(username: string, password: string): Promise<LoginResponse> {
+  private finalizeLogin(user: User): LoginResponse {
+    this.saveUser(user);
+    resetSessionExpiredFlag();
+    window.dispatchEvent(new CustomEvent('user:login', { detail: { user } }));
+    return { user };
+  }
+
+  async login(username: string, password: string): Promise<LoginResult> {
     await this.ensureCsrf();
     try {
       const response = await fetchWithAuth(`${this.BASE_URL}/api/accounts/auth/login/`, {
@@ -105,22 +124,139 @@ class AuthService {
         baseUrl: this.BASE_URL,
       });
 
+      const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || 'Erreur de connexion');
+        throw new Error(data.detail || 'Erreur de connexion');
       }
-
-      const data = await response.json();
-      const user = data.user as User;
-      this.saveUser(user);
-      resetSessionExpiredFlag();
-
-      window.dispatchEvent(new CustomEvent('user:login', { detail: { user } }));
-
-      return { user };
+      if (isRequires2FA(data)) {
+        return { requires_2fa: true, challenge: data.challenge };
+      }
+      return this.finalizeLogin(data.user as User);
     } catch (error: any) {
       throw new Error(error.message || 'Erreur de connexion');
     }
+  }
+
+  async beginPasskeyLogin(
+    email?: string,
+    signal?: AbortSignal,
+  ): Promise<{ challengeId: string; options: any }> {
+    await this.ensureCsrf();
+    const response = await fetchWithAuth(`${this.BASE_URL}/api/accounts/auth/login/passkey/begin/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(email ? { email } : {}),
+      retry: false,
+      baseUrl: this.BASE_URL,
+      signal,
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(data.detail || 'Erreur de connexion');
+    }
+    return splitChallengeResponse(data);
+  }
+
+  async finishPasskeyLogin(challengeId: string, credential: Record<string, unknown>): Promise<LoginResponse> {
+    await this.ensureCsrf();
+    const response = await fetchWithAuth(`${this.BASE_URL}/api/accounts/auth/login/passkey/finish/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ challenge_id: challengeId, credential }),
+      retry: false,
+      baseUrl: this.BASE_URL,
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(data.detail || 'Erreur de connexion');
+    }
+    return this.finalizeLogin(data.user as User);
+  }
+
+  /**
+   * Connexion par passkey. `conditional` : autofill du navigateur (sans email, annulable via `signal`).
+   * Avec `email`, le serveur restreint les credentials autorisés à ce compte.
+   */
+  async loginWithPasskey(opts: {
+    email?: string;
+    conditional?: boolean;
+    signal?: AbortSignal;
+  } = {}): Promise<LoginResponse> {
+    const { email, conditional = false, signal } = opts;
+    const { challengeId, options } = await this.beginPasskeyLogin(email, signal);
+    const credential = await navigator.credentials.get({
+      publicKey: parseRequestOptions(options),
+      ...(conditional ? { mediation: 'conditional' as CredentialMediationRequirement } : {}),
+      signal,
+    });
+    if (!credential) {
+      throw new Error('Connexion par passkey annulée');
+    }
+    return this.finishPasskeyLogin(challengeId, serializeCredential(credential));
+  }
+
+  async verifyTwoFactor(challenge: string, code: string): Promise<LoginResponse> {
+    await this.ensureCsrf();
+    const response = await fetchWithAuth(`${this.BASE_URL}/api/accounts/auth/login/2fa/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ challenge, code }),
+      retry: false,
+      baseUrl: this.BASE_URL,
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(data.detail || 'Code invalide');
+    }
+    return this.finalizeLogin(data.user as User);
+  }
+
+  async requestTwoFactorRecovery(email: string): Promise<string> {
+    await this.ensureCsrf();
+    const response = await fetchWithAuth(`${this.BASE_URL}/api/accounts/auth/2fa-recovery/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+      retry: false,
+      baseUrl: this.BASE_URL,
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(data.detail || 'Erreur de récupération');
+    }
+    return data.message || '';
+  }
+
+  async confirmTwoFactorRecovery(token: string): Promise<string> {
+    await this.ensureCsrf();
+    const response = await fetchWithAuth(`${this.BASE_URL}/api/accounts/auth/2fa-recovery/confirm/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
+      retry: false,
+      baseUrl: this.BASE_URL,
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(data.detail || 'Lien invalide ou expiré');
+    }
+    return data.message || '';
+  }
+
+  async cancelTwoFactorRecovery(cancelToken: string): Promise<string> {
+    await this.ensureCsrf();
+    const response = await fetchWithAuth(`${this.BASE_URL}/api/accounts/auth/2fa-recovery/cancel/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cancel_token: cancelToken }),
+      retry: false,
+      baseUrl: this.BASE_URL,
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(data.detail || 'Erreur');
+    }
+    return data.message || '';
   }
 
   async register(username: string, email: string, password: string, firstName: string, lastName: string): Promise<LoginResponse> {

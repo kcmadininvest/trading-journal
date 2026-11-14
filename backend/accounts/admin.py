@@ -1,7 +1,17 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.translation import gettext_lazy as _
-from .models import User, UserPreferences, LoginHistory, EmailActivationToken, PasswordResetToken
+from .models import (
+    User,
+    UserPreferences,
+    LoginHistory,
+    EmailActivationToken,
+    PasswordResetToken,
+    WebAuthnCredential,
+    TotpDevice,
+    BackupCode,
+    TwoFactorRecoveryRequest,
+)
 
 
 @admin.register(User)
@@ -54,11 +64,41 @@ class LoginHistoryAdmin(admin.ModelAdmin):
     """
     Configuration de l'interface d'administration pour LoginHistory
     """
-    list_display = ('user', 'date', 'ip_address', 'success')
-    list_filter = ('success', 'date')
+    list_display = ('user', 'date', 'ip_address', 'success', 'method')
+    list_filter = ('success', 'method', 'date')
     search_fields = ('user__email', 'ip_address', 'user_agent')
     readonly_fields = ('date',)
     ordering = ('-date',)
+
+
+@admin.register(WebAuthnCredential)
+class WebAuthnCredentialAdmin(admin.ModelAdmin):
+    list_display = ('user', 'label', 'credential_id', 'sign_count', 'created_at', 'last_used_at')
+    search_fields = ('user__email', 'label', 'credential_id')
+    readonly_fields = ('credential_id', 'public_key', 'sign_count', 'transports', 'created_at', 'last_used_at')
+
+
+@admin.register(TotpDevice)
+class TotpDeviceAdmin(admin.ModelAdmin):
+    list_display = ('user', 'enabled', 'confirmed_at', 'created_at')
+    list_filter = ('enabled',)
+    search_fields = ('user__email',)
+    readonly_fields = ('secret_encrypted', 'created_at', 'updated_at', 'confirmed_at')
+
+
+@admin.register(BackupCode)
+class BackupCodeAdmin(admin.ModelAdmin):
+    list_display = ('user', 'used_at', 'created_at')
+    list_filter = ('used_at',)
+    search_fields = ('user__email',)
+    readonly_fields = ('code_hash', 'created_at', 'used_at')
+
+
+@admin.register(TwoFactorRecoveryRequest)
+class TwoFactorRecoveryRequestAdmin(admin.ModelAdmin):
+    list_display = ('user', 'created_at', 'usable_from', 'expires_at', 'completed_at', 'cancelled_at')
+    search_fields = ('user__email', 'token', 'cancel_token')
+    readonly_fields = ('token', 'cancel_token', 'created_at')
 
 
 @admin.register(EmailActivationToken)

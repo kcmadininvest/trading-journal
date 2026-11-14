@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Récupération 2FA</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f4f4f4; }
+        .container { background-color: #ffffff; padding: 30px; border-radius: 10px; }
+        .button { display: inline-block; padding: 14px 28px; background-color: #2563eb; color: #ffffff !important; text-decoration: none; border-radius: 8px; margin: 12px 0; font-weight: bold; }
+        .button-cancel { background-color: #6b7280; }
+        .link { color: #2563eb; word-break: break-all; }
+        .footer { margin-top: 24px; font-size: 12px; color: #6b7280; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Récupération de la double authentification</h1>
+        <p>Bonjour {{ user.first_name }},</p>
+        <p>Une demande de désactivation du 2FA a été faite pour votre compte.</p>
+        <p>Le lien de confirmation ne sera utilisable qu’après une heure, et jusqu’à deux heures après cette demande.</p>
+        <p>Disponible à partir de : {{ usable_from }}<br>Expire à : {{ expires_at }}</p>
+        <div style="text-align: center;">
+            <a href="{{ confirm_url }}" class="button">Désactiver le 2FA</a>
+        </div>
+        <p class="link">{{ confirm_url }}</p>
+        <p>Si vous n’êtes pas à l’origine de cette demande, annulez-la immédiatement :</p>
+        <div style="text-align: center;">
+            <a href="{{ cancel_url }}" class="button button-cancel">Annuler la récupération</a>
+        </div>
+        <p class="link">{{ cancel_url }}</p>
+        <div class="footer">
+            <p>Vous pouvez aussi annuler en vous connectant avec un code 2FA valide.</p>
+        </div>
+    </div>
+</body>
+</html>

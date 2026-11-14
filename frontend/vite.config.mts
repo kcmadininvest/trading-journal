@@ -2,17 +2,24 @@ import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import checker from 'vite-plugin-checker';
 
+/** Mode léger pour e2e / machines à faible RAM : pas de checker TS/ESLint en process. */
+const e2eLight = process.env.VITE_E2E_LIGHT === '1';
+
 export default defineConfig({
   plugins: [
     react(),
-    checker({
-      typescript: true,
-      eslint: {
-        lintCommand: 'eslint "./src/**/*.{ts,tsx}"',
-        useFlatConfig: true,
-      },
-      overlay: { initialIsOpen: false },
-    }),
+    ...(!e2eLight
+      ? [
+          checker({
+            typescript: true,
+            eslint: {
+              lintCommand: 'eslint "./src/**/*.{ts,tsx}"',
+              useFlatConfig: true,
+            },
+            overlay: { initialIsOpen: false },
+          }),
+        ]
+      : []),
   ],
   build: {
     outDir: 'build',

@@ -1,11 +1,23 @@
 from django.urls import path, include
 from . import views
+from . import account_security_views as security_views
 
 app_name = 'accounts'
 
 urlpatterns = [
     # Authentification
     path('auth/login/', views.CustomTokenObtainPairView.as_view(), name='login'),
+    path(
+        'auth/login/passkey/begin/',
+        security_views.PasskeyLoginBeginView.as_view(),
+        name='login_passkey_begin',
+    ),
+    path(
+        'auth/login/passkey/finish/',
+        security_views.PasskeyLoginFinishView.as_view(),
+        name='login_passkey_finish',
+    ),
+    path('auth/login/2fa/', security_views.TwoFactorVerifyView.as_view(), name='login_2fa'),
     path('auth/refresh/', views.CookieTokenRefreshView.as_view(), name='token_refresh'),
     path('auth/logout/', views.LogoutView.as_view(), name='logout'),
     path('auth/csrf/', views.csrf_ensure, name='csrf_ensure'),
@@ -22,11 +34,59 @@ urlpatterns = [
         views.PasswordResetConfirmView.as_view(),
         name='password_reset_confirm',
     ),
+
+    # Récupération 2FA
+    path(
+        'auth/2fa-recovery/',
+        security_views.TwoFactorRecoveryRequestView.as_view(),
+        name='2fa_recovery_request',
+    ),
+    path(
+        'auth/2fa-recovery/confirm/',
+        security_views.TwoFactorRecoveryConfirmView.as_view(),
+        name='2fa_recovery_confirm',
+    ),
+    path(
+        'auth/2fa-recovery/cancel/',
+        security_views.TwoFactorRecoveryCancelView.as_view(),
+        name='2fa_recovery_cancel',
+    ),
     
     # Profil utilisateur
     path('profile/', views.UserProfileView.as_view(), name='user_profile'),
     path('profile/change-password/', views.PasswordChangeView.as_view(), name='change_password'),
     path('permissions/', views.user_permissions_view, name='user_permissions'),
+
+    # Sécurité compte (passkeys / 2FA)
+    path('security/', security_views.AccountSecurityStatusView.as_view(), name='security_status'),
+    path(
+        'security/passkey/register/begin/',
+        security_views.PasskeyRegisterBeginView.as_view(),
+        name='passkey_register_begin',
+    ),
+    path(
+        'security/passkey/register/finish/',
+        security_views.PasskeyRegisterFinishView.as_view(),
+        name='passkey_register_finish',
+    ),
+    path(
+        'security/passkey/delete/',
+        security_views.PasskeyDeleteView.as_view(),
+        name='passkey_delete',
+    ),
+    path('security/totp/begin/', security_views.TotpBeginView.as_view(), name='totp_begin'),
+    path('security/totp/confirm/', security_views.TotpConfirmView.as_view(), name='totp_confirm'),
+    path('security/totp/disable/', security_views.TotpDisableView.as_view(), name='totp_disable'),
+    path(
+        'security/backup-codes/regenerate/',
+        security_views.BackupCodesRegenerateView.as_view(),
+        name='backup_codes_regenerate',
+    ),
+    path(
+        'security/2fa-recovery/cancel/',
+        security_views.TwoFactorRecoveryCancelAuthenticatedView.as_view(),
+        name='2fa_recovery_cancel_auth',
+    ),
     
     # Préférences utilisateur
     path('preferences/', views.UserPreferencesView.as_view(), name='user_preferences'),
