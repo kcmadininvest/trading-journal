@@ -33,6 +33,68 @@ function isRequires2FA(data: any): data is LoginRequires2FA {
   return Boolean(data && data.requires_2fa && data.challenge);
 }
 
+/** Erreur API auth avec métadonnées (ex. rate limit 429). */
+export class AuthRequestError extends Error {
+  status?: number;
+  code?: string;
+  wait?: number | null;
+
+  constructor(
+    message: string,
+    opts?: { status?: number; code?: string; wait?: number | null },
+  ) {
+    super(message);
+    this.name = 'AuthRequestError';
+    this.status = opts?.status;
+    this.code = opts?.code;
+    this.wait = opts?.wait ?? null;
+  }
+}
+
+export function parseThrottleWaitSeconds(detail: unknown): number | null {
+  if (typeof detail !== 'string') return null;
+  const match = detail.match(/(\d+)\s*seconds?/i) || detail.match(/(\d+)\s*secondes?/i);
+  if (!match) return null;
+  const n = Number.parseInt(match[1], 10);
+  return Number.isFinite(n) ? n : null;
+}
+
+export function isAuthThrottledError(err: unknown): err is AuthRequestError {
+  if (err instanceof AuthRequestError) {
+    return err.status === 429 || err.code === 'throttled';
+  }
+  if (err instanceof Error) {
+    const msg = err.message.toLowerCase();
+    return (
+      msg.includes('throttl') ||
+      msg.includes('ralentie') ||
+      msg.includes('trop de tentatives') ||
+      msg.includes('expected available') ||
+      msg.includes('too many')
+    );
+  }
+  return false;
+}
+
+function throwFromAuthResponse(response: Response, data: any, fallback: string): never {
+  const detail = typeof data?.detail === 'string' && data.detail.trim() ? data.detail : fallback;
+  const wait =
+    typeof data?.wait === 'number'
+      ? data.wait
+      : parseThrottleWaitSeconds(detail);
+  if (response.status === 429 || data?.code === 'throttled') {
+    throw new AuthRequestError(detail, {
+      status: 429,
+      code: 'throttled',
+      wait,
+    });
+  }
+  throw new AuthRequestError(detail, {
+    status: response.status,
+    code: typeof data?.code === 'string' ? data.code : undefined,
+  });
+}
+
 class AuthService {
   private readonly BASE_URL = getApiBaseUrl();
   private user: User | null = null;
@@ -126,14 +188,15 @@ class AuthService {
 
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        throw new Error(data.detail || 'Erreur de connexion');
+        throwFromAuthResponse(response, data, 'Erreur de connexion');
       }
       if (isRequires2FA(data)) {
         return { requires_2fa: true, challenge: data.challenge };
       }
       return this.finalizeLogin(data.user as User);
     } catch (error: any) {
-      throw new Error(error.message || 'Erreur de connexion');
+      if (error instanceof AuthRequestError) throw error;
+      throw new AuthRequestError(error.message || 'Erreur de connexion');
     }
   }
 
@@ -152,7 +215,7 @@ class AuthService {
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
-      throw new Error(data.detail || 'Erreur de connexion');
+      throwFromAuthResponse(response, data, 'Erreur de connexion');
     }
     return splitChallengeResponse(data);
   }
@@ -168,7 +231,7 @@ class AuthService {
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
-      throw new Error(data.detail || 'Erreur de connexion');
+      throwFromAuthResponse(response, data, 'Erreur de connexion');
     }
     return this.finalizeLogin(data.user as User);
   }
@@ -206,7 +269,7 @@ class AuthService {
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
-      throw new Error(data.detail || 'Code invalide');
+      throwFromAuthResponse(response, data, 'Code invalide');
     }
     return this.finalizeLogin(data.user as User);
   }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { authService } from '../../services/auth';
+import { authService, AuthRequestError, isAuthThrottledError } from '../../services/auth';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { isConditionalMediationAvailable, isWebAuthnSupported } from '../../utils/webauthn';
 
@@ -118,7 +118,18 @@ const AuthModal: React.FC<AuthModalProps> = ({
     await new Promise((r) => setTimeout(r, 80));
   };
 
+  const formatLoginThrottleError = (err: unknown): string => {
+    const wait =
+      err instanceof AuthRequestError && typeof err.wait === 'number' && err.wait > 0
+        ? err.wait
+        : 60;
+    return t('auth:loginThrottled', { seconds: wait });
+  };
+
   const mapPasskeyLoginError = (err: unknown): string => {
+    if (isAuthThrottledError(err)) {
+      return formatLoginThrottleError(err);
+    }
     const name = err && typeof err === 'object' && 'name' in err ? String((err as { name?: string }).name) : '';
     const raw = err instanceof Error ? err.message : typeof err === 'string' ? err : '';
     const blob = `${name} ${raw}`.toLowerCase();
@@ -180,8 +191,19 @@ const AuthModal: React.FC<AuthModalProps> = ({
   // Fonction pour traduire les messages d'erreur du backend
   const translateErrorMessage = (message: string): string => {
     if (!message) return t('auth:errors.registrationFailed');
-    
+
     const messageLower = message.toLowerCase();
+    if (
+      messageLower.includes('throttl') ||
+      messageLower.includes('ralentie') ||
+      messageLower.includes('trop de tentatives') ||
+      messageLower.includes('expected available') ||
+      (messageLower.includes('too many') && messageLower.includes('request'))
+    ) {
+      const match = message.match(/(\d+)\s*seconds?/i) || message.match(/(\d+)\s*secondes?/i);
+      const seconds = match ? Number.parseInt(match[1], 10) : 60;
+      return t('auth:loginThrottled', { seconds: Number.isFinite(seconds) ? seconds : 60 });
+    }
     
     // Mapping des messages d'erreur aux clés de traduction
     // Message générique pour éviter de révéler quel champ existe déjà (sécurité)
@@ -323,6 +345,10 @@ const AuthModal: React.FC<AuthModalProps> = ({
         }
       }
     } catch (err: any) {
+      if (isAuthThrottledError(err)) {
+        setError(formatLoginThrottleError(err));
+        return;
+      }
       // Traduire le message d'erreur
       const errorMessage = err.message || t('auth:errorOccurred');
       

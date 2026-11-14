@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
-import { authService } from '../services/auth';
+import { authService, AuthRequestError, isAuthThrottledError } from '../services/auth';
 
 interface Props {
   token: string;
@@ -41,7 +41,15 @@ const Recover2faPage: React.FC<Props> = ({ token: tokenProp, mode }) => {
         window.location.href = '/';
       }, 2500);
     } catch (err: any) {
-      setError(err.message || t('auth:errorOccurred'));
+      if (isAuthThrottledError(err)) {
+        const seconds =
+          err instanceof AuthRequestError && typeof err.wait === 'number' && err.wait > 0
+            ? err.wait
+            : 60;
+        setError(t('auth:loginThrottled', { seconds }));
+      } else {
+        setError(err.message || t('auth:errorOccurred'));
+      }
     } finally {
       setIsLoading(false);
     }
