@@ -352,6 +352,38 @@ class AccountSecurityCampaignTests(APITestCase):
         self.assertNotIn('requires_2fa', response.data)
         self.assertIn(ACCESS_COOKIE_NAME, response.cookies)
 
+    def test_13b_cancel_pending_totp_requires_password_and_clears_device(self):
+        begin_totp_setup(self.user)
+        self.assertTrue(TotpDevice.objects.filter(user=self.user, enabled=False).exists())
+        self._auth_as(self.user)
+        bad = self.client.post(
+            reverse('accounts:totp_cancel_pending'),
+            {'password': 'WrongPass999!'},
+            format='json',
+        )
+        self.assertEqual(bad.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertTrue(TotpDevice.objects.filter(user=self.user, enabled=False).exists())
+        ok = self.client.post(
+            reverse('accounts:totp_cancel_pending'),
+            {'password': self.password},
+            format='json',
+        )
+        self.assertEqual(ok.status_code, status.HTTP_200_OK)
+        self.assertFalse(TotpDevice.objects.filter(user=self.user).exists())
+        self.assertFalse(ok.data['status']['totp_pending'])
+        self.assertFalse(ok.data['status']['totp_enabled'])
+
+    def test_13c_cancel_pending_totp_rejected_when_enabled(self):
+        self._enable_totp()
+        self._auth_as(self.user)
+        response = self.client.post(
+            reverse('accounts:totp_cancel_pending'),
+            {'password': self.password},
+            format='json',
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertTrue(TotpDevice.objects.filter(user=self.user, enabled=True).exists())
+
     def test_14_totp_enabled_returns_challenge_without_cookies(self):
         self._enable_totp()
         response = self._login_password()
@@ -372,6 +404,8 @@ class AccountSecurityCampaignTests(APITestCase):
         self.assertEqual(ok.status_code, status.HTTP_200_OK)
         self.assertIn(ACCESS_COOKIE_NAME, ok.cookies)
         self.assertEqual(ok.data['user']['id'], self.user.id)
+        history = LoginHistory.objects.filter(user=self.user, success=True).latest('date')
+        self.assertEqual(history.method, LoginHistory.METHOD_TOTP)
 
     def test_16_totp_code_replay_rejected(self):
         secret, _ = self._enable_totp()
@@ -401,6 +435,8 @@ class AccountSecurityCampaignTests(APITestCase):
         )
         self.assertEqual(ok.status_code, status.HTTP_200_OK)
         self.assertTrue(BackupCode.objects.filter(user=self.user, used_at__isnull=False).exists())
+        history = LoginHistory.objects.filter(user=self.user, success=True).latest('date')
+        self.assertEqual(history.method, LoginHistory.METHOD_BACKUP_CODE)
         step2 = self._login_password()
         reuse = self.client.post(
             reverse('accounts:login_2fa'),

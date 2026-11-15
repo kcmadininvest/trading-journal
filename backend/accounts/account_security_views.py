@@ -14,6 +14,7 @@ from .account_security import (
     AccountSecurityError,
     begin_totp_setup,
     cancel_pending_recovery_for_user,
+    cancel_pending_totp,
     cancel_recovery_by_token,
     complete_recovery,
     confirm_totp_setup,
@@ -298,6 +299,23 @@ class TotpDisableView(APIView):
             return Response(
                 {
                     'message': '2FA désactivé.',
+                    'status': security_status(request.user),
+                }
+            )
+        except AccountSecurityError as exc:
+            return Response({'detail': exc.message}, status=exc.status_code)
+
+
+class TotpCancelPendingView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        try:
+            _require_current_password(request.user, request.data.get('password', ''))
+            cancel_pending_totp(request.user)
+            return Response(
+                {
+                    'message': 'Configuration 2FA annulée.',
                     'status': security_status(request.user),
                 }
             )

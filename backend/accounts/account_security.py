@@ -97,6 +97,20 @@ def destroy_totp(user: User) -> None:
     BackupCode.objects.filter(user=user).delete()
 
 
+def cancel_pending_totp(user: User) -> None:
+    """Supprime uniquement une configuration TOTP non confirmée."""
+    device = TotpDevice.objects.filter(user=user).first()
+    if not device:
+        return
+    if device.enabled:
+        raise AccountSecurityError(
+            'Le 2FA est déjà actif. Utilisez la désactivation.',
+            code='totp_already_enabled',
+        )
+    TotpDevice.objects.filter(user=user, enabled=False).delete()
+    BackupCode.objects.filter(user=user).delete()
+
+
 def revoke_other_sessions(user: User, *, exclude_jti: Optional[str] = None) -> None:
     safe_blacklist_user_refresh_tokens(user, exclude_jti=exclude_jti)
 
@@ -320,8 +334,8 @@ def verify_2fa_challenge(token: str, code: str) -> Tuple[User, str]:
     ).update(cancelled_at=timezone.now())
 
     cache.delete(_challenge_key(token))
-    primary = data.get('primary_method') or LoginHistory.METHOD_PASSWORD
-    return user, primary if primary == LoginHistory.METHOD_PASSWORD else method
+    # Enregistrer le 2e facteur réellement utilisé (totp / backup_code), pas le primary.
+    return user, method
 
 
 def create_recovery_request(user: User) -> TwoFactorRecoveryRequest:

@@ -133,6 +133,7 @@ export interface LoginHistoryEntry {
   user_agent?: string;
   success: boolean;
   method?: string;
+  method_label?: string;
 }
 
 export interface PasskeyInfo {
@@ -546,6 +547,18 @@ class UserService {
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
       throw new Error(data.detail || 'Impossible de désactiver le 2FA');
+    }
+    return data.status;
+  }
+
+  async cancelPendingTotp(password: string): Promise<AccountSecurityStatus> {
+    const response = await fetchWithAuth(`${this.BASE_URL}/api/accounts/security/totp/cancel-pending/`, {
+      method: 'POST',
+      body: JSON.stringify({ password }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(data.detail || 'Impossible d\'annuler la configuration 2FA');
     }
     return data.status;
   }

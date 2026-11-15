@@ -591,3 +591,9 @@ class LoginHistorySerializer(serializers.Serializer):
     user_agent = serializers.CharField(required=False, allow_null=True)
     success = serializers.BooleanField()
     method = serializers.CharField(required=False, allow_blank=True)
+    method_label = serializers.SerializerMethodField()
+
+    def get_method_label(self, obj):
+        if hasattr(obj, 'get_method_display'):
+            return obj.get_method_display()
+        return getattr(obj, 'method', '') or ''

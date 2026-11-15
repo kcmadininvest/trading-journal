@@ -1805,6 +1805,7 @@ class DataExportView(APIView):
                         'ip_address': entry.ip_address,
                         'user_agent': entry.user_agent,
                         'success': entry.success,
+                        'method': entry.method,
                     })
             except Exception as e:
                 # Logger l'erreur détaillée côté serveur

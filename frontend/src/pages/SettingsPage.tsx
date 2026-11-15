@@ -925,9 +925,12 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                             }`}>
                               {entry.success ? t('settings:success') : t('settings:failed')}
                             </span>
-                            {entry.method ? (
+                            {(entry.method_label || entry.method) ? (
                               <span className="px-2 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">
-                                {entry.method}
+                                {entry.method_label
+                                  || t(`settings:loginMethod_${entry.method}`, {
+                                    defaultValue: entry.method,
+                                  })}
                               </span>
                             ) : null}
                           </div>

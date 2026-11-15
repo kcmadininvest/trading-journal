@@ -78,6 +78,11 @@ urlpatterns = [
     path('security/totp/confirm/', security_views.TotpConfirmView.as_view(), name='totp_confirm'),
     path('security/totp/disable/', security_views.TotpDisableView.as_view(), name='totp_disable'),
     path(
+        'security/totp/cancel-pending/',
+        security_views.TotpCancelPendingView.as_view(),
+        name='totp_cancel_pending',
+    ),
+    path(
         'security/backup-codes/regenerate/',
         security_views.BackupCodesRegenerateView.as_view(),
         name='backup_codes_regenerate',
