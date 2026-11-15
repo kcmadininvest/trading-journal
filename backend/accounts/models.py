@@ -645,7 +645,7 @@ class BackupCode(models.Model):
         verbose_name_plural = _('Codes de secours')
         db_table = 'accounts_backupcode'
         indexes = [
-            models.Index(fields=['user', 'used_at']),
+            models.Index(fields=['user', 'used_at'], name='acc_backup_user_used_idx'),
         ]
 
     @property
@@ -677,9 +677,9 @@ class TwoFactorRecoveryRequest(models.Model):
         verbose_name_plural = _('Récupérations 2FA')
         db_table = 'accounts_twofactorrecoveryrequest'
         indexes = [
-            models.Index(fields=['token']),
-            models.Index(fields=['cancel_token']),
-            models.Index(fields=['user', '-created_at']),
+            models.Index(fields=['token'], name='acc_2fa_rec_token_idx'),
+            models.Index(fields=['cancel_token'], name='acc_2fa_rec_cancel_idx'),
+            models.Index(fields=['user', '-created_at'], name='acc_2fa_rec_user_idx'),
         ]
 
     def save(self, *args, **kwargs):
