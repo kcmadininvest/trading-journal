@@ -98,6 +98,7 @@ def serve_template_file(request, filename):
         '.jpg': 'image/jpeg',
         '.jpeg': 'image/jpeg',
         '.txt': 'text/plain; charset=utf-8',
+        '.xml': 'application/xml',
     }
     
     ext = file_path.suffix.lower()
@@ -217,11 +218,19 @@ urlpatterns = [
     
     # Fichiers statiques depuis templates (favicon, manifest, logos)
     path('favicon.ico', serve_template_file, {'filename': 'favicon.ico'}, name='favicon_ico'),
+    path('favicon.svg', serve_template_file, {'filename': 'favicon.svg'}, name='favicon_svg'),
     path('favicon-16x16.png', serve_template_file, {'filename': 'favicon-16x16.png'}, name='favicon_16'),
     path('favicon-32x32.png', serve_template_file, {'filename': 'favicon-32x32.png'}, name='favicon_32'),
+    path('favicon-48x48.png', serve_template_file, {'filename': 'favicon-48x48.png'}, name='favicon_48'),
     path('apple-touch-icon.png', serve_template_file, {'filename': 'apple-touch-icon.png'}, name='apple_touch_icon'),
     path('android-chrome-192x192.png', serve_template_file, {'filename': 'android-chrome-192x192.png'}, name='android_chrome_192'),
     path('android-chrome-512x512.png', serve_template_file, {'filename': 'android-chrome-512x512.png'}, name='android_chrome_512'),
+    path('android-chrome-maskable-192x192.png', serve_template_file, {'filename': 'android-chrome-maskable-192x192.png'}, name='android_chrome_maskable_192'),
+    path('android-chrome-maskable-512x512.png', serve_template_file, {'filename': 'android-chrome-maskable-512x512.png'}, name='android_chrome_maskable_512'),
+    path('safari-pinned-tab.svg', serve_template_file, {'filename': 'safari-pinned-tab.svg'}, name='safari_pinned_tab'),
+    path('mstile-150x150.png', serve_template_file, {'filename': 'mstile-150x150.png'}, name='mstile_150'),
+    path('browserconfig.xml', serve_template_file, {'filename': 'browserconfig.xml'}, name='browserconfig'),
+    path('icon-transparent-192x192.png', serve_template_file, {'filename': 'icon-transparent-192x192.png'}, name='icon_transparent_192'),
     path('og-image.png', serve_template_file, {'filename': 'og-image.png'}, name='og_image'),
     path('twitter-card.png', serve_template_file, {'filename': 'twitter-card.png'}, name='twitter_card'),
     path('manifest.json', serve_template_file, {'filename': 'manifest.json'}, name='manifest'),

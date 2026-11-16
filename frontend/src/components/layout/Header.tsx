@@ -89,7 +89,7 @@ const Header: React.FC<HeaderProps> = ({
             title="Retour au tableau de bord"
           >
             <img 
-              src="/android-chrome-512x512.png" 
+              src="/icon-transparent-192x192.png" 
               alt="K&C Trading Journal" 
               className="w-8 h-8 object-contain"
             />
