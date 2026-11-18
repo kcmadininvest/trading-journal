@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="Boussole et coche de validation"><title>KC Trading Journal — Discipline et respect des règles</title>
+<!-- circular navy face, not a square blue frame -->
+<circle cx="512" cy="512" r="500" fill="#000055"/>
+<!-- four cardinal directions, high contrast -->
+<circle cx="512" cy="512" r="441" fill="none" stroke="#FFFFFF" stroke-width="54"/>
+<path d="M480 81 L512 199 L544 81Z M480 943 L512 825 L544 943Z M81 480 L199 512 L81 544Z M943 480 L825 512 L943 544Z" fill="#FFFFFF"/>
+<!-- diagonal two-part compass needle -->
+<path d="M448 415 L766 213 L591 517 L526 539 Z" fill="#16C8F4"/>
+<path d="M448 415 Q485 396 520 412 Q585 447 576 506 Q574 518 556 531 L244 756 L413 449 Q430 422 448 415 Z" fill="#FFFFFF"/>
+<circle cx="512" cy="485" r="73" fill="#FFFFFF"/>
+<circle cx="512" cy="485" r="46" fill="#000055"/>
+<!-- bold separate green adherence check inside compass -->
+<path d="M393 686 L501 792 L745 566" fill="none" stroke="#30D69C" stroke-width="71" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

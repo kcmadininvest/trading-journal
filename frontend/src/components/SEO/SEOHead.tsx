@@ -134,6 +134,14 @@ const SEOHead: React.FC<SEOHeadProps> = ({
     updateMetaTag('og:title', title || 'K&C Trading Journal', true);
     updateMetaTag('og:description', description || '', true);
     updateMetaTag('og:image', `${baseUrl}${image}`, true);
+    updateMetaTag('og:image:type', 'image/png', true);
+    updateMetaTag('og:image:width', '1200', true);
+    updateMetaTag('og:image:height', '630', true);
+    updateMetaTag(
+      'og:image:alt',
+      'K&C Trading Journal — trading journal and performance tracking',
+      true
+    );
     // Forcer og:url à toujours être en HTTPS
     updateMetaTag('og:url', canonicalUrl, true);
     updateMetaTag('og:type', type, true);
@@ -173,6 +181,10 @@ const SEOHead: React.FC<SEOHeadProps> = ({
     // Utiliser twitter-card.png pour Twitter, sinon fallback sur og-image
     const twitterImage = `${baseUrl}/twitter-card.png`;
     updateMetaTag('twitter:image', twitterImage);
+    updateMetaTag(
+      'twitter:image:alt',
+      'K&C Trading Journal — trading journal and performance tracking'
+    );
 
     // Canonical URL - Toujours en HTTPS (bonne pratique SEO)
     updateLinkTag('canonical', canonicalUrl);

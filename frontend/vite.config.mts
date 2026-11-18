@@ -30,6 +30,10 @@ export default defineConfig({
   },
   server: {
     port: 3000,
+    headers: {
+      // Qualif : éviter un cache HTTP agressif sur les assets d'icônes
+      'Cache-Control': 'no-store',
+    },
     watch: {
       ignored: [
         '**/node_modules.cra.backup/**',
