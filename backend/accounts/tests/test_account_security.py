@@ -21,6 +21,7 @@ from accounts.account_security import (
     confirm_totp_setup,
     create_recovery_request,
     destroy_totp,
+    record_login,
     totp_enabled,
 )
 from accounts.account_security_crypto import decrypt_totp_secret
@@ -206,6 +207,66 @@ class AccountSecurityCampaignTests(APITestCase):
         self.assertIn(ACCESS_COOKIE_NAME, ok.cookies)
         history = LoginHistory.objects.filter(user=self.user, success=True).latest('date')
         self.assertEqual(history.method, LoginHistory.METHOD_PASSKEY)
+
+    def test_04b_record_login_survives_invalid_ip(self):
+        """Une IP proxy invalide ne doit pas empêcher l'historique (passkey/2FA)."""
+        before = LoginHistory.objects.filter(user=self.user).count()
+        record_login(
+            self.user,
+            success=True,
+            method=LoginHistory.METHOD_PASSKEY,
+            ip_address='unknown',
+            user_agent='pytest',
+        )
+        record_login(
+            self.user,
+            success=True,
+            method=LoginHistory.METHOD_TOTP,
+            ip_address='%{REMOTE_ADDR}e',
+            user_agent='pytest',
+        )
+        self.assertEqual(LoginHistory.objects.filter(user=self.user).count(), before + 2)
+        latest = list(
+            LoginHistory.objects.filter(user=self.user).order_by('-date', '-id')[:2]
+        )
+        self.assertEqual({row.method for row in latest}, {
+            LoginHistory.METHOD_PASSKEY,
+            LoginHistory.METHOD_TOTP,
+        })
+        self.assertTrue(all(row.ip_address is None for row in latest))
+
+    def test_04c_passkey_history_with_invalid_xff_header(self):
+        cred = self._register_passkey()
+        self.client.cookies.clear()
+        begin = self.client.post(reverse('accounts:login_passkey_begin'), {}, format='json')
+        self.assertEqual(begin.status_code, status.HTTP_200_OK)
+        fake_auth = SimpleNamespace(new_sign_count=3)
+        with patch(
+            'accounts.account_webauthn.verify_authentication_response',
+            return_value=fake_auth,
+        ):
+            ok = self.client.post(
+                reverse('accounts:login_passkey_finish'),
+                {
+                    'challenge_id': begin.data['challenge_id'],
+                    'credential': {
+                        'id': cred.credential_id,
+                        'rawId': cred.credential_id,
+                        'type': 'public-key',
+                        'response': {
+                            'clientDataJSON': '',
+                            'authenticatorData': '',
+                            'signature': '',
+                        },
+                    },
+                },
+                format='json',
+                HTTP_X_FORWARDED_FOR='unknown',
+            )
+        self.assertEqual(ok.status_code, status.HTTP_200_OK)
+        history = LoginHistory.objects.filter(user=self.user, success=True).latest('date')
+        self.assertEqual(history.method, LoginHistory.METHOD_PASSKEY)
+        self.assertIsNone(history.ip_address)
 
     def test_05_passkey_isolation_between_accounts(self):
         cred_a = self._register_passkey(self.user, cred_id=b'user-a-cred')

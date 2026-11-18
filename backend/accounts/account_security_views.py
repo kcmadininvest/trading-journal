@@ -50,10 +50,9 @@ security_logger = logging.getLogger('security')
 
 
 def _client_ip(request) -> Optional[str]:
-    xff = request.META.get('HTTP_X_FORWARDED_FOR')
-    if xff:
-        return xff.split(',')[0].strip()
-    return request.META.get('REMOTE_ADDR')
+    from .utils import client_ip_from_request
+
+    return client_ip_from_request(request)
 
 
 def _user_agent(request) -> str:
