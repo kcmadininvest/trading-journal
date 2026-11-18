@@ -1,16 +1,54 @@
 """
 Utilitaires pour l'application accounts
 """
-from django.core.mail import send_mail, EmailMultiAlternatives
-from django.template.loader import render_to_string
-from django.conf import settings
-from django.utils.html import strip_tags
-from .models import EmailActivationToken, PasswordResetToken, User
-from django.utils import timezone
-from datetime import timedelta
+from __future__ import annotations
+
+import ipaddress
 import logging
+from datetime import timedelta
+from typing import Optional
+
+from django.conf import settings
+from django.core.mail import EmailMultiAlternatives, send_mail
+from django.template.loader import render_to_string
+from django.utils import timezone
+from django.utils.html import strip_tags
+
+from .models import EmailActivationToken, PasswordResetToken, User
 
 logger = logging.getLogger(__name__)
+
+
+def normalize_client_ip(ip: Optional[str]) -> Optional[str]:
+    """
+    Nettoie une IP client pour LoginHistory / audit.
+    Retourne None si la valeur est absente ou non parsable (évite un échec d'insert).
+    """
+    if not ip:
+        return None
+
+    ip_value = str(ip).strip()
+    if not ip_value or ip_value.lower() in {'(null)', 'null', 'none', 'unknown'}:
+        return None
+
+    # IPv4 accompagné d'un port (ex: "192.168.0.1:12345")
+    if ':' in ip_value and ip_value.count(':') == 1 and ip_value.split(':')[0].count('.') == 3:
+        ip_value = ip_value.split(':')[0]
+
+    try:
+        return str(ipaddress.ip_address(ip_value))
+    except ValueError:
+        logger.warning('Adresse IP invalide ignorée: %s', ip_value)
+        return None
+
+
+def client_ip_from_request(request) -> Optional[str]:
+    """IP client depuis X-Forwarded-For (premier hop) ou REMOTE_ADDR, normalisée."""
+    xff = request.META.get('HTTP_X_FORWARDED_FOR')
+    if xff:
+        return normalize_client_ip(xff.split(',')[0].strip())
+    return normalize_client_ip(request.META.get('REMOTE_ADDR'))
+
 
 _GENERIC_PASSWORD_RESET_MESSAGE = (
     'Si un compte existe pour cette adresse, un email de réinitialisation a été envoyé.'

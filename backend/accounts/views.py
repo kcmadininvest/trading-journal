@@ -19,7 +19,6 @@ from rolepermissions.decorators import has_permission_decorator
 from rolepermissions.checkers import has_permission
 from django.core.mail import send_mail
 from typing import cast
-import ipaddress
 import logging
 
 from trades.protected_screenshot_urls import transform_screenshot_url_for_response
@@ -192,35 +191,16 @@ class CustomTokenObtainPairView(TokenObtainPairView):
         return response
     
     def _get_client_ip(self, request):
-        """Récupérer l'adresse IP du client en garantissant un format valide"""
-        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-        if x_forwarded_for:
-            ip = x_forwarded_for.split(',')[0]
-        else:
-            ip = request.META.get('REMOTE_ADDR')
-        return self._normalize_ip(ip)
+        """Récupérer l'adresse IP du client en garantissant un format valide."""
+        from .utils import client_ip_from_request
+
+        return client_ip_from_request(request)
 
     def _normalize_ip(self, ip):
-        """
-        Nettoyer l'adresse IP pour éviter les valeurs invalides comme '(null)' ou les ports ajoutés.
-        Retourne None si aucune IP valide n'est disponible.
-        """
-        if not ip:
-            return None
+        """Compat : délègue au helper partagé."""
+        from .utils import normalize_client_ip
 
-        ip_value = ip.strip()
-        if not ip_value or ip_value.lower() in {'(null)', 'null', 'none', 'unknown'}:
-            return None
-
-        # Gérer les formats IPv4 accompagnés d'un port (ex: "192.168.0.1:12345")
-        if ':' in ip_value and ip_value.count(':') == 1 and ip_value.split(':')[0].count('.') == 3:
-            ip_value = ip_value.split(':')[0]
-
-        try:
-            return str(ipaddress.ip_address(ip_value))
-        except ValueError:
-            logger.warning(f"Adresse IP invalide reçue: {ip_value}. Valeur ignorée.")
-            return None
+        return normalize_client_ip(ip)
 
 
 class UserRegistrationView(APIView):

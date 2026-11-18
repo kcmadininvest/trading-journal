@@ -407,10 +407,14 @@ def record_login(
 ) -> None:
     if not user:
         return
+    from .utils import normalize_client_ip
+
+    # Ne jamais perdre la ligne d'historique à cause d'une IP proxy invalide.
+    safe_ip = normalize_client_ip(ip_address)
     try:
         LoginHistory.objects.create(
             user=user,
-            ip_address=ip_address,
+            ip_address=safe_ip,
             user_agent=user_agent or '',
             success=success,
             method=method or LoginHistory.METHOD_UNKNOWN,
