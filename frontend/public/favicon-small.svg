@@ -1,9 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><title>KC Trading Journal — favicon</title><circle cx="32" cy="32" r="31.5" fill="#000055"/>
-<circle cx="32" cy="32" r="27.8" fill="none" stroke="#FFFFFF" stroke-width="4.2"/>
-<path d="M31 3 L32 9 L33 3 Z M31 61 L32 55 L33 61 Z" fill="#FFFFFF"/>
-<path d="M26 29 L48 14 L37 36 L16 49Z" fill="#16C8F4"/>
-<path d="M26 29 L31 34 L16 49 Z" fill="#FFFFFF"/>
-<circle cx="31.5" cy="32.5" r="4" fill="#FFFFFF"/>
-<circle cx="31.5" cy="32.5" r="2" fill="#000055"/>
-<path d="M23 44 L30 50 L48 31" fill="none" stroke="#30D69C" stroke-width="6.3" stroke-linecap="round" stroke-linejoin="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128"><title>KC Trading Journal — favicon</title>
+<!-- exact same right-facing zandoli silhouette, with a wider white throat curve -->
+<path fill="#127A1F" d="M18 111 C6 89 5 65 19 48 C31 33 46 29 59 19 C69 9 78 7 88 13 C100 19 112 13 119 23 Q124 31 114 37 Q96 44 80 51 C55 65 36 86 24 116Z"/>
+<path fill="#A7F500" d="M19 107 C9 86 10 63 23 47 Q35 35 60 19 C72 9 79 10 88 15 Q102 22 116 21 Q124 28 115 34 C99 41 79 47 62 60 Q36 81 24 116Z"/>
+<!-- throat is an actual filled white shape with dark-blue border, not a thin line -->
+<path fill="#FFFFFF" stroke="#071939" stroke-width="2.8" stroke-linejoin="round" d="M22 115 C22 89 39 73 59 60 Q85 43 117 35 C110 46 91 54 75 63 C51 77 33 91 29 115 Q25 119 22 115 Z"/>
+<path fill="#071939" d="M57 31 Q64 26 68 19 C71 13 77 11 84 13 Q93 16 97 21 L107 22 L94 24 Q89 35 78 36 C68 36 65 31 64 27Z"/>
+<circle cx="80" cy="23" r="10" fill="#071039"/><circle cx="83" cy="20" r="3.8" fill="#FFFFFF"/>
+<circle cx="112" cy="28" r="2" fill="#071939"/>
 </svg>

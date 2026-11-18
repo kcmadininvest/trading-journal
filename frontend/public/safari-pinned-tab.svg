@@ -1,6 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024"><title>KC Trading Journal Safari mask</title>
-<circle cx="512" cy="512" r="441" fill="none" stroke="#000" stroke-width="67"/>
-<path d="M480 81 L512 199 L544 81Z M480 943 L512 825 L544 943Z M81 480 L199 512 L81 544Z M943 480 L825 512 L943 544Z" fill="#000"/>
-<path d="M448 415 L766 213 L591 517 L526 539Z M448 415 L556 531 L244 756 L413 449Z" fill="#000"/>
-<path d="M393 686 L501 792 L745 566" fill="none" stroke="#000" stroke-width="82" stroke-linecap="round" stroke-linejoin="round"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128"><title>Zandoli monochrome Safari</title><path fill="#000" d="M20 97 C2 61 22 34 51 22 C63 16 67 4 83 7 C91 8 99 14 106 13 C117 11 126 22 115 31 C93 40 79 41 62 55 C39 74 27 88 23 112 C21 82 47 62 73 49 Q96 36 115 31 Q107 40 79 53 C50 70 29 90 23 111Z"/></svg>
