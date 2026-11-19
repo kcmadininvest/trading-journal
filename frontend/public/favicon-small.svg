@@ -1,10 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128"><title>KC Trading Journal — favicon</title>
-<!-- exact same right-facing zandoli silhouette, with a wider white throat curve -->
-<path fill="#127A1F" d="M18 111 C6 89 5 65 19 48 C31 33 46 29 59 19 C69 9 78 7 88 13 C100 19 112 13 119 23 Q124 31 114 37 Q96 44 80 51 C55 65 36 86 24 116Z"/>
-<path fill="#A7F500" d="M19 107 C9 86 10 63 23 47 Q35 35 60 19 C72 9 79 10 88 15 Q102 22 116 21 Q124 28 115 34 C99 41 79 47 62 60 Q36 81 24 116Z"/>
-<!-- throat is an actual filled white shape with dark-blue border, not a thin line -->
-<path fill="#FFFFFF" stroke="#071939" stroke-width="2.8" stroke-linejoin="round" d="M22 115 C22 89 39 73 59 60 Q85 43 117 35 C110 46 91 54 75 63 C51 77 33 91 29 115 Q25 119 22 115 Z"/>
-<path fill="#071939" d="M57 31 Q64 26 68 19 C71 13 77 11 84 13 Q93 16 97 21 L107 22 L94 24 Q89 35 78 36 C68 36 65 31 64 27Z"/>
-<circle cx="80" cy="23" r="10" fill="#071039"/><circle cx="83" cy="20" r="3.8" fill="#FFFFFF"/>
-<circle cx="112" cy="28" r="2" fill="#071939"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1100" role="img" aria-label="KC Trading Journal Zandoli favicon"><path d="M260 1008 C170 944 117 841 143 696 C165 542 252 451 408 375 C510 325 558 265 642 245 C718 222 772 290 844 306 C947 331 1035 308 1071 380 C1092 421 1078 449 1035 474 C985 506 892 516 784 549 C609 600 465 668 373 777 C294 868 229 954 260 1008Z" fill="#8BF000"/><path d="M260 1008 C206 945 221 838 319 726 C445 583 645 534 834 500 C960 475 1044 450 1079 432 C1058 487 953 528 845 565 C647 634 489 706 379 834 C300 922 283 968 260 1008Z" fill="#FFD719"/><path d="M262 1007 C226 944 241 843 327 726 C467 567 669 533 833 501 C947 480 1040 449 1075 433 C1038 463 944 483 833 519 C637 575 458 668 346 794 C278 880 254 965 262 1007Z" fill="#00621A"/><circle cx="711" cy="353" r="67" fill="#001239"/><circle cx="713" cy="332" r="24" fill="white"/><ellipse cx="1002" cy="383" rx="18" ry="10" transform="rotate(21 1002 383)" fill="#001239"/></svg>
