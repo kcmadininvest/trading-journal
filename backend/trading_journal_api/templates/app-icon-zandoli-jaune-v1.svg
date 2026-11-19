@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1100" role="img" aria-label="Zandoli vert à cou jaune — KC Trading Journal">
+<defs><linearGradient id="leaf" x1="0" y1="0" x2="0.75" y2="1"><stop stop-color="#B5FF0B"/><stop offset="0.56" stop-color="#8FF000"/><stop offset="1" stop-color="#39CC00"/></linearGradient><linearGradient id="throat" x1="0" y1="0" x2="0.8" y2="1"><stop stop-color="#FFF23E"/><stop offset="0.6" stop-color="#FFE000"/><stop offset="1" stop-color="#F9B900"/></linearGradient></defs>
+<!-- Silhouette of the original approved green zandoli, reconstructed as real SVG geometry -->
+<path d="M260 1008 C170 944 117 841 143 696 C165 542 252 451 408 375 C510 325 558 265 642 245 C718 222 772 290 844 306 C947 331 1035 308 1071 380 C1092 421 1078 449 1035 474 C985 506 892 516 784 549 C609 600 465 668 373 777 C294 868 229 954 260 1008 Z" fill="url(#leaf)"/>
+<!-- top highlights -->
+<path d="M194 589 C250 444 386 393 495 337 C580 292 610 247 666 251 C744 241 780 292 828 307 C755 300 719 273 660 278 C602 281 569 339 489 370 C353 432 252 477 194 589Z" fill="#D8FF5A"/>
+<path d="M246 564 C314 438 421 408 513 358 C544 346 561 336 593 336 C512 393 377 419 246 564Z" fill="#C9FF70" opacity=".9"/>
+<!-- deep green flank and mouth separation -->
+<path d="M260 1008 C189 955 171 866 195 771 C226 654 355 573 514 528 C635 492 773 481 929 462 C1011 453 1059 439 1080 421 C1051 467 982 484 899 503 C740 541 569 591 440 693 C333 780 238 937 260 1008Z" fill="#06721A"/>
+<!-- Broad bright yellow throat clearly visible at small sizes -->
+<path d="M261 1007 C225 950 256 856 327 774 C455 632 640 574 822 535 C944 507 1034 472 1077 434 C1055 495 933 546 838 574 C642 639 513 710 398 829 C310 923 288 974 261 1007Z" fill="url(#throat)"/>
+<path d="M272 993 C245 934 280 859 344 785 C484 634 679 571 861 523 C957 497 1030 467 1067 440 C1018 501 924 531 824 560 C611 627 444 744 350 867 C301 928 287 969 272 993Z" fill="#FFE935" opacity=".68"/>
+<!-- curved shadow above yellow -->
+<path d="M260 1007 C214 925 242 821 327 720 C453 568 680 536 841 503 C970 479 1040 452 1075 431 C1031 471 929 490 825 521 C614 574 454 664 346 790 C278 881 256 961 260 1007Z" fill="#006318"/>
+<!-- dark emerald cheek detail -->
+<path d="M374 634 C419 565 481 541 540 524 C465 568 415 609 374 634Z" fill="#015D1D"/>
+<path d="M490 430 C555 385 617 375 663 387 C624 383 576 396 490 430Z" fill="#258C04"/>
+<!-- eye, highlights and nose -->
+<path d="M635 333 Q657 275 709 284 Q774 286 791 344 Q803 399 753 428 Q695 454 644 420 Q613 384 635 333Z" fill="#000C32"/>
+<ellipse cx="709" cy="337" rx="24" ry="25" fill="#FFFFFF"/>
+<ellipse cx="1002" cy="384" rx="19" ry="10" transform="rotate(21 1002 384)" fill="#00143A"/>
+</svg>
