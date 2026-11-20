@@ -10,7 +10,6 @@
   "allMonths": "Todos os Meses",
   "reset": "Redefinir",
   "period": "Período",
-  "noData": "Nenhum dado disponível",
   "charts": {
     "hourlyPerformanceScatter": {
       "title": "Performance par heure (Nuage de points)",
@@ -29,11 +28,11 @@
       "q1": "Q1 (25%)",
       "min": "Mínimo",
       "trades": "Operações",
+      "outliers": "Valores excepcionais",
+      "outliersMore": "  ... e mais {{count}}",
       "boxDescription": "Caixa: 50% central das operações (Q1 a Q3)",
       "medianDescription": "Linha central: Mediana (valor médio)",
       "whiskersDescription": "Bigodes: Intervalo de valores normais",
-      "outliers": "Valores excepcionais",
-      "outliersMore": "  ... e mais {{count}}",
       "outliersDescription": "Pontos: Valores excepcionais (azul = ganhos, rosa = perdas)",
       "outliersClippedDescription": "Triângulos na borda do eixo: valores fora da escala (ver tooltip)"
     },
@@ -44,13 +43,43 @@
       "yAxis": "PnL total",
       "regressionLine": "Linha de regressão",
       "densityLegend": "Densidade (dias)",
+      "columnDayCount": "{{formattedCount}} d.",
       "hexbinTooltip": {
-        "days_one": "{{count}} dia",
-        "days_other": "{{count}} dias",
+        "days_one": "{{formattedCount}} dia",
+        "days_other": "{{formattedCount}} dias",
         "avgTrades": "~{{value}} operações em média",
         "avgPnl": "PnL médio: {{value}}"
       },
+      "densityTooltip": {
+        "tradesPerDay": "{{formattedCount}} trades nesse dia"
+      },
       "rSquaredTooltip": "O coeficiente de determinação (R²) mede a força da correlação entre o número de operações e o PnL. Os hexágonos mostram a densidade dos dias de trading (cor mais intensa = mais dias na zona). A linha de regressão mostra a tendência geral."
+    },
+    "durationPerformance": {
+      "title": "Desempenho por duração da operação",
+      "tooltip": "P&L médio e Win Rate por faixa de duração (mesmos intervalos da distribuição de duração do dashboard). Veja rapidamente quais tempos de permanência são mais lucrativos e consistentes.",
+      "avgPnl": "P&L médio ({{symbol}})",
+      "winRate": "Win Rate (%)",
+      "tradeCount": "Número de operações: {{countDisplay}}"
+    },
+    "sizePerformance": {
+      "title": "Desempenho por tamanho de posição",
+      "tooltip": "P&L médio e Win Rate por tamanho de posição. Veja rapidamente quais tamanhos são mais lucrativos e consistentes.",
+      "avgPnl": "P&L médio ({{symbol}})",
+      "winRate": "Win Rate (%)",
+      "tradeCount": "Número de operações: {{countDisplay}}"
+    },
+    "featureCorrelationMatrix": {
+      "title": "Matriz de Correlação de Features",
+      "tooltip": "Mede a correlação linear entre variáveis-chave (P/L, tamanho, duração, hora de entrada, direção). Valores próximos de ±1 indicam relações fortes.",
+      "features": {
+        "pnl": "P/L líquido",
+        "size": "Tamanho da posição",
+        "duration": "Duração",
+        "hour": "Hora de entrada",
+        "direction": "Direção"
+      },
+      "description": "Os valores do coeficiente variam de -1 (relação inversa forte) a +1 (relação direta forte). Valores próximos de 0 indicam pouca ou nenhuma correlação linear."
     },
     "drawdown": {
       "title": "Drawdown Diário",
@@ -72,11 +101,17 @@
       "losses": "Perdas",
       "neutral": "Neutro",
       "gains": "Ganhos",
-      "tooltip": "Este mapa de calor mostra o seu desempenho (PnL) por dia da semana e por hora. Cada célula representa o PnL total para uma combinação dia/hora. Cores azuis indicam ganhos, cores rosa indicam perdas. Quanto mais intensa a cor, maior o valor. Apenas horas com dados são exibidas, com uma hora de contexto antes e depois."
+      "tooltip": "Este mapa de calor mostra o seu desempenho (PnL) por dia da semana e por hora. Cada célula representa o PnL total para uma combinação dia/hora. Cores azuis indicam ganhos, cores rosa indicam perdas. Quanto mais intensa a cor, maior o valor. Apenas horas com dados são exibidas, com uma hora de contexto antes e depois.",
+      "summary": {
+        "bestSlot": "Melhor slot",
+        "worstSlot": "Pior slot",
+        "activeSlots": "Slots ativos"
+      }
     },
     "pnlDistribution": {
       "title": "Distribuição de PnL",
       "label": "Porcentagem de operações",
+      "xAxis": "Faixa de P/L",
       "yAxis": "Porcentagem de operações",
       "range": "P&L: de {{start}} a {{end}}",
       "onTotal": "de {{total}} total",
@@ -195,7 +230,8 @@
     "riskCapital": "Risco e Capital",
     "projection": "Projeção",
     "timeAnalysis": "Análise Temporal",
-    "patterns": "Correlações e Padrões"
+    "patterns": "Correlações e Padrões",
+    "behavior": "Comportamento"
   },
   "monteCarlo": {
     "title": "Projeção para meta de saldo",
@@ -249,13 +285,34 @@
       "title": "Síntese",
       "labels": {
         "main": "Conclusão principal",
-        "timeline": "Faixa realista",
-        "typical": "Cenário típico",
-        "assumptions": "Hipóteses",
-        "history": "Histórico",
         "gap": "Distância a percorrer",
         "horizon": "Horizonte simulado",
-        "milestone": "Próximo marco"
+        "typical": "Cenário típico",
+        "timeline": "Faixa realista",
+        "milestone": "Próximo marco",
+        "assumptions": "Hipóteses",
+        "history": "Histórico"
+      },
+      "gap": {
+        "remaining": "Faltam {{gap}} para atingir {{target}} (saldo atual {{current}})."
+      },
+      "horizon": {
+        "failure": "{{failureRate}} % das simulações não atingem {{target}} no horizonte de {{maxDays}} dias de trading simulados."
+      },
+      "milestone": {
+        "next": "{{balance}} em {{days}} ({{weeks}}) — cerca de {{pct}} % do caminho até à meta."
+      },
+      "typical": {
+        "withDuration": "Prazo mediano {{days}} (cerca de {{weeks}}) — cenário central entre rápido e prudente.",
+        "insufficient": "O prazo mediano não está disponível com os dados atuais."
+      },
+      "assumptions": {
+        "base": "Ganho médio {{mu}}/dia, volatilidade {{sigma}}, ~{{daysPerWeek}} dias de trading/semana.",
+        "adjusted": "μ e σ ajustados ao seu tamanho alvo (×{{ratio}})."
+      },
+      "history": {
+        "standard": "{{dayCount}} dias de trading incluídos do histórico completo da conta.",
+        "limited": "Apenas {{dayCount}} dias de trading (mínimo {{minDays}} para projetar); interprete com cautela."
       },
       "dateEarly": "início de {{month}}",
       "dateLate": "fim de {{month}}",
@@ -278,27 +335,6 @@
         "patient": "A variabilidade entre cenários otimista e prudente é notável — avance no seu ritmo sem forçar entradas.",
         "cautious": "A probabilidade continua modesta: priorize a qualidade de execução em vez de acelerar o ritmo.",
         "steady": "Mantenha a regularidade na sua rotina de trading para convergir para esta faixa."
-      },
-      "typical": {
-        "withDuration": "Prazo mediano {{days}} (cerca de {{weeks}}) — cenário central entre rápido e prudente.",
-        "insufficient": "O prazo mediano não está disponível com os dados atuais."
-      },
-      "assumptions": {
-        "base": "Ganho médio {{mu}}/dia, volatilidade {{sigma}}, ~{{daysPerWeek}} dias de trading/semana.",
-        "adjusted": "μ e σ ajustados ao seu tamanho alvo (×{{ratio}})."
-      },
-      "history": {
-        "standard": "{{dayCount}} dias de trading incluídos do histórico completo da conta.",
-        "limited": "Apenas {{dayCount}} dias de trading (mínimo {{minDays}} para projetar); interprete com cautela."
-      },
-      "gap": {
-        "remaining": "Faltam {{gap}} para atingir {{target}} (saldo atual {{current}})."
-      },
-      "horizon": {
-        "failure": "{{failureRate}} % das simulações não atingem {{target}} no horizonte de {{maxDays}} dias de trading simulados."
-      },
-      "milestone": {
-        "next": "{{balance}} em {{days}} ({{weeks}}) — cerca de {{pct}} % do caminho até à meta."
       }
     },
     "sizing": {
@@ -306,8 +342,8 @@
       "sectionTeaser": "ex. 1 lote MNQ a 2 $/ponto — clique aqui para adaptar μ e σ ao seu tamanho alvo",
       "sectionActive": "Ajuste ativo — edite lotes e $/ponto abaixo",
       "sectionCollapsed": "{{lots}} lote × {{pointValue}} $/ponto — exposição {{exposure}} $/ponto",
-      "expandDetails": "Expandir definições",
-      "collapseDetails": "Recolher definições",
+      "expandDetails": "Expandir configurações",
+      "collapseDetails": "Recolher configurações",
       "optionalBadge": "Opcional",
       "toggleOn": "Clique para ativar",
       "toggleOff": "Clique para desativar",
@@ -324,5 +360,579 @@
         "insufficientExposureData": "Trades com exposição conhecida insuficientes (mínimo 5)."
       }
     }
+  },
+  "postLossSizing": {
+    "title": "Tamanho após uma perda",
+    "subtitle": "Após cada trade perdedor: a exposição do seguinte (contratos × valor do ponto) foi maior, igual ou menor? Micro e e-mini da mesma família (ex.: NQ / MNQ) são comparados de forma justa.",
+    "noData": "Não há casos suficientes de perda e trade seguinte no período selecionado.",
+    "sampleSize": "Casos analisados",
+    "sampleSizeHint": "Período e filtros selecionados",
+    "sampleSizeTooltip": "Número de perdas seguidos imediatamente por outro trade, no período escolhido no topo da página (conta, datas, estratégia). Não é uma janela móvel: cada perda conta no máximo uma vez nesse intervalo.",
+    "medianLookback": "Mediana dos últimos {{count}} trades",
+    "vsLosingTrade": "Vs trade perdedor",
+    "vsLosingTradeTooltip": "Exposição do trade seguinte (contratos × valor do ponto) vs o trade perdedor, mesmo ativo subjacente (micro e e-mini agrupados).",
+    "vsMedian": "Vs mediana recente",
+    "vsMedianTooltip": "Exposição do trade seguinte vs a mediana dos seus últimos {{count}} trades da mesma família de contrato na conta.",
+    "skippedCrossInstrument": "{{count}} caso(s) ignorado(s): instrumento diferente após uma perda.",
+    "skippedUnknownContract": "{{count}} caso(s) ignorado(s): contrato não reconhecido.",
+    "larger": "Maior",
+    "equal": "Igual",
+    "smaller": "Menor",
+    "kpiSummaryTitle": "Resumo",
+    "largerPctKpi": "Tamanho aumentado após perda",
+    "largerPctKpiTooltip": "Parte dos trades após uma perda em que o tamanho supera o do trade perdedor.",
+    "avgPnlAfterLarger": "PnL médio (tamanho ↑)",
+    "avgPnlAfterLargerTooltip": "Quando você aumenta o tamanho após uma perda. Positivo: o próximo trade gera lucro em média. Negativo: o próximo trade custa dinheiro em média — revenge trading típico.",
+    "avgPnlTooltip": "PnL médio do trade após uma perda (esta categoria de tamanho). Positivo: lucrativo em média. Negativo: perdedor em média.",
+    "winRateAfterLarger": "Win Rate (tamanho ↑)",
+    "recommendation": "Faça uma pausa após uma perda. Espere pelo menos 30 minutos antes da próxima operação.",
+    "count": "Ocorrências",
+    "pct": "Parte",
+    "totalPnl": "PnL total",
+    "avgPnl": "PnL médio",
+    "winRate": "Win Rate",
+    "viewInAnalytics": "Ver detalhes em Trading → Comportamento",
+    "interpretationScale": {
+      "evaluationColumn": "Leitura",
+      "title": "Como ler os percentuais",
+      "intro": "Cada parte mostra a proporção de casos após uma perda. Convém que « Maior » seja o mais baixo possível.",
+      "kpiHint": "Objetivo: manter este percentual o mais baixo possível.",
+      "kpiThresholds": "Referências: ≤ {{good}}% favorável · ≤ {{neutral}}% neutro · acima, a evitar.",
+      "kpiVerdict": {
+        "good": "Boa disciplina: raramente aumenta o tamanho após uma perda.",
+        "neutral": "A observar: tendência moderada a aumentar o tamanho após uma perda.",
+        "bad": "Comportamento de risco: aumentos frequentes (possível revenge trading)."
+      },
+      "limitedSample": "Amostra limitada ({{count}} casos): interpretar com cautela.",
+      "quality": {
+        "good": "Favorável",
+        "neutral": "Neutro",
+        "bad": "A evitar"
+      },
+      "largerDesc": "Tamanho maior: sinal típico de revenge trading e risco emocional.",
+      "equalDesc": "Mesmo tamanho: disciplina moderada; monitore a frequência de trades.",
+      "smallerDesc": "Tamanho menor: bom reflexo de gestão de risco após uma perda."
+    }
+  },
+  "postWinSizing": {
+    "title": "Tamanho após um ganho",
+    "subtitle": "Após cada trade vencedor: a exposição do seguinte (contratos × valor do ponto) foi maior, igual ou menor? Micro e e-mini da mesma família (ex.: NQ / MNQ) são comparados de forma justa.",
+    "noData": "Não há casos suficientes de ganho e trade seguinte no período selecionado.",
+    "sampleSize": "Casos analisados",
+    "sampleSizeHint": "Período e filtros selecionados",
+    "sampleSizeTooltip": "Número de ganhos seguidos imediatamente por outro trade, no período escolhido no topo da página (conta, datas, estratégia). Não é uma janela móvel: cada ganho conta no máximo uma vez nesse intervalo.",
+    "medianLookback": "Mediana dos últimos {{count}} trades",
+    "vsWinningTrade": "Vs trade vencedor",
+    "vsWinningTradeTooltip": "Exposição do trade seguinte (contratos × valor do ponto) vs o trade vencedor, mesmo ativo subjacente (micro e e-mini agrupados).",
+    "vsMedian": "Vs mediana recente",
+    "vsMedianTooltip": "Exposição do trade seguinte vs a mediana dos seus últimos {{count}} trades da mesma família de contrato na conta.",
+    "skippedCrossInstrument": "{{count}} caso(s) ignorado(s): instrumento diferente após um ganho.",
+    "skippedUnknownContract": "{{count}} caso(s) ignorado(s): contrato não reconhecido.",
+    "larger": "Maior",
+    "equal": "Igual",
+    "smaller": "Menor",
+    "kpiSummaryTitle": "Resumo",
+    "largerPctKpi": "Tamanho aumentado após ganho",
+    "largerPctKpiTooltip": "Parte dos trades após um ganho em que o tamanho supera o do trade vencedor.",
+    "avgPnlAfterLarger": "PnL médio (tamanho ↑)",
+    "avgPnlAfterLargerTooltip": "Quando você aumenta o tamanho após um ganho. Positivo: o próximo trade gera lucro em média. Negativo: o próximo trade custa dinheiro em média — euforia ou excesso de confiança que faz você perder.",
+    "avgPnlTooltip": "PnL médio do trade após um ganho (esta categoria de tamanho). Positivo: lucrativo em média. Negativo: perdedor em média.",
+    "winRateAfterLarger": "Win Rate (tamanho ↑)",
+    "recommendation": "Após um ganho, mantenha um tamanho alinhado ao seu plano. Evite aumentar por euforia.",
+    "count": "Ocorrências",
+    "pct": "Parte",
+    "totalPnl": "PnL total",
+    "avgPnl": "PnL médio",
+    "winRate": "Win Rate",
+    "viewInAnalytics": "Ver detalhes em Trading → Comportamento",
+    "interpretationScale": {
+      "evaluationColumn": "Leitura",
+      "title": "Como ler os percentuais",
+      "intro": "Cada parte mostra a proporção de casos após um ganho. Convém que « Maior » seja o mais baixo possível.",
+      "kpiHint": "Objetivo: manter este percentual o mais baixo possível.",
+      "kpiThresholds": "Referências: ≤ {{good}}% favorável · ≤ {{neutral}}% neutro · acima, a evitar.",
+      "kpiVerdict": {
+        "good": "Boa disciplina: raramente aumenta o tamanho após um ganho.",
+        "neutral": "A observar: tendência moderada a aumentar o tamanho após um ganho.",
+        "bad": "Comportamento de risco: aumentos frequentes (possível excesso de confiança)."
+      },
+      "limitedSample": "Amostra limitada ({{count}} casos): interpretar com cautela.",
+      "quality": {
+        "good": "Favorável",
+        "neutral": "Neutro",
+        "bad": "A evitar"
+      },
+      "largerDesc": "Tamanho maior: sinal típico de excesso de confiança e risco excessivo após uma sequência vencedora.",
+      "equalDesc": "Mesmo tamanho: boa disciplina; monitore a frequência de trades.",
+      "smallerDesc": "Tamanho menor: bom reflexo de gestão de risco após um ganho."
+    }
+  },
+  "multiCurrency": {
+    "noConversionWarning": "Várias moedas ativas sem conversão FX: os valores agregados estão ocultos. Selecione uma única conta ou revise a moeda padrão em Configurações.",
+    "partialTabNote": "Sem conversão FX: percentuais, contagens e distribuições de tamanho continuam visíveis; apenas valores agregados (P/L médio) ficam ocultos."
+  },
+  "behaviorNarrative": {
+    "tabTitle": "Resumo",
+    "ui": {
+      "kpiWinRate": "Win Rate",
+      "kpiProfitFactor": "Profit Factor",
+      "kpiSharpe": "Sharpe (anualizado)",
+      "alertRevenge": "Revenge trading",
+      "alertSizing": "Sizing invertido",
+      "toneBadge": {
+        "excellent": "Período excelente",
+        "positive": "Boa dinâmica",
+        "mixed": "Período misto",
+        "challenging": "Período exigente"
+      }
+    },
+    "intro": {
+      "heading": "Visão geral",
+      "tradeCount": "{{count}} operações analisadas no período selecionado.",
+      "excellent": "Período excelente: suas métricas e disciplina confirmam um edge real. Parabéns por esse nível de constância.",
+      "positive": "Boa dinâmica: você tem bases sólidas neste período. Continue capitalizando o que funciona.",
+      "mixed": "Período misto: pontos fortes a aproveitar e alguns hábitos a ajustar. Manter a lucidez o mantém no caminho certo.",
+      "challenging": "Período exigente — refoque na disciplina e no tamanho da posição. O progresso costuma começar por aí."
+    },
+    "insufficientData": {
+      "title": "Resumo",
+      "body": "Não há operações suficientes no período selecionado (mínimo {{min}}) para gerar um resumo comportamental.",
+      "partial": "Os dados disponíveis ainda não permitem um resumo detalhado neste período."
+    },
+    "strengths": {
+      "title": {
+        "excellent": "Parabéns — seu edge é sólido",
+        "positive": "O que está funcionando bem",
+        "mixed": "Seus pontos fortes no período",
+        "challenging": "O que convém reforçar"
+      },
+      "profitFactorGood": "Seu Profit Factor de {{profitFactor}} é excelente: cada dólar perdido gera quase {{profitFactor}} dólares brutos ganhos.",
+      "profitFactorAverage": "Seu Profit Factor de {{profitFactor}} mostra um edge positivo: consolide o que funciona e elimine os setups mais caros.",
+      "profitFactorPoor": "Seu Profit Factor de {{profitFactor}} está apertado neste período — priorize qualidade de execução e tamanho antes do volume.",
+      "sharpeGood": "Seu Sharpe anualizado de {{sharpe}} é bom: retorno sólido para o risco assumido.",
+      "sharpeExcellent": "Seu Sharpe anualizado de {{sharpe}} é excepcional: parabéns por essa regularidade.",
+      "sharpeAverage": "Seu Sharpe anualizado de {{sharpe}} é razoável — suavizar a volatilidade ainda pode melhorar a constância.",
+      "sharpePoor": "Seu Sharpe anualizado de {{sharpe}} reflete um período instável — priorize risco regular operação a operação.",
+      "winRateGood": "Seu Win Rate de {{winRate}}% é sólido no período.",
+      "winRateAverage": "Seu Win Rate de {{winRate}}% está numa zona intermediária — a qualidade de execução pode fazer a diferença.",
+      "winRatePoor": "Seu Win Rate de {{winRate}}% é baixo — priorize seletividade e aderência ao plano.",
+      "expectancyPositive": "Sua expectativa por operação é positiva ({{expectancy}}): você lucra em média por trade.",
+      "expectancyNegative": "Sua expectativa por operação é negativa ({{expectancy}}) neste período — aperte o risco.",
+      "streaks": "Sua sequência máxima de {{maxWins}} operações vencedoras seguidas, com apenas {{maxLosses}} perdedoras seguidas, demonstra consistência real.",
+      "encourageNoMetrics": "Os números globais são exigentes neste período, mas cada sessão é um recomeço: ancore-se no plano e no tamanho da posição."
+    },
+    "risk": {
+      "title": {
+        "celebrate": "Risco sob controle",
+        "excellent": "Resiliência",
+        "positive": "Perfil de risco",
+        "mixed": "Risco e Drawdown",
+        "challenging": "Risco a observar"
+      },
+      "drawdownHigh": "Max Drawdown {{drawdownPct}}% ({{drawdownAmount}}) — proteja o capital antes de aumentar o tamanho.",
+      "drawdownModerate": "Max Drawdown {{drawdownPct}}% ({{drawdownAmount}}): manejável se você seguir o plano.",
+      "recoveryGood": "Fator de recuperação {{recovery}}: você se recupera com eficiência após as quedas.",
+      "recoveryLow": "Fator de recuperação {{recovery}}: as perdas demoram mais para serem recuperadas."
+    },
+    "rhythm": {
+      "title": {
+        "excellent": "Ritmo diário",
+        "positive": "Ritmo de trading",
+        "mixed": "Ritmo do período",
+        "challenging": "Ritmo a acalmar"
+      },
+      "overtrading": "Cerca de {{count}} operações por dia ativo em média — acima de 10, a qualidade das decisões costuma cair.",
+      "healthyPace": "Ritmo saudável: cerca de {{count}} operações por dia ativo (3–5 é ideal para day trading).",
+      "worstDay": "Seu dia mais difícil: {{day}} ({{pnl}}).",
+      "worstDayNoMoney": "Dia mais difícil observado: {{day}} (valores ocultos — várias moedas)."
+    },
+    "habits": {
+      "title": "Hábitos pós-operação",
+      "postLoss": {
+        "larger": "Após uma perda, você costuma aumentar o tamanho — veja a aba « {{tab}} » para detalhes.",
+        "equal": "Após uma perda, você mantém o tamanho na maior parte — bom hábito (veja « {{tab}} »).",
+        "smaller": "Após uma perda, você costuma reduzir o tamanho — disciplina prudente (veja « {{tab}} »).",
+        "insufficient": "Amostra insuficiente pós-perda para resumir o hábito de sizing."
+      },
+      "postWin": {
+        "larger": "Após um ganho, você costuma aumentar o tamanho — cuidado com o excesso de confiança (aba « {{tab}} »).",
+        "equal": "Após um ganho, você mantém o tamanho — boa disciplina (aba « {{tab}} »).",
+        "smaller": "Após um ganho, você costuma reduzir o tamanho (aba « {{tab}} »)."
+      }
+    },
+    "process": {
+      "title": {
+        "excellent": "Execução do plano",
+        "positive": "Processo",
+        "mixed": "Plano e direção",
+        "challenging": "Processo a reforçar"
+      },
+      "planRespectGood": "Em {{comparableCount}} operações vencedoras fora de break-even comparáveis (R/R planejado e real), {{rate}}% alcançaram R/R real ≥ R/R planejado.",
+      "planRespectLow": "Em {{comparableCount}} operações vencedoras fora de break-even comparáveis (R/R planejado e real), apenas {{rate}}% cumpriram o R/R planejado — muitas vezes saída antecipada ou stop mais amplo que o planejado.",
+      "rrGap": "R/R planejado {{planned}} vs realizado {{actual}} em média (realizado em vencedoras excluindo BE).",
+      "biasLong": "Forte viés long ({{longPct}}% long / {{shortPct}}% short).",
+      "biasShort": "Forte viés short ({{longPct}}% long / {{shortPct}}% short)."
+    },
+    "alerts": {
+      "title": {
+        "warnings": "Pontos de vigilância",
+        "warningsChallenging": "Prioridades de melhoria",
+        "cleanCelebrate": "Disciplina: você mantém o rumo",
+        "clean": {
+          "excellent": "Disciplina exemplar",
+          "positive": "Boa disciplina comportamental",
+          "mixed": "Disciplina globalmente correta",
+          "challenging": "Disciplina a preservar"
+        }
+      },
+      "revengeEncourage": "Após um dia perdedor, você passa de {{afterWin}} a {{afterLoss}} operações em média no dia seguinte — um reflexo a vigiar para proteger o capital.",
+      "revengeWorstMonth": "Isso pode explicar em parte as perdas concentradas em {{month}}.",
+      "sizingEncourage": "Suas posições perdedoras são em média {{pct}}% maiores que as vencedoras — tente manter a mesma convicção independentemente do resultado esperado.",
+      "congratulateClean": "Parabéns: sem sinais maiores de revenge trading nem sizing invertido neste período. Sua disciplina se mantém.",
+      "neutralClean": "Sem alertas maiores de frequência ou sizing — mantenha a prudência nos dias difíceis.",
+      "none": "Sem alertas importantes de frequência ou sizing neste período."
+    },
+    "timeWindows": {
+      "title": {
+        "celebrate": "Seus horários vencedores",
+        "excellent": "Quando você rende melhor",
+        "positive": "Suas janelas favoráveis",
+        "mixed": "Janelas horárias e diárias",
+        "challenging": "Onde recuperar o controle"
+      },
+      "bestHours": "Você rende claramente melhor por volta de {{hours}} (fuso {{timezone}}).",
+      "bestHoursCelebrate": "Parabéns: seus melhores resultados se concentram por volta de {{hours}} (fuso {{timezone}}).",
+      "bestAndWorstHoursCelebrate": "Parabéns: seus melhores resultados se concentram por volta de {{hours}}, enquanto o horário {{hour}} é o menos produtivo (fuso {{timezone}}).",
+      "worstHour": "Seu desempenho mais fraco se concentra no horário {{hour}} (fuso {{timezone}}).",
+      "worstHourCelebrate": "Em contrapartida, o horário {{hour}} é o menos produtivo (fuso {{timezone}}).",
+      "worstHourEncourage": "O horário {{hour}} é menos favorável — você rende melhor em outros horários; convém evitá-lo por enquanto (fuso {{timezone}}).",
+      "worstHourNoMoney": "Seu desempenho mais fraco se concentra no horário {{hour}} (fuso {{timezone}}).",
+      "weekdays": "{{bestDay}} é seu melhor dia ({{bestWinRate}}% de acerto, {{bestPnl}}), {{worstDay}} o mais delicado.",
+      "weekdaysCelebrate": "Parabéns: {{bestDay}} é seu dia mais forte ({{bestWinRate}}% de acerto, {{bestPnl}}), enquanto {{worstDay}} pede mais prudência.",
+      "weekdaysNoMoney": "{{bestDay}} é seu melhor dia ({{bestWinRate}}% de acerto), {{worstDay}} o mais delicado — valores agregados ocultos (várias moedas)."
+    },
+    "duration": {
+      "title": {
+        "celebrate": "Sua duração ideal",
+        "excellent": "Duração ótima",
+        "positive": "Duração que combina com você",
+        "mixed": "Duração das operações",
+        "challenging": "Duração a ajustar"
+      },
+      "bestAvg": "Seu melhor P&L médio está na faixa {{label}} ({{avgPnl}}).",
+      "bestAvgLowVolume": "Seu melhor P&L médio está em {{label}} ({{avgPnl}}), com apenas {{count}} operações — confirme com uma amostra maior.",
+      "sweetSpot": "Seu ponto ideal é {{label}} — bom Win Rate ({{winRate}}%) e retorno ({{avgPnl}}, {{count}} operações).",
+      "sweetSpotCelebrate": "Parabéns: a faixa {{label}} é sua zona ideal ({{winRate}}% de acerto, {{avgPnl}} em média, {{count}} operações).",
+      "onlyBucket": "A faixa {{label}} oferece seu melhor equilíbrio ({{winRate}}% de acerto, P&L médio {{avgPnl}})."
+    },
+    "trajectory": {
+      "title": {
+        "celebrate": "Boa trajetória",
+        "encourage": "Retomar o controle",
+        "excellent": "Sua progressão",
+        "positive": "Trajetória encorajadora",
+        "mixed": "Trajetória",
+        "challenging": "Foco à frente"
+      },
+      "bestWeek": "Sua semana {{week}} ({{year}}) se destaca como a melhor ({{pnl}}, {{winRate}}% de acerto).",
+      "bestWeekCelebrate": "Parabéns: a semana {{week}} ({{year}}) é seu pico de desempenho ({{pnl}}, {{winRate}}% de acerto).",
+      "bestWeekNoMoney": "Melhor semana por Win Rate: S{{week}} {{year}} ({{winRate}}%).",
+      "progression": "No geral, você progride na segunda metade do período — continue nessa direção.",
+      "progressionCelebrate": "Boa progressão na segunda metade do período: sua curva vai na direção certa.",
+      "volatile": "A trajetória continua mista — identifique as semanas difíceis para antecipá-las melhor.",
+      "volatileEncourage": "O período foi volátil — isso é normal. Refoque no seu processo: a regularidade acaba valendo a pena."
+    }
+  },
+  "behaviorDiscipline": {
+    "tabTitle": "Sinais de disciplina",
+    "noData": "Dados insuficientes no período selecionado para calcular este indicador.",
+    "revenge": {
+      "title": "Sinal de disciplina — revenge trading",
+      "subtitle": "Número médio de trades no dia de trading após um dia perdedor vs ganhador (apenas dias com atividade). Diferente da aba « Tamanho após uma perda », que analisa o trade imediatamente seguinte.",
+      "tradesAfterNegativeDay": "Trades após dia negativo",
+      "tradesAfterPositiveDay": "Trades após dia positivo",
+      "tradesPerDay": "trades/dia",
+      "alert": "+{{pct}}% mais trades após um dia perdedor — possível sinal de revenge trading.",
+      "alertFavorable": "{{pct}}% menos trades após um dia perdedor — boa disciplina de frequência."
+    },
+    "sizing": {
+      "title": "Tamanho de posição — disciplina de sizing",
+      "subtitle": "Exposição média (contratos × valor do ponto) em trades vencedores vs perdedores. Micro e e-mini da mesma família são comparados de forma justa.",
+      "avgWinningSize": "Tamanho médio — vencedores",
+      "avgLosingSize": "Tamanho médio — perdedores",
+      "badge": "+{{pct}}%",
+      "alert": "+{{pct}}% mais tamanho em trades perdedores do que em vencedores — viés arriscado de sobreconvicção.",
+      "alertFavorable": "{{pct}}% menos tamanho em trades perdedores — boa disciplina de sizing."
+    },
+    "alerts": {
+      "title": "Sinais de alerta comportamental",
+      "intro": "Dois pontos merecem atenção.",
+      "introOne": "Um ponto merece atenção.",
+      "revengeSummary": "Revenge trading: em média {{afterLoss}} trades/dia após um dia perdedor vs {{afterWin}} após um dia ganhador (+{{pct}}%), o que pode amplificar grandes dias negativos.",
+      "sizingSummary": "Sizing invertido: as posições perdedoras são em média {{pct}}% maiores que as vencedoras — tendência a overcommit em setups que acabam falhando."
+    }
+  },
+  "dashboard": {
+    "title": "Análise Estatística de Operações",
+    "subtitle": "Descubra seus melhores setups, identifique padrões perdedores e detecte vieses comportamentais",
+    "loading": "Carregando análises...",
+    "error": "Erro ao carregar análises",
+    "globalStats": {
+      "title": "Estatísticas Globais",
+      "totalTrades": "Total de Operações",
+      "winRate": "Win Rate",
+      "expectancy": "Expectativa",
+      "profitFactor": "Profit Factor"
+    },
+    "bestSetups": {
+      "title": "Melhores Setups",
+      "noData": "Dados insuficientes (mínimo de 30 operações por setup)",
+      "setup": "Setup",
+      "quality": "Qualidade",
+      "sample": "Amostra",
+      "winRate": "Win Rate",
+      "expectancy": "Expectativa",
+      "totalPnL": "PnL Total"
+    },
+    "worstPatterns": {
+      "title": "Padrões a Evitar",
+      "noData": "Nenhum padrão perdedor recorrente identificado",
+      "occurrence": "ocorrência",
+      "avgPnL": "PnL médio"
+    },
+    "biases": {
+      "title": "Vieses Comportamentais Detectados",
+      "noData": "Nenhum viés comportamental significativo detectado",
+      "recommendation": "Recomendação",
+      "types": {
+        "overtrading": "Overtrading",
+        "stopLossWidening": "Ampliação do Stop Loss",
+        "revengeTrading": "Revenge Trading"
+      },
+      "descriptions": {
+        "overtrading": "Média de {{count}} operações em dias ativos",
+        "revengeTrading": "{{count}} revenge trades detectados ({{quickCount}} em até {{minutes}} min)",
+        "fomo": "{{count}} operações com sinais de FOMO (entradas tardias, melhor entrada perdida)",
+        "lossAversion": "{{count}} operações perdedoras mantidas tempo demais ou com SL ampliado",
+        "prematureExit": "{{count}} operações vencedoras encerradas cedo demais",
+        "stopLossWidening": "{{count}} operações com SL ampliado"
+      },
+      "recommendations": {
+        "limitTrades": "Limite o número de operações por dia",
+        "respectStopLoss": "Respeite o stop loss inicial",
+        "takePauseAfterLoss": "Faça uma pausa após uma perda. Espere pelo menos 30 minutos antes da próxima operação.",
+        "waitForSetup": "Espere o setup certo. Não persiga o mercado.",
+        "cutLossesQuickly": "Respeite o stop loss inicial. Corte as perdas rapidamente.",
+        "letWinnersRun": "Deixe os ganhos correrem. Respeite os alvos de take profit.",
+        "neverWidenSL": "Respeite o stop loss inicial. Nunca amplie o SL."
+      }
+    },
+    "trendAnalysis": {
+      "title": "Desempenho por Tendência",
+      "trades": "Operações",
+      "winRate": "Win Rate",
+      "expectancy": "Expectativa"
+    },
+    "sessionAnalysis": {
+      "title": "Desempenho por Sessão",
+      "trades": "Operações",
+      "winRate": "Win Rate",
+      "expectancy": "Expectativa"
+    }
+  },
+  "physicalState": {
+    "optimal": "Ótimo",
+    "rested": "Descansado",
+    "tired": "Cansado",
+    "sick": "Doente"
+  },
+  "mentalState": {
+    "focused": "Focado",
+    "confident": "Confiante",
+    "distracted": "Distraído",
+    "stressed": "Estressado"
+  },
+  "exitEmotionalContext": {
+    "neutral": "Neutro/Disciplina",
+    "fear": "Medo",
+    "greed": "Ganância",
+    "fomo": "FOMO",
+    "discipline": "Disciplina estrita"
+  },
+  "exitReason": {
+    "takeProfitHit": "Take Profit atingido",
+    "stopLossHit": "Stop Loss atingido",
+    "manualExit": "Saída manual",
+    "timeBased": "Baseado no tempo",
+    "targetReached": "Alvo atingido",
+    "setupInvalidated": "Setup invalidado",
+    "emotional": "Emocional",
+    "newsEvent": "Evento de notícias"
+  },
+  "tradingSession": {
+    "asian": "Asiática",
+    "london": "Londres",
+    "newYork": "Nova York",
+    "overlapLondonNY": "Sobreposição Londres/NY",
+    "afterHours": "After Hours"
+  },
+  "dayOfWeek": {
+    "monday": "Segunda-feira",
+    "tuesday": "Terça-feira",
+    "wednesday": "Quarta-feira",
+    "thursday": "Quinta-feira",
+    "friday": "Sexta-feira"
+  },
+  "newsImpact": {
+    "low": "Baixo",
+    "medium": "Médio",
+    "high": "Alto"
+  },
+  "stopLossDirection": {
+    "tighter": "Mais apertado",
+    "wider": "Mais amplo"
+  },
+  "timeInPosition": {
+    "muchShorter": "Muito mais curto",
+    "shorter": "Mais curto",
+    "asPlanned": "Conforme planejado",
+    "longer": "Mais longo",
+    "muchLonger": "Muito mais longo"
+  },
+  "setupCategory": {
+    "pullback": "Pullback",
+    "breakout": "Breakout",
+    "reversal": "Reversão",
+    "continuation": "Continuação",
+    "rangeBound": "Range Bound",
+    "newsDriven": "Baseado em notícias",
+    "scalp": "Scalp",
+    "other": "Outro"
+  },
+  "chartPattern": {
+    "doubleTop": "Double Top",
+    "doubleBottom": "Double Bottom",
+    "headShoulders": "Head & Shoulders",
+    "triangle": "Triangle",
+    "flag": "Flag",
+    "wedge": "Wedge",
+    "channel": "Channel"
+  },
+  "setupQuality": {
+    "A": "A - Excelente",
+    "B": "B - Bom",
+    "C": "C - Médio",
+    "D": "D - Fraco",
+    "F": "F - Muito fraco"
+  },
+  "entryTiming": {
+    "early": "Cedo",
+    "optimal": "Ótimo",
+    "late": "Tarde",
+    "missed": "Perdido"
+  },
+  "trends": {
+    "bullish": "Bullish",
+    "bearish": "Bearish",
+    "ranging": "Lateral",
+    "unclear": "Indefinido",
+    "neutral": "Neutro"
+  },
+  "marketStructure": {
+    "higherHighs": "Higher Highs",
+    "lowerLows": "Lower Lows",
+    "consolidation": "Consolidação"
+  },
+  "rangePosition": {
+    "topThird": "Terço superior",
+    "middleThird": "Terço médio",
+    "bottomThird": "Terço inferior"
+  },
+  "volumeProfile": {
+    "high": "Alto",
+    "medium": "Médio",
+    "low": "Baixo"
+  },
+  "previousTradeResult": {
+    "win": "Ganho",
+    "loss": "Perda",
+    "breakeven": "Breakeven",
+    "firstTrade": "Primeira operação da sessão"
+  },
+  "timeframes": {
+    "m1": "minuto",
+    "m2": "minutos",
+    "m5": "minutos",
+    "m15": "minutos",
+    "m30": "minutos",
+    "h1": "hora",
+    "h4": "horas",
+    "daily": "Diário",
+    "weekly": "Semanal"
+  },
+  "tradeMotivation": {
+    "setupSignal": "Sinal de setup",
+    "fomo": "FOMO",
+    "revenge": "Revenge",
+    "boredom": "Tédio",
+    "recoveryAttempt": "Tentativa de recuperação",
+    "planned": "Planejado"
+  },
+  "biasRules": {
+    "title": "Regras de Detecção e Configuração",
+    "helpText": "Personalize os limiares de detecção de acordo com o seu estilo de trading",
+    "save": "Salvar",
+    "reset": "Redefinir",
+    "saving": "Salvando...",
+    "resetConfirm": "Redefinir todos os limiares para os valores padrão?",
+    "biases": {
+      "overtrading": {
+        "title": "Overtrading",
+        "explanation": "O day trading ideal fica entre 3 e 5 operações por dia. Acima de 10 operações costuma indicar overtrading, o que pode reduzir a qualidade das decisões.",
+        "minDays": "Dias mínimos",
+        "minDaysDesc": "Número de dias com overtrading para confirmar o padrão",
+        "minTradesPerDay": "Operações por dia",
+        "minTradesPerDayDesc": "Limiar de detecção (trades/dia)",
+        "highSeverityThreshold": "Severidade ALTA",
+        "highSeverityThresholdDesc": "Limiar para severidade alta"
+      },
+      "revengeTrading": {
+        "title": "Revenge Trading",
+        "explanation": "Operar por vingança após uma perda é um dos comportamentos mais destrutivos. Faça uma pausa após uma perda para evitar decisões emocionais.",
+        "minOccurrences": "Ocorrências mínimas",
+        "minOccurrencesDesc": "Número mínimo para detectar o padrão",
+        "quickTradeMinutes": "Atraso rápido (minutos)",
+        "quickTradeMinutesDesc": "Trade considerado \"rápido\" após uma perda"
+      },
+      "fomo": {
+        "title": "FOMO (Medo de Ficar de Fora)",
+        "explanation": "Entrar tarde em um movimento por medo de perder a oportunidade costuma levar a entradas no pior momento. Paciência e disciplina são essenciais.",
+        "minOccurrences": "Ocorrências mínimas",
+        "minOccurrencesDesc": "Número mínimo para detectar o padrão",
+        "entryRangeThreshold": "Limiar de entrada (%)",
+        "entryRangeThresholdDesc": "Percentual do range considerado tardio"
+      },
+      "lossAversion": {
+        "title": "Aversão à Perda",
+        "explanation": "Manter posições perdedoras por tempo demais esperando uma reversão é um viés clássico. Respeitar o stop loss é crucial.",
+        "minOccurrences": "Ocorrências mínimas",
+        "minOccurrencesDesc": "Número mínimo para detectar o padrão"
+      },
+      "prematureExit": {
+        "title": "Saída Prematura",
+        "explanation": "Cortar ganhos cedo demais por medo de perder lucros impede alcançar os alvos. Deixar os ganhos correrem é essencial.",
+        "minOccurrences": "Ocorrências mínimas",
+        "minOccurrencesDesc": "Número mínimo para detectar o padrão",
+        "rrThreshold": "Limiar R:R",
+        "rrThresholdDesc": "Razão do R:R planejado considerada prematura (0.5 = 50%)"
+      },
+      "stopLossWidening": {
+        "title": "Ampliação do Stop Loss",
+        "explanation": "Ampliar o stop loss após a entrada é um dos comportamentos mais perigosos. O stop loss inicial deve sempre ser respeitado.",
+        "minOccurrences": "Ocorrências mínimas",
+        "minOccurrencesDesc": "Número mínimo para detectar o padrão"
+      }
+    },
+    "default": "padrão"
   }
 }

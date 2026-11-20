@@ -13,6 +13,7 @@ const AboutPage: React.FC = () => {
     en: '/about',
     es: '/acerca-de',
     de: '/uber-uns',
+    pt: '/sobre',
   };
   
   // Détecter la langue depuis l'URL en premier, puis localStorage
@@ -35,7 +36,7 @@ const AboutPage: React.FC = () => {
     }
     // Sinon, utiliser localStorage
     const savedLang = localStorage.getItem('i18nextLng');
-    if (savedLang && ['fr', 'en', 'es', 'de'].includes(savedLang)) {
+    if (savedLang && ['fr', 'en', 'es', 'de', 'pt'].includes(savedLang)) {
       return savedLang;
     }
     return 'fr';
@@ -106,6 +107,12 @@ const AboutPage: React.FC = () => {
       description: 'Entdecken Sie die Geschichte und Mission von K&C Trading Journal. Eine Plattform, die mit Leidenschaft geschaffen wurde, um Tradern zu helfen, ihre Leistung zu verfolgen und zu verbessern. Kostenlose Anmeldung, keine Verpflichtung.',
       keywords: 'über uns, Trading-Journal, Geschichte, Mission, Team',
       name: 'Über uns - K&C Trading Journal',
+    },
+    pt: {
+      title: 'Sobre | K&C Trading Journal',
+      description: 'Conheça a história e a missão do K&C Trading Journal. Uma plataforma criada com paixão para ajudar traders a acompanhar e melhorar seu desempenho. Cadastro gratuito, sem compromisso.',
+      keywords: 'sobre, trading journal, história, missão, equipe, diário de trading',
+      name: 'Sobre - K&C Trading Journal',
     },
   };
 

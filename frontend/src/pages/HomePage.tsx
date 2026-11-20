@@ -59,7 +59,7 @@ const HomePage: React.FC = () => {
   useEffect(() => {
     const handleLanguageChanged = (lng: string) => {
       const langCode = lng.split('-')[0];
-      if (['fr', 'en', 'es', 'de'].includes(langCode)) {
+      if (['fr', 'en', 'es', 'de', 'pt'].includes(langCode)) {
         setCurrentLanguage(langCode);
       }
     };
@@ -78,7 +78,7 @@ const HomePage: React.FC = () => {
     if (window.location.search) {
       const searchParams = new URLSearchParams(window.location.search);
       const langParam = searchParams.get('lang');
-      const hasSupportedLang = !!langParam && ['fr', 'en', 'es', 'de'].includes(langParam);
+      const hasSupportedLang = !!langParam && ['fr', 'en', 'es', 'de', 'pt'].includes(langParam);
 
       if (!hasSupportedLang) {
         const newUrl = window.location.pathname;
@@ -139,10 +139,11 @@ const HomePage: React.FC = () => {
   }, [isLanguageDropdownOpen, isMobileMenuOpen]);
 
   const languageOptions = [
-    { value: 'fr', label: 'Français', flag: '🇫🇷' },
+    { value: 'de', label: 'Deutsch', flag: '🇩🇪' },
     { value: 'en', label: 'English', flag: '🇬🇧' },
     { value: 'es', label: 'Español', flag: '🇪🇸' },
-    { value: 'de', label: 'Deutsch', flag: '🇩🇪' },
+    { value: 'fr', label: 'Français', flag: '🇫🇷' },
+    { value: 'pt', label: 'Português', flag: '🇵🇹' },
   ];
 
   useEffect(() => {
@@ -186,12 +187,17 @@ const HomePage: React.FC = () => {
       description: 'Professionelles Trading-Journal - Verfolgen, analysieren und optimieren Sie Ihre Leistung mit erweiterten Tools. CSV-Import, Multi-Konto, Statistiken, Market Replay, Tagebuch, Ziele. Kostenlose Anmeldung, keine Verpflichtung.',
       keywords: 'Trading-Journal, Journal de trading, Trade-Tracking, Trading-Analyse, Trading-Leistung, Trading-Software, Market Replay, Sitzungs-Replay',
     },
+    pt: {
+      title: 'Diário de Trading Gratuito | K&C Trading Journal',
+      description: 'Diário de trading profissional - Acompanhe, analise e otimize seu desempenho com ferramentas avançadas. Importação CSV, multi-contas, estatísticas, Market Replay, diário, objetivos. Cadastro gratuito, sem compromisso.',
+      keywords: 'diário de trading, trading journal, acompanhamento de trades, análise de trading, desempenho de trading, software de trading, market replay, replay de sessão, diário de backtest',
+    },
   };
 
   // Synchroniser currentLanguage avec i18n à chaque fois que i18n change
   useEffect(() => {
     const i18nLang = i18nInstance.language?.split('-')[0] || 'fr';
-    if (i18nLang !== currentLanguage && ['fr', 'en', 'es', 'de'].includes(i18nLang)) {
+    if (i18nLang !== currentLanguage && ['fr', 'en', 'es', 'de', 'pt'].includes(i18nLang)) {
       setCurrentLanguage(i18nLang);
     }
   }, [i18nInstance.language, currentLanguage]);
@@ -300,6 +306,28 @@ const HomePage: React.FC = () => {
                 ],
               },
             },
+            pt: {
+              organization: {
+                name: 'K&C Trading Journal',
+                description: 'Aplicação profissional de diário de trading',
+                featureList: [
+                  'Acompanhamento de trades',
+                  'Análise de desempenho',
+                  'Importação CSV',
+                  'Multi-contas',
+                  'Estatísticas detalhadas',
+                  'Visualizações avançadas',
+                  'Market Replay',
+                  'Replay de sessão',
+                  'Diário',
+                  'Perguntas do dia',
+                  'Diário de backtest',
+                  'Dados históricos',
+                  'Meus Objetivos',
+                  'Comportamento',
+                ],
+              },
+            },
           };
         
         const currentSchema = schemaData[currentLanguage as keyof typeof schemaData] || schemaData.fr;
@@ -356,14 +384,6 @@ const HomePage: React.FC = () => {
               data={{
                 name: currentSchema.organization.name,
                 url: baseUrl,
-                potentialAction: {
-                  '@type': 'SearchAction',
-                  target: {
-                    '@type': 'EntryPoint',
-                    urlTemplate: `${baseUrl}/search?q={search_term_string}`,
-                  },
-                  'query-input': 'required name=search_term_string',
-                },
               }}
             />
           </>

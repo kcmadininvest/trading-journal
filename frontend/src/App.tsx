@@ -632,8 +632,8 @@ function App() {
     }
 
     // Pages publiques accessibles via pathname (SEO) - Support multilingue
-    const aboutPaths = ['/a-propos', '/about', '/acerca-de', '/uber-uns'];
-    const featuresPaths = ['/fonctionnalites', '/features', '/funcionalidades', '/funktionen'];
+    const aboutPaths = ['/a-propos', '/about', '/acerca-de', '/uber-uns', '/sobre'];
+    const featuresPaths = ['/fonctionnalites', '/features', '/funcionalidades', '/funktionen', '/recursos'];
     
     if (aboutPaths.includes(pathname)) {
       return <LazyPage><AboutPage /></LazyPage>;

@@ -1,0 +1,40 @@
+{
+  "title": "Aviso legal",
+  "link": "Aviso legal",
+  "subtitle": "Informações legais e termos de uso",
+  "section1": {
+    "title": "1. Editor do site",
+    "content": "Este site é publicado pela K&C Madin Invest. Este serviço é fornecido em caráter pessoal e educacional para a gestão de um diário de trading."
+  },
+  "section2": {
+    "title": "2. Aviso geral",
+    "content": "O trading nos mercados financeiros envolve riscos significativos de perda de capital. Desempenhos passados não garantem resultados futuros. Todo investimento implica risco de perda total ou parcial do capital investido.",
+    "warning": "Este diário de trading é uma ferramenta de acompanhamento pessoal e não constitui aconselhamento de investimento, recomendação financeira, nem solicitação de compra ou venda de instrumentos financeiros."
+  },
+  "section3": {
+    "title": "3. Responsabilidade",
+    "content": "O editor não pode ser responsabilizado pelas decisões de trading tomadas pelos usuários com base nas informações contidas neste diário. Cada usuário é o único responsável por suas decisões de investimento e por suas consequências.",
+    "data": "O editor se empenha em garantir a precisão das informações fornecidas, mas não garante a ausência de erros, omissões ou interrupções do serviço. Os dados são fornecidos \"como estão\", sem qualquer garantia."
+  },
+  "section4": {
+    "title": "4. Proteção de dados",
+    "content": "Os dados pessoais e financeiros inseridos neste diário são armazenados com segurança. O usuário é o único responsável pela confidencialidade de suas credenciais e pelo acesso à sua conta.",
+    "backup": "É fortemente recomendado que os usuários mantenham backups de seus dados e não dependam exclusivamente deste serviço para a preservação de suas informações de trading."
+  },
+  "section5": {
+    "title": "5. Propriedade intelectual",
+    "content": "Todo o conteúdo deste site (textos, imagens, logotipos, estrutura) é propriedade do editor e está protegido pelas leis de propriedade intelectual. Qualquer reprodução não autorizada é proibida."
+  },
+  "section6": {
+    "title": "6. Aceitação dos termos",
+    "content": "O uso deste serviço implica a aceitação plena e integral destes avisos legais. Em caso de discordância, o usuário concorda em cessar imediatamente o uso do serviço."
+  },
+  "section7": {
+    "title": "7. Modificação dos avisos legais",
+    "content": "O editor reserva-se o direito de modificar estes avisos legais a qualquer momento. Recomenda-se que os usuários consultem regularmente esta página para tomar conhecimento de quaisquer alterações."
+  },
+  "section8": {
+    "title": "8. Lei aplicável e foro",
+    "content": "Estes avisos legais são regidos pela legislação aplicável. Em caso de litígio, e na ausência de acordo amigável, o litígio será submetido aos tribunais competentes."
+  }
+}

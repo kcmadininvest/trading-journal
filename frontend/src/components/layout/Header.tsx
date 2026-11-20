@@ -33,10 +33,11 @@ const Header: React.FC<HeaderProps> = ({
   const languageDropdownRef = useRef<HTMLDivElement>(null);
   
   const languageOptions = [
-    { value: 'fr', label: 'Français', flag: '🇫🇷' },
-    { value: 'en', label: 'English', flag: '🇬🇧' },
     { value: 'de', label: 'Deutsch', flag: '🇩🇪' },
+    { value: 'en', label: 'English', flag: '🇬🇧' },
     { value: 'es', label: 'Español', flag: '🇪🇸' },
+    { value: 'fr', label: 'Français', flag: '🇫🇷' },
+    { value: 'pt', label: 'Português', flag: '🇵🇹' },
   ];
 
   const currentLanguage = i18n.language?.split('-')[0] || 'en';

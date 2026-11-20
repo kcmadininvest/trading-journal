@@ -1093,12 +1093,13 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                 </label>
                 <CustomSelect
                   value={preferences.language}
-                  onChange={(value) => setPreferences({ ...preferences, language: value as 'de' | 'en' | 'fr' | 'es' })}
+                  onChange={(value) => setPreferences({ ...preferences, language: value as 'de' | 'en' | 'fr' | 'es' | 'pt' })}
                   options={[
-                    { value: 'fr', label: 'Français' },
-                    { value: 'en', label: 'English' },
                     { value: 'de', label: 'Deutsch' },
+                    { value: 'en', label: 'English' },
                     { value: 'es', label: 'Español' },
+                    { value: 'fr', label: 'Français' },
+                    { value: 'pt', label: 'Português' },
                   ]}
                 />
               </div>

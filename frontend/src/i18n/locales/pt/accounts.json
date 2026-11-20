@@ -4,6 +4,14 @@
   "accountCount": "{{count}} compte",
   "accountCountPlural": "{{count}} comptes",
   "noAccounts": "Aucun compte. Créez votre premier compte à droite.",
+  "noAccountsFiltered": "Nenhuma conta corresponde aos filtros selecionados.",
+  "filters": {
+    "search": "Pesquisar",
+    "searchPlaceholder": "Nome, ID do corretor...",
+    "type": "Tipo de conta",
+    "status": "Status",
+    "reset": "Redefinir"
+  },
   "columns": {
     "account": "Conta",
     "type": "Tipo",
@@ -39,7 +47,10 @@
     "archive": "Arquivar",
     "unarchive": "Desarquivar"
   },
+  "deleteTitle": "Excluir conta",
   "deleteConfirm": "Excluir definitivamente a conta \"{{name}}\" e todos os seus dados (operações associadas)?\n\nEsta ação é irreversível.",
+  "archiveModalTitle": "Arquivar conta",
+  "confirmArchive": "Tem certeza de que deseja arquivar esta conta? Ela não ficará mais visível por padrão.",
   "form": {
     "editTitle": "Editar conta",
     "newTitle": "Nova conta",
@@ -55,6 +66,15 @@
     "brokerIdTopstepHelp": "Opcional: deixe vazio ou preenchido automaticamente se o nome coincidir exatamente com o TopStepX (menu de contas). Não reutilize o mesmo ID em várias contas.",
     "currency": "Moeda",
     "currencyDescription": "Selecione a moeda; apenas o símbolo será exibido.",
+    "initialCapital": "Capital Inicial",
+    "initialCapitalPlaceholder": "Deixe em branco se desconhecido",
+    "initialCapitalDescription": "Capital inicial da conta (opcional). Usado para limiares de MLL e meta de lucro.",
+    "initialCapitalPreset0": "0",
+    "initialCapitalPreset50000": "50.000",
+    "initialCapitalPreset150000": "150.000",
+    "chartThresholdHelp": "MLL e meta de lucro são limiares absolutos da conta. O gráfico do dashboard segue o período filtrado.",
+    "mllRequiredWhenEnabled": "Informe um valor de MLL ou desative a opção.",
+    "profitTargetRequiredWhenEnabled": "Informe uma meta de lucro ou desative a opção.",
     "status": "Status",
     "statusDescription": "Ativo: conta em uso | Inativo: conta em pausa | Arquivado: conta fechada permanentemente",
     "description": "Descrição",
@@ -77,6 +97,13 @@
     "profitTargetPlaceholder": "Inserir meta de lucro",
     "profitTargetDescription": "Meta de lucro a atingir (entrada manual)"
   },
+  "copyTrading": {
+    "followersTitle": "Contas que recebem uma cópia das suas importações (esta conta como origem)",
+    "noFollowers": "Nenhuma conta seguidora. Em outra conta, ative a cópia e escolha esta como origem.",
+    "copyFromEnabled": "Esta conta recebe uma cópia das importações CSV feitas na conta abaixo",
+    "leaderLabel": "Conta de origem (arquivo CSV)",
+    "leaderHelp": "Após salvar, importar naquela conta também duplicará as operações aqui."
+  },
   "defaultCurrencyName": "Dollar américain",
   "onboarding": {
     "title": "Crie sua primeira conta de trading",
@@ -92,10 +119,12 @@
     "lastSync": "Última sync: {{date}}",
     "neverSynced": "Ainda não sincronizado",
     "brokerIdRequired": "Use o nome exato da conta TopStepX (menu de contas) ou um ID ProjectX válido. O ID é definido automaticamente quando o nome coincide.",
-    "integrationRequired": "Nenhuma API configurada. Configurar em Definições → Trading",
+    "integrationRequired": "Nenhuma API configurada. Configurar em Configurações → Trading",
+    "apiPaused": "API TopStep pausada — reative pelo dashboard ou nas configurações.",
+    "apiActiveWarning": "A sync da API pode desconectar o TopStep se você estiver operando ao mesmo tempo.",
     "errors": {
-      "credentialsDecryptFailed": "Não foi possível ler as credenciais guardadas. Volte a ligar o TopStepX em Definições → Trading e introduza novamente a chave API."
+      "credentialsDecryptFailed": "Não foi possível ler as credenciais guardadas. Volte a ligar o TopStepX em Configurações → Trading e introduza novamente a chave API.",
+      "apiPaused": "A API TopStep está pausada. Reative-a pelo dashboard ou nas configurações."
     }
   }
 }
-

@@ -708,7 +708,7 @@ const AnalyticsPage: React.FC = () => {
         'es': 'es-ES',
         'de': 'de-DE',
         'it': 'it-IT',
-        'pt': 'pt-PT',
+        'pt': 'pt-BR',
         'ja': 'ja-JP',
         'ko': 'ko-KR',
         'zh': 'zh-CN',

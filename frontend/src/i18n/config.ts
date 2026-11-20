@@ -126,56 +126,67 @@ import frHome from './locales/fr/home.json';
 import enHome from './locales/en/home.json';
 import esHome from './locales/es/home.json';
 import deHome from './locales/de/home.json';
+import ptHome from './locales/pt/home.json';
 
 import frStrategy from './locales/fr/strategy.json';
 import enStrategy from './locales/en/strategy.json';
 import esStrategy from './locales/es/strategy.json';
 import deStrategy from './locales/de/strategy.json';
+import ptStrategy from './locales/pt/strategy.json';
 
 import frPositionStrategies from './locales/fr/positionStrategies.json';
 import enPositionStrategies from './locales/en/positionStrategies.json';
 import dePositionStrategies from './locales/de/positionStrategies.json';
 import esPositionStrategies from './locales/es/positionStrategies.json';
+import ptPositionStrategies from './locales/pt/positionStrategies.json';
 
 import frGoals from './locales/fr/goals.json';
 import enGoals from './locales/en/goals.json';
 import esGoals from './locales/es/goals.json';
 import deGoals from './locales/de/goals.json';
+import ptGoals from './locales/pt/goals.json';
 
 import frTransactions from './locales/fr/transactions.json';
 import enTransactions from './locales/en/transactions.json';
 import esTransactions from './locales/es/transactions.json';
 import deTransactions from './locales/de/transactions.json';
+import ptTransactions from './locales/pt/transactions.json';
 
 import frLegal from './locales/fr/legal.json';
 import enLegal from './locales/en/legal.json';
 import esLegal from './locales/es/legal.json';
 import deLegal from './locales/de/legal.json';
+import ptLegal from './locales/pt/legal.json';
 
 import frAbout from './locales/fr/about.json';
 import enAbout from './locales/en/about.json';
 import esAbout from './locales/es/about.json';
 import deAbout from './locales/de/about.json';
+import ptAbout from './locales/pt/about.json';
 
 import frFeatures from './locales/fr/features.json';
 import enFeatures from './locales/en/features.json';
 import esFeatures from './locales/es/features.json';
 import deFeatures from './locales/de/features.json';
+import ptFeatures from './locales/pt/features.json';
 
 import frContact from './locales/fr/contact.json';
 import enContact from './locales/en/contact.json';
 import esContact from './locales/es/contact.json';
 import deContact from './locales/de/contact.json';
+import ptContact from './locales/pt/contact.json';
 
 import frCalculator from './locales/fr/calculator.json';
 import enCalculator from './locales/en/calculator.json';
 import esCalculator from './locales/es/calculator.json';
 import deCalculator from './locales/de/calculator.json';
+import ptCalculator from './locales/pt/calculator.json';
 import frBilling from './locales/fr/billing.json';
 import frReplay from './locales/fr/replay.json';
 import enReplay from './locales/en/replay.json';
 import esReplay from './locales/es/replay.json';
 import deReplay from './locales/de/replay.json';
+import ptReplay from './locales/pt/replay.json';
 import frJournalQuestions from './locales/fr/journalQuestions.json';
 import enJournalQuestions from './locales/en/journalQuestions.json';
 import esJournalQuestions from './locales/es/journalQuestions.json';
@@ -198,14 +209,17 @@ import frTradingActivity from './locales/fr/trading_activity.json';
 import enTradingActivity from './locales/en/trading_activity.json';
 import esTradingActivity from './locales/es/trading_activity.json';
 import deTradingActivity from './locales/de/trading_activity.json';
+import ptTradingActivity from './locales/pt/trading_activity.json';
 import frHistoricalData from './locales/fr/historicalData.json';
 import enHistoricalData from './locales/en/historicalData.json';
 import esHistoricalData from './locales/es/historicalData.json';
 import deHistoricalData from './locales/de/historicalData.json';
+import ptHistoricalData from './locales/pt/historicalData.json';
 import frMarketReplay from './locales/fr/marketReplay.json';
 import enMarketReplay from './locales/en/marketReplay.json';
 import esMarketReplay from './locales/es/marketReplay.json';
 import deMarketReplay from './locales/de/marketReplay.json';
+import ptMarketReplay from './locales/pt/marketReplay.json';
 import frBacktestJournal from './locales/fr/backtestJournal.json';
 import enBacktestJournal from './locales/en/backtestJournal.json';
 import esBacktestJournal from './locales/es/backtestJournal.json';
@@ -256,6 +270,9 @@ const customNavigatorLanguagesDetector = {
       }
       if (lang === 'de') {
         return 'de';
+      }
+      if (lang === 'pt') {
+        return 'pt';
       }
     }
     
@@ -430,11 +447,22 @@ const resources = {
     users: ptUsers,
     accounts: ptAccounts,
     auth: ptAuth,
+    home: ptHome,
+    strategy: ptStrategy,
+    positionStrategies: ptPositionStrategies,
+    goals: ptGoals,
+    transactions: ptTransactions,
+    legal: ptLegal,
+    about: ptAbout,
+    features: ptFeatures,
+    contact: ptContact,
+    calculator: ptCalculator,
     billing: ptBilling,
-    replay: enReplay,
+    replay: ptReplay,
     journalQuestions: ptJournalQuestions,
-    trading_activity: enTradingActivity,
-    marketReplay: enMarketReplay,
+    trading_activity: ptTradingActivity,
+    historicalData: ptHistoricalData,
+    marketReplay: ptMarketReplay,
     backtestJournal: ptBacktestJournal,
     help: ptHelp,
   },
@@ -526,6 +554,7 @@ const getDefaultLanguage = (): string => {
       if (lang === 'fr') return 'fr';
       if (lang === 'es') return 'es';
       if (lang === 'de') return 'de';
+      if (lang === 'pt') return 'pt';
     }
   }
   // Par défaut, retourner 'en'
@@ -543,7 +572,7 @@ languageDetector.addDetector(customNavigatorLanguagesDetector);
 const getInitialLanguage = (): string => {
   if (typeof window !== 'undefined') {
     const urlLang = new URLSearchParams(window.location.search).get('lang');
-    if (urlLang && ['fr', 'en', 'es', 'de'].includes(urlLang)) {
+    if (urlLang && ['fr', 'en', 'es', 'de', 'pt'].includes(urlLang)) {
       return urlLang;
     }
   }

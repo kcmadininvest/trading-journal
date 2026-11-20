@@ -21,7 +21,8 @@ const SEOHead: React.FC<SEOHeadProps> = ({
   noindex = false,
 }) => {
   const { i18n } = useTranslation();
-  const currentLang = i18n.language || 'fr';
+  // Normaliser (ex. pt-BR → pt) pour localeMap / hreflang / content-language
+  const currentLang = (i18n.language || 'fr').split('-')[0];
   
   // Fonction helper pour forcer une URL à être en HTTPS (bonne pratique SEO)
   const ensureHttps = (urlString: string): string => {
@@ -51,7 +52,7 @@ const SEOHead: React.FC<SEOHeadProps> = ({
     } catch {
       // Fallback si l'URL n'est pas valide
       const safeUrl = ensureHttps(url).split('#')[0];
-      const match = safeUrl.match(/^(.+?)(\?lang=(fr|en|es|de))?$/i);
+      const match = safeUrl.match(/^(.+?)(\?lang=(fr|en|es|de|pt))?$/i);
       if (!match) {
         return ensureHttps(url).split('?')[0].split('#')[0];
       }
@@ -123,7 +124,7 @@ const SEOHead: React.FC<SEOHeadProps> = ({
     const hasHomeLangQuery = (() => {
       if (typeof window === 'undefined') return false;
       const langParam = new URLSearchParams(window.location.search).get('lang');
-      return isHomePage && !!langParam && ['fr', 'en', 'es', 'de'].includes(langParam);
+      return isHomePage && !!langParam && ['fr', 'en', 'es', 'de', 'pt'].includes(langParam);
     })();
     updateMetaTag('robots', noindex || hasHomeLangQuery ? 'noindex, follow' : 'index, follow');
     
@@ -154,6 +155,7 @@ const SEOHead: React.FC<SEOHeadProps> = ({
       en: 'en_US',
       es: 'es_ES',
       de: 'de_DE',
+      pt: 'pt_BR',
     };
     const currentLocale = localeMap[currentLang] || 'fr_FR';
     updateMetaTag('og:locale', currentLocale, true);
@@ -164,7 +166,7 @@ const SEOHead: React.FC<SEOHeadProps> = ({
     existingAlternates.forEach((meta) => meta.remove());
     
     // Ajouter les nouvelles balises og:locale:alternate pour toutes les langues sauf la langue actuelle
-    const supportedLocales = ['fr_FR', 'en_US', 'es_ES', 'de_DE'];
+    const supportedLocales = ['fr_FR', 'en_US', 'es_ES', 'de_DE', 'pt_BR'];
     supportedLocales.forEach((locale) => {
       if (locale !== currentLocale) {
         const alternateMeta = document.createElement('meta');
@@ -190,7 +192,7 @@ const SEOHead: React.FC<SEOHeadProps> = ({
     updateLinkTag('canonical', canonicalUrl);
 
     // Hreflang tags - Générer les URLs pour chaque langue selon la page actuelle
-    const languages = ['fr', 'en', 'es', 'de'];
+    const languages = ['fr', 'en', 'es', 'de', 'pt'];
     
     // URLs selon la page et la langue
     const getUrlForLanguage = (lang: string): string => {
@@ -201,24 +203,28 @@ const SEOHead: React.FC<SEOHeadProps> = ({
       
       // Page À Propos
       if (currentPath.includes('/a-propos') || currentPath.includes('/about') || 
-          currentPath.includes('/acerca-de') || currentPath.includes('/uber-uns')) {
+          currentPath.includes('/acerca-de') || currentPath.includes('/uber-uns') ||
+          currentPath.includes('/sobre')) {
         const aboutUrls: Record<string, string> = {
           fr: '/a-propos',
           en: '/about',
           es: '/acerca-de',
           de: '/uber-uns',
+          pt: '/sobre',
         };
         return `${baseUrl}${aboutUrls[lang] || aboutUrls.fr}`;
       }
       
       // Page Fonctionnalités
       if (currentPath.includes('/fonctionnalites') || currentPath.includes('/features') || 
-          currentPath.includes('/funcionalidades') || currentPath.includes('/funktionen')) {
+          currentPath.includes('/funcionalidades') || currentPath.includes('/funktionen') ||
+          currentPath.includes('/recursos')) {
         const featuresUrls: Record<string, string> = {
           fr: '/fonctionnalites',
           en: '/features',
           es: '/funcionalidades',
           de: '/funktionen',
+          pt: '/recursos',
         };
         return `${baseUrl}${featuresUrls[lang] || featuresUrls.fr}`;
       }
@@ -230,17 +236,18 @@ const SEOHead: React.FC<SEOHeadProps> = ({
     // Supprimer les anciennes balises hreflang avant d'ajouter les nouvelles
     const existingHreflangs = document.querySelectorAll('link[rel="alternate"][hreflang]');
     existingHreflangs.forEach((link) => link.remove());
-    
-    // Pour la home, conserver uniquement x-default vers `/` pour éviter les conflits canoniques.
-    if (isHomePage) {
-      updateLinkTag('alternate', `${baseUrl}/`, 'x-default');
-    } else {
-      languages.forEach((lang) => {
-        const langUrl = getUrlForLanguage(lang);
-        updateLinkTag('alternate', langUrl, lang);
-      });
-      updateLinkTag('alternate', getUrlForLanguage('fr'), 'x-default');
-    }
+
+    // Home: hreflang fr/en/es/de/pt + x-default tous vers `/` (pas de ?lang=).
+    // Marketing: hreflang réciproques par slug + x-default FR.
+    languages.forEach((lang) => {
+      const langUrl = getUrlForLanguage(lang);
+      updateLinkTag('alternate', langUrl, lang);
+    });
+    updateLinkTag(
+      'alternate',
+      isHomePage ? `${baseUrl}/` : getUrlForLanguage('fr'),
+      'x-default'
+    );
 
     // Mettre à jour la langue HTML
     document.documentElement.lang = currentLang;

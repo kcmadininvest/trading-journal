@@ -19,6 +19,7 @@ const FeaturesPage: React.FC = () => {
     en: '/features',
     es: '/funcionalidades',
     de: '/funktionen',
+    pt: '/recursos',
   };
 
   const detectLanguageFromUrl = (): string | null => {
@@ -37,7 +38,7 @@ const FeaturesPage: React.FC = () => {
       return urlLang;
     }
     const savedLang = localStorage.getItem('i18nextLng');
-    if (savedLang && ['fr', 'en', 'es', 'de'].includes(savedLang)) {
+    if (savedLang && ['fr', 'en', 'es', 'de', 'pt'].includes(savedLang)) {
       return savedLang;
     }
     return 'fr';
@@ -118,6 +119,12 @@ const FeaturesPage: React.FC = () => {
       description: 'Entdecken Sie alle Funktionen von K&C Trading Journal: Trade-Verfolgung, erweiterte Analysen, Strategieverwaltung, Statistiken, Market Replay, Tagebuch, Ziele, Verhalten und vieles mehr.',
       keywords: 'Funktionen, Features, Trade-Verfolgung, Trading-Analyse, Trading-Statistiken, Trading-Journal, Market Replay, Sitzungs-Replay',
       name: 'Funktionen - K&C Trading Journal',
+    },
+    pt: {
+      title: 'Recursos | K&C Trading Journal',
+      description: 'Descubra todos os recursos do K&C Trading Journal: acompanhamento de trades, análises avançadas, gestão de estratégias, estatísticas, Market Replay, diário, objetivos, comportamento e muito mais. Cadastro gratuito.',
+      keywords: 'recursos, funcionalidades, acompanhamento de trades, análise de trading, estatísticas, diário de trading, market replay, replay de sessão, diário de backtest, objetivos',
+      name: 'Recursos - K&C Trading Journal',
     },
   };
 

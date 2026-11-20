@@ -1,0 +1,26 @@
+{
+  "title": "Recursos",
+  "subtitle": "Todos os recursos de que você precisa para acompanhar e melhorar seu desempenho de trading.",
+  "coreTitle": "Recursos principais",
+  "advancedTitle": "Módulos avançados",
+  "backHome": "Voltar ao início",
+  "additional": {
+    "title": "Recursos adicionais",
+    "import": {
+      "title": "Importação CSV",
+      "content": "Importe facilmente suas operações a partir de um arquivo CSV. Compatível com a maioria das plataformas de trading."
+    },
+    "export": {
+      "title": "Exportação CSV",
+      "content": "Exporte seus dados filtrados para análise externa ou backup."
+    },
+    "filters": {
+      "title": "Filtros avançados",
+      "content": "Filtre suas operações por conta, data, instrumento, estratégia e muito mais."
+    },
+    "customization": {
+      "title": "Personalização",
+      "content": "Personalize sua interface: formato de data, formato de número, idioma, fuso horário, tema e tamanho da fonte."
+    }
+  }
+}

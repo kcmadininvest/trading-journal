@@ -1,0 +1,56 @@
+{
+  "streak": {
+    "title": "Sequência de Respeito à Estratégia",
+    "subtitle": "Dias consecutivos com 100% de conformidade",
+    "sinceWithArticle": "desde",
+    "nextBadge": "Próximo distintivo",
+    "daysLeft": "dias restantes",
+    "days": "dias"
+  },
+  "badges": {
+    "title": "Distintivos de Disciplina",
+    "earned": "Distintivos conquistados",
+    "locked": "Distintivos a desbloquear",
+    "days": "dias",
+    "labels": {
+      "beginner": "Iniciante Disciplinado",
+      "week": "Semana Perfeita",
+      "two_weeks": "Duas Semanas Exemplares",
+      "maltz": "Rotina Estabelecida",
+      "month": "Mês de Disciplina",
+      "two_months": "Mestre da Disciplina",
+      "three_months": "Lenda da Estratégia",
+      "centurion": "Centurião",
+      "year": "Ano Perfeito"
+    }
+  },
+  "metrics": {
+    "overall": "Taxa Geral",
+    "respected": "Respeitados",
+    "notRespected": "Não Respeitados",
+    "last7Days": "Últimos 7 dias",
+    "last30Days": "Últimos 30 dias",
+    "last90Days": "Últimos 90 dias"
+  },
+  "compliance": {
+    "rate": "Taxa de Conformidade (%)",
+    "evolution": "Evolução da Taxa de Conformidade",
+    "trades": "trades respeitados"
+  },
+  "complianceEvolutionAllAccountsTooltip": "Evolução da taxa de conformidade da estratégia para todas as suas contas ativas combinadas",
+  "complianceEvolutionSelectedAccountTooltip": "Evolução da taxa de conformidade da estratégia para a conta selecionada",
+  "date": "Data",
+  "noDataForAccount": "Nenhum dado disponível para esta conta",
+  "loading": "Carregando...",
+  "performance": {
+    "title": "Impacto da Conformidade com a Estratégia",
+    "subtitle": "Comparação de desempenho com base na conformidade com a estratégia",
+    "respected": "Estratégia Respeitada",
+    "notRespected": "Estratégia Não Respeitada",
+    "trades": "Trades",
+    "winRate": "Win Rate",
+    "avgPnl": "PnL Médio",
+    "totalPnl": "PnL Total",
+    "insight": "Quando você respeita sua estratégia, seu Win Rate fica {{diff}}% maior e seu PnL médio fica {{pnlDiff}} maior."
+  }
+}

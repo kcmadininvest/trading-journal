@@ -1,0 +1,176 @@
+{
+  "title": "K&C Trading Journal",
+  "subtitle": "A plataforma completa para acompanhar, analisar e otimizar seu desempenho de trading. Assuma o controle do seu trading com ferramentas profissionais.",
+  "hero": {
+    "tagline": "Transforme seus dados em insights acionáveis",
+    "description": "Registre cada operação, analise seus padrões, identifique seus pontos fortes e fracos para se tornar um trader mais performático e disciplinado.",
+    "freeBadge": "Cadastro gratuito • Sem compromisso"
+  },
+  "features": {
+    "viewAll": "Ver todos os recursos",
+    "coreTitle": "Recursos principais",
+    "newTitle": "Módulos avançados",
+    "carousel": {
+      "pause": "Pausar reprodução automática",
+      "play": "Retomar reprodução automática"
+    },
+    "tradeTracking": {
+      "title": "Registro completo de operações",
+      "description": "Registre todas as suas operações com precisão. Importação CSV, gestão multi-conta, acompanhamento de desempenho em tempo real."
+    },
+    "advancedAnalysis": {
+      "title": "Análises avançadas",
+      "description": "Gráficos interativos, mapas de calor de desempenho, análise por dia da semana e por hora para identificar seus melhores momentos de trading."
+    },
+    "strategies": {
+      "title": "Gestão de estratégias",
+      "description": "Documente suas estratégias, analise sua conformidade, meça sua eficácia e identifique possíveis melhorias."
+    },
+    "statistics": {
+      "title": "Estatísticas detalhadas",
+      "description": "Métricas avançadas de desempenho: Profit Factor, Win Rate, Drawdown, índices de recuperação e muito mais."
+    },
+    "emotions": {
+      "title": "Análise de emoções",
+      "description": "Acompanhe suas emoções durante cada operação para entender o impacto no seu desempenho e melhorar sua disciplina mental."
+    },
+    "calendar": {
+      "title": "Visualização em calendário",
+      "description": "Visualize seu desempenho de trading em formato de calendário para identificar rapidamente seus melhores e piores dias."
+    },
+    "multiAccount": {
+      "title": "Multi-conta",
+      "description": "Gerencie várias contas de trading (corretoras, prop firms, plataformas, etc.) e analise-as separadamente ou de forma agregada."
+    },
+    "insights": {
+      "title": "Insights inteligentes",
+      "description": "Descubra seus padrões de trading, seus momentos mais lucrativos e seus hábitos para otimizar sua abordagem."
+    },
+    "marketReplay": {
+      "title": "Market Replay",
+      "description": "Reproduza OHLC histórico multi-timeframe para backtesting manual."
+    },
+    "sessionReplay": {
+      "title": "Replay de sessão",
+      "description": "Reproduza suas sessões de trading: ordens, fills, posições, PnL intradiário e rascunho do diário."
+    },
+    "dailyJournal": {
+      "title": "Diário",
+      "description": "Escreva suas anotações diárias de trading, organize-as e encontre-as facilmente."
+    },
+    "journalQuestions": {
+      "title": "Perguntas diárias",
+      "description": "Responda a um questionário diário configurável para estruturar sua rotina de trading."
+    },
+    "backtestJournal": {
+      "title": "Diário de backtest",
+      "description": "Escolha uma estratégia de posição para registrar suas observações de backtest."
+    },
+    "historicalData": {
+      "title": "Dados históricos",
+      "description": "Baixe e armazene barras brutas por contrato real via suas integrações."
+    },
+    "goals": {
+      "title": "Meus objetivos",
+      "description": "Defina e acompanhe seus objetivos de trading."
+    },
+    "behavior": {
+      "title": "Comportamento",
+      "description": "Analise sua disciplina, o sizing após ganhos ou perdas, e os sinais comportamentais."
+    }
+  },
+  "benefits": {
+    "title": "Por que escolher o K&C Trading Journal?",
+    "items": {
+      "data": {
+        "title": "Dados centralizados",
+        "description": "Todos os seus dados de trading em um só lugar, facilmente acessíveis e analisáveis."
+      },
+      "visualization": {
+        "title": "Visualizações poderosas",
+        "description": "Gráficos interativos e painéis intuitivos para compreender rapidamente seu desempenho."
+      },
+      "improvement": {
+        "title": "Melhoria contínua",
+        "description": "Identifique seus pontos fortes e fracos para progredir regularmente no seu trading."
+      },
+      "discipline": {
+        "title": "Disciplina mental",
+        "description": "Acompanhe suas emoções e a conformidade com a estratégia para reforçar sua disciplina de trading."
+      }
+    }
+  },
+  "about": {
+    "title": "Sobre",
+    "summary": "O K&C Trading Journal é uma plataforma criada para ajudar traders a acompanhar e melhorar seu desempenho. Uma ferramenta profissional, com cadastro gratuito e sem compromisso.",
+    "learnMore": "Saiba mais"
+  },
+  "cta": {
+    "title": "Pronto para transformar seu trading?",
+    "description": "Junte-se aos traders que já usam o K&C Trading Journal para melhorar seu desempenho. Comece gratuitamente hoje.",
+    "subtitle": "Cadastro gratuito • Sem compromisso • Configuração em 2 minutos",
+    "registerButton": "Cadastrar-se — Grátis"
+  },
+  "contact": {
+    "button": "Fale conosco"
+  },
+  "footer": {
+    "copyright": "© {{year}} K&C Trading Journal. Todos os direitos reservados.",
+    "legalNotice": "Aviso legal"
+  },
+  "legalNotice": {
+    "title": "Aviso legal",
+    "ownership": {
+      "title": "Propriedade",
+      "content": "Este aplicativo de diário de trading é propriedade exclusiva da K&C Madin Invest."
+    },
+    "liability": {
+      "title": "Limitação de responsabilidade",
+      "content1": "As informações, análises e estatísticas contidas neste aplicativo de diário de trading são fornecidas apenas para fins informativos. A K&C Madin Invest não pode garantir a precisão, a completude ou a relevância das informações disponibilizadas no aplicativo.",
+      "content2": "As decisões de trading tomadas com base nas informações fornecidas pelo aplicativo são de exclusiva responsabilidade do usuário. A K&C Madin Invest não pode, em nenhum caso, ser responsabilizada por danos diretos ou indiretos, incluindo perdas financeiras, resultantes do uso dessas informações ou do próprio aplicativo."
+    },
+    "dataProtection": {
+      "title": "Proteção de dados",
+      "content": "De acordo com a legislação aplicável (GDPR), os usuários têm o direito de acessar, retificar, portar e excluir seus dados pessoais. Os usuários podem excluir permanentemente sua conta e todos os seus dados de trading a qualquer momento pelo menu « Configurações » / « Conta » no aplicativo. Para qualquer outra solicitação relativa aos seus dados pessoais, os usuários podem entrar em contato com a K&C Madin Invest."
+    },
+    "cookies": {
+      "title": "Cookies e armazenamento local",
+      "intro": "Este aplicativo de diário de trading utiliza apenas cookies técnicos necessários para seu funcionamento:",
+      "session": "Cookies de sessão: Manutenção da sua conexão segura e autenticação",
+      "csrf": "Cookies CSRF: Proteção contra ataques de Cross-Site Request Forgery",
+      "storage": "Armazenamento local (localStorage): Armazenamento temporário das suas preferências de autenticação, idioma e configurações de exibição",
+      "conclusion": "Nenhum cookie de rastreamento, publicidade ou análise de terceiros é utilizado. Todos os cookies são seguros (transmissão apenas via HTTPS) e não contêm dados pessoais ou financeiros sensíveis. Os dados de trading são armazenados com segurança em nossos servidores. Você pode excluir cookies e o armazenamento local a qualquer momento nas configurações do seu navegador."
+    },
+    "close": "Fechar"
+  },
+  "faq": {
+    "title": "Perguntas frequentes",
+    "subtitle": "Encontre rapidamente respostas para suas perguntas",
+    "items": [
+      {
+        "question": "O cadastro é gratuito?",
+        "answer": "Sim, o cadastro é gratuito e sem compromisso. Você pode começar hoje. A oferta e as condições de acesso aos recursos podem evoluir; elas são apresentadas no aplicativo."
+      },
+      {
+        "question": "Como posso importar minhas operações?",
+        "answer": "Você pode importar suas operações por meio de um arquivo CSV. O formato suportado é compatível com a maioria das plataformas de trading. Vá até a seção Operações e use o botão 'Importar CSV' para enviar seus dados."
+      },
+      {
+        "question": "Posso gerenciar várias contas de trading?",
+        "answer": "Com certeza! O K&C Trading Journal permite gerenciar várias contas de trading (corretoras, prop firms, plataformas, etc.). Você pode analisar cada conta separadamente ou ver uma visão agregada de todas as suas contas."
+      },
+      {
+        "question": "Meus dados estão seguros?",
+        "answer": "Sim, a segurança dos seus dados é nossa prioridade. Todas as comunicações são criptografadas via HTTPS, e seus dados de trading são armazenados com segurança em nossos servidores. Você pode excluir sua conta e todos os seus dados a qualquer momento."
+      },
+      {
+        "question": "Quais estatísticas estão disponíveis?",
+        "answer": "O K&C Trading Journal oferece estatísticas detalhadas, incluindo Profit Factor, Win Rate, Drawdown, índices de recuperação e muito mais. Você também pode visualizar seu desempenho por meio de gráficos interativos e mapas de calor."
+      },
+      {
+        "question": "Posso usar o aplicativo no celular?",
+        "answer": "Sim, o aplicativo é responsivo e funciona em todos os dispositivos (computador, tablet, smartphone). Você pode acessar seu diário de trading de qualquer lugar com conexão à internet."
+      }
+    ]
+  }
+}

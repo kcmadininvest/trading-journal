@@ -42,14 +42,17 @@ const PAGES_TO_PRERENDER = [
   { path: '/', lang: 'en' },
   { path: '/', lang: 'es' },
   { path: '/', lang: 'de' },
+  { path: '/', lang: 'pt' },
   { path: '/a-propos', lang: 'fr' },
   { path: '/about', lang: 'en' },
   { path: '/acerca-de', lang: 'es' },
   { path: '/uber-uns', lang: 'de' },
+  { path: '/sobre', lang: 'pt' },
   { path: '/fonctionnalites', lang: 'fr' },
   { path: '/features', lang: 'en' },
   { path: '/funcionalidades', lang: 'es' },
   { path: '/funktionen', lang: 'de' },
+  { path: '/recursos', lang: 'pt' },
 ];
 
 /**
@@ -101,6 +104,12 @@ async function generatePrerenderedHTML(route, lang, query = '') {
           keywords: 'Trading-Journal, Journal de trading, Trade-Tracking, Trading-Analyse, Trading-Leistung, Trading-Software, Market Replay, Sitzungs-Replay',
           locale: 'de_DE',
         },
+        pt: {
+          title: 'Diário de Trading Gratuito | K&C Trading Journal',
+          description: 'Diário de trading profissional - Acompanhe, analise e otimize seu desempenho com ferramentas avançadas. Importação CSV, multi-contas, estatísticas, Market Replay, diário, objetivos. Cadastro gratuito, sem compromisso.',
+          keywords: 'diário de trading, trading journal, acompanhamento de trades, análise de trading, desempenho de trading, software de trading, market replay, replay de sessão, diário de backtest',
+          locale: 'pt_BR',
+        },
       },
       '/about': {
         en: {
@@ -118,6 +127,14 @@ async function generatePrerenderedHTML(route, lang, query = '') {
           locale: 'fr_FR',
         },
       },
+      '/sobre': {
+        pt: {
+          title: 'Sobre | K&C Trading Journal',
+          description: 'Conheça a história e a missão do K&C Trading Journal. Uma plataforma criada com paixão para ajudar traders a acompanhar e melhorar seu desempenho. Cadastro gratuito, sem compromisso.',
+          keywords: 'sobre, trading journal, história, missão, equipe, diário de trading',
+          locale: 'pt_BR',
+        },
+      },
       '/features': {
         en: {
           title: 'Trading Journal Features - Track, Analyze & Optimize | K&C Trading Journal',
@@ -132,6 +149,14 @@ async function generatePrerenderedHTML(route, lang, query = '') {
           description: 'Découvrez toutes les fonctionnalités de K&C Trading Journal : suivi de trades, analyses avancées, gestion de stratégies, statistiques, Market Replay, journal, objectifs, comportement et bien plus encore.',
           keywords: 'fonctionnalités, features, suivi trades, analyse trading, statistiques trading, journal trading, market replay, replay de session, journal de backtest, objectifs trading',
           locale: 'fr_FR',
+        },
+      },
+      '/recursos': {
+        pt: {
+          title: 'Recursos | K&C Trading Journal',
+          description: 'Descubra todos os recursos do K&C Trading Journal: acompanhamento de trades, análises avançadas, gestão de estratégias, estatísticas, Market Replay, diário, objetivos, comportamento e muito mais. Cadastro gratuito.',
+          keywords: 'recursos, funcionalidades, acompanhamento de trades, análise de trading, estatísticas, diário de trading, market replay, replay de sessão, diário de backtest, objetivos',
+          locale: 'pt_BR',
         },
       },
     };
@@ -179,30 +204,70 @@ async function generatePrerenderedHTML(route, lang, query = '') {
       '/a-propos': `${baseUrl}/a-propos`,
       '/acerca-de': `${baseUrl}/acerca-de`,
       '/uber-uns': `${baseUrl}/uber-uns`,
+      '/sobre': `${baseUrl}/sobre`,
       '/features': `${baseUrl}/features`,
       '/fonctionnalites': `${baseUrl}/fonctionnalites`,
       '/funcionalidades': `${baseUrl}/funcionalidades`,
       '/funktionen': `${baseUrl}/funktionen`,
+      '/recursos': `${baseUrl}/recursos`,
     };
     
     const currentHreflangUrl = hreflangUrls[route] || baseUrl;
-    
-    // Pour la page d'accueil, conserver une canonical unique sur `/`
-    if (route === '/') {
+
+    const aboutRoutes = ['/a-propos', '/about', '/acerca-de', '/uber-uns', '/sobre'];
+    const featuresRoutes = ['/fonctionnalites', '/features', '/funcionalidades', '/funktionen', '/recursos'];
+    const aboutHreflang = {
+      fr: `${baseUrl}/a-propos`,
+      en: `${baseUrl}/about`,
+      es: `${baseUrl}/acerca-de`,
+      de: `${baseUrl}/uber-uns`,
+      pt: `${baseUrl}/sobre`,
+    };
+    const featuresHreflang = {
+      fr: `${baseUrl}/fonctionnalites`,
+      en: `${baseUrl}/features`,
+      es: `${baseUrl}/funcionalidades`,
+      de: `${baseUrl}/funktionen`,
+      pt: `${baseUrl}/recursos`,
+    };
+
+    const replaceHreflangBlock = (hrefByLang, xDefaultHref) => {
       const hreflangReplacements = {
-        fr: `<link rel="alternate" hreflang="fr" href="${baseUrl}/" />`,
-        en: `<link rel="alternate" hreflang="en" href="${baseUrl}/" />`,
-        es: `<link rel="alternate" hreflang="es" href="${baseUrl}/" />`,
-        de: `<link rel="alternate" hreflang="de" href="${baseUrl}/" />`,
+        fr: `<link rel="alternate" hreflang="fr" href="${hrefByLang.fr}" />`,
+        en: `<link rel="alternate" hreflang="en" href="${hrefByLang.en}" />`,
+        es: `<link rel="alternate" hreflang="es" href="${hrefByLang.es}" />`,
+        de: `<link rel="alternate" hreflang="de" href="${hrefByLang.de}" />`,
+        pt: `<link rel="alternate" hreflang="pt" href="${hrefByLang.pt}" />`,
       };
-      
-      ['fr', 'en', 'es', 'de'].forEach((l) => {
+
+      ['fr', 'en', 'es', 'de', 'pt'].forEach((l) => {
         const regex = new RegExp(`<link\\s+rel=["']alternate["']\\s+hreflang=["']${l}["']\\s+href=["'][^"']*["']\\s*\\/?>`, 'i');
-        html = html.replace(regex, hreflangReplacements[l]);
+        if (regex.test(html)) {
+          html = html.replace(regex, hreflangReplacements[l]);
+        } else {
+          html = html.replace(
+            /<link\s+rel=["']alternate["']\s+hreflang=["']x-default["']/i,
+            `${hreflangReplacements[l]}\n    <link rel="alternate" hreflang="x-default"`
+          );
+        }
       });
 
       const xDefaultRegex = /<link\s+rel=["']alternate["']\s+hreflang=["']x-default["']\s+href=["'][^"']*["']\s*\/?>/i;
-      html = html.replace(xDefaultRegex, `<link rel="alternate" hreflang="x-default" href="${baseUrl}/" />`);
+      html = html.replace(xDefaultRegex, `<link rel="alternate" hreflang="x-default" href="${xDefaultHref}" />`);
+    };
+
+    // Home: toutes les langues pointent vers `/` (canonical unique).
+    if (route === '/') {
+      replaceHreflangBlock(
+        { fr: `${baseUrl}/`, en: `${baseUrl}/`, es: `${baseUrl}/`, de: `${baseUrl}/`, pt: `${baseUrl}/` },
+        `${baseUrl}/`
+      );
+    } else if (aboutRoutes.includes(route)) {
+      // Cluster À propos : hreflang réciproques + x-default FR (spec)
+      replaceHreflangBlock(aboutHreflang, aboutHreflang.fr);
+    } else if (featuresRoutes.includes(route)) {
+      // Cluster Fonctionnalités : hreflang réciproques + x-default FR (spec)
+      replaceHreflangBlock(featuresHreflang, featuresHreflang.fr);
     }
     
     // Ajouter un commentaire pour indiquer que c'est pré-rendu

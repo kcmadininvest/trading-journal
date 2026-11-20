@@ -56,6 +56,14 @@ class StaticViewSitemap(Sitemap):
                 ]
             },
             {
+                'url': '/sobre',
+                'priority': 0.8,
+                'changefreq': 'monthly',
+                'images': [
+                    {'loc': '/android-chrome-512x512.png', 'title': 'K&C Trading Journal Logo'},
+                ]
+            },
+            {
                 'url': '/fonctionnalites', 
                 'priority': 0.8,
                 'changefreq': 'monthly',
@@ -81,6 +89,14 @@ class StaticViewSitemap(Sitemap):
             },
             {
                 'url': '/funktionen', 
+                'priority': 0.8,
+                'changefreq': 'monthly',
+                'images': [
+                    {'loc': '/android-chrome-512x512.png', 'title': 'K&C Trading Journal Logo'},
+                ]
+            },
+            {
+                'url': '/recursos',
                 'priority': 0.8,
                 'changefreq': 'monthly',
                 'images': [

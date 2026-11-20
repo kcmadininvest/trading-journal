@@ -1,0 +1,30 @@
+{
+  "title": "Fale conosco",
+  "close": "Fechar",
+  "form": {
+    "email": {
+      "label": "Seu e-mail",
+      "placeholder": "seu@email.com"
+    },
+    "subject": {
+      "label": "Assunto",
+      "placeholder": "Assunto da sua mensagem"
+    },
+    "message": {
+      "label": "Mensagem",
+      "placeholder": "Sua mensagem..."
+    }
+  },
+  "buttons": {
+    "cancel": "Cancelar",
+    "send": "Enviar",
+    "sending": "Enviando..."
+  },
+  "errors": {
+    "sendError": "Ocorreu um erro ao enviar sua mensagem. Tente novamente.",
+    "sendErrorDefault": "Ocorreu um erro ao enviar sua mensagem."
+  },
+  "success": {
+    "messageSent": "Sua mensagem foi enviada com sucesso!"
+  }
+}
