@@ -336,13 +336,29 @@ async function prerenderAllPages() {
       if (page.path === '/') {
         filename = `index.${page.lang}.html`;
       }
+
+      // Les shells home par langue (index.pt.html, …) ne sont servis que via ?lang=
+      // → noindex dans le HTML en plus du X-Robots-Tag Apache.
+      let htmlToWrite = html;
+      if (page.path === '/') {
+        htmlToWrite = html.replace(
+          /<meta\s+name=["']robots["']\s+content=["'][^"']*["']\s*\/?>/i,
+          '<meta name="robots" content="noindex, follow" />'
+        );
+        if (!/<meta\s+name=["']robots["']/i.test(htmlToWrite)) {
+          htmlToWrite = htmlToWrite.replace(
+            '</head>',
+            '    <meta name="robots" content="noindex, follow" />\n  </head>'
+          );
+        }
+      }
       
       const outputPath = path.join(outputDir, filename);
-      fs.writeFileSync(outputPath, html, 'utf8');
+      fs.writeFileSync(outputPath, htmlToWrite, 'utf8');
       
       console.log(`✅ Pré-rendu généré: ${page.path} (${page.lang})`);
       
-      // Pour la page d'accueil en français, mettre à jour aussi index.html par défaut
+      // index.html canonique (URL `/`) reste indexable — FR par défaut après prerender
       if (page.path === '/' && page.lang === 'fr') {
         const defaultIndexPath = path.join(BUILD_DIR, 'index.html');
         fs.writeFileSync(defaultIndexPath, html, 'utf8');

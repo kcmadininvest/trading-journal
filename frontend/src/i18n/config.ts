@@ -565,22 +565,31 @@ const getDefaultLanguage = (): string => {
 const languageDetector = new LanguageDetector();
 languageDetector.addDetector(customNavigatorLanguagesDetector);
 
+const SUPPORTED_UI_LANGS = ['fr', 'en', 'es', 'de', 'pt'] as const;
+
 // Obtenir la langue initiale :
-// 1) paramètre `?lang=` si présent et supporté
-// 2) fallback navigateur
-// Le backend synchronisera avec les préférences sauvegardées après connexion
+// 1) `?lang=` si supporté
+// 2) choix explicite localStorage (visiteurs non authentifiés)
+// 3) navigateur
+// Après connexion, usePreferences écrase avec la préférence backend.
 const getInitialLanguage = (): string => {
   if (typeof window !== 'undefined') {
     const urlLang = new URLSearchParams(window.location.search).get('lang');
-    if (urlLang && ['fr', 'en', 'es', 'de', 'pt'].includes(urlLang)) {
+    if (urlLang && (SUPPORTED_UI_LANGS as readonly string[]).includes(urlLang)) {
       return urlLang;
+    }
+
+    try {
+      const stored = window.localStorage.getItem('i18nextLng')?.split('-')[0];
+      if (stored && (SUPPORTED_UI_LANGS as readonly string[]).includes(stored)) {
+        return stored;
+      }
+    } catch {
+      // localStorage indisponible (mode privé strict, etc.)
     }
   }
 
-  // Pour les utilisateurs non authentifiés : détecter depuis le navigateur
-  // Pour les utilisateurs authentifiés : usePreferences écrasera avec la langue backend
-  const detectedLang = getDefaultLanguage();
-  return detectedLang;
+  return getDefaultLanguage();
 };
 
 i18n
@@ -588,7 +597,7 @@ i18n
   .use(initReactI18next)
   .init({
     resources,
-    lng: getInitialLanguage(), // Utiliser la langue détectée depuis navigator (priorité absolue)
+    lng: getInitialLanguage(),
     fallbackLng: getDefaultLanguage(),
     supportedLngs: ['fr', 'en', 'es', 'de', 'it', 'pt', 'ja', 'ko', 'zh'],
     defaultNS: 'common',
@@ -599,32 +608,19 @@ i18n
     },
     
     detection: {
-      // Ordre de détection : 
-      // 1. querystring `?lang=` (priorité SEO/home multilingue)
-      // 2. customNavigatorLanguages (navigator.languages avec ordre de préférence)
-      // 3. navigator (fallback standard)
-      // Note: localStorage n'est PAS utilisé pour la détection initiale
-      // Le backend est la source de vérité et écrasera via usePreferences après connexion
-      order: ['querystring', 'customNavigatorLanguages', 'navigator'],
+      // 1. querystring `?lang=`
+      // 2. localStorage (choix explicite UI)
+      // 3. navigateur
+      // Authentifié : backend via usePreferences
+      order: ['querystring', 'localStorage', 'customNavigatorLanguages', 'navigator'],
       lookupQuerystring: 'lang',
-      // Ne pas sauvegarder automatiquement - le backend gère la persistance
-      caches: [],
+      caches: ['localStorage'],
       lookupLocalStorage: 'i18nextLng',
     },
-  })
-  .then(() => {
-    // Après l'initialisation, vérifier si localStorage contient un choix explicite utilisateur
-    // et l'appliquer si nécessaire (mais seulement si l'utilisateur a vraiment fait un choix)
-    // Pour l'instant, on laisse la détection du navigateur avoir la priorité
   });
 
-// La détection de langue est gérée par i18next avec le fallbackLng qui utilise getDefaultLanguage()
-// getDefaultLanguage() retourne 'fr' si le navigateur est en français, sinon 'en'
-
-// Fonction pour changer la langue depuis les préférences utilisateur
-// Cette fonction sauvegarde automatiquement dans localStorage (choix explicite utilisateur)
+// Persiste le choix explicite (sélecteur) dans localStorage via caches i18next.
 export const changeLanguage = (lang: string) => {
-  // i18next sauvegarde automatiquement dans localStorage grâce à caches: ['localStorage']
   return i18n.changeLanguage(lang);
 };
 

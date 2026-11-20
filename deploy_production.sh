@@ -535,15 +535,21 @@ fi
 info "Configuration .env.production:"
 cat .env.production | grep -v "SECRET" | grep -v "KEY" || true
 
-# Build avec le fichier .env.production
-npm run build
+# Build + pré-render SEO (pages marketing /sobre, /recursos, etc.)
+# Sans prerender, Apache sert le même shell SPA pour toutes les URLs → canonical/hreflang faux pour Googlebot.
+npm run build:prerender
 
 if [ ! -d "build" ] || [ ! -f "build/index.html" ]; then
     error "Le build a échoué ou le dossier build n'existe pas"
     exit 1
 fi
 
-info "✅ Frontend compilé avec succès"
+if [ ! -f "build/prerendered/sobre/index.html" ] || [ ! -f "build/prerendered/recursos/index.html" ]; then
+    error "Pré-render SEO incomplet (build/prerendered/sobre ou /recursos manquant)"
+    exit 1
+fi
+
+info "✅ Frontend compilé avec succès (build + prerender SEO)"
 
 # 7. 🔄 Synchronisation des templates Django et fichiers statiques
 info "Synchronisation des fichiers statiques avec Django..."
