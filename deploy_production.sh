@@ -322,6 +322,14 @@ if [ -d ".git" ] || git rev-parse --git-dir > /dev/null 2>&1; then
     # Afficher le tag déployé si disponible
     if [ ! -z "$DEPLOY_TAG" ]; then
         info "✅ Code déployé depuis le tag $DEPLOY_TAG"
+
+        # Si ce script a été mis à jour par le checkout, se relancer une fois pour exécuter
+        # la version du tag (évite npm run build sans prerender à cause du décalage de lignes).
+        if [ "${DEPLOY_SCRIPT_REEXEC:-0}" != "1" ]; then
+            export DEPLOY_SCRIPT_REEXEC=1
+            info "🔁 Relance du script de déploiement (version tag)…"
+            exec bash "$PROJECT_ROOT/deploy_production.sh"
+        fi
     else
         info "✅ Code à jour depuis la branche main (production)"
     fi
