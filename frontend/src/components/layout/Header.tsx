@@ -94,12 +94,17 @@ const Header: React.FC<HeaderProps> = ({
               alt="K&C Trading Journal" 
               className="w-11 h-11 sm:w-14 sm:h-14 object-contain"
             />
-            {/* Titre visible seulement hors nav desktop (évite la collision avec les menus 2xl) */}
-            <span className="text-base lg:text-lg font-semibold text-white whitespace-nowrap hidden sm:inline 2xl:hidden">K&C Trading Journal</span>
+            {/*
+              Titre app :
+              - sm → <2xl : visible (menu hamburger)
+              - 2xl → <1700px : masqué (nav desktop dense ; seuil Playwright titre+user+billing)
+              - ≥1700px : visible à nouveau
+            */}
+            <span className="text-base lg:text-lg font-semibold text-white whitespace-nowrap hidden sm:inline 2xl:hidden min-[1700px]:inline">K&C Trading Journal</span>
           </button>
           
           {/* Separator */}
-          <div className="hidden min-[1800px]:block h-8 w-px bg-gray-600"></div>
+          <div className="hidden min-[1700px]:block h-8 w-px bg-gray-600"></div>
         </div>
 
         {/* Center: Navigation */}
