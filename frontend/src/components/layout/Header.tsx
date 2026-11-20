@@ -90,15 +90,21 @@ const Header: React.FC<HeaderProps> = ({
             title="Retour au tableau de bord"
           >
             <img 
-              src="/icon-transparent-192x192.png" 
+              src="/logo-transparent.svg" 
               alt="K&C Trading Journal" 
-              className="w-8 h-8 object-contain"
+              className="w-11 h-11 sm:w-14 sm:h-14 object-contain"
             />
-            <span className="text-base lg:text-lg font-semibold text-white whitespace-nowrap hidden sm:inline">K&C Trading Journal</span>
+            {/*
+              Titre app :
+              - sm → <2xl : visible (menu hamburger)
+              - 2xl → <1700px : masqué (nav desktop dense ; seuil Playwright titre+user+billing)
+              - ≥1700px : visible à nouveau
+            */}
+            <span className="text-base lg:text-lg font-semibold text-white whitespace-nowrap hidden sm:inline 2xl:hidden min-[1700px]:inline">K&C Trading Journal</span>
           </button>
           
           {/* Separator */}
-          <div className="hidden 2xl:block h-8 w-px bg-gray-600"></div>
+          <div className="hidden min-[1700px]:block h-8 w-px bg-gray-600"></div>
         </div>
 
         {/* Center: Navigation */}
@@ -114,8 +120,8 @@ const Header: React.FC<HeaderProps> = ({
 
         {/* Right: User info and actions */}
         <div className="flex items-center space-x-1 sm:space-x-4 flex-shrink-0">
-          {/* User info - hidden on mobile, shown on sm and up */}
-          <div className="text-right hidden 2xl:block">
+          {/* Infos user : seulement quand la largeur suffit vraiment (nav FR + badges) */}
+          <div className="text-right hidden min-[1800px]:block">
             <div className="flex items-center justify-end space-x-2">
               <p className="text-xs font-medium text-white truncate max-w-[120px]">
                 {currentUser.first_name && currentUser.last_name 

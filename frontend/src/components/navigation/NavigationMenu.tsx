@@ -323,7 +323,7 @@ const NavigationMenu: React.FC<NavigationMenuProps> = ({
         menuItems={menuItems}
       />
 
-      {/* Desktop Navigation */}
+      {/* Desktop Navigation (pas d'overflow-hidden : les dropdown NavGroup seraient coupés) */}
       <nav className="hidden 2xl:flex items-center gap-1">
         {/* Dashboard - direct link */}
         <NavItem
