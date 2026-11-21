@@ -541,8 +541,16 @@ const HomePage: React.FC = () => {
       <div className="max-w-7xl w-full">
         {/* Hero Section */}
         <div className="text-center mb-16">
-          <h1 className="text-6xl md:text-7xl font-bold mb-8 pb-2 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent leading-[1.1]">
-            {t('home:title')}
+          <h1 className="inline-flex items-center justify-center gap-[0.2em] mb-8 text-5xl sm:text-6xl md:text-7xl font-bold leading-none">
+            <img
+              src="/logo-simplifie-transparent-1024.png"
+              alt=""
+              className="h-[1.15em] w-[1.15em] object-contain flex-shrink-0"
+              aria-hidden="true"
+            />
+            <span className="pb-[0.05em] bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              {t('home:title')}
+            </span>
           </h1>
           <p className="text-2xl text-gray-700 max-w-3xl mx-auto mb-4 font-medium">
             {t('home:subtitle')}
