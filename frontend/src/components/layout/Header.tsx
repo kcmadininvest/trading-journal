@@ -90,7 +90,7 @@ const Header: React.FC<HeaderProps> = ({
             title="Retour au tableau de bord"
           >
             <img 
-              src="/logo-transparent.svg" 
+              src="/logo-simplifie-transparent-1024.png" 
               alt="K&C Trading Journal" 
               className="w-11 h-11 sm:w-14 sm:h-14 object-contain"
             />
