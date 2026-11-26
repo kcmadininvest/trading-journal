@@ -11,6 +11,9 @@ import { usePreferences } from '../hooks/usePreferences';
 import { usePrivacySettings, maskValue } from '../hooks/usePrivacySettings';
 import userService from '../services/userService';
 import { PageShell } from '../components/layout';
+import { useTradingAccount } from '../contexts/useTradingAccount';
+import { queryClient } from '../lib/queryClient';
+import { queryKeys } from '../lib/queryKeys';
 
 const DEFAULT_ITEMS_PER_PAGE = 20;
 
@@ -19,6 +22,7 @@ type SortDirection = 'asc' | 'desc';
 
 const TradingAccountsPage: React.FC = () => {
   const { t } = useI18nTranslation();
+  const { setSelectedAccountId } = useTradingAccount();
   const [allAccounts, setAllAccounts] = useState<TradingAccount[]>([]);
   const [loading, setLoading] = useState(false);
   const { preferences, loading: preferencesLoading } = usePreferences();
@@ -264,11 +268,17 @@ const TradingAccountsPage: React.FC = () => {
 
 
   const handleSaveAccount = async (accountId: number | null, data: Partial<TradingAccount>) => {
+    let savedAccount: TradingAccount | null = null;
     if (accountId) {
-      await tradingAccountsService.update(accountId, data);
+      savedAccount = await tradingAccountsService.update(accountId, data);
     } else {
-      await tradingAccountsService.create(data);
+      savedAccount = await tradingAccountsService.create(data);
     }
+    if (savedAccount?.is_default) {
+      setSelectedAccountId(savedAccount.id);
+    }
+    void queryClient.invalidateQueries({ queryKey: queryKeys.bootstrap() });
+    void queryClient.invalidateQueries({ queryKey: ['tradingAccounts'] });
     await load();
     setShowAccountModal(false);
     setEditingAccount(null);
@@ -287,6 +297,9 @@ const TradingAccountsPage: React.FC = () => {
   const handleSetDefault = async (id: number) => {
     try {
       await tradingAccountsService.setDefault(id);
+      setSelectedAccountId(id);
+      void queryClient.invalidateQueries({ queryKey: queryKeys.bootstrap() });
+      void queryClient.invalidateQueries({ queryKey: ['tradingAccounts'] });
       await load();
     } catch {
       // échec silencieux — l’UI reste sur l’état précédent

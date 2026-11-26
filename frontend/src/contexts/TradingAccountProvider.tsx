@@ -202,7 +202,11 @@ export function TradingAccountProvider({ children }: { children: ReactNode }) {
 
   const selectedAccount = useMemo(() => {
     if (selectedAccountId == null) return null;
-    return accounts.find((a) => a.id === selectedAccountId) ?? bootstrap?.default_account ?? null;
+    const fromList = accounts.find((a) => a.id === selectedAccountId);
+    if (fromList) return fromList;
+    const boot = bootstrap?.default_account;
+    if (boot && boot.id === selectedAccountId) return boot;
+    return null;
   }, [selectedAccountId, accounts, bootstrap?.default_account]);
 
   const contextLoading =
