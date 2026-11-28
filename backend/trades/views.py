@@ -329,7 +329,7 @@ class TradingAccountViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'], url_path='repair-topstep-broker-ids')
     def repair_topstep_broker_ids(self, request):
-        """Aligne broker_account_id sur le nom TopStepX (API Account/search)."""
+        """Complète les broker_account_id vides à partir du nom TopStepX."""
         from integrations.topstepx_auth import get_topstepx_integration, get_valid_session_token
         from integrations.topstepx_accounts import repair_topstep_broker_account_ids
         from integrations.topstepx_client import TopStepXApiClient, TopStepXApiError

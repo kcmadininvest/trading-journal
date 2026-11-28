@@ -93,6 +93,7 @@ class TradingActivityExpenseSerializer(serializers.ModelSerializer):
             'date',
             'primary_currency',
             'subtotal',
+            'discount_amount',
             'vat_amount',
             'total',
             'invoice_reference',
@@ -123,12 +124,24 @@ class TradingActivityExpenseSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         subtotal = attrs.get('subtotal', getattr(self.instance, 'subtotal', None))
+        discount_amount = attrs.get(
+            'discount_amount',
+            getattr(self.instance, 'discount_amount', Decimal('0')),
+        )
+        if discount_amount is None:
+            discount_amount = Decimal('0')
         vat_amount = attrs.get('vat_amount', getattr(self.instance, 'vat_amount', None))
         total = attrs.get('total', getattr(self.instance, 'total', None))
         if subtotal is not None and vat_amount is not None and total is not None:
-            expected = Decimal(str(subtotal)) + Decimal(str(vat_amount))
+            subtotal_dec = Decimal(str(subtotal))
+            discount_dec = Decimal(str(discount_amount))
+            if discount_dec > subtotal_dec:
+                raise serializers.ValidationError({'discount_amount': 'La remise ne peut pas dépasser le sous-total.'})
+            expected = subtotal_dec - discount_dec + Decimal(str(vat_amount))
             if abs(Decimal(str(total)) - expected) > Decimal('0.02'):
-                raise serializers.ValidationError({'total': 'Le total doit être égal à sous-total + TVA (tolérance 0,02).'})
+                raise serializers.ValidationError(
+                    {'total': 'Le total doit être égal à sous-total − remise + TVA (tolérance 0,02).'}
+                )
         sec_amt = attrs.get('secondary_amount', getattr(self.instance, 'secondary_amount', None))
         sec_cur = attrs.get('secondary_currency', getattr(self.instance, 'secondary_currency', None))
         if sec_amt is not None and sec_amt > 0:

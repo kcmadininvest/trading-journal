@@ -55,7 +55,7 @@
     "brokerId": "ID Broker (opzionale)",
     "brokerIdPlaceholder": "Identificativo lato broker",
     "brokerIdTopstepPlaceholder": "ID conto TopStepX (numerico)",
-    "brokerIdTopstepHelp": "Opzionale: lasciare vuoto o compilato automaticamente se il nome coincide esattamente con TopStepX (menu conti). Non riutilizzare lo stesso ID su più conti.",
+    "brokerIdTopstepHelp": "Opzionale. Il valore inserito viene conservato. Se il campo è vuoto e il nome coincide esattamente con TopStepX, l’ID viene compilato automaticamente. Non riutilizzare lo stesso ID su più conti.",
     "currency": "Valuta",
     "currencyDescription": "Seleziona la valuta; solo il simbolo sarà visualizzato.",
     "status": "Stato",

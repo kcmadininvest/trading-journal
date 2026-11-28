@@ -99,7 +99,7 @@ def repair_topstep_broker_account_ids(
     auth_token: str,
     trading_accounts: list[TradingAccount],
 ) -> list[dict]:
-    """Met à jour broker_account_id pour chaque compte TopStepX selon le nom API."""
+    """Complète broker_account_id vide lorsqu'un compte TopStepX porte le même nom."""
     if not trading_accounts:
         return []
 
@@ -115,7 +115,8 @@ def repair_topstep_broker_account_ids(
             continue
         new_id = str(api_id)
         old_id = (trading_account.broker_account_id or '').strip()
-        if old_id == new_id:
+        # Une valeur saisie est conservée. Seul un champ vide est complété.
+        if old_id:
             continue
         trading_account.broker_account_id = new_id
         trading_account.save(update_fields=['broker_account_id', 'updated_at'])

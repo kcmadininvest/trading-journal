@@ -117,6 +117,14 @@ class TradingActivityExpense(models.Model):
         validators=[MinValueValidator(Decimal('0'))],
         verbose_name='Sous-total',
     )
+    discount_amount = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        default=Decimal('0'),
+        validators=[MinValueValidator(Decimal('0'))],
+        verbose_name='Remise',
+        help_text='Montant déduit du sous-total avant TVA. 0 si aucune remise.',
+    )
     vat_amount = models.DecimalField(
         max_digits=15,
         decimal_places=2,
@@ -179,9 +187,13 @@ class TradingActivityExpense(models.Model):
             validate_iso_currency(self.secondary_currency)
         elif self.secondary_currency and not self.secondary_amount:
             raise ValidationError({'secondary_amount': 'Le montant secondaire est requis si une devise secondaire est renseignée.'})
-        expected = (self.subtotal or Decimal('0')) + (self.vat_amount or Decimal('0'))
+        discount = self.discount_amount or Decimal('0')
+        subtotal = self.subtotal or Decimal('0')
+        if discount > subtotal:
+            raise ValidationError({'discount_amount': 'La remise ne peut pas dépasser le sous-total.'})
+        expected = subtotal - discount + (self.vat_amount or Decimal('0'))
         if self.total and abs(self.total - expected) > Decimal('0.02'):
-            raise ValidationError({'total': 'Le total doit correspondre à sous-total + TVA (tolérance 0,02).'})
+            raise ValidationError({'total': 'Le total doit correspondre à sous-total − remise + TVA (tolérance 0,02).'})
 
     def save(self, *args, **kwargs):
         self.primary_currency = self.primary_currency.upper()

@@ -317,3 +317,81 @@ class TradingActivityTaxPaymentsApiTests(TestCase):
         )
         res = self.client.put(detail_url, {'label': 'Invalid'}, format='json')
         self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+class TradingActivityExpenseDiscountTests(TestCase):
+    def setUp(self) -> None:
+        self.user = User.objects.create_user(
+            email='expense-discount@example.com',
+            username='expense_discount_user',
+            password='testpass123',
+        )
+        CustomerSubscription.objects.create(
+            user=self.user,
+            stripe_customer_id='cus_discount_test',
+            stripe_subscription_id='sub_discount_test',
+            stripe_price_id='price_test',
+            status=CustomerSubscription.STATUS_ACTIVE,
+            current_period_end=timezone.now(),
+        )
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user)
+
+    def test_create_expense_subtracts_discount_before_vat(self) -> None:
+        url = reverse('trading_activity:trading-activity-expense-list')
+        res = self.client.post(
+            url,
+            {
+                'date': '2026-11-12',
+                'primary_currency': 'USD',
+                'subtotal': '100.00',
+                'discount_amount': '12.25',
+                'vat_amount': '17.55',
+                'total': '105.30',
+                'label': 'Plateforme',
+            },
+            format='json',
+        )
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED, res.data)
+        self.assertEqual(res.data['discount_amount'], '12.25')
+        self.assertEqual(res.data['total'], '105.30')
+
+        summary = self.client.get(reverse('trading_activity:trading-activity-summary'))
+        self.assertEqual(summary.status_code, status.HTTP_200_OK)
+        usd = next(b for b in summary.data['expense_totals']['primary'] if b['primary_currency'] == 'USD')
+        self.assertEqual(usd['discount_amount'], '12.25')
+        self.assertEqual(usd['total'], '105.30')
+
+    def test_reject_discount_above_subtotal(self) -> None:
+        url = reverse('trading_activity:trading-activity-expense-list')
+        res = self.client.post(
+            url,
+            {
+                'date': '2026-11-12',
+                'primary_currency': 'USD',
+                'subtotal': '10.00',
+                'discount_amount': '12.25',
+                'vat_amount': '0.00',
+                'total': '0.01',
+            },
+            format='json',
+        )
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('discount_amount', res.data)
+
+    def test_expense_without_discount_keeps_subtotal_plus_vat(self) -> None:
+        url = reverse('trading_activity:trading-activity-expense-list')
+        res = self.client.post(
+            url,
+            {
+                'date': '2026-11-12',
+                'primary_currency': 'EUR',
+                'subtotal': '9.00',
+                'vat_amount': '1.80',
+                'total': '10.80',
+            },
+            format='json',
+        )
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED, res.data)
+        self.assertEqual(res.data['discount_amount'], '0.00')
+        self.assertEqual(res.data['total'], '10.80')

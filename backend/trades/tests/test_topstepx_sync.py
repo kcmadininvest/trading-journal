@@ -16,7 +16,10 @@ from integrations.models import UserApiIntegration
 from trades.models import ImportedTrade, TradeSyncLog, TradingAccount
 from trades.replay.auto_build import ReplayAutoBuildSummary
 from trades.sync.topstepx_mapper import map_api_trades_to_parsed_rows, parse_api_timestamp
-from integrations.topstepx_accounts import resolve_projectx_account_id
+from integrations.topstepx_accounts import (
+    repair_topstep_broker_account_ids,
+    resolve_projectx_account_id,
+)
 from trades.sync.topstepx_sync import TopStepXSyncService, SyncResult
 from trades.sync.trade_upsert import create_trade_from_parsed, import_parsed_trades
 
@@ -607,3 +610,81 @@ class TopStepXSyncApiTests(TestCase):
             self.assertEqual(res.status_code, status.HTTP_200_OK)
         res = self.client.post(self.sync_url, {}, format='json')
         self.assertEqual(res.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
+
+
+@override_settings(
+    INTEGRATIONS_CREDENTIALS_KEY='test-integrations-key-for-unit-tests-only',
+)
+class TopStepBrokerIdPreservationTests(TestCase):
+    def setUp(self) -> None:
+        self.user = User.objects.create_user(
+            email='broker-id@example.com',
+            username='broker_id',
+            password='testpass123',
+        )
+        self.account = TradingAccount.objects.create(
+            user=self.user,
+            name='50KTC-SKU-V2-DLL-31867-95053204',
+            account_type='topstep',
+            broker_account_id='95053204',
+            currency='USD',
+            status='active',
+        )
+        self.integration = UserApiIntegration.objects.create(
+            user=self.user,
+            provider='topstepx',
+            external_username='trader',
+            secrets_encrypted=encrypt_json({'api_key': 'key-123'}),
+            is_connected=True,
+        )
+
+    @patch('integrations.topstepx_accounts.list_projectx_accounts')
+    def test_repair_keeps_entered_broker_id(self, mock_list) -> None:
+        mock_list.return_value = [{'id': 30253261, 'name': self.account.name}]
+        repaired = repair_topstep_broker_account_ids(MagicMock(), 'token', [self.account])
+        self.account.refresh_from_db()
+        self.assertEqual(repaired, [])
+        self.assertEqual(self.account.broker_account_id, '95053204')
+
+    @patch('integrations.topstepx_accounts.list_projectx_accounts')
+    def test_repair_fills_empty_broker_id_from_matching_name(self, mock_list) -> None:
+        self.account.broker_account_id = ''
+        self.account.save(update_fields=['broker_account_id'])
+        mock_list.return_value = [{'id': 30253261, 'name': self.account.name}]
+        repaired = repair_topstep_broker_account_ids(MagicMock(), 'token', [self.account])
+        self.account.refresh_from_db()
+        self.assertEqual(self.account.broker_account_id, '30253261')
+        self.assertEqual(repaired[0]['old_broker_account_id'], None)
+        self.assertEqual(repaired[0]['broker_account_id'], '30253261')
+
+    @patch('trades.sync.topstepx_sync.call_with_valid_session_token')
+    @patch('trades.sync.topstepx_sync.resolve_projectx_account_id', return_value=(30253261, True))
+    def test_sync_does_not_replace_entered_broker_id(self, _mock_resolve, mock_call) -> None:
+        mock_client = MagicMock()
+        mock_client.search_trades.return_value = []
+
+        def _invoke(_integration, callback):
+            return callback('token')
+
+        mock_call.side_effect = _invoke
+        TopStepXSyncService(client=mock_client).sync_account(self.user, self.account)
+        self.account.refresh_from_db()
+        self.assertEqual(self.account.broker_account_id, '95053204')
+        mock_client.search_trades.assert_called_once()
+        self.assertEqual(mock_client.search_trades.call_args.args[1], 30253261)
+
+    @patch('trades.sync.topstepx_sync.call_with_valid_session_token')
+    @patch('trades.sync.topstepx_sync.resolve_projectx_account_id', return_value=(30253261, True))
+    def test_sync_fills_empty_broker_id(self, _mock_resolve, mock_call) -> None:
+        self.account.broker_account_id = ''
+        self.account.save(update_fields=['broker_account_id'])
+        mock_client = MagicMock()
+        mock_client.search_trades.return_value = []
+
+        def _invoke(_integration, callback):
+            return callback('token')
+
+        mock_call.side_effect = _invoke
+        TopStepXSyncService(client=mock_client).sync_account(self.user, self.account)
+        self.account.refresh_from_db()
+        self.assertEqual(self.account.broker_account_id, '30253261')

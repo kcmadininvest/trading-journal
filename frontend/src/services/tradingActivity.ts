@@ -15,6 +15,7 @@ export interface TradingActivityExpense {
   date: string;
   primary_currency: string;
   subtotal: string;
+  discount_amount?: string;
   vat_amount: string;
   total: string;
   invoice_reference: string;
@@ -118,6 +119,7 @@ export interface TradingActivityTaxPayment {
 export interface ExpenseTotalsPrimaryBlock {
   primary_currency: string;
   subtotal: string;
+  discount_amount?: string;
   vat_amount: string;
   total: string;
 }

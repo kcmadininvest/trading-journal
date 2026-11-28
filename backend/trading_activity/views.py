@@ -346,6 +346,7 @@ class TradingActivitySummaryView(APIView):
             exp_qs.values('primary_currency')
             .annotate(
                 subtotal_sum=Sum('subtotal'),
+                discount_sum=Sum('discount_amount'),
                 vat_sum=Sum('vat_amount'),
                 total_sum=Sum('total'),
             )
@@ -355,6 +356,7 @@ class TradingActivitySummaryView(APIView):
             {
                 'primary_currency': r['primary_currency'],
                 'subtotal': str(r['subtotal_sum'] or Decimal('0')),
+                'discount_amount': str(r['discount_sum'] or Decimal('0')),
                 'vat_amount': str(r['vat_sum'] or Decimal('0')),
                 'total': str(r['total_sum'] or Decimal('0')),
             }

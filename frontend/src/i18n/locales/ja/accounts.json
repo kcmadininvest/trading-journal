@@ -52,7 +52,7 @@
     "brokerId": "ID Broker (optionnel)",
     "brokerIdPlaceholder": "ブローカー側の識別子",
     "brokerIdTopstepPlaceholder": "TopStepX口座ID（数値）",
-    "brokerIdTopstepHelp": "任意：空欄可。口座名がTopStepX（口座メニュー）と完全一致する場合は自動入力されます。同じIDを複数の口座で使わないでください。",
+    "brokerIdTopstepHelp": "任意。入力した値は保持されます。空欄で口座名がTopStepXと完全一致する場合のみ、IDが自動入力されます。同じIDを複数の口座で使わないでください。",
     "currency": "Devise",
     "currencyDescription": "Sélectionnez la devise; seul le symbole sera affiché.",
     "status": "ステータス",

@@ -347,24 +347,10 @@ const TradingAccountModal: React.FC<TradingAccountModalProps> = ({
                   step="0.01"
                   digits={2}
                 />
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {[0, 50000, 150000].map((preset) => (
-                    <button
-                      key={preset}
-                      type="button"
-                      onClick={() => setForm((prev) => ({ ...prev, initial_capital: preset } as any))}
-                      className="rounded-md border border-gray-300 px-2 py-1 text-xs text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
-                    >
-                      {t(`accounts:form.initialCapitalPreset${preset}`, {
-                        defaultValue: preset === 0 ? '0' : preset.toLocaleString('fr-FR'),
-                      })}
-                    </button>
-                  ))}
-                </div>
                 <p className="mt-1 text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">{t('accounts:form.initialCapitalDescription')}</p>
-                <p className="mt-1 text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">{t('accounts:form.chartThresholdHelp')}</p>
               </div>
             </div>
+            <p className="w-full text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">{t('accounts:form.chartThresholdHelp')}</p>
 
             <div className="flex items-center justify-between gap-3 rounded-lg bg-gray-50 p-3 dark:bg-gray-900">
               <div className="flex min-w-0 items-center gap-3">

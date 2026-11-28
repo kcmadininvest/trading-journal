@@ -4,6 +4,7 @@ import { toast } from 'react-hot-toast/headless';
 import { PageShell } from '../components/layout';
 import { DeleteConfirmModal, PaginationControls, Tooltip } from '../components/ui';
 import { DateInput } from '../components/common/DateInput';
+import { ChartHelpTooltip } from '../components/charts/ChartHelpTooltip';
 import { CustomSelect } from '../components/common/CustomSelect';
 import { usePreferences } from '../hooks/usePreferences';
 import {
@@ -38,6 +39,32 @@ import {
   toOrderingParam,
   type LedgerSortTab,
 } from '../utils/tradingActivityLedgerSort';
+
+function formatDiscountAmount(
+  amount: string | number | null | undefined,
+  numberFormat: NumberFormatType,
+): string {
+  const n = typeof amount === 'string' ? parseFloat(amount) : amount;
+  if (n == null || Number.isNaN(n) || n === 0) return '—';
+  return formatNumber(-Math.abs(n), 2, numberFormat);
+}
+
+function expenseAmountsFromBase(
+  subtotalStr: string,
+  discountStr: string,
+  numberFormat: NumberFormatType,
+  vatStr?: string,
+) {
+  const net = parseUserDecimal(subtotalStr, numberFormat) - parseUserDecimal(discountStr, numberFormat);
+  const vat = vatStr === undefined
+    ? Math.round(Math.max(0, net) * 0.2 * 100) / 100
+    : parseUserDecimal(vatStr, numberFormat);
+  const total = Math.round((net + vat) * 100) / 100;
+  return {
+    vat_amount: formatNumber(vat, 2, numberFormat),
+    total: formatNumber(total, 2, numberFormat),
+  };
+}
 
 /** Même principe que PageSizeSelector : pas de flèche native du navigateur sur les <select>. */
 const MODAL_SELECT_CLASS =
@@ -426,6 +453,12 @@ function MobileExpenseCard({
           </dd>
         </div>
         <div className="flex justify-between gap-2">
+          <dt className="text-gray-500 dark:text-gray-400">{t('table.discount')}</dt>
+          <dd className="tabular-nums text-right text-gray-900 dark:text-gray-100">
+            {formatDiscountAmount(row.discount_amount, numberFormat)}
+          </dd>
+        </div>
+        <div className="flex justify-between gap-2">
           <dt className="text-gray-500 dark:text-gray-400">{t('table.vat')}</dt>
           <dd className="tabular-nums text-right text-gray-900 dark:text-gray-100">
             {formatNumber(row.vat_amount, 2, numberFormat)}
@@ -696,6 +729,7 @@ const TradingActivityPage: React.FC = () => {
     date: new Date().toISOString().slice(0, 10),
     primary_currency: defaultCurrency,
     subtotal: '',
+    discount_amount: '',
     vat_amount: '',
     total: '',
     invoice_reference: '',
@@ -981,6 +1015,7 @@ const TradingActivityPage: React.FC = () => {
       date: new Date().toISOString().slice(0, 10),
       primary_currency: defaultCurrency,
       subtotal: st,
+      discount_amount: '',
       vat_amount: '',
       total: '',
       invoice_reference: '',
@@ -1000,6 +1035,10 @@ const TradingActivityPage: React.FC = () => {
       date: row.date,
       primary_currency: row.primary_currency,
       subtotal: formatNumber(row.subtotal, 2, numberFormat),
+      discount_amount:
+        row.discount_amount != null && parseFloat(String(row.discount_amount)) > 0
+          ? formatNumber(row.discount_amount, 2, numberFormat)
+          : '',
       vat_amount: formatNumber(row.vat_amount, 2, numberFormat),
       total: formatNumber(row.total, 2, numberFormat),
       invoice_reference: row.invoice_reference || '',
@@ -1016,16 +1055,20 @@ const TradingActivityPage: React.FC = () => {
     setExpenseModal(true);
   };
 
-  const applyVatFromSubtotal = (subtotalStr: string) => {
-    const st = parseUserDecimal(subtotalStr, numberFormat);
-    const vat = Math.round(st * 0.2 * 100) / 100;
-    const tot = Math.round((st + vat) * 100) / 100;
-    return { vat: formatNumber(vat, 2, numberFormat), total: formatNumber(tot, 2, numberFormat) };
+  const onExpenseSubtotalChange = (v: string) => {
+    setExpForm((f) => ({
+      ...f,
+      subtotal: v,
+      ...expenseAmountsFromBase(v, f.discount_amount, numberFormat),
+    }));
   };
 
-  const onExpenseSubtotalChange = (v: string) => {
-    const { vat, total } = applyVatFromSubtotal(v);
-    setExpForm((f) => ({ ...f, subtotal: v, vat_amount: vat, total }));
+  const onExpenseDiscountChange = (v: string) => {
+    setExpForm((f) => ({
+      ...f,
+      discount_amount: v,
+      ...expenseAmountsFromBase(f.subtotal, v, numberFormat),
+    }));
   };
 
   const openNewCredit = () => {
@@ -1105,6 +1148,8 @@ const TradingActivityPage: React.FC = () => {
   const saveExpense = async () => {
     try {
       const subtotalApi = normalizeDecimalForApi(expForm.subtotal, numberFormat);
+      const discountRaw = expForm.discount_amount.trim();
+      const discountApi = discountRaw ? normalizeDecimalForApi(discountRaw, numberFormat) : '0';
       const vatApi = normalizeDecimalForApi(expForm.vat_amount, numberFormat);
       const totalApi = normalizeDecimalForApi(expForm.total, numberFormat);
       const secRaw = expForm.secondary_amount.trim();
@@ -1113,6 +1158,7 @@ const TradingActivityPage: React.FC = () => {
         date: expForm.date,
         primary_currency: expForm.primary_currency,
         subtotal: subtotalApi,
+        discount_amount: discountApi,
         vat_amount: vatApi,
         total: totalApi,
         invoice_reference: expForm.invoice_reference || '',
@@ -1746,6 +1792,17 @@ const TradingActivityPage: React.FC = () => {
                             </dd>
                           </div>
                           <div className="flex flex-col gap-1">
+                            <dt className="text-gray-500 dark:text-gray-400">{t('table.discount')}</dt>
+                            <dd className="space-y-0.5 tabular-nums font-medium">
+                              {(summary.expense_totals.primary ?? []).map((b) => (
+                                <div key={`disc-${b.primary_currency}`}>
+                                  {formatDiscountAmount(b.discount_amount, numberFormat)}
+                                  {parseFloat(String(b.discount_amount || '0')) > 0 ? ` ${b.primary_currency}` : ''}
+                                </div>
+                              ))}
+                            </dd>
+                          </div>
+                          <div className="flex flex-col gap-1">
                             <dt className="text-gray-500 dark:text-gray-400">{t('table.vat')}</dt>
                             <dd className="space-y-0.5 tabular-nums font-medium">
                               {(summary.expense_totals.primary ?? []).map((b) => (
@@ -1808,6 +1865,7 @@ const TradingActivityPage: React.FC = () => {
                               onSort={(field) => handleLedgerSort('debit', field)}
                             />
                             <th className="px-3 py-2">{t('table.subtotal')}</th>
+                            <th className="px-3 py-2">{t('table.discount')}</th>
                             <th className="px-3 py-2">{t('table.vat')}</th>
                             <TradingActivitySortableTh
                               label={t('table.total')}
@@ -1845,6 +1903,9 @@ const TradingActivityPage: React.FC = () => {
                               <td className="px-3 py-2">
                                 {formatNumber(row.subtotal, 2, numberFormat)} {row.primary_currency}
                               </td>
+                              <td className="px-3 py-2 tabular-nums">
+                                {formatDiscountAmount(row.discount_amount, numberFormat)}
+                              </td>
                               <td className="px-3 py-2">{formatNumber(row.vat_amount, 2, numberFormat)}</td>
                               <td className="px-3 py-2 font-medium">
                                 {formatNumber(row.total, 2, numberFormat)} {row.primary_currency}
@@ -1880,6 +1941,14 @@ const TradingActivityPage: React.FC = () => {
                                 {(summary.expense_totals.primary ?? []).map((b) => (
                                   <div key={b.primary_currency} className="whitespace-nowrap">
                                     {formatNumber(b.subtotal, 2, numberFormat)} {b.primary_currency}
+                                  </div>
+                                ))}
+                              </td>
+                              <td className="px-3 py-2 text-left font-semibold tabular-nums text-gray-900 dark:text-gray-100">
+                                {(summary.expense_totals.primary ?? []).map((b) => (
+                                  <div key={`disc-${b.primary_currency}`} className="whitespace-nowrap">
+                                    {formatDiscountAmount(b.discount_amount, numberFormat)}
+                                    {parseFloat(String(b.discount_amount || '0')) > 0 ? ` ${b.primary_currency}` : ''}
                                   </div>
                                 ))}
                               </td>
@@ -2288,6 +2357,22 @@ const TradingActivityPage: React.FC = () => {
                   </Tooltip>
                 </div>
                 <div>
+                  <div className="mb-2 flex items-center gap-1.5">
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('form.discount')}</label>
+                    <ChartHelpTooltip content={t('form.discountHint')} position="top" />
+                  </div>
+                  <Tooltip content={numberFormatHint} position="top" triggerDisplay="block" className="w-full">
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    value={expForm.discount_amount}
+                    onChange={(e) => onExpenseDiscountChange(e.target.value)}
+                    placeholder="0"
+                  />
+                  </Tooltip>
+                </div>
+                <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('form.vat')}</label>
                   <Tooltip content={numberFormatHint} position="top" triggerDisplay="block" className="w-full">
                   <input
@@ -2297,12 +2382,16 @@ const TradingActivityPage: React.FC = () => {
                     value={expForm.vat_amount}
                     onChange={(e) => {
                       const vat = e.target.value;
-                      const st = parseUserDecimal(expForm.subtotal, numberFormat);
-                      const v = parseUserDecimal(vat, numberFormat);
+                      const computed = expenseAmountsFromBase(
+                        expForm.subtotal,
+                        expForm.discount_amount,
+                        numberFormat,
+                        vat,
+                      );
                       setExpForm({
                         ...expForm,
                         vat_amount: vat,
-                        total: formatNumber(st + v, 2, numberFormat),
+                        total: computed.total,
                       });
                     }}
                   />

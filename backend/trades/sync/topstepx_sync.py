@@ -95,9 +95,9 @@ class TopStepXSyncService:
             account_id, _needs_broker_id_update = resolve_projectx_account_id(
                 self.client, token, trading_account
             )
-            new_broker_id = str(account_id)
-            if (trading_account.broker_account_id or '').strip() != new_broker_id:
-                trading_account.broker_account_id = new_broker_id
+            stored_broker_id = (trading_account.broker_account_id or '').strip()
+            if not stored_broker_id:
+                trading_account.broker_account_id = str(account_id)
                 trading_account.save(update_fields=['broker_account_id', 'updated_at'])
 
             since = self._resolve_since(trading_account, full_resync)

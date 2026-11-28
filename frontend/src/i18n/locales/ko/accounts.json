@@ -52,7 +52,7 @@
     "brokerId": "ID Broker (optionnel)",
     "brokerIdPlaceholder": "브로커 측 식별자",
     "brokerIdTopstepPlaceholder": "TopStepX 계정 ID (숫자)",
-    "brokerIdTopstepHelp": "선택 사항: 비워 두거나 계정 이름이 TopStepX(계정 메뉴)와 정확히 일치하면 자동으로 채워집니다. 동일한 ID를 여러 계정에 사용하지 마세요.",
+    "brokerIdTopstepHelp": "선택 사항. 입력한 값은 유지됩니다. 비어 있고 계정 이름이 TopStepX와 정확히 일치할 때만 ID가 자동으로 채워집니다. 동일한 ID를 여러 계정에 사용하지 마세요.",
     "currency": "Devise",
     "currencyDescription": "Sélectionnez la devise; seul le symbole sera affiché.",
     "status": "상태",

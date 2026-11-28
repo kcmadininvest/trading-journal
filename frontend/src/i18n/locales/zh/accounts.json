@@ -52,7 +52,7 @@
     "brokerId": "ID Broker (optionnel)",
     "brokerIdPlaceholder": "经纪商侧标识",
     "brokerIdTopstepPlaceholder": "TopStepX 账户 ID（数字）",
-    "brokerIdTopstepHelp": "可选：留空即可；若账户名称与 TopStepX（账户菜单）完全一致将自动填写。请勿在多个账户上重复使用同一 ID。",
+    "brokerIdTopstepHelp": "可选。已填写的值会保留。仅当留空且账户名称与 TopStepX 完全一致时，才会自动填入 ID。请勿在多个账户上重复使用同一 ID。",
     "currency": "Devise",
     "currencyDescription": "Sélectionnez la devise; seul le symbole sera affiché.",
     "status": "状态",
